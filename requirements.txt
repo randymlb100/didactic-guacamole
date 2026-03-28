@@ -1,0 +1,4 @@
+Flask
+Flask-Cors
+beautifulsoup4
+gunicorn

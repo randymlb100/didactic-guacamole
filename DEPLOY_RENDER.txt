@@ -1,0 +1,17 @@
+Archivos listos para Render.
+
+Usa estos valores:
+
+Build Command:
+pip install -r requirements.txt
+
+Start Command:
+gunicorn app:app
+
+Si Render detecta el archivo render.yaml, puede autocompletar la configuracion.
+
+Pasos:
+1. Sube esta carpeta a GitHub.
+2. En Render crea un Web Service desde ese repo.
+3. Espera el deploy.
+4. Copia la URL publica y usala en la app Android, pestaña Resultados.
