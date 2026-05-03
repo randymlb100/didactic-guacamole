@@ -1,6 +1,7 @@
 import datetime
 import json
 import os
+import time
 
 from flask import Flask, Response, jsonify, request
 from flask_cors import CORS
@@ -11,6 +12,8 @@ from scraper.scrape_and_save import get_dr_date_str, save_to_supabase, scrape
 app = Flask(__name__)
 CORS(app)
 port = int(os.environ.get("PORT", 5000))
+SCRAPE_CACHE_TTL_SECONDS = int(os.environ.get("SCRAPE_CACHE_TTL_SECONDS", "120"))
+_scrape_cache = {}
 
 
 def json_utf8(data, status=200):
@@ -26,17 +29,34 @@ def json_utf8(data, status=200):
 
 
 def normalize_result_row(row):
+    number = str(row.get("number", "")).strip()
+    name = str(row.get("name", "")).strip()
     out = {
         "id": str(row.get("id", "")).strip(),
-        "name": str(row.get("name", "")).strip(),
+        "name": name,
         "date": str(row.get("date", "")).strip(),
-        "number": str(row.get("number", "")).strip(),
+        "number": number,
     }
+    normalized_name = name.lower()
+    if "pick 3" in normalized_name:
+        out["pick3"] = number
+    if "pick 4" in normalized_name:
+        out["pick4"] = number
     for key in ("status", "source", "firstSeenAt", "lastSeenAt"):
         value = row.get(key)
         if value:
             out[key] = value
     return out
+
+
+def scrape_cached(date_key):
+    now = time.time()
+    cached = _scrape_cache.get(date_key)
+    if cached and now - cached["stored_at"] < SCRAPE_CACHE_TTL_SECONDS:
+        return cached["rows"]
+    rows = scrape(date_key)
+    _scrape_cache[date_key] = {"stored_at": now, "rows": rows}
+    return rows
 
 
 def unique_sorted_results(rows):
@@ -52,7 +72,7 @@ def unique_sorted_results(rows):
 def results_for_request():
     date_key = request.args.get("date") or get_dr_date_str()
     name_filter = (request.args.get("name") or request.args.get("lottery") or "").strip().lower()
-    rows = unique_sorted_results(scrape(date_key))
+    rows = unique_sorted_results(scrape_cached(date_key))
     if name_filter:
         rows = [row for row in rows if name_filter in row["name"].lower()]
     return date_key, rows
@@ -190,7 +210,7 @@ def legacy_filtered_route():
     route_filter = LEGACY_ROUTE_FILTERS.get(request.path, "")
     request_filter = request.args.get("name")
     query = (request_filter or route_filter or "").lower()
-    rows = unique_sorted_results(scrape(date_key))
+    rows = unique_sorted_results(scrape_cached(date_key))
     if query:
         rows = [row for row in rows if query in row["name"].lower()]
     return json_utf8(rows)
