@@ -1,4 +1,4 @@
 Flask
 Flask-Cors
-beautifulsoup4
+beautifulsoup4==4.14.3
 gunicorn
