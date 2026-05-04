@@ -28,10 +28,23 @@ class ScraperContractsTest(unittest.TestCase):
         self.assertEqual("26-04-2026", scraper.parse_miloteria_date("04/26/2026 11:00:00 PM"))
 
     def test_haiti_bolet_sources_are_mapped_to_catalog_ids(self):
-        self.assertEqual("27", scraper.ENLOTERIA_HAITI_BOLET_SOURCES[0]["id"])
-        self.assertEqual("Haiti Bolet 11:30 AM", scraper.ENLOTERIA_HAITI_BOLET_SOURCES[0]["name"])
-        self.assertEqual("28", scraper.ENLOTERIA_HAITI_BOLET_SOURCES[1]["id"])
-        self.assertEqual("Haiti Bolet 6:30 PM", scraper.ENLOTERIA_HAITI_BOLET_SOURCES[1]["name"])
+        sources_by_id = {source["id"]: source["name"] for source in scraper.ENLOTERIA_HAITI_BOLET_SOURCES}
+        self.assertEqual("Haiti Bolet 11:30 AM", sources_by_id["27"])
+        self.assertEqual("Haiti Bolet 6:30 PM", sources_by_id["28"])
+
+    def test_enloteria_sources_cover_new_catalog_ids(self):
+        sources_by_id = {source["id"]: source for source in scraper.ENLOTERIA_RESULT_SOURCES}
+
+        for lottery_id in [str(value) for value in range(29, 47)]:
+            self.assertIn(lottery_id, sources_by_id)
+
+        self.assertEqual("Georgia Día", sources_by_id["44"]["name"])
+        self.assertEqual("Georgia Tarde", sources_by_id["45"]["name"])
+        self.assertEqual("Georgia Noche", sources_by_id["46"]["name"])
+        self.assertEqual("Anguilla 10AM", sources_by_id["2"]["source_name"])
+        self.assertEqual("Anguilla 1PM", sources_by_id["4"]["source_name"])
+        self.assertEqual("Anguilla 6PM", sources_by_id["11"]["source_name"])
+        self.assertEqual("Anguilla 9PM", sources_by_id["14"]["source_name"])
 
     def test_parse_enloteria_haiti_bolet_jsonld_event(self):
         html = """
@@ -59,6 +72,36 @@ class ScraperContractsTest(unittest.TestCase):
 
         self.assertEqual(
             {"id": "27", "name": "Haiti Bolet 11:30 AM", "date": "28-04-2026", "number": "00-54-25"},
+            row,
+        )
+
+    def test_parse_enloteria_result_jsonld_supports_source_name_alias(self):
+        html = """
+        <script type="application/ld+json">
+        {
+          "@context": "https://schema.org",
+          "@graph": [
+            {
+              "@type": "Event",
+              "name": "Anguilla 10AM",
+              "startDate": "2026-04-28T10:00:00-04:00",
+              "description": "Resultados de Anguilla 10AM. Números ganadores: 08, 14, 52."
+            }
+          ]
+        }
+        </script>
+        """
+
+        row = scraper.parse_enloteria_result_jsonld_for_dates(
+            html,
+            lottery_id="2",
+            lottery_name="Anguila Mañana",
+            target_dates=["28-04-2026"],
+            source_name="Anguilla 10AM",
+        )
+
+        self.assertEqual(
+            {"id": "2", "name": "Anguila Mañana", "date": "28-04-2026", "number": "08-14-52"},
             row,
         )
 

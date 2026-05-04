@@ -46,7 +46,24 @@ KING_LOTTERY_STATUS_ROWS = [
     {"id": "24", "name": "King Lottery Noche"},
 ]
 
-ENLOTERIA_HAITI_BOLET_SOURCES = [
+ENLOTERIA_RESULT_SOURCES = [
+    {"url": "https://enloteria.com/resultados-anguilla-8am", "id": "29", "name": "Anguilla 8AM"},
+    {"url": "https://enloteria.com/resultados-anguilla-9am", "id": "30", "name": "Anguilla 9AM"},
+    {"url": "https://enloteria.com/resultados-anguilla-10am", "id": "2", "name": "Anguila Mañana", "source_name": "Anguilla 10AM"},
+    {"url": "https://enloteria.com/resultados-anguilla-11am", "id": "31", "name": "Anguilla 11AM"},
+    {"url": "https://enloteria.com/resultados-anguilla-12pm", "id": "32", "name": "Anguilla 12PM"},
+    {"url": "https://enloteria.com/resultados-anguilla-1pm", "id": "4", "name": "Anguila Mediodía", "source_name": "Anguilla 1PM"},
+    {"url": "https://enloteria.com/resultados-anguilla-2pm", "id": "33", "name": "Anguilla 2PM"},
+    {"url": "https://enloteria.com/resultados-anguilla-3pm", "id": "34", "name": "Anguilla 3PM"},
+    {"url": "https://enloteria.com/resultados-anguilla-4pm", "id": "35", "name": "Anguilla 4PM"},
+    {"url": "https://enloteria.com/resultados-anguilla-5pm", "id": "36", "name": "Anguilla 5PM"},
+    {"url": "https://enloteria.com/resultados-anguilla-6pm", "id": "11", "name": "Anguila Tarde", "source_name": "Anguilla 6PM"},
+    {"url": "https://enloteria.com/resultados-anguilla-7pm", "id": "37", "name": "Anguilla 7PM"},
+    {"url": "https://enloteria.com/resultados-anguilla-8pm", "id": "38", "name": "Anguilla 8PM"},
+    {"url": "https://enloteria.com/resultados-anguilla-9pm", "id": "14", "name": "Anguila Noche", "source_name": "Anguilla 9PM"},
+    {"url": "https://enloteria.com/resultados-anguilla-10pm", "id": "39", "name": "Anguilla 10PM"},
+    {"url": "https://enloteria.com/resultados-haiti-bolet-9-30-am", "id": "40", "name": "Haiti Bolet 9:30 AM"},
+    {"url": "https://enloteria.com/resultados-haiti-bolet-10-30-am", "id": "41", "name": "Haiti Bolet 10:30 AM"},
     {
         "url": "https://enloteria.com/resultados-haiti-bolet-11-30-am",
         "id": "27",
@@ -57,6 +74,18 @@ ENLOTERIA_HAITI_BOLET_SOURCES = [
         "id": "28",
         "name": "Haiti Bolet 6:30 PM",
     },
+    {"url": "https://enloteria.com/resultados-haiti-bolet-5-30-pm", "id": "42", "name": "Haiti Bolet 5:30 PM"},
+    {"url": "https://enloteria.com/resultados-haiti-bolet-7-30-pm", "id": "43", "name": "Haiti Bolet 7:30 PM"},
+    {"url": "https://enloteria.com/resultados-georgia-dia", "id": "44", "name": "Georgia Día"},
+    {"url": "https://enloteria.com/resultados-georgia-tarde", "id": "45", "name": "Georgia Tarde"},
+    {"url": "https://enloteria.com/resultados-georgia-noche", "id": "46", "name": "Georgia Noche"},
+    {"url": "https://enloteria.com/resultados-new-jersey-tarde", "id": "25", "name": "New Jersey Tarde"},
+    {"url": "https://enloteria.com/resultados-new-jersey-noche", "id": "26", "name": "New Jersey Noche"},
+]
+
+ENLOTERIA_HAITI_BOLET_SOURCES = [
+    source for source in ENLOTERIA_RESULT_SOURCES
+    if str(source["name"]).startswith("Haiti Bolet")
 ]
 
 def should_fail_without_supabase_key(supabase_key, env=None):
@@ -193,12 +222,13 @@ def parse_enloteria_spanish_date(raw):
     return f"{int(match.group(1)):02d}-{month}-{match.group(3)}"
 
 
-def parse_enloteria_haiti_bolet_dom_for_dates(html_text, lottery_id, lottery_name, target_dates):
+def parse_enloteria_result_dom_for_dates(html_text, lottery_id, lottery_name, target_dates, source_name=None):
     allowed_dates = [str(date) for date in target_dates if str(date or "").strip()]
+    expected_name = str(source_name or lottery_name).lower()
     soup = BeautifulSoup(str(html_text or ""), "html.parser")
     headings = soup.find_all(["h1", "h2", "h3", "h4", "h5", "h6"])
     for heading in headings:
-        if heading.get_text(" ", strip=True).lower() != lottery_name.lower():
+        if heading.get_text(" ", strip=True).lower() != expected_name:
             continue
         parent = heading.parent
         if not parent:
@@ -228,6 +258,10 @@ def parse_enloteria_haiti_bolet_dom_for_dates(html_text, lottery_id, lottery_nam
     return None
 
 
+def parse_enloteria_haiti_bolet_dom_for_dates(html_text, lottery_id, lottery_name, target_dates):
+    return parse_enloteria_result_dom_for_dates(html_text, lottery_id, lottery_name, target_dates)
+
+
 def iter_enloteria_jsonld_objects(html_text):
     for match in re.finditer(
         r'<script[^>]+type=["\']application/ld\+json["\'][^>]*>(.*?)</script>',
@@ -252,8 +286,9 @@ def parse_enloteria_haiti_bolet_jsonld(html_text, lottery_id, lottery_name, targ
     )
 
 
-def parse_enloteria_haiti_bolet_jsonld_for_dates(html_text, lottery_id, lottery_name, target_dates):
+def parse_enloteria_result_jsonld_for_dates(html_text, lottery_id, lottery_name, target_dates, source_name=None):
     allowed_dates = [str(date) for date in target_dates if str(date or "").strip()]
+    expected_name = str(source_name or lottery_name).lower()
     for data in iter_enloteria_jsonld_objects(html_text):
         graph = data.get("@graph") if isinstance(data, dict) else None
         nodes = graph if isinstance(graph, list) else [data]
@@ -262,7 +297,7 @@ def parse_enloteria_haiti_bolet_jsonld_for_dates(html_text, lottery_id, lottery_
                 continue
             if node.get("@type") != "Event":
                 continue
-            if str(node.get("name", "")).strip().lower() != lottery_name.lower():
+            if str(node.get("name", "")).strip().lower() != expected_name:
                 continue
             result_date = iso_date_to_dr_date(node.get("startDate"))
             if result_date not in allowed_dates:
@@ -276,7 +311,17 @@ def parse_enloteria_haiti_bolet_jsonld_for_dates(html_text, lottery_id, lottery_
                 "date": result_date,
                 "number": "-".join(numbers),
             }
-    return parse_enloteria_haiti_bolet_dom_for_dates(
+    return parse_enloteria_result_dom_for_dates(
+        html_text,
+        lottery_id=lottery_id,
+        lottery_name=lottery_name,
+        target_dates=target_dates,
+        source_name=source_name,
+    )
+
+
+def parse_enloteria_haiti_bolet_jsonld_for_dates(html_text, lottery_id, lottery_name, target_dates):
+    return parse_enloteria_result_jsonld_for_dates(
         html_text,
         lottery_id=lottery_id,
         lottery_name=lottery_name,
@@ -284,11 +329,11 @@ def parse_enloteria_haiti_bolet_jsonld_for_dates(html_text, lottery_id, lottery_
     )
 
 
-def fetch_enloteria_haiti_bolet(date_str=None, fallback_days=2):
+def fetch_enloteria_results(date_str=None, fallback_days=0, sources=None):
     target_date = date_str or get_dr_date_str()
     target_dates = recent_dr_dates(target_date, days_back=fallback_days)
     results = []
-    for source in ENLOTERIA_HAITI_BOLET_SOURCES:
+    for source in sources or ENLOTERIA_RESULT_SOURCES:
         req = urllib.request.Request(
             source["url"],
             headers={
@@ -299,13 +344,14 @@ def fetch_enloteria_haiti_bolet(date_str=None, fallback_days=2):
         try:
             html = urllib.request.urlopen(req, timeout=20).read().decode("utf-8", "ignore")
         except Exception as e:
-            print(f"  EnLoteria Haiti Bolet error for {source['name']}: {e}")
+            print(f"  EnLoteria error for {source['name']}: {e}")
             continue
-        row = parse_enloteria_haiti_bolet_jsonld_for_dates(
+        row = parse_enloteria_result_jsonld_for_dates(
             html,
             lottery_id=source["id"],
             lottery_name=source["name"],
             target_dates=target_dates,
+            source_name=source.get("source_name"),
         )
         if row:
             results.append(row)
@@ -313,6 +359,14 @@ def fetch_enloteria_haiti_bolet(date_str=None, fallback_days=2):
         else:
             print(f"  EnLoteria: no recent result for {source['name']} on {', '.join(target_dates)}")
     return results
+
+
+def fetch_enloteria_haiti_bolet(date_str=None, fallback_days=2):
+    return fetch_enloteria_results(
+        date_str=date_str,
+        fallback_days=fallback_days,
+        sources=ENLOTERIA_HAITI_BOLET_SOURCES,
+    )
 
 
 def fetch_lotteryusa_results(url, lottery_id, lottery_name, digits, target_date):
@@ -515,8 +569,8 @@ def scrape(date_str=None):
             results.append(row)
             seen_ids.add(row["id"])
 
-    haiti_bolet = fetch_enloteria_haiti_bolet(date_str, fallback_days=0)
-    for row in haiti_bolet:
+    enloteria_rows = fetch_enloteria_results(date_str, fallback_days=0)
+    for row in enloteria_rows:
         if row["id"] not in seen_ids:
             results.append(row)
             seen_ids.add(row["id"])

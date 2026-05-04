@@ -1,74 +1,48 @@
 [
-    {
-        "id": 1,
-        "name": "La Primera Día"
-    },
-    {
-        "id": 2,
-        "name": "Anguila Mañana"
-    },
-    {
-        "id": 3,
-        "name": "La Suerte 12:30"
-    },
-    {
-        "id": 4,
-        "name": "Anguila Medio Día"
-    },
-    {
-        "id": 5,
-        "name": "Quiniela Real"
-    },
-    {
-        "id": 6,
-        "name": "Florida Día"
-    },
-    {
-        "id": 7,
-        "name": "Quiniela LoteDom"
-    },
-    {
-        "id": 8,
-        "name": "New York Tarde"
-    },
-    {
-        "id": 9,
-        "name": "Gana Más"
-    },
-    {
-        "id": 10,
-        "name": "La Suerte 18:00"
-    },
-    {
-        "id": 11,
-        "name": "Anguila Tarde"
-    },
-    {
-        "id": 12,
-        "name": "Quiniela Loteka"
-    },
-    {
-        "id": 13,
-        "name": "Lotería Nacional"
-    },
-    {
-        "id": 14,
-        "name": "Anguila Noche"
-    },
-    {
-        "id": 15,
-        "name": "Quiniela Leidsa"
-    },
-    {
-        "id": 16,
-        "name": "Primera Noche"
-    },   
-    {
-        "id": 17,
-        "name": "Florida Noche"
-    },
-    {
-        "id": 18,
-        "name": "New York Noche"
-    }
+  { "id": 1, "name": "La Primera Día" },
+  { "id": 2, "name": "Anguila Mañana" },
+  { "id": 3, "name": "La Suerte 12:30" },
+  { "id": 4, "name": "Anguila Mediodía" },
+  { "id": 5, "name": "Quiniela Real" },
+  { "id": 6, "name": "Florida Día" },
+  { "id": 7, "name": "Quiniela LoteDom" },
+  { "id": 8, "name": "New York Tarde" },
+  { "id": 9, "name": "Gana Más" },
+  { "id": 10, "name": "La Suerte Tarde" },
+  { "id": 11, "name": "Anguila Tarde" },
+  { "id": 12, "name": "Quiniela Loteka" },
+  { "id": 13, "name": "Lotería Nacional" },
+  { "id": 14, "name": "Anguila Noche" },
+  { "id": 15, "name": "Quiniela Leidsa" },
+  { "id": 16, "name": "Primera Noche" },
+  { "id": 17, "name": "Florida Noche" },
+  { "id": 18, "name": "New York Noche" },
+  { "id": 19, "name": "NJ Pick 3 Día" },
+  { "id": 20, "name": "NJ Pick 3 Noche" },
+  { "id": 21, "name": "NJ Pick 4 Día" },
+  { "id": 22, "name": "NJ Pick 4 Noche" },
+  { "id": 23, "name": "King Lottery Día" },
+  { "id": 24, "name": "King Lottery Noche" },
+  { "id": 25, "name": "New Jersey Tarde" },
+  { "id": 26, "name": "New Jersey Noche" },
+  { "id": 27, "name": "Haiti Bolet 11:30 AM" },
+  { "id": 28, "name": "Haiti Bolet 6:30 PM" },
+  { "id": 29, "name": "Anguilla 8AM" },
+  { "id": 30, "name": "Anguilla 9AM" },
+  { "id": 31, "name": "Anguilla 11AM" },
+  { "id": 32, "name": "Anguilla 12PM" },
+  { "id": 33, "name": "Anguilla 2PM" },
+  { "id": 34, "name": "Anguilla 3PM" },
+  { "id": 35, "name": "Anguilla 4PM" },
+  { "id": 36, "name": "Anguilla 5PM" },
+  { "id": 37, "name": "Anguilla 7PM" },
+  { "id": 38, "name": "Anguilla 8PM" },
+  { "id": 39, "name": "Anguilla 10PM" },
+  { "id": 40, "name": "Haiti Bolet 9:30 AM" },
+  { "id": 41, "name": "Haiti Bolet 10:30 AM" },
+  { "id": 42, "name": "Haiti Bolet 5:30 PM" },
+  { "id": 43, "name": "Haiti Bolet 7:30 PM" },
+  { "id": 44, "name": "Georgia Día" },
+  { "id": 45, "name": "Georgia Tarde" },
+  { "id": 46, "name": "Georgia Noche" }
 ]
