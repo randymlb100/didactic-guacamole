@@ -9,10 +9,18 @@ from bs4 import BeautifulSoup
 SUPABASE_URL = os.environ.get("SUPABASE_URL", "https://unhoulkujbtsypccpirc.supabase.co")
 SUPABASE_KEY = os.environ.get("SUPABASE_KEY", "")
 TRACKED_REMOTE_RESULT_IDS = {"23", "24", "27", "28"}
-US_PICK_NORMAL_CATALOG_STATE_CODES = {"NJ"}
+US_PICK_NORMAL_CATALOG_STATE_CODES = set()
 US_PICK_URLS = {
     "pick3": "https://pick-3.com/winning-numbers",
     "pick4": "https://pick-4.com/winning-numbers",
+}
+US_PICK_NJ_HOME_URLS = {
+    "pick3": "https://nj.pick-3.com/",
+    "pick4": "https://nj.pick-4.com/",
+}
+US_PICK_HISTORY_PATHS = {
+    "pick3": ["numbers", "winning-numbers", "results", ""],
+    "pick4": ["winning-numbers", "numbers", "results", ""],
 }
 US_PICK_SOURCE_NAMES = {
     "pick3": "pick-3.com",
@@ -245,6 +253,22 @@ def parse_us_pick_date_only(raw):
     return parsed.strftime("%d-%m-%Y")
 
 
+def parse_us_pick_long_date(raw):
+    text = str(raw or "").strip()
+    text = re.sub(r"^[A-Za-z]+,\s*", "", text)
+    try:
+        parsed = datetime.datetime.strptime(text, "%B %d, %Y")
+    except ValueError:
+        return ""
+    return parsed.strftime("%d-%m-%Y")
+
+
+def find_us_pick_long_date(html_text):
+    text = BeautifulSoup(str(html_text or ""), "html.parser").get_text(" ", strip=True)
+    match = re.search(r"\b(?:Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday),\s+[A-Za-z]+\s+\d{1,2},\s+\d{4}\b", text)
+    return parse_us_pick_long_date(match.group(0)) if match else ""
+
+
 def split_us_pick_title(title):
     cleaned = re.sub(r"\s+Latest\s+Draws!?\s*$", "", str(title or "").strip(), flags=re.I)
     cleaned = re.sub(r"\s+", " ", cleaned).strip()
@@ -326,126 +350,304 @@ def parse_us_pick_overview(html_text, game):
     return sorted(results, key=lambda row: (row["state"], row["game"], row["draw"], row["gameName"]))
 
 
-def parse_boliteros_date(raw):
-    text = str(raw or "").strip()
-    try:
-        parsed = datetime.datetime.strptime(text, "%B %d, %Y")
-    except ValueError:
-        try:
-            parsed = datetime.datetime.strptime(text, "%b %d, %Y")
-        except ValueError:
-            return ""
-    return parsed.strftime("%d-%m-%Y")
-
-
-def classify_boliteros_game(raw):
-    text = str(raw or "").strip()
-    normalized = text.lower().replace("-", " ")
-    if re.search(r"\b(3|three)\b", normalized) or normalized == "numbers":
-        return "pick3", text
-    if re.search(r"\b(4|four)\b", normalized):
-        return "pick4", text
-    return "", text
-
-
-def find_boliteros_card(heading):
-    current = heading
-    for _ in range(0, 4):
-        current = current.parent
-        if not current:
-            break
-        parts = candidate_text_parts(current)
-        if any(parse_boliteros_date(part) for part in parts):
-            return current
-    return heading.parent
-
-
-def parse_boliteros_pick_feed(html_text):
+def parse_new_jersey_pick_home(html_text, game):
+    normalized_game = normalize_us_pick_game(game)
+    digits = 3 if normalized_game == "pick3" else 4 if normalized_game == "pick4" else 0
+    if not digits:
+        return []
     soup = BeautifulSoup(str(html_text or ""), "html.parser")
+    date_node = soup.select_one(".resultsHome .date")
+    date_key = parse_us_pick_long_date(date_node.get_text(" ", strip=True) if date_node else "")
+    if not date_key:
+        date_key = find_us_pick_long_date(html_text)
+    game_name = "Pick 3" if normalized_game == "pick3" else "Pick 4"
     rows = []
-    seen_ids = set()
-    for heading in soup.find_all("h3"):
-        state_name = heading.get_text(" ", strip=True)
-        state_code = US_STATE_CODES.get(state_name)
-        if not state_code or state_code in US_PICK_NORMAL_CATALOG_STATE_CODES:
+    for box in soup.select(".resultsHome .result-box .box"):
+        label_text = box.get_text(" ", strip=True)
+        if re.search(r"\bMidday\b", label_text, re.I):
+            draw_label = "Midday Draw"
+        elif re.search(r"\bEvening\b", label_text, re.I):
+            draw_label = "Evening Draw"
+        else:
             continue
-        card = find_boliteros_card(heading)
-        parts = candidate_text_parts(card)
-        if not parts:
-            continue
-        draw_time = ""
-        date_key = ""
-        for index, part in enumerate(parts):
-            if part == state_name and index + 1 < len(parts):
-                draw_time = parts[index + 1]
-            parsed_date = parse_boliteros_date(part)
-            if parsed_date:
-                date_key = parsed_date
-                break
-        if not date_key:
-            continue
-        index = 0
-        while index < len(parts):
-            game, game_name = classify_boliteros_game(parts[index])
-            if not game:
-                index += 1
+        numbers = []
+        for ball in box.select(".resultBall"):
+            classes = set(ball.get("class") or [])
+            if "fireball" in classes:
                 continue
-            digits = 3 if game == "pick3" else 4
-            numbers = []
-            cursor = index + 1
-            while cursor < len(parts) and len(numbers) < digits:
-                if classify_boliteros_game(parts[cursor])[0]:
-                    break
-                if re.fullmatch(r"\d{1,2}", parts[cursor]):
-                    numbers.append(parts[cursor])
-                cursor += 1
-            if len(numbers) == digits:
-                result_id = build_us_pick_result_id(game, state_code, game_name, draw_time)
-                if result_id not in seen_ids:
-                    seen_ids.add(result_id)
-                    rows.append({
-                        "id": result_id,
-                        "state": state_name,
-                        "stateCode": state_code,
-                        "game": game,
-                        "gameName": game_name,
-                        "draw": draw_time,
-                        "date": date_key,
-                        "number": "-".join(numbers),
-                        "playTypes": ["straight", "box"],
-                        "source": "boliteros.com",
-                    })
-            index = max(cursor, index + 1)
+            value = extract_pick_ball_value(ball)
+            if re.fullmatch(r"\d{1,2}", value):
+                numbers.append(value)
+        if len(numbers) < digits:
+            continue
+        rows.append({
+            "id": build_us_pick_result_id(normalized_game, "NJ", game_name, draw_label),
+            "state": "New Jersey",
+            "stateCode": "NJ",
+            "game": normalized_game,
+            "gameName": game_name,
+            "draw": draw_label,
+            "date": date_key,
+            "number": "-".join(numbers[:digits]),
+            "playTypes": ["straight", "box"],
+            "source": US_PICK_SOURCE_NAMES[normalized_game],
+        })
+    if not rows:
+        rows = parse_new_jersey_pick_marker_balls(soup, normalized_game, digits, date_key, game_name)
     return sorted(rows, key=lambda row: (row["state"], row["game"], row["draw"], row["gameName"]))
 
 
-def merge_us_pick_sources(primary_rows, backup_rows):
-    merged = []
-    index_by_match = {}
-    backup_date_by_state_game = {}
-    for backup in backup_rows:
-        if backup.get("date"):
-            backup_date_by_state_game[(backup.get("stateCode"), backup.get("game"))] = backup.get("date")
-    for row in primary_rows:
-        item = dict(row)
-        if not item.get("date"):
-            item["date"] = backup_date_by_state_game.get((item.get("stateCode"), item.get("game")), "")
-        match_key = (item.get("stateCode"), item.get("game"), item.get("number"))
-        index_by_match[match_key] = len(merged)
-        merged.append(item)
-    for backup in backup_rows:
-        match_key = (backup.get("stateCode"), backup.get("game"), backup.get("number"))
-        target_index = index_by_match.get(match_key)
-        if target_index is None:
-            index_by_match[match_key] = len(merged)
-            merged.append(dict(backup))
+def extract_pick_ball_value(ball):
+    text = ball.get_text("", strip=True)
+    classes = set(ball.get("class") or [])
+    if any(str(item).startswith("number-part-") for item in classes):
+        match = re.search(r"\d", text)
+        return match.group(0) if match else ""
+    return text
+
+
+def parse_new_jersey_pick_marker_balls(soup, normalized_game, digits, date_key, game_name):
+    rows = []
+    active_draw = ""
+    active_numbers = []
+    for ball in soup.select(".resultBall"):
+        classes = set(ball.get("class") or [])
+        if "middayDraw" in classes or "eveningDraw" in classes:
+            if active_draw and len(active_numbers) >= digits:
+                rows.append(build_new_jersey_pick_row(normalized_game, game_name, active_draw, date_key, active_numbers[:digits]))
+            active_draw = "Midday Draw" if "middayDraw" in classes else "Evening Draw"
+            active_numbers = []
             continue
-        target = merged[target_index]
-        if not target.get("date") and backup.get("date"):
-            target["date"] = backup["date"]
-        if backup.get("source") and backup["source"] not in str(target.get("source", "")):
-            target["source"] = f"{target.get('source')},{backup['source']}"
-    return sorted(merged, key=lambda row: (row["state"], row["game"], row["draw"], row["gameName"]))
+        if not active_draw:
+            continue
+        value = extract_pick_ball_value(ball)
+        if re.fullmatch(r"\d{1,2}", value):
+            active_numbers.append(value)
+    if active_draw and len(active_numbers) >= digits:
+        rows.append(build_new_jersey_pick_row(normalized_game, game_name, active_draw, date_key, active_numbers[:digits]))
+    return rows
+
+
+def build_new_jersey_pick_row(normalized_game, game_name, draw_label, date_key, numbers):
+    return {
+        "id": build_us_pick_result_id(normalized_game, "NJ", game_name, draw_label),
+        "state": "New Jersey",
+        "stateCode": "NJ",
+        "game": normalized_game,
+        "gameName": game_name,
+        "draw": draw_label,
+        "date": date_key,
+        "number": "-".join(numbers),
+        "playTypes": ["straight", "box"],
+        "source": US_PICK_SOURCE_NAMES[normalized_game],
+    }
+
+
+def normalize_pick_history_draw_label(raw):
+    text = str(raw or "").strip()
+    text = re.sub(r"\s+", " ", text)
+    if not text:
+        return ""
+    if re.fullmatch(r"(Midday|Morning|Day|Evening|Night)(?:\s+Draw)?", text, re.I):
+        base = text.split()[0].capitalize()
+        return f"{base} Draw"
+    if re.fullmatch(r"\d{1,2}:\d{2}\s*(?:AM|PM)(?:\s+Draw)?", text, re.I):
+        return re.sub(r"\s+Draw$", "", text, flags=re.I).upper().replace(" AM", " AM").replace(" PM", " PM") + " Draw"
+    if text.lower() == "draw":
+        return "Draw"
+    return ""
+
+
+def build_us_pick_history_row(normalized_game, state_code, state_name, game_name, draw_label, date_key, numbers):
+    return {
+        "id": build_us_pick_result_id(normalized_game, state_code, game_name, draw_label),
+        "state": "Washington DC" if state_code == "DC" and state_name == "DC" else state_name,
+        "stateCode": state_code,
+        "game": normalized_game,
+        "gameName": game_name,
+        "draw": draw_label,
+        "date": date_key,
+        "number": "-".join(numbers),
+        "playTypes": ["straight", "box"],
+        "source": US_PICK_SOURCE_NAMES[normalized_game],
+    }
+
+
+def parse_pick_history_marker_rows(container, normalized_game, state_code, state_name, game_name, date_key, digits):
+    rows = []
+    active_draw = ""
+    active_numbers = []
+    for ball in container.select(".resultBall"):
+        classes = set(ball.get("class") or [])
+        if "middayDraw" in classes or "morningDraw" in classes or "dayDraw" in classes or "eveningDraw" in classes or "nightDraw" in classes:
+            if active_draw and len(active_numbers) >= digits:
+                rows.append(build_us_pick_history_row(
+                    normalized_game, state_code, state_name, game_name, active_draw, date_key, active_numbers[:digits],
+                ))
+            if "eveningDraw" in classes:
+                active_draw = "Evening Draw"
+            elif "nightDraw" in classes:
+                active_draw = "Night Draw"
+            elif "morningDraw" in classes:
+                active_draw = "Morning Draw"
+            elif "dayDraw" in classes:
+                active_draw = "Day Draw"
+            else:
+                active_draw = "Midday Draw"
+            active_numbers = []
+            continue
+        if not active_draw or "fireball" in classes:
+            continue
+        value = extract_pick_ball_value(ball)
+        if re.fullmatch(r"\d{1,2}", value):
+            active_numbers.append(value)
+    if active_draw and len(active_numbers) >= digits:
+        rows.append(build_us_pick_history_row(
+            normalized_game, state_code, state_name, game_name, active_draw, date_key, active_numbers[:digits],
+        ))
+    return rows
+
+
+def parse_pick_history_text_rows(container, normalized_game, state_code, state_name, game_name, date_key, digits):
+    parts = candidate_text_parts(container)
+    rows = []
+    draw_label = ""
+    numbers = []
+    for part in parts:
+        if parse_us_pick_long_date(part):
+            continue
+        normalized_draw = normalize_pick_history_draw_label(part)
+        if normalized_draw:
+            if draw_label and len(numbers) >= digits:
+                rows.append(build_us_pick_history_row(
+                    normalized_game, state_code, state_name, game_name, draw_label, date_key, numbers[:digits],
+                ))
+            draw_label = normalized_draw
+            numbers = []
+            continue
+        if draw_label and re.fullmatch(r"\d{1,2}", part):
+            numbers.append(part)
+    if draw_label and len(numbers) >= digits:
+        rows.append(build_us_pick_history_row(
+            normalized_game, state_code, state_name, game_name, draw_label, date_key, numbers[:digits],
+        ))
+    return rows
+
+
+def parse_pick_history_box_rows(container, normalized_game, state_code, state_name, game_name, date_key, digits):
+    rows = []
+    for box in container.select(".box"):
+        draw_label = ""
+        label_text = box.get_text(" ", strip=True)
+        for candidate in ("Midday Draw", "Evening Draw", "Morning Draw", "Day Draw", "Night Draw", "Midday", "Evening"):
+            if re.search(rf"\b{re.escape(candidate)}\b", label_text, re.I):
+                draw_label = normalize_pick_history_draw_label(candidate)
+                break
+        if not draw_label:
+            continue
+        numbers = []
+        for ball in box.select(".resultBall"):
+            classes = set(ball.get("class") or [])
+            if "fireball" in classes:
+                continue
+            value = extract_pick_ball_value(ball)
+            if re.fullmatch(r"\d{1,2}", value):
+                numbers.append(value)
+        if len(numbers) >= digits:
+            rows.append(build_us_pick_history_row(
+                normalized_game, state_code, state_name, game_name, draw_label, date_key, numbers[:digits],
+            ))
+    return rows
+
+
+def parse_us_pick_history_page(html_text, game, state_code, state_name, game_name, target_date):
+    normalized_game = normalize_us_pick_game(game)
+    digits = 3 if normalized_game == "pick3" else 4 if normalized_game == "pick4" else 0
+    if not digits:
+        return []
+    soup = BeautifulSoup(str(html_text or ""), "html.parser")
+    containers = soup.select(".drawContainer, .resultsBox")
+    rows_by_id = {}
+    for container in containers:
+        date_key = ""
+        for part in candidate_text_parts(container):
+            date_key = parse_us_pick_long_date(part)
+            if date_key:
+                break
+        if date_key != target_date:
+            continue
+        rows = parse_pick_history_marker_rows(
+            container, normalized_game, state_code, state_name, game_name, date_key, digits,
+        )
+        if not rows:
+            rows = parse_pick_history_box_rows(
+                container, normalized_game, state_code, state_name, game_name, date_key, digits,
+            )
+        if not rows:
+            rows = parse_pick_history_text_rows(
+                container, normalized_game, state_code, state_name, game_name, date_key, digits,
+            )
+        for row in rows:
+            rows_by_id[row["id"]] = row
+    return sorted(rows_by_id.values(), key=lambda row: (row["state"], row["game"], row["draw"], row["gameName"]))
+
+
+def fetch_new_jersey_pick_home(game):
+    normalized_game = normalize_us_pick_game(game)
+    url = US_PICK_NJ_HOME_URLS.get(normalized_game)
+    if not url:
+        return []
+    req = urllib.request.Request(
+        url,
+        headers={
+            "User-Agent": "Mozilla/5.0",
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        },
+    )
+    try:
+        html = urllib.request.urlopen(req, timeout=25).read().decode("utf-8", "ignore")
+    except Exception as e:
+        print(f"  NJ Pick error for {normalized_game}: {e}")
+        return []
+    return parse_new_jersey_pick_home(html, normalized_game)
+
+
+def us_pick_history_url_candidates(game, state_code):
+    normalized_game = normalize_us_pick_game(game)
+    domain = "pick-3.com" if normalized_game == "pick3" else "pick-4.com"
+    code = str(state_code or "").lower()
+    urls = []
+    for path in US_PICK_HISTORY_PATHS.get(normalized_game, []):
+        suffix = f"/{path}" if path else "/"
+        urls.append(f"https://{code}.{domain}{suffix}")
+    return urls
+
+
+def fetch_us_pick_state_history(game, state_code, state_name, game_name, target_date):
+    normalized_game = normalize_us_pick_game(game)
+    for url in us_pick_history_url_candidates(normalized_game, state_code):
+        req = urllib.request.Request(
+            url,
+            headers={
+                "User-Agent": "Mozilla/5.0",
+                "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+            },
+        )
+        try:
+            html = urllib.request.urlopen(req, timeout=20).read().decode("utf-8", "ignore")
+        except Exception:
+            continue
+        rows = parse_us_pick_history_page(
+            html,
+            game=normalized_game,
+            state_code=state_code,
+            state_name=state_name,
+            game_name=game_name,
+            target_date=target_date,
+        )
+        if rows:
+            return rows
+    return []
 
 
 def fetch_us_pick_overview(game):
@@ -468,31 +670,46 @@ def fetch_us_pick_overview(game):
     return parse_us_pick_overview(html, normalized_game)
 
 
-def fetch_boliteros_pick_feed():
-    req = urllib.request.Request(
-        "https://boliteros.com/",
-        headers={
-            "User-Agent": "Mozilla/5.0",
-            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-        },
-    )
-    try:
-        html = urllib.request.urlopen(req, timeout=25).read().decode("utf-8", "ignore")
-    except Exception as e:
-        print(f"  Boliteros error: {e}")
-        return []
-    return parse_boliteros_pick_feed(html)
-
-
 def scrape_us_picks(date_str=None):
     target_date = date_str or get_dr_date_str()
-    primary_rows = []
+    rows_by_id = {}
     for game in ("pick3", "pick4"):
-        primary_rows.extend(fetch_us_pick_overview(game))
-    rows = merge_us_pick_sources(primary_rows, fetch_boliteros_pick_feed())
+        overview_rows = fetch_us_pick_overview(game)
+        if target_date:
+            history_keys = set()
+            state_rows = {}
+            for row in overview_rows:
+                state_key = (row.get("stateCode"), row.get("gameName"))
+                state_rows[state_key] = row
+            for row in state_rows.values():
+                history_rows = fetch_us_pick_state_history(
+                    game,
+                    row.get("stateCode"),
+                    row.get("state"),
+                    row.get("gameName"),
+                    target_date,
+                )
+                if history_rows:
+                    history_keys.add((row.get("stateCode"), row.get("gameName")))
+                for history_row in history_rows:
+                    rows_by_id[history_row["id"]] = history_row
+            for row in fetch_new_jersey_pick_home(game):
+                if row.get("date") == target_date:
+                    history_keys.add((row.get("stateCode"), row.get("gameName")))
+                    rows_by_id[row["id"]] = row
+            for row in overview_rows:
+                state_key = (row.get("stateCode"), row.get("gameName"))
+                if state_key not in history_keys:
+                    rows_by_id[row["id"]] = row
+        else:
+            for row in overview_rows:
+                rows_by_id[row["id"]] = row
+            for row in fetch_new_jersey_pick_home(game):
+                rows_by_id[row["id"]] = row
+    rows = list(rows_by_id.values())
     if target_date:
         rows = [row for row in rows if row.get("date") == target_date]
-    return rows
+    return sorted(rows, key=lambda row: (row["state"], row["game"], row["draw"], row["gameName"]))
 
 
 def iso_date_to_dr_date(raw):
@@ -970,28 +1187,6 @@ def pick_results_cache_key(date_str):
     return f"pick_results_cache_by_day:{date_str}"
 
 
-def save_native_pick_results_table(date_str, rows):
-    payload = json.dumps([{
-        "result_date": date_str,
-        "payload": rows,
-        "updated_at": utc_now_iso(),
-    }], ensure_ascii=False).encode("utf-8")
-    url = f"{SUPABASE_URL}/rest/v1/lotterynet_pick_results_by_day"
-    req = urllib.request.Request(
-        url,
-        data=payload,
-        headers={
-            "Content-Type": "application/json",
-            "apikey": SUPABASE_KEY,
-            "Authorization": f"Bearer {SUPABASE_KEY}",
-            "Prefer": "resolution=merge-duplicates",
-        },
-        method="POST",
-    )
-    resp = urllib.request.urlopen(req, timeout=15)
-    print(f"Saved native pick results table for {date_str} -> HTTP {resp.status}")
-
-
 def save_us_picks_to_supabase(date_str, rows):
     key = pick_results_cache_key(date_str)
     value = json.dumps(rows, ensure_ascii=False)
@@ -1011,14 +1206,19 @@ def save_us_picks_to_supabase(date_str, rows):
     try:
         resp = urllib.request.urlopen(req, timeout=15)
         print(f"Saved {len(rows)} US pick results for {date_str} -> HTTP {resp.status}")
-        try:
-            save_native_pick_results_table(date_str, rows)
-        except Exception as e:
-            print(f"Warning: native pick results table save failed for {date_str}: {e}")
     except urllib.error.HTTPError as e:
         body = e.read().decode()
         print(f"Supabase pick error {e.code}: {body}")
         raise
+
+
+def unique_us_pick_results(rows):
+    by_id = {}
+    for row in rows:
+        result_id = str(row.get("id", "")).strip()
+        if result_id:
+            by_id[result_id] = row
+    return sorted(by_id.values(), key=lambda row: row.get("id", ""))
 
 
 def utc_now_iso():
@@ -1140,10 +1340,21 @@ if __name__ == "__main__":
                 raise RuntimeError("SUPABASE_KEY is required in GitHub Actions")
             print("No SUPABASE_KEY — skipping save")
             continue
-        if not results:
-            print(f"No results found for {target_date} — skipping save")
-            continue
+        if results:
+            prune_missing_ids = AUTHORITATIVE_NJ_IDS if idx == 0 and target_date == get_dr_date_str() else None
+            save_to_supabase(target_date, results, prune_missing_ids=prune_missing_ids)
+        else:
+            print(f"No results found for {target_date} — skipping RD save")
 
-        prune_missing_ids = AUTHORITATIVE_NJ_IDS if idx == 0 and target_date == get_dr_date_str() else None
-        save_to_supabase(target_date, results, prune_missing_ids=prune_missing_ids)
+        print(f"\n[US Pick] Scraping {target_date}...")
+        pick_results = unique_us_pick_results(scrape_us_picks(target_date))
+        print(f"Found {len(pick_results)} US Pick results")
+        if pick_results:
+            pick3_count = sum(1 for row in pick_results if row.get("game") == "pick3")
+            pick4_count = sum(1 for row in pick_results if row.get("game") == "pick4")
+            print(f"  Pick 3: {pick3_count}")
+            print(f"  Pick 4: {pick4_count}")
+            save_us_picks_to_supabase(target_date, pick_results)
+        else:
+            print(f"No US Pick results found for {target_date} — skipping pick save")
 

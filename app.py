@@ -32,6 +32,7 @@ def json_utf8(data, status=200):
 def normalize_result_row(row):
     number = str(row.get("number", "")).strip()
     name = str(row.get("name", "")).strip()
+    game = str(row.get("game", "")).lower().replace("-", "")
     out = {
         "id": str(row.get("id", "")).strip(),
         "name": name,
@@ -39,15 +40,25 @@ def normalize_result_row(row):
         "number": number,
     }
     normalized_name = name.lower()
-    if "pick 3" in normalized_name:
+    if game == "pick3" or "pick 3" in normalized_name:
         out["pick3"] = number
-    if "pick 4" in normalized_name:
+    if game == "pick4" or "pick 4" in normalized_name:
         out["pick4"] = number
-    for key in ("status", "source", "firstSeenAt", "lastSeenAt"):
+    for key in ("status", "source", "firstSeenAt", "lastSeenAt", "state", "stateCode", "game", "gameName", "draw", "playTypes"):
         value = row.get(key)
         if value:
             out[key] = value
     return out
+
+
+def normalize_pick_row(row):
+    normalized = normalize_result_row(row)
+    game = str(row.get("game", "")).lower().replace("-", "")
+    game_name = str(row.get("gameName", "")).strip() or ("Pick 4" if game == "pick4" else "Pick 3")
+    draw = str(row.get("draw", "")).strip()
+    state = str(row.get("state", "")).strip()
+    normalized["name"] = " ".join(part for part in [state, game_name, draw] if part)
+    return normalized
 
 
 def scrape_cached(date_key):
@@ -77,13 +88,24 @@ def unique_sorted_results(rows):
         if not normalized["id"]:
             continue
         by_id[normalized["id"]] = normalized
-    return sorted(by_id.values(), key=lambda item: int(item["id"]))
+    return sorted(by_id.values(), key=lambda item: (0, int(item["id"])) if item["id"].isdigit() else (1, item["id"]))
+
+
+def unique_sorted_pick_results(rows):
+    by_id = {}
+    for row in rows:
+        normalized = normalize_pick_row(row)
+        if normalized["id"]:
+            by_id[normalized["id"]] = normalized
+    return sorted(by_id.values(), key=lambda item: item["id"])
 
 
 def results_for_request():
     date_key = request.args.get("date") or get_dr_date_str()
     name_filter = (request.args.get("name") or request.args.get("lottery") or "").strip().lower()
-    rows = unique_sorted_results(scrape_cached(date_key))
+    lottery_rows = unique_sorted_results(scrape_cached(date_key))
+    pick_rows = unique_sorted_pick_results(pick_scrape_cached(date_key))
+    rows = unique_sorted_results(lottery_rows + pick_rows)
     if name_filter:
         rows = [row for row in rows if name_filter in row["name"].lower()]
     return date_key, rows
@@ -93,7 +115,7 @@ def pick_results_for_request():
     date_key = request.args.get("date") or get_dr_date_str()
     state_filter = (request.args.get("state") or "").strip().lower()
     game_filter = (request.args.get("game") or "").strip().lower().replace("-", "")
-    rows = pick_scrape_cached(date_key)
+    rows = unique_sorted_pick_results(pick_scrape_cached(date_key))
     if state_filter:
         rows = [
             row for row in rows
@@ -146,7 +168,7 @@ def system_results():
         "generatedAt": datetime.datetime.now(datetime.UTC).isoformat().replace("+00:00", "Z"),
     }
     if mode in ("lottery", "both"):
-        _, lottery_rows = results_for_request()
+        lottery_rows = unique_sorted_results(scrape_cached(date_key))
         payload["lotteries"] = {
             "section": "lotteries",
             "count": len(lottery_rows),
@@ -164,7 +186,10 @@ def system_results():
 
 @app.route("/run-scraper", methods=["GET", "POST"])
 def run_scraper():
-    date_key, rows = results_for_request()
+    date_key = request.args.get("date") or get_dr_date_str()
+    lottery_rows = unique_sorted_results(scrape_cached(date_key))
+    pick_rows = unique_sorted_pick_results(pick_scrape_cached(date_key))
+    rows = unique_sorted_results(lottery_rows + pick_rows)
     if not os.environ.get("SUPABASE_KEY", "").strip():
         return json_utf8({
             "date": date_key,
@@ -174,7 +199,8 @@ def run_scraper():
             "results": rows,
         }, status=503)
     try:
-        save_to_supabase(date_key, rows)
+        save_to_supabase(date_key, lottery_rows)
+        save_us_picks_to_supabase(date_key, pick_rows)
     except Exception as error:
         return json_utf8({
             "date": date_key,
@@ -220,7 +246,7 @@ def run_system_scraper():
                 "results": lottery_rows,
             }
         if mode in ("pick", "both"):
-            pick_rows = pick_scrape_cached(date_key)
+            pick_rows = unique_sorted_pick_results(pick_scrape_cached(date_key))
             save_us_picks_to_supabase(date_key, pick_rows)
             payload["picks"] = {
                 "count": len(pick_rows),

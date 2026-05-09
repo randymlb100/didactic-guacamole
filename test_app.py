@@ -32,7 +32,7 @@ class RenderApiContractsTest(unittest.TestCase):
 
     def test_root_returns_28_unique_results(self):
         rows = fake_results() + [fake_results()[1]]
-        with patch("app.scrape", return_value=rows):
+        with patch("app.scrape", return_value=rows), patch("app.scrape_us_picks", return_value=[]):
             response = self.client.get("/?date=02-05-2026")
 
         self.assertEqual(200, response.status_code)
@@ -41,7 +41,7 @@ class RenderApiContractsTest(unittest.TestCase):
         self.assertEqual("28", payload[-1]["id"])
 
     def test_results_endpoint_returns_metadata(self):
-        with patch("app.scrape", return_value=fake_results()):
+        with patch("app.scrape", return_value=fake_results()), patch("app.scrape_us_picks", return_value=[]):
             response = self.client.get("/results?date=02-05-2026")
 
         payload = json.loads(response.data.decode("utf-8"))
@@ -77,7 +77,7 @@ class RenderApiContractsTest(unittest.TestCase):
 
         self.assertEqual(1, scrape_mock.call_count)
 
-    def test_pick_results_endpoint_is_separate_from_normal_lottery_results(self):
+    def test_results_endpoint_includes_normal_and_new_pick_results(self):
         pick_rows = [
             {
                 "id": "US-P3-FL-PICK-3-EVENING",
@@ -98,7 +98,10 @@ class RenderApiContractsTest(unittest.TestCase):
 
         normal_payload = json.loads(normal.data.decode("utf-8"))
         pick_payload = json.loads(picks.data.decode("utf-8"))
-        self.assertEqual(28, normal_payload["count"])
+        self.assertEqual(29, normal_payload["count"])
+        self.assertEqual("US-P3-FL-PICK-3-EVENING", normal_payload["results"][-1]["id"])
+        self.assertEqual("Florida Pick 3 Evening Draw", normal_payload["results"][-1]["name"])
+        self.assertEqual("9-2-0", normal_payload["results"][-1]["pick3"])
         self.assertEqual(1, pick_payload["count"])
         self.assertEqual("picks", pick_payload["section"])
         self.assertEqual("US-P3-FL-PICK-3-EVENING", pick_payload["results"][0]["id"])
