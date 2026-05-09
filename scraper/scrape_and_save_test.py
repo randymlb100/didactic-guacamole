@@ -268,6 +268,135 @@ class ScraperContractsTest(unittest.TestCase):
 
         self.assertEqual([], rows)
 
+    def test_us_pick_result_ids_include_game_state_and_draw_without_numeric_collision(self):
+        self.assertEqual(
+            "US-P3-FL-PICK-3-EVENING",
+            scraper.build_us_pick_result_id("pick3", "FL", "Pick 3", "Evening Draw"),
+        )
+        self.assertEqual(
+            "US-P4-GA-CASH-4-NIGHT",
+            scraper.build_us_pick_result_id("pick4", "GA", "Cash 4", "Night Draw"),
+        )
+
+    def test_parse_pick3_overview_skips_new_jersey_because_it_is_normal_catalog(self):
+        html = """
+        <section>
+          <img alt="Florida Pick 3 Latest Draws!" />
+          <p>Latest Results</p>
+          <h3>Florida Pick 3</h3>
+          <p>08 May 26 Evening Draw</p>
+          <ul><li>9</li><li>2</li><li>0</li></ul>
+          <a href="https://fl.pick-3.com">Check Numbers</a>
+        </section>
+        <section>
+          <img alt="New Jersey Pick 3 Latest Draws!" />
+          <p>Latest Results</p>
+          <h3>New Jersey Pick 3</h3>
+          <p>08 May 26 Evening Draw</p>
+          <ul><li>8</li><li>2</li><li>8</li></ul>
+          <a href="https://nj.pick-3.com">Check Numbers</a>
+        </section>
+        """
+
+        rows = scraper.parse_us_pick_overview(html, game="pick3")
+
+        self.assertEqual(1, len(rows))
+        self.assertEqual("US-P3-FL-PICK-3-EVENING", rows[0]["id"])
+        self.assertEqual("FL", rows[0]["stateCode"])
+        self.assertEqual("Florida", rows[0]["state"])
+        self.assertEqual("Pick 3", rows[0]["gameName"])
+        self.assertEqual("pick3", rows[0]["game"])
+        self.assertEqual("9-2-0", rows[0]["number"])
+        self.assertEqual(["straight", "box"], rows[0]["playTypes"])
+
+    def test_parse_pick4_overview_reads_state_draw_time_and_source(self):
+        html = """
+        <article>
+          <img alt="Georgia Cash 4 Latest Draws!" />
+          <span>Latest Results</span>
+          <strong>Georgia Cash 4</strong>
+          <span>08 May 26 Night Draw</span>
+          <ol><li>0</li><li>6</li><li>1</li><li>3</li></ol>
+          <a href="https://ga.pick-4.com">Check Numbers</a>
+        </article>
+        """
+
+        rows = scraper.parse_us_pick_overview(html, game="pick4")
+
+        self.assertEqual(1, len(rows))
+        self.assertEqual("US-P4-GA-CASH-4-NIGHT", rows[0]["id"])
+        self.assertEqual("08-05-2026", rows[0]["date"])
+        self.assertEqual("Night Draw", rows[0]["draw"])
+        self.assertEqual("pick-4.com", rows[0]["source"])
+        self.assertEqual("0-6-1-3", rows[0]["number"])
+
+    def test_parse_boliteros_feed_reads_pick_rows_and_skips_new_jersey(self):
+        html = """
+        <section>
+          <div>
+            <h3>Florida</h3><span>9:48 PM</span>
+            <span>May 8, 2026</span>
+            <span>Pick 3</span><span>9</span><span>2</span><span>0</span><span>3</span><span>FB</span>
+            <span>Pick 4</span><span>1</span><span>9</span><span>8</span><span>6</span><span>3</span><span>FB</span>
+          </div>
+          <div>
+            <h3>New Jersey</h3><span>11:09 PM</span>
+            <span>May 8, 2026</span>
+            <span>Pick-3</span><span>8</span><span>2</span><span>8</span>
+          </div>
+        </section>
+        """
+
+        rows = scraper.parse_boliteros_pick_feed(html)
+
+        self.assertEqual(["US-P3-FL-PICK-3-9-48-PM", "US-P4-FL-PICK-4-9-48-PM"], [row["id"] for row in rows])
+        self.assertEqual(["pick3", "pick4"], [row["game"] for row in rows])
+        self.assertEqual(["9-2-0", "1-9-8-6"], [row["number"] for row in rows])
+        self.assertEqual(["08-05-2026", "08-05-2026"], [row["date"] for row in rows])
+        self.assertEqual(["boliteros.com", "boliteros.com"], [row["source"] for row in rows])
+
+    def test_merge_pick_sources_uses_backup_date_when_primary_date_is_missing(self):
+        primary = [{
+            "id": "US-P4-FL-PICK-4-EVENING",
+            "state": "Florida",
+            "stateCode": "FL",
+            "game": "pick4",
+            "gameName": "Pick 4",
+            "draw": "Evening Draw",
+            "date": "",
+            "number": "1-9-8-6",
+            "playTypes": ["straight", "box"],
+            "source": "pick-4.com",
+        }]
+        backup = [{
+            "id": "US-P4-FL-PICK-4-9-48-PM",
+            "state": "Florida",
+            "stateCode": "FL",
+            "game": "pick4",
+            "gameName": "Pick 4",
+            "draw": "9:48 PM",
+            "date": "08-05-2026",
+            "number": "1-9-8-6",
+            "playTypes": ["straight", "box"],
+            "source": "boliteros.com",
+        }]
+
+        rows = scraper.merge_us_pick_sources(primary, backup)
+
+        self.assertEqual(1, len(rows))
+        self.assertEqual("08-05-2026", rows[0]["date"])
+        self.assertEqual("pick-4.com,boliteros.com", rows[0]["source"])
+
+    def test_pick_supabase_key_is_separate_from_normal_lottery_results(self):
+        self.assertEqual(
+            "pick_results_cache_by_day:08-05-2026",
+            scraper.pick_results_cache_key("08-05-2026"),
+        )
+        self.assertNotEqual(
+            "lot_results_cache_by_day:08-05-2026",
+            scraper.pick_results_cache_key("08-05-2026"),
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

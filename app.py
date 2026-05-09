@@ -6,7 +6,7 @@ import time
 from flask import Flask, Response, jsonify, request
 from flask_cors import CORS
 
-from scraper.scrape_and_save import get_dr_date_str, save_to_supabase, scrape
+from scraper.scrape_and_save import get_dr_date_str, save_to_supabase, save_us_picks_to_supabase, scrape, scrape_us_picks
 
 
 app = Flask(__name__)
@@ -14,6 +14,7 @@ CORS(app)
 port = int(os.environ.get("PORT", 5000))
 SCRAPE_CACHE_TTL_SECONDS = int(os.environ.get("SCRAPE_CACHE_TTL_SECONDS", "120"))
 _scrape_cache = {}
+_pick_scrape_cache = {}
 
 
 def json_utf8(data, status=200):
@@ -59,6 +60,16 @@ def scrape_cached(date_key):
     return rows
 
 
+def pick_scrape_cached(date_key):
+    now = time.time()
+    cached = _pick_scrape_cache.get(date_key)
+    if cached and now - cached["stored_at"] < SCRAPE_CACHE_TTL_SECONDS:
+        return cached["rows"]
+    rows = scrape_us_picks(date_key)
+    _pick_scrape_cache[date_key] = {"stored_at": now, "rows": rows}
+    return rows
+
+
 def unique_sorted_results(rows):
     by_id = {}
     for row in rows:
@@ -78,6 +89,22 @@ def results_for_request():
     return date_key, rows
 
 
+def pick_results_for_request():
+    date_key = request.args.get("date") or get_dr_date_str()
+    state_filter = (request.args.get("state") or "").strip().lower()
+    game_filter = (request.args.get("game") or "").strip().lower().replace("-", "")
+    rows = pick_scrape_cached(date_key)
+    if state_filter:
+        rows = [
+            row for row in rows
+            if state_filter in str(row.get("state", "")).lower()
+            or state_filter == str(row.get("stateCode", "")).lower()
+        ]
+    if game_filter in ("pick3", "pick4"):
+        rows = [row for row in rows if row.get("game") == game_filter]
+    return date_key, rows
+
+
 @app.route("/", methods=["GET"])
 def all_results():
     _, rows = results_for_request()
@@ -93,6 +120,46 @@ def results_with_metadata():
         "generatedAt": datetime.datetime.now(datetime.UTC).isoformat().replace("+00:00", "Z"),
         "results": rows,
     })
+
+
+@app.route("/pick-results", methods=["GET"])
+def pick_results_with_metadata():
+    date_key, rows = pick_results_for_request()
+    return json_utf8({
+        "date": date_key,
+        "section": "picks",
+        "count": len(rows),
+        "generatedAt": datetime.datetime.now(datetime.UTC).isoformat().replace("+00:00", "Z"),
+        "results": rows,
+    })
+
+
+@app.route("/system-results", methods=["GET"])
+def system_results():
+    mode = (request.args.get("mode") or "lottery").strip().lower()
+    if mode not in ("lottery", "pick", "both"):
+        mode = "lottery"
+    date_key = request.args.get("date") or get_dr_date_str()
+    payload = {
+        "date": date_key,
+        "mode": mode,
+        "generatedAt": datetime.datetime.now(datetime.UTC).isoformat().replace("+00:00", "Z"),
+    }
+    if mode in ("lottery", "both"):
+        _, lottery_rows = results_for_request()
+        payload["lotteries"] = {
+            "section": "lotteries",
+            "count": len(lottery_rows),
+            "results": lottery_rows,
+        }
+    if mode in ("pick", "both"):
+        _, pick_rows = pick_results_for_request()
+        payload["picks"] = {
+            "section": "picks",
+            "count": len(pick_rows),
+            "results": pick_rows,
+        }
+    return json_utf8(payload)
 
 
 @app.route("/run-scraper", methods=["GET", "POST"])
@@ -122,6 +189,48 @@ def run_scraper():
         "saved": True,
         "results": rows,
     })
+
+
+@app.route("/run-system-scraper", methods=["GET", "POST"])
+def run_system_scraper():
+    mode = (request.args.get("mode") or "lottery").strip().lower()
+    if mode not in ("lottery", "pick", "both"):
+        mode = "lottery"
+    date_key = request.args.get("date") or get_dr_date_str()
+    if not os.environ.get("SUPABASE_KEY", "").strip():
+        return json_utf8({
+            "date": date_key,
+            "mode": mode,
+            "saved": False,
+            "error": "SUPABASE_KEY is not configured in Render",
+        }, status=503)
+
+    payload = {
+        "date": date_key,
+        "mode": mode,
+        "saved": True,
+        "generatedAt": datetime.datetime.now(datetime.UTC).isoformat().replace("+00:00", "Z"),
+    }
+    try:
+        if mode in ("lottery", "both"):
+            lottery_rows = unique_sorted_results(scrape_cached(date_key))
+            save_to_supabase(date_key, lottery_rows)
+            payload["lotteries"] = {
+                "count": len(lottery_rows),
+                "results": lottery_rows,
+            }
+        if mode in ("pick", "both"):
+            pick_rows = pick_scrape_cached(date_key)
+            save_us_picks_to_supabase(date_key, pick_rows)
+            payload["picks"] = {
+                "count": len(pick_rows),
+                "results": pick_rows,
+            }
+    except Exception as error:
+        payload["saved"] = False
+        payload["error"] = str(error)
+        return json_utf8(payload, status=500)
+    return json_utf8(payload)
 
 
 @app.route("/health", methods=["GET"])

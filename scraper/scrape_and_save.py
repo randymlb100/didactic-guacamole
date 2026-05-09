@@ -9,6 +9,67 @@ from bs4 import BeautifulSoup
 SUPABASE_URL = os.environ.get("SUPABASE_URL", "https://unhoulkujbtsypccpirc.supabase.co")
 SUPABASE_KEY = os.environ.get("SUPABASE_KEY", "")
 TRACKED_REMOTE_RESULT_IDS = {"23", "24", "27", "28"}
+US_PICK_NORMAL_CATALOG_STATE_CODES = {"NJ"}
+US_PICK_URLS = {
+    "pick3": "https://pick-3.com/winning-numbers",
+    "pick4": "https://pick-4.com/winning-numbers",
+}
+US_PICK_SOURCE_NAMES = {
+    "pick3": "pick-3.com",
+    "pick4": "pick-4.com",
+}
+
+US_STATE_CODES = {
+    "Alabama": "AL",
+    "Alaska": "AK",
+    "Arizona": "AZ",
+    "Arkansas": "AR",
+    "California": "CA",
+    "Colorado": "CO",
+    "Connecticut": "CT",
+    "Delaware": "DE",
+    "Florida": "FL",
+    "Georgia": "GA",
+    "Idaho": "ID",
+    "Illinois": "IL",
+    "Indiana": "IN",
+    "Iowa": "IA",
+    "Kansas": "KS",
+    "Kentucky": "KY",
+    "Louisiana": "LA",
+    "Maine": "ME",
+    "Maryland": "MD",
+    "Massachusetts": "MA",
+    "Michigan": "MI",
+    "Minnesota": "MN",
+    "Mississippi": "MS",
+    "Missouri": "MO",
+    "Nebraska": "NE",
+    "Nevada": "NV",
+    "New Hampshire": "NH",
+    "New Jersey": "NJ",
+    "New Mexico": "NM",
+    "New York": "NY",
+    "North Carolina": "NC",
+    "North Dakota": "ND",
+    "Ohio": "OH",
+    "Oklahoma": "OK",
+    "Oregon": "OR",
+    "Pennsylvania": "PA",
+    "Rhode Island": "RI",
+    "South Carolina": "SC",
+    "South Dakota": "SD",
+    "Tennessee": "TN",
+    "Texas": "TX",
+    "Vermont": "VT",
+    "Virginia": "VA",
+    "Washington DC": "DC",
+    "Washington": "WA",
+    "DC": "DC",
+    "West Virginia": "WV",
+    "Wisconsin": "WI",
+    "Wyoming": "WY",
+}
 
 # Mapa: nombre en loteriasdominicanas.com → id de lotería en la app
 LOTTERY_MAP = {
@@ -133,6 +194,305 @@ def parse_lotteryusa_date(raw):
     except ValueError:
         return ""
     return parsed.strftime("%d-%m-%Y")
+
+
+def slug_token(raw):
+    text = str(raw or "").upper()
+    text = re.sub(r"[^A-Z0-9]+", "-", text)
+    return text.strip("-")
+
+
+def normalize_us_pick_game(game):
+    value = str(game or "").lower().replace("-", "")
+    if value in ("pick3", "p3"):
+        return "pick3"
+    if value in ("pick4", "p4"):
+        return "pick4"
+    return ""
+
+
+def build_us_pick_result_id(game, state_code, game_name, draw_label):
+    normalized_game = normalize_us_pick_game(game)
+    prefix = "P3" if normalized_game == "pick3" else "P4"
+    draw = str(draw_label or "").replace(" Draw", "")
+    return "-".join([
+        "US",
+        prefix,
+        slug_token(state_code),
+        slug_token(game_name),
+        slug_token(draw),
+    ])
+
+
+def parse_us_pick_draw_date(raw):
+    text = str(raw or "").strip()
+    match = re.search(r"(\d{1,2}\s+[A-Za-z]{3}\s+\d{2})\s+(.+?Draw)", text)
+    if not match:
+        return "", ""
+    try:
+        parsed = datetime.datetime.strptime(match.group(1), "%d %b %y")
+    except ValueError:
+        return "", ""
+    return parsed.strftime("%d-%m-%Y"), match.group(2).strip()
+
+
+def parse_us_pick_date_only(raw):
+    text = str(raw or "").strip()
+    try:
+        parsed = datetime.datetime.strptime(text, "%d %b %y")
+    except ValueError:
+        return ""
+    return parsed.strftime("%d-%m-%Y")
+
+
+def split_us_pick_title(title):
+    cleaned = re.sub(r"\s+Latest\s+Draws!?\s*$", "", str(title or "").strip(), flags=re.I)
+    cleaned = re.sub(r"\s+", " ", cleaned).strip()
+    for state_name in sorted(US_STATE_CODES.keys(), key=len, reverse=True):
+        if cleaned.lower().startswith(state_name.lower() + " "):
+            return state_name, US_STATE_CODES[state_name], cleaned[len(state_name):].strip()
+    return "", "", cleaned
+
+
+def candidate_text_parts(node):
+    return [part.strip() for part in node.get_text("|", strip=True).split("|") if part.strip()]
+
+
+def find_pick_candidate_block(image):
+    current = image
+    for _ in range(0, 6):
+        current = current.parent
+        if not current:
+            break
+        parts = candidate_text_parts(current)
+        if any("Check Numbers" in part for part in parts):
+            return current
+        if len([part for part in parts if re.fullmatch(r"\d{1,2}", part)]) >= 3:
+            return current
+    return image.parent
+
+
+def parse_us_pick_overview(html_text, game):
+    normalized_game = normalize_us_pick_game(game)
+    digits = 3 if normalized_game == "pick3" else 4 if normalized_game == "pick4" else 0
+    if not digits:
+        return []
+    soup = BeautifulSoup(str(html_text or ""), "html.parser")
+    results = []
+    seen_ids = set()
+    for image in soup.find_all("img"):
+        alt = image.get("alt") or ""
+        if "Latest Draws" not in alt:
+            continue
+        state_name, state_code, game_name = split_us_pick_title(alt)
+        if not state_code or state_code in US_PICK_NORMAL_CATALOG_STATE_CODES:
+            continue
+        block = find_pick_candidate_block(image)
+        parts = candidate_text_parts(block)
+        date_key = ""
+        draw_label = ""
+        for index, part in enumerate(parts):
+            parsed_key, parsed_draw = parse_us_pick_draw_date(part)
+            if parsed_key:
+                date_key = parsed_key
+                draw_label = parsed_draw
+                break
+            parsed_date = parse_us_pick_date_only(part)
+            if parsed_date and index + 1 < len(parts) and "Draw" in parts[index + 1]:
+                date_key = parsed_date
+                draw_label = parts[index + 1]
+                break
+            if not draw_label and "Draw" in part:
+                draw_label = part
+        numbers = [part for part in parts if re.fullmatch(r"\d{1,2}", part)]
+        if not draw_label or len(numbers) < digits:
+            continue
+        result_id = build_us_pick_result_id(normalized_game, state_code, game_name, draw_label)
+        if result_id in seen_ids:
+            continue
+        seen_ids.add(result_id)
+        results.append({
+            "id": result_id,
+            "state": "Washington DC" if state_code == "DC" and state_name == "DC" else state_name,
+            "stateCode": state_code,
+            "game": normalized_game,
+            "gameName": game_name,
+            "draw": draw_label,
+            "date": date_key,
+            "number": "-".join(numbers[:digits]),
+            "playTypes": ["straight", "box"],
+            "source": US_PICK_SOURCE_NAMES[normalized_game],
+        })
+    return sorted(results, key=lambda row: (row["state"], row["game"], row["draw"], row["gameName"]))
+
+
+def parse_boliteros_date(raw):
+    text = str(raw or "").strip()
+    try:
+        parsed = datetime.datetime.strptime(text, "%B %d, %Y")
+    except ValueError:
+        try:
+            parsed = datetime.datetime.strptime(text, "%b %d, %Y")
+        except ValueError:
+            return ""
+    return parsed.strftime("%d-%m-%Y")
+
+
+def classify_boliteros_game(raw):
+    text = str(raw or "").strip()
+    normalized = text.lower().replace("-", " ")
+    if re.search(r"\b(3|three)\b", normalized) or normalized == "numbers":
+        return "pick3", text
+    if re.search(r"\b(4|four)\b", normalized):
+        return "pick4", text
+    return "", text
+
+
+def find_boliteros_card(heading):
+    current = heading
+    for _ in range(0, 4):
+        current = current.parent
+        if not current:
+            break
+        parts = candidate_text_parts(current)
+        if any(parse_boliteros_date(part) for part in parts):
+            return current
+    return heading.parent
+
+
+def parse_boliteros_pick_feed(html_text):
+    soup = BeautifulSoup(str(html_text or ""), "html.parser")
+    rows = []
+    seen_ids = set()
+    for heading in soup.find_all("h3"):
+        state_name = heading.get_text(" ", strip=True)
+        state_code = US_STATE_CODES.get(state_name)
+        if not state_code or state_code in US_PICK_NORMAL_CATALOG_STATE_CODES:
+            continue
+        card = find_boliteros_card(heading)
+        parts = candidate_text_parts(card)
+        if not parts:
+            continue
+        draw_time = ""
+        date_key = ""
+        for index, part in enumerate(parts):
+            if part == state_name and index + 1 < len(parts):
+                draw_time = parts[index + 1]
+            parsed_date = parse_boliteros_date(part)
+            if parsed_date:
+                date_key = parsed_date
+                break
+        if not date_key:
+            continue
+        index = 0
+        while index < len(parts):
+            game, game_name = classify_boliteros_game(parts[index])
+            if not game:
+                index += 1
+                continue
+            digits = 3 if game == "pick3" else 4
+            numbers = []
+            cursor = index + 1
+            while cursor < len(parts) and len(numbers) < digits:
+                if classify_boliteros_game(parts[cursor])[0]:
+                    break
+                if re.fullmatch(r"\d{1,2}", parts[cursor]):
+                    numbers.append(parts[cursor])
+                cursor += 1
+            if len(numbers) == digits:
+                result_id = build_us_pick_result_id(game, state_code, game_name, draw_time)
+                if result_id not in seen_ids:
+                    seen_ids.add(result_id)
+                    rows.append({
+                        "id": result_id,
+                        "state": state_name,
+                        "stateCode": state_code,
+                        "game": game,
+                        "gameName": game_name,
+                        "draw": draw_time,
+                        "date": date_key,
+                        "number": "-".join(numbers),
+                        "playTypes": ["straight", "box"],
+                        "source": "boliteros.com",
+                    })
+            index = max(cursor, index + 1)
+    return sorted(rows, key=lambda row: (row["state"], row["game"], row["draw"], row["gameName"]))
+
+
+def merge_us_pick_sources(primary_rows, backup_rows):
+    merged = []
+    index_by_match = {}
+    backup_date_by_state_game = {}
+    for backup in backup_rows:
+        if backup.get("date"):
+            backup_date_by_state_game[(backup.get("stateCode"), backup.get("game"))] = backup.get("date")
+    for row in primary_rows:
+        item = dict(row)
+        if not item.get("date"):
+            item["date"] = backup_date_by_state_game.get((item.get("stateCode"), item.get("game")), "")
+        match_key = (item.get("stateCode"), item.get("game"), item.get("number"))
+        index_by_match[match_key] = len(merged)
+        merged.append(item)
+    for backup in backup_rows:
+        match_key = (backup.get("stateCode"), backup.get("game"), backup.get("number"))
+        target_index = index_by_match.get(match_key)
+        if target_index is None:
+            index_by_match[match_key] = len(merged)
+            merged.append(dict(backup))
+            continue
+        target = merged[target_index]
+        if not target.get("date") and backup.get("date"):
+            target["date"] = backup["date"]
+        if backup.get("source") and backup["source"] not in str(target.get("source", "")):
+            target["source"] = f"{target.get('source')},{backup['source']}"
+    return sorted(merged, key=lambda row: (row["state"], row["game"], row["draw"], row["gameName"]))
+
+
+def fetch_us_pick_overview(game):
+    normalized_game = normalize_us_pick_game(game)
+    url = US_PICK_URLS.get(normalized_game)
+    if not url:
+        return []
+    req = urllib.request.Request(
+        url,
+        headers={
+            "User-Agent": "Mozilla/5.0",
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        },
+    )
+    try:
+        html = urllib.request.urlopen(req, timeout=25).read().decode("utf-8", "ignore")
+    except Exception as e:
+        print(f"  US Pick error for {normalized_game}: {e}")
+        return []
+    return parse_us_pick_overview(html, normalized_game)
+
+
+def fetch_boliteros_pick_feed():
+    req = urllib.request.Request(
+        "https://boliteros.com/",
+        headers={
+            "User-Agent": "Mozilla/5.0",
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        },
+    )
+    try:
+        html = urllib.request.urlopen(req, timeout=25).read().decode("utf-8", "ignore")
+    except Exception as e:
+        print(f"  Boliteros error: {e}")
+        return []
+    return parse_boliteros_pick_feed(html)
+
+
+def scrape_us_picks(date_str=None):
+    target_date = date_str or get_dr_date_str()
+    primary_rows = []
+    for game in ("pick3", "pick4"):
+        primary_rows.extend(fetch_us_pick_overview(game))
+    rows = merge_us_pick_sources(primary_rows, fetch_boliteros_pick_feed())
+    if target_date:
+        rows = [row for row in rows if row.get("date") == target_date]
+    return rows
 
 
 def iso_date_to_dr_date(raw):
@@ -604,6 +964,62 @@ def fetch_existing_from_supabase(date_str):
     except Exception as e:
         print(f"Warning: could not fetch existing results: {e}")
     return []
+
+
+def pick_results_cache_key(date_str):
+    return f"pick_results_cache_by_day:{date_str}"
+
+
+def save_native_pick_results_table(date_str, rows):
+    payload = json.dumps([{
+        "result_date": date_str,
+        "payload": rows,
+        "updated_at": utc_now_iso(),
+    }], ensure_ascii=False).encode("utf-8")
+    url = f"{SUPABASE_URL}/rest/v1/lotterynet_pick_results_by_day"
+    req = urllib.request.Request(
+        url,
+        data=payload,
+        headers={
+            "Content-Type": "application/json",
+            "apikey": SUPABASE_KEY,
+            "Authorization": f"Bearer {SUPABASE_KEY}",
+            "Prefer": "resolution=merge-duplicates",
+        },
+        method="POST",
+    )
+    resp = urllib.request.urlopen(req, timeout=15)
+    print(f"Saved native pick results table for {date_str} -> HTTP {resp.status}")
+
+
+def save_us_picks_to_supabase(date_str, rows):
+    key = pick_results_cache_key(date_str)
+    value = json.dumps(rows, ensure_ascii=False)
+    payload = json.dumps({"key": key, "value": value, "upd": utc_now_iso()}).encode("utf-8")
+    url = f"{SUPABASE_URL}/rest/v1/lotterynet_kv"
+    req = urllib.request.Request(
+        url,
+        data=payload,
+        headers={
+            "Content-Type": "application/json",
+            "apikey": SUPABASE_KEY,
+            "Authorization": f"Bearer {SUPABASE_KEY}",
+            "Prefer": "resolution=merge-duplicates",
+        },
+        method="POST",
+    )
+    try:
+        resp = urllib.request.urlopen(req, timeout=15)
+        print(f"Saved {len(rows)} US pick results for {date_str} -> HTTP {resp.status}")
+        try:
+            save_native_pick_results_table(date_str, rows)
+        except Exception as e:
+            print(f"Warning: native pick results table save failed for {date_str}: {e}")
+    except urllib.error.HTTPError as e:
+        body = e.read().decode()
+        print(f"Supabase pick error {e.code}: {body}")
+        raise
+
 
 def utc_now_iso():
     return datetime.datetime.now(datetime.UTC).isoformat().replace("+00:00", "Z")

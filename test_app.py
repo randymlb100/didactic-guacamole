@@ -28,6 +28,7 @@ class RenderApiContractsTest(unittest.TestCase):
     def setUp(self):
         self.client = app.app.test_client()
         app._scrape_cache.clear()
+        app._pick_scrape_cache.clear()
 
     def test_root_returns_28_unique_results(self):
         rows = fake_results() + [fake_results()[1]]
@@ -75,6 +76,90 @@ class RenderApiContractsTest(unittest.TestCase):
             self.client.get("/loteria-pick4?date=02-05-2026")
 
         self.assertEqual(1, scrape_mock.call_count)
+
+    def test_pick_results_endpoint_is_separate_from_normal_lottery_results(self):
+        pick_rows = [
+            {
+                "id": "US-P3-FL-PICK-3-EVENING",
+                "state": "Florida",
+                "stateCode": "FL",
+                "game": "pick3",
+                "gameName": "Pick 3",
+                "draw": "Evening Draw",
+                "date": "02-05-2026",
+                "number": "9-2-0",
+                "playTypes": ["straight", "box"],
+                "source": "pick-3.com",
+            },
+        ]
+        with patch("app.scrape", return_value=fake_results()), patch("app.scrape_us_picks", return_value=pick_rows):
+            normal = self.client.get("/results?date=02-05-2026")
+            picks = self.client.get("/pick-results?date=02-05-2026")
+
+        normal_payload = json.loads(normal.data.decode("utf-8"))
+        pick_payload = json.loads(picks.data.decode("utf-8"))
+        self.assertEqual(28, normal_payload["count"])
+        self.assertEqual(1, pick_payload["count"])
+        self.assertEqual("picks", pick_payload["section"])
+        self.assertEqual("US-P3-FL-PICK-3-EVENING", pick_payload["results"][0]["id"])
+
+    def test_combined_results_endpoint_honors_mode_without_changing_default(self):
+        pick_rows = [
+            {
+                "id": "US-P4-GA-CASH-4-NIGHT",
+                "state": "Georgia",
+                "stateCode": "GA",
+                "game": "pick4",
+                "gameName": "Cash 4",
+                "draw": "Night Draw",
+                "date": "02-05-2026",
+                "number": "0-6-1-3",
+                "playTypes": ["straight", "box"],
+                "source": "pick-4.com",
+            },
+        ]
+        with patch("app.scrape", return_value=fake_results()), patch("app.scrape_us_picks", return_value=pick_rows):
+            default_response = self.client.get("/system-results?date=02-05-2026")
+            both_response = self.client.get("/system-results?date=02-05-2026&mode=both")
+
+        default_payload = json.loads(default_response.data.decode("utf-8"))
+        both_payload = json.loads(both_response.data.decode("utf-8"))
+        self.assertEqual("lottery", default_payload["mode"])
+        self.assertEqual(28, default_payload["lotteries"]["count"])
+        self.assertNotIn("picks", default_payload)
+        self.assertEqual("both", both_payload["mode"])
+        self.assertEqual(28, both_payload["lotteries"]["count"])
+        self.assertEqual(1, both_payload["picks"]["count"])
+
+    def test_run_system_scraper_can_save_pick_only_without_touching_lottery(self):
+        pick_rows = [
+            {
+                "id": "US-P3-FL-PICK-3-EVENING",
+                "state": "Florida",
+                "stateCode": "FL",
+                "game": "pick3",
+                "gameName": "Pick 3",
+                "draw": "Evening Draw",
+                "date": "02-05-2026",
+                "number": "9-2-0",
+                "playTypes": ["straight", "box"],
+                "source": "pick-3.com",
+            },
+        ]
+        with patch("app.scrape") as lottery_scrape, \
+            patch("app.scrape_us_picks", return_value=pick_rows), \
+            patch("app.save_to_supabase") as save_lottery, \
+            patch("app.save_us_picks_to_supabase") as save_picks, \
+            patch.dict("os.environ", {"SUPABASE_KEY": "test-key"}):
+            response = self.client.post("/run-system-scraper?date=02-05-2026&mode=pick")
+
+        payload = json.loads(response.data.decode("utf-8"))
+        self.assertEqual(200, response.status_code)
+        self.assertEqual("pick", payload["mode"])
+        self.assertEqual(1, payload["picks"]["count"])
+        lottery_scrape.assert_not_called()
+        save_lottery.assert_not_called()
+        save_picks.assert_called_once()
 
 
 if __name__ == "__main__":
