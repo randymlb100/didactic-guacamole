@@ -4,6 +4,7 @@ Scrapea loteriasdominicanas.com y guarda en lotterynet_kv
 key: lot_results_cache_by_day
 """
 import os, json, datetime, urllib.request, urllib.parse, re
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from bs4 import BeautifulSoup
 
 SUPABASE_URL = os.environ.get("SUPABASE_URL", "https://unhoulkujbtsypccpirc.supabase.co")
@@ -670,10 +671,39 @@ def fetch_us_pick_overview(game):
     return parse_us_pick_overview(html, normalized_game)
 
 
-def scrape_us_picks(date_str=None):
+def fetch_us_pick_history_batch(game, state_rows, target_date):
+    rows_by_key = {}
+    max_workers = int(os.environ.get("US_PICK_HISTORY_WORKERS", "16"))
+    with ThreadPoolExecutor(max_workers=max(1, min(max_workers, len(state_rows) or 1))) as executor:
+        future_to_row = {
+            executor.submit(
+                fetch_us_pick_state_history,
+                game,
+                row.get("stateCode"),
+                row.get("state"),
+                row.get("gameName"),
+                target_date,
+            ): row
+            for row in state_rows
+        }
+        for future in as_completed(future_to_row):
+            row = future_to_row[future]
+            state_key = (row.get("stateCode"), row.get("gameName"))
+            try:
+                history_rows = future.result()
+            except Exception as e:
+                print(f"  US Pick history error for {row.get('state')} {row.get('gameName')}: {e}")
+                history_rows = []
+            if history_rows:
+                rows_by_key[state_key] = history_rows
+    return rows_by_key
+
+
+def scrape_us_picks(date_str=None, games=None):
     target_date = date_str or get_dr_date_str()
     rows_by_id = {}
-    for game in ("pick3", "pick4"):
+    requested_games = tuple(g for g in (games or ("pick3", "pick4")) if normalize_us_pick_game(g))
+    for game in requested_games:
         overview_rows = fetch_us_pick_overview(game)
         if target_date:
             history_keys = set()
@@ -681,16 +711,10 @@ def scrape_us_picks(date_str=None):
             for row in overview_rows:
                 state_key = (row.get("stateCode"), row.get("gameName"))
                 state_rows[state_key] = row
-            for row in state_rows.values():
-                history_rows = fetch_us_pick_state_history(
-                    game,
-                    row.get("stateCode"),
-                    row.get("state"),
-                    row.get("gameName"),
-                    target_date,
-                )
+            history_by_key = fetch_us_pick_history_batch(game, list(state_rows.values()), target_date)
+            for state_key, history_rows in history_by_key.items():
                 if history_rows:
-                    history_keys.add((row.get("stateCode"), row.get("gameName")))
+                    history_keys.add(state_key)
                 for history_row in history_rows:
                     rows_by_id[history_row["id"]] = history_row
             for row in fetch_new_jersey_pick_home(game):

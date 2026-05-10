@@ -81,6 +81,19 @@ def pick_scrape_cached(date_key):
     return rows
 
 
+def pick_scrape_cached_for_game(date_key, game_filter):
+    if game_filter not in ("pick3", "pick4"):
+        return pick_scrape_cached(date_key)
+    cache_key = f"{date_key}:{game_filter}"
+    now = time.time()
+    cached = _pick_scrape_cache.get(cache_key)
+    if cached and now - cached["stored_at"] < SCRAPE_CACHE_TTL_SECONDS:
+        return cached["rows"]
+    rows = scrape_us_picks(date_key, games=(game_filter,))
+    _pick_scrape_cache[cache_key] = {"stored_at": now, "rows": rows}
+    return rows
+
+
 def unique_sorted_results(rows):
     by_id = {}
     for row in rows:
@@ -115,7 +128,7 @@ def pick_results_for_request():
     date_key = request.args.get("date") or get_dr_date_str()
     state_filter = (request.args.get("state") or "").strip().lower()
     game_filter = (request.args.get("game") or "").strip().lower().replace("-", "")
-    rows = unique_sorted_pick_results(pick_scrape_cached(date_key))
+    rows = unique_sorted_pick_results(pick_scrape_cached_for_game(date_key, game_filter))
     if state_filter:
         rows = [
             row for row in rows
