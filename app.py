@@ -2,11 +2,23 @@ import datetime
 import json
 import os
 import time
+import urllib.parse
+import urllib.request
 
 from flask import Flask, Response, jsonify, request
 from flask_cors import CORS
 
-from scraper.scrape_and_save import get_dr_date_str, save_to_supabase, save_us_picks_to_supabase, scrape, scrape_us_picks
+from scraper.scrape_and_save import (
+    SUPABASE_KEY,
+    SUPABASE_URL,
+    fetch_existing_from_supabase,
+    get_dr_date_str,
+    pick_results_cache_key,
+    save_to_supabase,
+    save_us_picks_to_supabase,
+    scrape,
+    scrape_us_picks,
+)
 
 
 app = Flask(__name__)
@@ -94,6 +106,51 @@ def pick_scrape_cached_for_game(date_key, game_filter):
     return rows
 
 
+def should_use_live_scrape():
+    return request.args.get("live") == "1" or not SUPABASE_KEY.strip()
+
+
+def lottery_rows_for_request_date(date_key):
+    if should_use_live_scrape():
+        return unique_sorted_results(scrape_cached(date_key))
+    return unique_sorted_results(fetch_existing_from_supabase(date_key))
+
+
+def fetch_pick_rows_from_supabase(date_key):
+    if not SUPABASE_KEY.strip():
+        return []
+    params = urllib.parse.urlencode({"key": f"eq.{pick_results_cache_key(date_key)}", "select": "value"})
+    req = urllib.request.Request(
+        f"{SUPABASE_URL}/rest/v1/lotterynet_kv?{params}",
+        headers={
+            "apikey": SUPABASE_KEY,
+            "Authorization": f"Bearer {SUPABASE_KEY}",
+        },
+    )
+    try:
+        resp = urllib.request.urlopen(req, timeout=15)
+        rows = json.loads(resp.read().decode("utf-8"))
+        if rows and rows[0].get("value"):
+            value = rows[0]["value"]
+            if isinstance(value, str):
+                value = json.loads(value)
+            if isinstance(value, list):
+                return value
+    except Exception as error:
+        print(f"Warning: could not fetch pick cache: {error}")
+    return []
+
+
+def pick_rows_for_request_date(date_key, game_filter=""):
+    if should_use_live_scrape():
+        rows = pick_scrape_cached_for_game(date_key, game_filter)
+    else:
+        rows = fetch_pick_rows_from_supabase(date_key)
+    if game_filter in ("pick3", "pick4"):
+        rows = [row for row in rows if row.get("game") == game_filter]
+    return unique_sorted_pick_results(rows)
+
+
 def unique_sorted_results(rows):
     by_id = {}
     for row in rows:
@@ -116,8 +173,8 @@ def unique_sorted_pick_results(rows):
 def results_for_request():
     date_key = request.args.get("date") or get_dr_date_str()
     name_filter = (request.args.get("name") or request.args.get("lottery") or "").strip().lower()
-    lottery_rows = unique_sorted_results(scrape_cached(date_key))
-    pick_rows = unique_sorted_pick_results(pick_scrape_cached(date_key))
+    lottery_rows = lottery_rows_for_request_date(date_key)
+    pick_rows = pick_rows_for_request_date(date_key)
     rows = unique_sorted_results(lottery_rows + pick_rows)
     if name_filter:
         rows = [row for row in rows if name_filter in row["name"].lower()]
@@ -128,7 +185,7 @@ def pick_results_for_request():
     date_key = request.args.get("date") or get_dr_date_str()
     state_filter = (request.args.get("state") or "").strip().lower()
     game_filter = (request.args.get("game") or "").strip().lower().replace("-", "")
-    rows = unique_sorted_pick_results(pick_scrape_cached_for_game(date_key, game_filter))
+    rows = pick_rows_for_request_date(date_key, game_filter)
     if state_filter:
         rows = [
             row for row in rows
@@ -181,14 +238,14 @@ def system_results():
         "generatedAt": datetime.datetime.now(datetime.UTC).isoformat().replace("+00:00", "Z"),
     }
     if mode in ("lottery", "both"):
-        lottery_rows = unique_sorted_results(scrape_cached(date_key))
+        lottery_rows = lottery_rows_for_request_date(date_key)
         payload["lotteries"] = {
             "section": "lotteries",
             "count": len(lottery_rows),
             "results": lottery_rows,
         }
     if mode in ("pick", "both"):
-        _, pick_rows = pick_results_for_request()
+        pick_rows = pick_rows_for_request_date(date_key)
         payload["picks"] = {
             "section": "picks",
             "count": len(pick_rows),
