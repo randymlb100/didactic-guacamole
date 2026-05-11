@@ -8,7 +8,20 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from bs4 import BeautifulSoup
 
 SUPABASE_URL = os.environ.get("SUPABASE_URL", "https://unhoulkujbtsypccpirc.supabase.co")
-SUPABASE_KEY = os.environ.get("SUPABASE_KEY", "")
+DEFAULT_SUPABASE_PUBLISHABLE_KEY = "sb_publishable_A0LxL11fjdQGehmIPnyPZQ_6ty7T8lK"
+
+
+def configured_supabase_key():
+    return (
+        os.environ.get("SUPABASE_KEY")
+        or os.environ.get("SUPABASE_SERVICE_ROLE_KEY")
+        or os.environ.get("SUPABASE_ANON_KEY")
+        or os.environ.get("SUPABASE_PUBLISHABLE_KEY")
+        or DEFAULT_SUPABASE_PUBLISHABLE_KEY
+    )
+
+
+SUPABASE_KEY = configured_supabase_key()
 TRACKED_REMOTE_RESULT_IDS = {"23", "24", "27", "28"}
 US_PICK_NORMAL_CATALOG_STATE_CODES = set()
 US_PICK_URLS = {
@@ -1245,6 +1258,32 @@ def unique_us_pick_results(rows):
     return sorted(by_id.values(), key=lambda row: row.get("id", ""))
 
 
+def is_us_pick_result_row(row):
+    row_id = str(row.get("id", "")).upper()
+    name = str(row.get("name", "")).lower()
+    game = str(row.get("game", "")).lower().replace("-", "")
+    return (
+        row_id.startswith("US-P3-") or
+        row_id.startswith("US-P4-") or
+        bool(row.get("pick3")) or
+        bool(row.get("pick4")) or
+        game in {"pick3", "pick4"} or
+        "pick 3" in name or
+        "pick 4" in name
+    )
+
+
+def split_lottery_and_pick_rows(rows):
+    lottery_rows = []
+    pick_rows = []
+    for row in rows or []:
+        if is_us_pick_result_row(row):
+            pick_rows.append(row)
+        else:
+            lottery_rows.append(row)
+    return lottery_rows, pick_rows
+
+
 def utc_now_iso():
     return datetime.datetime.now(datetime.UTC).isoformat().replace("+00:00", "Z")
 
@@ -1305,7 +1344,9 @@ def save_to_supabase(date_str, results, prune_missing_ids=None):
     # Merge: preserve existing rows by default, override with fresh ones by id.
     # For today's authoritatives we can optionally prune IDs that were not freshly found,
     # which lets us clear stale same-day rows without damaging historical backfills.
-    existing = fetch_existing_from_supabase(date_str)
+    existing, legacy_pick_rows = split_lottery_and_pick_rows(fetch_existing_from_supabase(date_str))
+    if legacy_pick_rows:
+        print(f"Warning: ignoring {len(legacy_pick_rows)} pick rows found in lottery cache for {date_str}")
     merged_list = merge_results_by_id(existing, results, prune_missing_ids, observed_at=utc_now_iso())
     missing_tracked = missing_tracked_result_ids(merged_list)
     if missing_tracked:

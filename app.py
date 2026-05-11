@@ -12,6 +12,7 @@ from scraper.scrape_and_save import (
     SUPABASE_KEY,
     SUPABASE_URL,
     fetch_existing_from_supabase,
+    split_lottery_and_pick_rows,
     get_dr_date_str,
     pick_results_cache_key,
     save_to_supabase,
@@ -116,7 +117,8 @@ def should_use_live_scrape():
 def lottery_rows_for_request_date(date_key):
     if should_use_live_scrape():
         return unique_sorted_results(scrape_cached(date_key))
-    return unique_sorted_results(fetch_existing_from_supabase(date_key))
+    lottery_rows, _ = split_lottery_and_pick_rows(fetch_existing_from_supabase(date_key))
+    return unique_sorted_results(lottery_rows)
 
 
 def fetch_pick_rows_from_supabase(date_key):
@@ -149,6 +151,8 @@ def pick_rows_for_request_date(date_key, game_filter=""):
         rows = pick_scrape_cached_for_game(date_key, game_filter)
     else:
         rows = fetch_pick_rows_from_supabase(date_key)
+        if not rows:
+            _, rows = split_lottery_and_pick_rows(fetch_existing_from_supabase(date_key))
     if game_filter in ("pick3", "pick4"):
         rows = [row for row in rows if row.get("game") == game_filter]
     return unique_sorted_pick_results(rows)
@@ -342,6 +346,17 @@ def run_system_scraper():
 @app.route("/health", methods=["GET"])
 def health():
     return jsonify({"ok": True, "service": "lotterynet-results"})
+
+
+@app.route("/config-check", methods=["GET"])
+def config_check():
+    return jsonify({
+        "ok": True,
+        "service": "lotterynet-results",
+        "supabaseUrlConfigured": bool(SUPABASE_URL.strip()),
+        "supabaseKeyConfigured": bool(SUPABASE_KEY.strip()),
+        "supabaseKeyPrefix": SUPABASE_KEY[:14] if SUPABASE_KEY else "",
+    })
 
 
 @app.route("/search", methods=["GET"])

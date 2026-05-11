@@ -114,7 +114,7 @@ class RenderApiContractsTest(unittest.TestCase):
         scrape_mock.assert_not_called()
         normal_payload = json.loads(normal.data.decode("utf-8"))
         pick_payload = json.loads(picks.data.decode("utf-8"))
-        self.assertEqual(29, normal_payload["count"])
+        self.assertEqual(25, normal_payload["count"])
         self.assertEqual("US-P3-FL-PICK-3-EVENING", normal_payload["results"][-1]["id"])
         self.assertEqual("Florida Pick 3 Evening Draw", normal_payload["results"][-1]["name"])
         self.assertEqual("9-2-0", normal_payload["results"][-1]["pick3"])
@@ -147,10 +147,10 @@ class RenderApiContractsTest(unittest.TestCase):
         default_payload = json.loads(default_response.data.decode("utf-8"))
         both_payload = json.loads(both_response.data.decode("utf-8"))
         self.assertEqual("lottery", default_payload["mode"])
-        self.assertEqual(28, default_payload["lotteries"]["count"])
+        self.assertEqual(24, default_payload["lotteries"]["count"])
         self.assertNotIn("picks", default_payload)
         self.assertEqual("both", both_payload["mode"])
-        self.assertEqual(28, both_payload["lotteries"]["count"])
+        self.assertEqual(24, both_payload["lotteries"]["count"])
         self.assertEqual(1, both_payload["picks"]["count"])
 
     def test_root_without_date_is_lightweight_health_check(self):
