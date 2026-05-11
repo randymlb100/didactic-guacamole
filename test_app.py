@@ -32,35 +32,46 @@ class RenderApiContractsTest(unittest.TestCase):
 
     def test_root_returns_28_unique_results(self):
         rows = fake_results() + [fake_results()[1]]
-        with patch("app.scrape", return_value=rows), patch("app.scrape_us_picks", return_value=[]):
+        with patch("app.fetch_existing_from_supabase", return_value=rows), \
+            patch("app.fetch_pick_rows_from_supabase", return_value=[]), \
+            patch("app.scrape") as scrape_mock:
             response = self.client.get("/?date=02-05-2026")
 
+        scrape_mock.assert_not_called()
         self.assertEqual(200, response.status_code)
         payload = json.loads(response.data.decode("utf-8"))
         self.assertEqual(28, len(payload))
         self.assertEqual("28", payload[-1]["id"])
 
     def test_results_endpoint_returns_metadata(self):
-        with patch("app.scrape", return_value=fake_results()), patch("app.scrape_us_picks", return_value=[]):
+        with patch("app.fetch_existing_from_supabase", return_value=fake_results()), \
+            patch("app.fetch_pick_rows_from_supabase", return_value=[]), \
+            patch("app.scrape") as scrape_mock:
             response = self.client.get("/results?date=02-05-2026")
 
+        scrape_mock.assert_not_called()
         payload = json.loads(response.data.decode("utf-8"))
         self.assertEqual("02-05-2026", payload["date"])
         self.assertEqual(28, payload["count"])
+        self.assertEqual("supabase-cache", payload["source"])
         self.assertEqual("27", payload["results"][-2]["id"])
 
     def test_haiti_route_filters_haiti_bolet(self):
-        with patch("app.scrape", return_value=fake_results()):
+        with patch("app.fetch_existing_from_supabase", return_value=fake_results()), patch("app.scrape") as scrape_mock:
             response = self.client.get("/loteria-haiti?date=02-05-2026")
 
+        scrape_mock.assert_not_called()
         payload = json.loads(response.data.decode("utf-8"))
         self.assertEqual(["27", "28"], [row["id"] for row in payload])
 
     def test_pick_routes_include_pick_specific_fields(self):
-        with patch("app.scrape", return_value=fake_results()):
+        with patch("app.fetch_existing_from_supabase", return_value=fake_results()), \
+            patch("app.fetch_pick_rows_from_supabase", return_value=[]), \
+            patch("app.scrape") as scrape_mock:
             pick3 = self.client.get("/loteria-pick3?date=02-05-2026")
             pick4 = self.client.get("/loteria-pick4?date=02-05-2026")
 
+        scrape_mock.assert_not_called()
         pick3_payload = json.loads(pick3.data.decode("utf-8"))
         pick4_payload = json.loads(pick4.data.decode("utf-8"))
         self.assertEqual(["19", "20"], [row["id"] for row in pick3_payload])
@@ -70,12 +81,14 @@ class RenderApiContractsTest(unittest.TestCase):
         self.assertEqual("0-8-4-3", pick4_payload[0]["pick4"])
         self.assertNotIn("pick3", pick4_payload[0])
 
-    def test_reuses_scrape_cache_for_same_date(self):
-        with patch("app.scrape", return_value=fake_results()) as scrape_mock:
+    def test_public_routes_do_not_scrape_for_same_date(self):
+        with patch("app.fetch_existing_from_supabase", return_value=fake_results()), \
+            patch("app.fetch_pick_rows_from_supabase", return_value=[]), \
+            patch("app.scrape") as scrape_mock:
             self.client.get("/loteria-pick3?date=02-05-2026")
             self.client.get("/loteria-pick4?date=02-05-2026")
 
-        self.assertEqual(1, scrape_mock.call_count)
+        scrape_mock.assert_not_called()
 
     def test_results_endpoint_includes_normal_and_new_pick_results(self):
         pick_rows = [
@@ -92,10 +105,13 @@ class RenderApiContractsTest(unittest.TestCase):
                 "source": "pick-3.com",
             },
         ]
-        with patch("app.scrape", return_value=fake_results()), patch("app.scrape_us_picks", return_value=pick_rows):
+        with patch("app.fetch_existing_from_supabase", return_value=fake_results()), \
+            patch("app.fetch_pick_rows_from_supabase", return_value=pick_rows), \
+            patch("app.scrape") as scrape_mock:
             normal = self.client.get("/results?date=02-05-2026")
             picks = self.client.get("/pick-results?date=02-05-2026")
 
+        scrape_mock.assert_not_called()
         normal_payload = json.loads(normal.data.decode("utf-8"))
         pick_payload = json.loads(picks.data.decode("utf-8"))
         self.assertEqual(29, normal_payload["count"])
@@ -121,10 +137,13 @@ class RenderApiContractsTest(unittest.TestCase):
                 "source": "pick-4.com",
             },
         ]
-        with patch("app.scrape", return_value=fake_results()), patch("app.scrape_us_picks", return_value=pick_rows):
+        with patch("app.fetch_existing_from_supabase", return_value=fake_results()), \
+            patch("app.fetch_pick_rows_from_supabase", return_value=pick_rows), \
+            patch("app.scrape") as scrape_mock:
             default_response = self.client.get("/system-results?date=02-05-2026")
             both_response = self.client.get("/system-results?date=02-05-2026&mode=both")
 
+        scrape_mock.assert_not_called()
         default_payload = json.loads(default_response.data.decode("utf-8"))
         both_payload = json.loads(both_response.data.decode("utf-8"))
         self.assertEqual("lottery", default_payload["mode"])
@@ -133,6 +152,28 @@ class RenderApiContractsTest(unittest.TestCase):
         self.assertEqual("both", both_payload["mode"])
         self.assertEqual(28, both_payload["lotteries"]["count"])
         self.assertEqual(1, both_payload["picks"]["count"])
+
+    def test_root_without_date_is_lightweight_health_check(self):
+        with patch("app.scrape") as scrape_mock, patch("app.fetch_existing_from_supabase") as cache_mock:
+            response = self.client.get("/")
+
+        scrape_mock.assert_not_called()
+        cache_mock.assert_not_called()
+        payload = json.loads(response.data.decode("utf-8"))
+        self.assertEqual(200, response.status_code)
+        self.assertTrue(payload["ok"])
+
+    def test_system_results_does_not_scrape_when_cache_missing(self):
+        with patch("app.fetch_existing_from_supabase", return_value=[]), \
+            patch("app.fetch_pick_rows_from_supabase", return_value=[]), \
+            patch("app.scrape") as scrape_mock:
+            response = self.client.get("/system-results?date=02-05-2026&mode=both")
+
+        scrape_mock.assert_not_called()
+        payload = json.loads(response.data.decode("utf-8"))
+        self.assertEqual("cache-miss", payload["source"])
+        self.assertEqual(0, payload["lotteries"]["count"])
+        self.assertEqual(0, payload["picks"]["count"])
 
     def test_run_system_scraper_can_save_pick_only_without_touching_lottery(self):
         pick_rows = [

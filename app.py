@@ -66,10 +66,13 @@ def normalize_result_row(row):
 def normalize_pick_row(row):
     normalized = normalize_result_row(row)
     game = str(row.get("game", "")).lower().replace("-", "")
-    game_name = str(row.get("gameName", "")).strip() or ("Pick 4" if game == "pick4" else "Pick 3")
+    game_name = str(row.get("gameName", "")).strip()
+    if not game_name and game:
+        game_name = "Pick 4" if game == "pick4" else "Pick 3"
     draw = str(row.get("draw", "")).strip()
     state = str(row.get("state", "")).strip()
-    normalized["name"] = " ".join(part for part in [state, game_name, draw] if part)
+    if state or game_name or draw:
+        normalized["name"] = " ".join(part for part in [state, game_name, draw] if part)
     return normalized
 
 
@@ -107,7 +110,7 @@ def pick_scrape_cached_for_game(date_key, game_filter):
 
 
 def should_use_live_scrape():
-    return request.args.get("live") == "1" or not SUPABASE_KEY.strip()
+    return request.args.get("live") == "1"
 
 
 def lottery_rows_for_request_date(date_key):
@@ -128,7 +131,7 @@ def fetch_pick_rows_from_supabase(date_key):
         },
     )
     try:
-        resp = urllib.request.urlopen(req, timeout=15)
+        resp = urllib.request.urlopen(req, timeout=5)
         rows = json.loads(resp.read().decode("utf-8"))
         if rows and rows[0].get("value"):
             value = rows[0]["value"]
@@ -199,6 +202,8 @@ def pick_results_for_request():
 
 @app.route("/", methods=["GET"])
 def all_results():
+    if not request.args.get("date") and not request.args.get("live"):
+        return jsonify({"ok": True, "service": "lotterynet-results"})
     _, rows = results_for_request()
     return json_utf8(rows)
 
@@ -209,6 +214,7 @@ def results_with_metadata():
     return json_utf8({
         "date": date_key,
         "count": len(rows),
+        "source": "live-scraper" if should_use_live_scrape() else ("supabase-cache" if rows else "cache-miss"),
         "generatedAt": datetime.datetime.now(datetime.UTC).isoformat().replace("+00:00", "Z"),
         "results": rows,
     })
@@ -221,6 +227,7 @@ def pick_results_with_metadata():
         "date": date_key,
         "section": "picks",
         "count": len(rows),
+        "source": "live-scraper" if should_use_live_scrape() else ("supabase-cache" if rows else "cache-miss"),
         "generatedAt": datetime.datetime.now(datetime.UTC).isoformat().replace("+00:00", "Z"),
         "results": rows,
     })
@@ -235,6 +242,7 @@ def system_results():
     payload = {
         "date": date_key,
         "mode": mode,
+        "source": "live-scraper" if should_use_live_scrape() else "supabase-cache",
         "generatedAt": datetime.datetime.now(datetime.UTC).isoformat().replace("+00:00", "Z"),
     }
     if mode in ("lottery", "both"):
@@ -251,6 +259,8 @@ def system_results():
             "count": len(pick_rows),
             "results": pick_rows,
         }
+    if not any(payload.get(section, {}).get("count", 0) for section in ("lotteries", "picks")):
+        payload["source"] = "live-scraper" if should_use_live_scrape() else "cache-miss"
     return json_utf8(payload)
 
 
@@ -415,7 +425,12 @@ def legacy_filtered_route():
     route_filter = LEGACY_ROUTE_FILTERS.get(request.path, "")
     request_filter = request.args.get("name")
     query = (request_filter or route_filter or "").lower()
-    rows = unique_sorted_results(scrape_cached(date_key))
+    if request.args.get("live") == "1":
+        rows = unique_sorted_results(scrape_cached(date_key))
+    else:
+        lottery_rows = lottery_rows_for_request_date(date_key)
+        pick_rows = pick_rows_for_request_date(date_key)
+        rows = unique_sorted_results(lottery_rows + pick_rows)
     if query:
         rows = [row for row in rows if query in row["name"].lower()]
     return json_utf8(rows)
