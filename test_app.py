@@ -205,6 +205,35 @@ class RenderApiContractsTest(unittest.TestCase):
         save_lottery.assert_not_called()
         save_picks.assert_called_once()
 
+    def test_run_scraper_uses_configured_fallback_key_when_render_env_is_missing(self):
+        lottery_rows = [
+            {"id": "1", "name": "La Primera Día", "date": "02-05-2026", "number": "01-02-03"},
+        ]
+        pick_rows = [
+            {
+                "id": "US-P3-FL-PICK-3-EVENING",
+                "state": "Florida",
+                "stateCode": "FL",
+                "game": "pick3",
+                "gameName": "Pick 3",
+                "draw": "Evening Draw",
+                "date": "02-05-2026",
+                "number": "9-2-0",
+            },
+        ]
+        with patch("app.scrape", return_value=lottery_rows), \
+            patch("app.scrape_us_picks", return_value=pick_rows), \
+            patch("app.save_to_supabase") as save_lottery, \
+            patch("app.save_us_picks_to_supabase") as save_picks, \
+            patch.dict("os.environ", {}, clear=True):
+            response = self.client.post("/run-scraper?date=02-05-2026")
+
+        payload = json.loads(response.data.decode("utf-8"))
+        self.assertEqual(200, response.status_code)
+        self.assertTrue(payload["saved"])
+        save_lottery.assert_called_once()
+        save_picks.assert_called_once()
+
 
 if __name__ == "__main__":
     unittest.main()

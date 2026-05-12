@@ -23,7 +23,7 @@ def configured_supabase_key():
 
 SUPABASE_KEY = configured_supabase_key()
 TRACKED_REMOTE_RESULT_IDS = {"23", "24", "27", "28"}
-US_PICK_NORMAL_CATALOG_STATE_CODES = set()
+US_PICK_NORMAL_CATALOG_STATE_CODES = {"NJ"}
 US_PICK_URLS = {
     "pick3": "https://pick-3.com/winning-numbers",
     "pick4": "https://pick-4.com/winning-numbers",
@@ -225,7 +225,7 @@ def slug_token(raw):
 
 
 def normalize_us_pick_game(game):
-    value = str(game or "").lower().replace("-", "")
+    value = str(game or "").lower().replace("-", "").replace(" ", "")
     if value in ("pick3", "p3"):
         return "pick3"
     if value in ("pick4", "p4"):
@@ -362,6 +362,84 @@ def parse_us_pick_overview(html_text, game):
             "source": US_PICK_SOURCE_NAMES[normalized_game],
         })
     return sorted(results, key=lambda row: (row["state"], row["game"], row["draw"], row["gameName"]))
+
+
+def parse_boliteros_date(raw):
+    text = str(raw or "").strip()
+    for fmt in ("%B %d, %Y", "%b %d, %Y"):
+        try:
+            return datetime.datetime.strptime(text, fmt).strftime("%d-%m-%Y")
+        except ValueError:
+            continue
+    return ""
+
+
+def parse_boliteros_pick_feed(html_text):
+    soup = BeautifulSoup(str(html_text or ""), "html.parser")
+    rows = []
+    seen_ids = set()
+    for heading in soup.find_all("h3"):
+        state_name = heading.get_text(" ", strip=True)
+        state_code = US_STATE_CODES.get(state_name)
+        if not state_code or state_code in US_PICK_NORMAL_CATALOG_STATE_CODES:
+            continue
+        parts = candidate_text_parts(heading.parent or heading)
+        draw_time = next((part for part in parts if re.fullmatch(r"\d{1,2}:\d{2}\s*(?:AM|PM)", part, re.I)), "")
+        date_key = next((parse_boliteros_date(part) for part in parts if parse_boliteros_date(part)), "")
+        for index, part in enumerate(parts):
+            normalized_game = normalize_us_pick_game(part)
+            if normalized_game not in ("pick3", "pick4"):
+                continue
+            digits = 3 if normalized_game == "pick3" else 4
+            numbers = [
+                value
+                for value in parts[index + 1:]
+                if re.fullmatch(r"\d{1,2}", value)
+            ][:digits]
+            if len(numbers) < digits:
+                continue
+            game_name = "Pick 3" if normalized_game == "pick3" else "Pick 4"
+            result_id = build_us_pick_result_id(normalized_game, state_code, game_name, draw_time)
+            if result_id in seen_ids:
+                continue
+            seen_ids.add(result_id)
+            rows.append({
+                "id": result_id,
+                "state": state_name,
+                "stateCode": state_code,
+                "game": normalized_game,
+                "gameName": game_name,
+                "draw": draw_time,
+                "date": date_key,
+                "number": "-".join(numbers),
+                "playTypes": ["straight", "box"],
+                "source": "boliteros.com",
+            })
+    return sorted(rows, key=lambda row: row["id"])
+
+
+def merge_us_pick_sources(primary_rows, backup_rows):
+    merged = {row.get("id"): dict(row) for row in primary_rows if row.get("id")}
+    for backup in backup_rows:
+        match_key = next((
+            key for key, row in merged.items()
+            if row.get("stateCode") == backup.get("stateCode")
+            and row.get("game") == backup.get("game")
+            and row.get("number") == backup.get("number")
+        ), "")
+        if match_key:
+            row = merged[match_key]
+            if not row.get("date") and backup.get("date"):
+                row["date"] = backup["date"]
+            sources = [
+                source
+                for source in (row.get("source"), backup.get("source"))
+                if source
+            ]
+            row["source"] = ",".join(dict.fromkeys(sources))
+        elif backup.get("id"):
+            merged[backup["id"]] = dict(backup)
+    return sorted(merged.values(), key=lambda row: row.get("id", ""))
 
 
 def parse_new_jersey_pick_home(html_text, game):

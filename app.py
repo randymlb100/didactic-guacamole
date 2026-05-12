@@ -274,7 +274,7 @@ def run_scraper():
     lottery_rows = unique_sorted_results(scrape_cached(date_key))
     pick_rows = unique_sorted_pick_results(pick_scrape_cached(date_key))
     rows = unique_sorted_results(lottery_rows + pick_rows)
-    if not os.environ.get("SUPABASE_KEY", "").strip():
+    if not SUPABASE_KEY.strip():
         return json_utf8({
             "date": date_key,
             "count": len(rows),
@@ -307,7 +307,7 @@ def run_system_scraper():
     if mode not in ("lottery", "pick", "both"):
         mode = "lottery"
     date_key = request.args.get("date") or get_dr_date_str()
-    if not os.environ.get("SUPABASE_KEY", "").strip():
+    if not SUPABASE_KEY.strip():
         return json_utf8({
             "date": date_key,
             "mode": mode,
