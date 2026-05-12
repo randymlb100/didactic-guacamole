@@ -522,6 +522,92 @@ class ScraperContractsTest(unittest.TestCase):
 
         self.assertEqual([], missing)
 
+    def test_pick_status_rows_mark_non_applicable_sunday_draw_as_no_draw(self):
+        rows = scraper.build_pick_status_rows(
+            [
+                scraper.ExpectedPickDraw(
+                    id="US-P3-AR-CASH-3-MIDDAY",
+                    state="Arkansas",
+                    state_code="AR",
+                    game="pick3",
+                    game_name="Cash 3",
+                    draw="Midday Draw",
+                ),
+            ],
+            current_rows=[],
+            target_date="10-05-2026",
+            now_dr=datetime.datetime(2026, 5, 12, 9, 0),
+        )
+
+        self.assertEqual(1, len(rows))
+        self.assertEqual("no_draw", rows[0]["status"])
+        self.assertEqual("calendar_rule", rows[0]["noDrawReason"])
+
+    def test_pick_status_rows_mark_missing_past_draw_as_missing_from_sources(self):
+        rows = scraper.build_pick_status_rows(
+            [
+                scraper.ExpectedPickDraw(
+                    id="US-P4-SC-PICK-4-EVENING",
+                    state="South Carolina",
+                    state_code="SC",
+                    game="pick4",
+                    game_name="Pick 4",
+                    draw="Evening Draw",
+                ),
+            ],
+            current_rows=[],
+            target_date="10-05-2026",
+            now_dr=datetime.datetime(2026, 5, 12, 9, 0),
+        )
+
+        self.assertEqual("missing_from_sources", rows[0]["status"])
+
+    def test_pick_cache_merge_keeps_published_result_over_missing_status(self):
+        merged = scraper.merge_pick_cache_rows(
+            existing_rows=[{
+                "id": "US-P4-SC-PICK-4-EVENING",
+                "date": "10-05-2026",
+                "number": "3-6-6-7",
+                "status": "published",
+                "source": "lotteryusa.com",
+            }],
+            fresh_rows=[{
+                "id": "US-P4-SC-PICK-4-EVENING",
+                "date": "10-05-2026",
+                "number": "",
+                "status": "missing_from_sources",
+                "source": "pick-backfill",
+            }],
+            target_date="10-05-2026",
+        )
+
+        self.assertEqual(1, len(merged))
+        self.assertEqual("3-6-6-7", merged[0]["number"])
+        self.assertEqual("published", merged[0]["status"])
+
+    def test_pick_cache_merge_upgrades_missing_status_to_published_backfill(self):
+        merged = scraper.merge_pick_cache_rows(
+            existing_rows=[{
+                "id": "US-P3-DC-3-MIDDAY",
+                "date": "10-05-2026",
+                "status": "missing_from_sources",
+                "source": "pick-backfill",
+            }],
+            fresh_rows=[{
+                "id": "US-P3-DC-3-MIDDAY",
+                "date": "10-05-2026",
+                "number": "8-7-3",
+                "status": "published",
+                "source": "lotteryusa.com",
+                "backfilled": True,
+            }],
+            target_date="10-05-2026",
+        )
+
+        self.assertEqual("8-7-3", merged[0]["number"])
+        self.assertEqual("published", merged[0]["status"])
+        self.assertTrue(merged[0]["backfilled"])
+
     def test_smart_fallback_only_fetches_missing_draws(self):
         expected = [
             scraper.ExpectedPickDraw(
@@ -625,7 +711,10 @@ class ScraperContractsTest(unittest.TestCase):
             patch.object(scraper, "fetch_pick_fallback_rows", return_value=[]):
             rows = scraper.scrape_us_picks("11-05-2026", games=["pick3"], existing_rows=existing)
 
-        self.assertEqual(existing, rows)
+        published = next(row for row in rows if row["id"] == "US-P3-IN-DAILY-3-MIDDAY")
+        self.assertEqual("5-8-6", published["number"])
+        self.assertEqual("published", published["status"])
+        self.assertIn("US-P3-AR-CASH-3-EVENING", [row["id"] for row in rows])
 
     def test_scrape_us_picks_skips_fallback_for_today_when_primary_sources_are_empty(self):
         with patch.object(scraper, "get_dr_date_str", return_value="12-05-2026"), \
@@ -640,7 +729,8 @@ class ScraperContractsTest(unittest.TestCase):
                 now_dr=datetime.datetime(2026, 5, 12, 9, 0),
             )
 
-        self.assertEqual([], rows)
+        self.assertTrue(rows)
+        self.assertTrue(all(row["status"] == "pending" for row in rows))
         fallback.assert_not_called()
 
 

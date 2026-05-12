@@ -257,6 +257,46 @@ class RenderApiContractsTest(unittest.TestCase):
         self.assertEqual("US-P3-FL-PICK-3-EVENING", save_picks.call_args.args[1][0]["id"])
         self.assertEqual("9-2-0", save_picks.call_args.args[1][0]["number"])
 
+    def test_pick_results_expose_no_draw_and_backfill_metadata(self):
+        pick_rows = [
+            {
+                "id": "US-P3-AR-CASH-3-MIDDAY",
+                "state": "Arkansas",
+                "stateCode": "AR",
+                "game": "pick3",
+                "gameName": "Cash 3",
+                "draw": "Midday Draw",
+                "date": "10-05-2026",
+                "number": "",
+                "status": "no_draw",
+                "source": "no_draw",
+                "noDrawReason": "calendar_rule",
+                "backfilled": False,
+            },
+            {
+                "id": "US-P3-DC-3-MIDDAY",
+                "state": "District of Columbia",
+                "stateCode": "DC",
+                "game": "pick3",
+                "gameName": "DC Lucky",
+                "draw": "Midday Draw",
+                "date": "10-05-2026",
+                "number": "8-7-3",
+                "status": "published",
+                "source": "lotteryusa.com",
+                "backfilled": True,
+            },
+        ]
+        with patch("app.fetch_pick_rows_from_supabase", return_value=pick_rows):
+            response = self.client.get("/pick-results?date=10-05-2026")
+
+        payload = json.loads(response.data.decode("utf-8"))
+        self.assertEqual(200, response.status_code)
+        self.assertEqual("no_draw", payload["results"][0]["status"])
+        self.assertEqual("calendar_rule", payload["results"][0]["noDrawReason"])
+        self.assertFalse(payload["results"][0]["isBackfilled"])
+        self.assertTrue(payload["results"][1]["isBackfilled"])
+
     def test_system_results_live_both_runs_lottery_and_pick_in_parallel(self):
         def slow_lottery(_date_key):
             time.sleep(0.25)

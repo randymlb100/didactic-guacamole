@@ -59,10 +59,25 @@ def normalize_result_row(row):
         out["pick3"] = number
     if game == "pick4" or "pick 4" in normalized_name:
         out["pick4"] = number
-    for key in ("status", "source", "firstSeenAt", "lastSeenAt", "state", "stateCode", "game", "gameName", "draw", "playTypes"):
+    for key in (
+        "status",
+        "source",
+        "firstSeenAt",
+        "lastSeenAt",
+        "state",
+        "stateCode",
+        "game",
+        "gameName",
+        "draw",
+        "playTypes",
+        "backfilled",
+        "noDrawReason",
+    ):
         value = row.get(key)
-        if value:
+        if value is not None and value != "":
             out[key] = value
+    if "backfilled" in out:
+        out["isBackfilled"] = bool(out["backfilled"])
     return out
 
 

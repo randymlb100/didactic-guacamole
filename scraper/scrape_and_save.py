@@ -53,6 +53,10 @@ US_PICK_SOURCE_NAMES = {
 PICK_FALLBACK_MAX_CALLS = int(os.environ.get("PICK_FALLBACK_MAX_CALLS", "25"))
 PICK_FALLBACK_WORKERS = int(os.environ.get("PICK_FALLBACK_WORKERS", "4"))
 PICK_SOURCE_TIMEOUT_SECONDS = int(os.environ.get("PICK_SOURCE_TIMEOUT_SECONDS", "8"))
+PICK_RESULT_STATUS_PUBLISHED = "published"
+PICK_RESULT_STATUS_PENDING = "pending"
+PICK_RESULT_STATUS_MISSING = "missing_from_sources"
+PICK_RESULT_STATUS_NO_DRAW = "no_draw"
 
 
 @dataclass(frozen=True)
@@ -358,6 +362,98 @@ def has_valid_pick_result(row, target_date):
     return bool(re.fullmatch(r"\d{1,2}(?:-\d{1,2}){2,3}", number))
 
 
+def normalize_pick_status(raw):
+    value = str(raw or "").strip().lower()
+    if value in {"published", "result", "ok"}:
+        return PICK_RESULT_STATUS_PUBLISHED
+    if value in {"pending", "esperando", "waiting"}:
+        return PICK_RESULT_STATUS_PENDING
+    if value in {"missing_from_sources", "missing", "missing sources"}:
+        return PICK_RESULT_STATUS_MISSING
+    if value in {"no_draw", "no draw", "sin sorteo", "no sorteo"}:
+        return PICK_RESULT_STATUS_NO_DRAW
+    return value
+
+
+def pick_row_has_cacheable_status(row):
+    return normalize_pick_status(row.get("status")) in {
+        PICK_RESULT_STATUS_PUBLISHED,
+        PICK_RESULT_STATUS_PENDING,
+        PICK_RESULT_STATUS_MISSING,
+        PICK_RESULT_STATUS_NO_DRAW,
+    }
+
+
+def pick_row_should_persist(row, target_date):
+    if not isinstance(row, dict):
+        return False
+    if str(row.get("date", "")).strip() != str(target_date or "").strip():
+        return False
+    result_id = str(row.get("id", "")).strip()
+    if not result_id:
+        return False
+    return has_valid_pick_result(row, target_date) or pick_row_has_cacheable_status(row)
+
+
+def normalize_pick_cache_row(row, target_date):
+    normalized = dict(row)
+    normalized["id"] = str(normalized.get("id", "")).strip()
+    normalized["date"] = str(normalized.get("date", "")).strip() or str(target_date or "").strip()
+    number = str(normalized.get("number") or normalized.get("pick3") or normalized.get("pick4") or "").strip()
+    if number:
+        normalized["number"] = number
+    status = normalize_pick_status(normalized.get("status"))
+    if not status and has_valid_pick_result(normalized, target_date):
+        status = PICK_RESULT_STATUS_PUBLISHED
+    if status:
+        normalized["status"] = status
+    if has_valid_pick_result(normalized, target_date):
+        normalized.setdefault("backfilled", False)
+    return normalized
+
+
+def pick_row_rank(row, target_date):
+    if has_valid_pick_result(row, target_date):
+        return 4
+    status = normalize_pick_status(row.get("status"))
+    if status == PICK_RESULT_STATUS_NO_DRAW:
+        return 3
+    if status == PICK_RESULT_STATUS_PENDING:
+        return 2
+    if status == PICK_RESULT_STATUS_MISSING:
+        return 1
+    return 0
+
+
+def merge_pick_cache_rows(existing_rows, fresh_rows, target_date):
+    merged = {}
+    for source_rows in (existing_rows or [], fresh_rows or []):
+        for row in source_rows:
+            if not pick_row_should_persist(row, target_date):
+                continue
+            normalized = normalize_pick_cache_row(row, target_date)
+            result_id = normalized["id"]
+            previous = merged.get(result_id)
+            if previous is None:
+                merged[result_id] = normalized
+                continue
+            previous_rank = pick_row_rank(previous, target_date)
+            current_rank = pick_row_rank(normalized, target_date)
+            if previous_rank > current_rank:
+                keep = dict(previous)
+                if not keep.get("source") and normalized.get("source"):
+                    keep["source"] = normalized["source"]
+                if normalized.get("lastCheckedAt"):
+                    keep["lastCheckedAt"] = normalized["lastCheckedAt"]
+                merged[result_id] = keep
+                continue
+            if previous_rank == current_rank and previous_rank == 4 and previous.get("number") and not normalized.get("number"):
+                merged[result_id] = dict(previous)
+                continue
+            merged[result_id] = normalized
+    return sorted(merged.values(), key=lambda row: row.get("id", ""))
+
+
 def is_pick_target_date_eligible_for_live_scrape(target_date, now_dr=None):
     try:
         target = datetime.datetime.strptime(str(target_date), "%d-%m-%Y").date()
@@ -406,6 +502,80 @@ def pick_draws_needing_fallback(expected_draws, existing_rows, target_date, max_
     limit = PICK_FALLBACK_MAX_CALLS if max_calls is None else max(0, int(max_calls))
     missing = [draw for draw in expected_draws if draw.id not in available]
     return missing[:limit]
+
+
+def pick_draw_applies_on_date(draw, target_date):
+    try:
+        requested = datetime.datetime.strptime(str(target_date), "%d-%m-%Y").date()
+    except ValueError:
+        return True
+    if requested.weekday() != 6:
+        return True
+    draw_name = str(draw.draw or "").strip().lower()
+    state_code = str(draw.state_code or "").strip().upper()
+    if state_code == "AR":
+        return "midday" not in draw_name
+    if state_code == "SC":
+        return "midday" not in draw_name
+    if state_code == "TN":
+        return "evening" in draw_name
+    if state_code in {"TX", "WV"}:
+        return False
+    return True
+
+
+def build_pick_status_rows(expected_draws, current_rows, target_date, now_dr=None):
+    current = now_dr or get_dr_now()
+    today = current.date()
+    requested = parse_dr_date_key(target_date)
+    published_ids = {
+        str(row.get("id", "")).strip()
+        for row in current_rows or []
+        if has_valid_pick_result(row, target_date)
+    }
+    rows = []
+    for draw in expected_draws or []:
+        if draw.id in published_ids:
+            continue
+        if not pick_draw_applies_on_date(draw, target_date):
+            status = PICK_RESULT_STATUS_NO_DRAW
+            source = PICK_RESULT_STATUS_NO_DRAW
+            no_draw_reason = "calendar_rule"
+        else:
+            status = PICK_RESULT_STATUS_PENDING if requested is not None and requested >= today else PICK_RESULT_STATUS_MISSING
+            source = "pick-backfill"
+            no_draw_reason = None
+        row = {
+            "id": draw.id,
+            "name": " ".join(part for part in [draw.state, draw.game_name, draw.draw] if part),
+            "date": target_date,
+            "number": "",
+            "status": status,
+            "source": source,
+            "state": draw.state,
+            "stateCode": draw.state_code,
+            "game": draw.game,
+            "gameName": draw.game_name,
+            "draw": draw.draw,
+            "playTypes": ["straight", "box"],
+            "lastCheckedAt": utc_now_iso(),
+            "backfilled": False,
+        }
+        if no_draw_reason:
+            row["noDrawReason"] = no_draw_reason
+        rows.append(row)
+    return sorted(rows, key=lambda row: row.get("id", ""))
+
+
+def expected_pick_draws_for_request(requested_games, existing_rows, discovered_rows):
+    draws_by_id = {}
+    for draw in configured_pick_fallback_draws(requested_games):
+        draws_by_id[draw.id] = draw
+    for draw in expected_pick_draws_from_rows(existing_rows):
+        draws_by_id[draw.id] = draw
+    for draw in expected_pick_draws_from_rows(discovered_rows):
+        draws_by_id[draw.id] = draw
+    return [draws_by_id[key] for key in sorted(draws_by_id)]
 
 
 def parse_us_pick_draw_date(raw):
@@ -1004,6 +1174,7 @@ def fetch_lotteryusa_pick_draw(draw, target_date):
             timeout=PICK_SOURCE_TIMEOUT_SECONDS,
         )
         if row and has_valid_pick_result(row, target_date):
+            row["status"] = PICK_RESULT_STATUS_PUBLISHED
             row["source"] = "lotteryusa.com"
             row["game"] = draw.game
             row["state"] = draw.state
@@ -1011,6 +1182,7 @@ def fetch_lotteryusa_pick_draw(draw, target_date):
             row["gameName"] = draw.game_name
             row["draw"] = draw.draw
             row["playTypes"] = ["straight", "box"]
+            row["backfilled"] = True
             row["lastCheckedAt"] = utc_now_iso()
             row["sourceAttempts"] = [{"source": "lotteryusa.com", "url": url, "status": "matched"}]
             return row
@@ -1053,25 +1225,15 @@ def configured_pick_fallback_draws(requested_games):
 
 
 def merge_pick_rows_without_empty_overwrite(existing_rows, fresh_rows, target_date):
-    merged = {
-        str(row.get("id", "")).strip(): dict(row)
-        for row in existing_rows or []
-        if str(row.get("id", "")).strip() and has_valid_pick_result(row, target_date)
-    }
-    for row in fresh_rows or []:
-        result_id = str(row.get("id", "")).strip()
-        if not result_id or not has_valid_pick_result(row, target_date):
-            continue
-        merged[result_id] = dict(row)
-    return list(merged.values())
+    return merge_pick_cache_rows(existing_rows, fresh_rows, target_date)
 
 
 def scrape_us_picks(date_str=None, games=None, existing_rows=None, now_dr=None):
     target_date = date_str or get_dr_date_str()
     rows_by_id = {
-        str(row.get("id", "")).strip(): dict(row)
+        str(row.get("id", "")).strip(): normalize_pick_cache_row(row, target_date)
         for row in existing_rows or []
-        if str(row.get("id", "")).strip() and has_valid_pick_result(row, target_date)
+        if pick_row_should_persist(row, target_date)
     }
     requested_games = tuple(g for g in (games or ("pick3", "pick4")) if normalize_us_pick_game(g))
     for game in requested_games:
@@ -1087,31 +1249,43 @@ def scrape_us_picks(date_str=None, games=None, existing_rows=None, now_dr=None):
                 if history_rows:
                     history_keys.add(state_key)
                 for history_row in history_rows:
+                    history_row["status"] = PICK_RESULT_STATUS_PUBLISHED
                     rows_by_id[history_row["id"]] = history_row
             for row in fetch_new_jersey_pick_home(game):
                 if row.get("date") == target_date:
                     history_keys.add((row.get("stateCode"), row.get("gameName")))
+                    row["status"] = PICK_RESULT_STATUS_PUBLISHED
                     rows_by_id[row["id"]] = row
             for row in overview_rows:
                 state_key = (row.get("stateCode"), row.get("gameName"))
                 if state_key not in history_keys:
+                    row["status"] = PICK_RESULT_STATUS_PUBLISHED
                     rows_by_id[row["id"]] = row
         else:
             for row in overview_rows:
+                row["status"] = PICK_RESULT_STATUS_PUBLISHED
                 rows_by_id[row["id"]] = row
             for row in fetch_new_jersey_pick_home(game):
+                row["status"] = PICK_RESULT_STATUS_PUBLISHED
                 rows_by_id[row["id"]] = row
     rows = merge_pick_rows_without_empty_overwrite([], rows_by_id.values(), target_date)
-    if target_date and target_date == get_dr_date_str() and not rows:
-        return []
+    expected_draws = expected_pick_draws_for_request(requested_games, existing_rows or [], rows)
+    if target_date and target_date == get_dr_date_str() and not any(has_valid_pick_result(row, target_date) for row in rows):
+        status_rows = build_pick_status_rows(expected_draws, rows, target_date, now_dr=now_dr)
+        return merge_pick_rows_without_empty_overwrite(rows, status_rows, target_date)
     fallback_rows = fetch_pick_fallback_rows(
-        configured_pick_fallback_draws(requested_games),
+        expected_draws,
         rows,
         target_date,
         max_calls=PICK_FALLBACK_MAX_CALLS,
         now_dr=now_dr,
     )
     rows = merge_pick_rows_without_empty_overwrite(rows, fallback_rows, target_date)
+    rows = merge_pick_rows_without_empty_overwrite(
+        rows,
+        build_pick_status_rows(expected_draws, rows, target_date, now_dr=now_dr),
+        target_date,
+    )
     if target_date:
         rows = [row for row in rows if row.get("date") == target_date]
     return sorted(rows, key=lambda row: (
@@ -1625,7 +1799,8 @@ def fetch_existing_us_picks_from_supabase(date_str):
 
 def save_us_picks_to_supabase(date_str, rows):
     key = pick_results_cache_key(date_str)
-    value = json.dumps(rows, ensure_ascii=False)
+    merged_rows = merge_pick_cache_rows(fetch_existing_us_picks_from_supabase(date_str), rows, date_str)
+    value = json.dumps(merged_rows, ensure_ascii=False)
     payload = json.dumps({"key": key, "value": value, "upd": utc_now_iso()}).encode("utf-8")
     url = f"{SUPABASE_URL}/rest/v1/lotterynet_kv"
     req = urllib.request.Request(
@@ -1641,7 +1816,7 @@ def save_us_picks_to_supabase(date_str, rows):
     )
     try:
         resp = urllib.request.urlopen(req, timeout=15)
-        print(f"Saved {len(rows)} US pick results for {date_str} -> HTTP {resp.status}")
+        print(f"Saved {len(merged_rows)} US pick results for {date_str} -> HTTP {resp.status}")
     except urllib.error.HTTPError as e:
         body = e.read().decode()
         print(f"Supabase pick error {e.code}: {body}")
