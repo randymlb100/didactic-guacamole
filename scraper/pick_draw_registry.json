@@ -1,0 +1,3857 @@
+[
+  {
+    "id": "19",
+    "state": "New Jersey",
+    "stateCode": "NJ",
+    "game": "pick3",
+    "gameName": "Pick 3",
+    "draw": "Midday Draw",
+    "schedule": {
+      "drawTime": "12:59 PM",
+      "timeZoneId": "America/New_York",
+      "daysOfWeek": [
+        "MONDAY",
+        "TUESDAY",
+        "WEDNESDAY",
+        "THURSDAY",
+        "FRIDAY",
+        "SATURDAY",
+        "SUNDAY"
+      ]
+    },
+    "sources": {
+      "primary": "official",
+      "fallbacks": [
+        "lotteryusa",
+        "pick34_site"
+      ],
+      "officialUrls": [
+        "https://www.njlottery.com/en-us/drawgames/pick3.html"
+      ],
+      "lotteryusaUrls": [
+        "https://www.lotteryusa.com/new-jersey/midday-pick-3/"
+      ]
+    },
+    "calendarPolicy": {
+      "supportsSunday": true
+    }
+  },
+  {
+    "id": "20",
+    "state": "New Jersey",
+    "stateCode": "NJ",
+    "game": "pick3",
+    "gameName": "Pick 3",
+    "draw": "Evening Draw",
+    "schedule": {
+      "drawTime": "10:57 PM",
+      "timeZoneId": "America/New_York",
+      "daysOfWeek": [
+        "MONDAY",
+        "TUESDAY",
+        "WEDNESDAY",
+        "THURSDAY",
+        "FRIDAY",
+        "SATURDAY",
+        "SUNDAY"
+      ]
+    },
+    "sources": {
+      "primary": "official",
+      "fallbacks": [
+        "lotteryusa",
+        "pick34_site"
+      ],
+      "officialUrls": [
+        "https://www.njlottery.com/en-us/drawgames/pick3.html"
+      ],
+      "lotteryusaUrls": [
+        "https://www.lotteryusa.com/new-jersey/pick-3/"
+      ]
+    },
+    "calendarPolicy": {
+      "supportsSunday": true
+    }
+  },
+  {
+    "id": "21",
+    "state": "New Jersey",
+    "stateCode": "NJ",
+    "game": "pick4",
+    "gameName": "Pick 4",
+    "draw": "Midday Draw",
+    "schedule": {
+      "drawTime": "12:59 PM",
+      "timeZoneId": "America/New_York",
+      "daysOfWeek": [
+        "MONDAY",
+        "TUESDAY",
+        "WEDNESDAY",
+        "THURSDAY",
+        "FRIDAY",
+        "SATURDAY",
+        "SUNDAY"
+      ]
+    },
+    "sources": {
+      "primary": "official",
+      "fallbacks": [
+        "lotteryusa",
+        "pick34_site"
+      ],
+      "officialUrls": [
+        "https://www.njlottery.com/en-us/drawgames/pick4.html"
+      ],
+      "lotteryusaUrls": [
+        "https://www.lotteryusa.com/new-jersey/midday-pick-4/"
+      ]
+    },
+    "calendarPolicy": {
+      "supportsSunday": true
+    }
+  },
+  {
+    "id": "22",
+    "state": "New Jersey",
+    "stateCode": "NJ",
+    "game": "pick4",
+    "gameName": "Pick 4",
+    "draw": "Evening Draw",
+    "schedule": {
+      "drawTime": "10:57 PM",
+      "timeZoneId": "America/New_York",
+      "daysOfWeek": [
+        "MONDAY",
+        "TUESDAY",
+        "WEDNESDAY",
+        "THURSDAY",
+        "FRIDAY",
+        "SATURDAY",
+        "SUNDAY"
+      ]
+    },
+    "sources": {
+      "primary": "official",
+      "fallbacks": [
+        "lotteryusa",
+        "pick34_site"
+      ],
+      "officialUrls": [
+        "https://www.njlottery.com/en-us/drawgames/pick4.html"
+      ],
+      "lotteryusaUrls": [
+        "https://www.lotteryusa.com/new-jersey/pick-4/"
+      ]
+    },
+    "calendarPolicy": {
+      "supportsSunday": true
+    }
+  },
+  {
+    "id": "US-P3-AR-CASH-3-EVENING",
+    "state": "Arkansas",
+    "stateCode": "AR",
+    "game": "pick3",
+    "gameName": "Cash 3",
+    "draw": "Evening Draw",
+    "schedule": {
+      "drawTime": "6:59 PM",
+      "timeZoneId": "America/Chicago",
+      "daysOfWeek": [
+        "MONDAY",
+        "TUESDAY",
+        "WEDNESDAY",
+        "THURSDAY",
+        "FRIDAY",
+        "SATURDAY",
+        "SUNDAY"
+      ]
+    },
+    "sources": {
+      "primary": "official",
+      "fallbacks": [
+        "lotteryusa",
+        "pick34_site"
+      ],
+      "officialUrls": [
+        "https://www.myarkansaslottery.com/games/cash-3"
+      ],
+      "lotteryusaUrls": [
+        "https://www.lotteryusa.com/arkansas/cash-3/"
+      ]
+    },
+    "calendarPolicy": {
+      "supportsSunday": true
+    }
+  },
+  {
+    "id": "US-P3-AR-CASH-3-MIDDAY",
+    "state": "Arkansas",
+    "stateCode": "AR",
+    "game": "pick3",
+    "gameName": "Cash 3",
+    "draw": "Midday Draw",
+    "schedule": {
+      "drawTime": "12:59 PM",
+      "timeZoneId": "America/Chicago",
+      "daysOfWeek": [
+        "MONDAY",
+        "TUESDAY",
+        "WEDNESDAY",
+        "THURSDAY",
+        "FRIDAY",
+        "SATURDAY"
+      ]
+    },
+    "sources": {
+      "primary": "lotteryusa",
+      "fallbacks": [
+        "pick34_site"
+      ],
+      "officialUrls": [],
+      "lotteryusaUrls": []
+    },
+    "calendarPolicy": {
+      "supportsSunday": false
+    }
+  },
+  {
+    "id": "US-P3-AZ-PICK-3-DRAW",
+    "state": "Arizona",
+    "stateCode": "AZ",
+    "game": "pick3",
+    "gameName": "Pick 3",
+    "draw": "Draw",
+    "schedule": {
+      "drawTime": "7:00 PM",
+      "timeZoneId": "America/Phoenix",
+      "daysOfWeek": [
+        "MONDAY",
+        "TUESDAY",
+        "WEDNESDAY",
+        "THURSDAY",
+        "FRIDAY",
+        "SATURDAY",
+        "SUNDAY"
+      ]
+    },
+    "sources": {
+      "primary": "lotteryusa",
+      "fallbacks": [
+        "pick34_site"
+      ],
+      "officialUrls": [],
+      "lotteryusaUrls": []
+    },
+    "calendarPolicy": {
+      "supportsSunday": true
+    }
+  },
+  {
+    "id": "US-P3-CA-PICK-3-EVENING",
+    "state": "California",
+    "stateCode": "CA",
+    "game": "pick3",
+    "gameName": "Pick 3",
+    "draw": "Evening Draw",
+    "schedule": {
+      "drawTime": "6:30 PM",
+      "timeZoneId": "America/Los_Angeles",
+      "daysOfWeek": [
+        "MONDAY",
+        "TUESDAY",
+        "WEDNESDAY",
+        "THURSDAY",
+        "FRIDAY",
+        "SATURDAY",
+        "SUNDAY"
+      ]
+    },
+    "sources": {
+      "primary": "lotteryusa",
+      "fallbacks": [
+        "pick34_site"
+      ],
+      "officialUrls": [],
+      "lotteryusaUrls": []
+    },
+    "calendarPolicy": {
+      "supportsSunday": true
+    }
+  },
+  {
+    "id": "US-P3-CA-PICK-3-MIDDAY",
+    "state": "California",
+    "stateCode": "CA",
+    "game": "pick3",
+    "gameName": "Pick 3",
+    "draw": "Midday Draw",
+    "schedule": {
+      "drawTime": "1:00 PM",
+      "timeZoneId": "America/Los_Angeles",
+      "daysOfWeek": [
+        "MONDAY",
+        "TUESDAY",
+        "WEDNESDAY",
+        "THURSDAY",
+        "FRIDAY",
+        "SATURDAY",
+        "SUNDAY"
+      ]
+    },
+    "sources": {
+      "primary": "lotteryusa",
+      "fallbacks": [
+        "pick34_site"
+      ],
+      "officialUrls": [],
+      "lotteryusaUrls": []
+    },
+    "calendarPolicy": {
+      "supportsSunday": true
+    }
+  },
+  {
+    "id": "US-P3-CO-PICK-3-EVENING",
+    "state": "Colorado",
+    "stateCode": "CO",
+    "game": "pick3",
+    "gameName": "Pick 3",
+    "draw": "Evening Draw",
+    "schedule": {
+      "drawTime": "7:30 PM",
+      "timeZoneId": "America/Denver",
+      "daysOfWeek": [
+        "MONDAY",
+        "TUESDAY",
+        "WEDNESDAY",
+        "THURSDAY",
+        "FRIDAY",
+        "SATURDAY",
+        "SUNDAY"
+      ]
+    },
+    "sources": {
+      "primary": "lotteryusa",
+      "fallbacks": [
+        "pick34_site"
+      ],
+      "officialUrls": [],
+      "lotteryusaUrls": []
+    },
+    "calendarPolicy": {
+      "supportsSunday": true
+    }
+  },
+  {
+    "id": "US-P3-CO-PICK-3-MIDDAY",
+    "state": "Colorado",
+    "stateCode": "CO",
+    "game": "pick3",
+    "gameName": "Pick 3",
+    "draw": "Midday Draw",
+    "schedule": {
+      "drawTime": "1:30 PM",
+      "timeZoneId": "America/Denver",
+      "daysOfWeek": [
+        "MONDAY",
+        "TUESDAY",
+        "WEDNESDAY",
+        "THURSDAY",
+        "FRIDAY",
+        "SATURDAY",
+        "SUNDAY"
+      ]
+    },
+    "sources": {
+      "primary": "lotteryusa",
+      "fallbacks": [
+        "pick34_site"
+      ],
+      "officialUrls": [],
+      "lotteryusaUrls": []
+    },
+    "calendarPolicy": {
+      "supportsSunday": true
+    }
+  },
+  {
+    "id": "US-P3-CT-PLAY3-DAY",
+    "state": "Connecticut",
+    "stateCode": "CT",
+    "game": "pick3",
+    "gameName": "Play 3",
+    "draw": "Day Draw",
+    "schedule": {
+      "drawTime": "1:57 PM",
+      "timeZoneId": "America/New_York",
+      "daysOfWeek": [
+        "MONDAY",
+        "TUESDAY",
+        "WEDNESDAY",
+        "THURSDAY",
+        "FRIDAY",
+        "SATURDAY",
+        "SUNDAY"
+      ]
+    },
+    "sources": {
+      "primary": "lotteryusa",
+      "fallbacks": [
+        "pick34_site"
+      ],
+      "officialUrls": [],
+      "lotteryusaUrls": []
+    },
+    "calendarPolicy": {
+      "supportsSunday": true
+    }
+  },
+  {
+    "id": "US-P3-CT-PLAY3-NIGHT",
+    "state": "Connecticut",
+    "stateCode": "CT",
+    "game": "pick3",
+    "gameName": "Play 3",
+    "draw": "Night Draw",
+    "schedule": {
+      "drawTime": "10:29 PM",
+      "timeZoneId": "America/New_York",
+      "daysOfWeek": [
+        "MONDAY",
+        "TUESDAY",
+        "WEDNESDAY",
+        "THURSDAY",
+        "FRIDAY",
+        "SATURDAY",
+        "SUNDAY"
+      ]
+    },
+    "sources": {
+      "primary": "lotteryusa",
+      "fallbacks": [
+        "pick34_site"
+      ],
+      "officialUrls": [],
+      "lotteryusaUrls": []
+    },
+    "calendarPolicy": {
+      "supportsSunday": true
+    }
+  },
+  {
+    "id": "US-P3-DC-3-EVENING",
+    "state": "District of Columbia",
+    "stateCode": "DC",
+    "game": "pick3",
+    "gameName": "DC Lucky",
+    "draw": "Evening Draw",
+    "schedule": {
+      "drawTime": "7:50 PM",
+      "timeZoneId": "America/New_York",
+      "daysOfWeek": [
+        "MONDAY",
+        "TUESDAY",
+        "WEDNESDAY",
+        "THURSDAY",
+        "FRIDAY",
+        "SATURDAY",
+        "SUNDAY"
+      ]
+    },
+    "sources": {
+      "primary": "lotteryusa",
+      "fallbacks": [
+        "pick34_site"
+      ],
+      "officialUrls": [],
+      "lotteryusaUrls": [
+        "https://www.lotteryusa.com/district-of-columbia/dc-lucky/"
+      ]
+    },
+    "calendarPolicy": {
+      "supportsSunday": true
+    }
+  },
+  {
+    "id": "US-P3-DC-3-MIDDAY",
+    "state": "District of Columbia",
+    "stateCode": "DC",
+    "game": "pick3",
+    "gameName": "DC Lucky",
+    "draw": "Midday Draw",
+    "schedule": {
+      "drawTime": "1:50 PM",
+      "timeZoneId": "America/New_York",
+      "daysOfWeek": [
+        "MONDAY",
+        "TUESDAY",
+        "WEDNESDAY",
+        "THURSDAY",
+        "FRIDAY",
+        "SATURDAY",
+        "SUNDAY"
+      ]
+    },
+    "sources": {
+      "primary": "lotteryusa",
+      "fallbacks": [
+        "pick34_site"
+      ],
+      "officialUrls": [],
+      "lotteryusaUrls": [
+        "https://www.lotteryusa.com/district-of-columbia/dc-lucky-midday/"
+      ]
+    },
+    "calendarPolicy": {
+      "supportsSunday": true
+    }
+  },
+  {
+    "id": "US-P3-DE-PLAY-3-DAY",
+    "state": "Delaware",
+    "stateCode": "DE",
+    "game": "pick3",
+    "gameName": "Play 3",
+    "draw": "Day Draw",
+    "schedule": {
+      "drawTime": "1:58 PM",
+      "timeZoneId": "America/New_York",
+      "daysOfWeek": [
+        "MONDAY",
+        "TUESDAY",
+        "WEDNESDAY",
+        "THURSDAY",
+        "FRIDAY",
+        "SATURDAY",
+        "SUNDAY"
+      ]
+    },
+    "sources": {
+      "primary": "lotteryusa",
+      "fallbacks": [
+        "pick34_site"
+      ],
+      "officialUrls": [],
+      "lotteryusaUrls": []
+    },
+    "calendarPolicy": {
+      "supportsSunday": true
+    }
+  },
+  {
+    "id": "US-P3-DE-PLAY-3-NIGHT",
+    "state": "Delaware",
+    "stateCode": "DE",
+    "game": "pick3",
+    "gameName": "Play 3",
+    "draw": "Night Draw",
+    "schedule": {
+      "drawTime": "7:57 PM",
+      "timeZoneId": "America/New_York",
+      "daysOfWeek": [
+        "MONDAY",
+        "TUESDAY",
+        "WEDNESDAY",
+        "THURSDAY",
+        "FRIDAY",
+        "SATURDAY",
+        "SUNDAY"
+      ]
+    },
+    "sources": {
+      "primary": "lotteryusa",
+      "fallbacks": [
+        "pick34_site"
+      ],
+      "officialUrls": [],
+      "lotteryusaUrls": []
+    },
+    "calendarPolicy": {
+      "supportsSunday": true
+    }
+  },
+  {
+    "id": "US-P3-FL-PICK-3-EVENING",
+    "state": "Florida",
+    "stateCode": "FL",
+    "game": "pick3",
+    "gameName": "Pick 3",
+    "draw": "Evening Draw",
+    "schedule": {
+      "drawTime": "9:45 PM",
+      "timeZoneId": "America/New_York",
+      "daysOfWeek": [
+        "MONDAY",
+        "TUESDAY",
+        "WEDNESDAY",
+        "THURSDAY",
+        "FRIDAY",
+        "SATURDAY",
+        "SUNDAY"
+      ]
+    },
+    "sources": {
+      "primary": "lotteryusa",
+      "fallbacks": [
+        "pick34_site"
+      ],
+      "officialUrls": [],
+      "lotteryusaUrls": []
+    },
+    "calendarPolicy": {
+      "supportsSunday": true
+    }
+  },
+  {
+    "id": "US-P3-FL-PICK-3-MIDDAY",
+    "state": "Florida",
+    "stateCode": "FL",
+    "game": "pick3",
+    "gameName": "Pick 3",
+    "draw": "Midday Draw",
+    "schedule": {
+      "drawTime": "1:30 PM",
+      "timeZoneId": "America/New_York",
+      "daysOfWeek": [
+        "MONDAY",
+        "TUESDAY",
+        "WEDNESDAY",
+        "THURSDAY",
+        "FRIDAY",
+        "SATURDAY",
+        "SUNDAY"
+      ]
+    },
+    "sources": {
+      "primary": "lotteryusa",
+      "fallbacks": [
+        "pick34_site"
+      ],
+      "officialUrls": [],
+      "lotteryusaUrls": []
+    },
+    "calendarPolicy": {
+      "supportsSunday": true
+    }
+  },
+  {
+    "id": "US-P3-GA-PICK-3-EVENING",
+    "state": "Georgia",
+    "stateCode": "GA",
+    "game": "pick3",
+    "gameName": "Pick 3",
+    "draw": "Evening Draw",
+    "schedule": {
+      "drawTime": "6:59 PM",
+      "timeZoneId": "America/New_York",
+      "daysOfWeek": [
+        "MONDAY",
+        "TUESDAY",
+        "WEDNESDAY",
+        "THURSDAY",
+        "FRIDAY",
+        "SATURDAY",
+        "SUNDAY"
+      ]
+    },
+    "sources": {
+      "primary": "lotteryusa",
+      "fallbacks": [
+        "pick34_site"
+      ],
+      "officialUrls": [],
+      "lotteryusaUrls": []
+    },
+    "calendarPolicy": {
+      "supportsSunday": true
+    }
+  },
+  {
+    "id": "US-P3-GA-PICK-3-MIDDAY",
+    "state": "Georgia",
+    "stateCode": "GA",
+    "game": "pick3",
+    "gameName": "Pick 3",
+    "draw": "Midday Draw",
+    "schedule": {
+      "drawTime": "12:29 PM",
+      "timeZoneId": "America/New_York",
+      "daysOfWeek": [
+        "MONDAY",
+        "TUESDAY",
+        "WEDNESDAY",
+        "THURSDAY",
+        "FRIDAY",
+        "SATURDAY",
+        "SUNDAY"
+      ]
+    },
+    "sources": {
+      "primary": "lotteryusa",
+      "fallbacks": [
+        "pick34_site"
+      ],
+      "officialUrls": [],
+      "lotteryusaUrls": []
+    },
+    "calendarPolicy": {
+      "supportsSunday": true
+    }
+  },
+  {
+    "id": "US-P3-IA-PICK-3-EVENING",
+    "state": "Iowa",
+    "stateCode": "IA",
+    "game": "pick3",
+    "gameName": "Pick 3",
+    "draw": "Evening Draw",
+    "schedule": {
+      "drawTime": "10:00 PM",
+      "timeZoneId": "America/Chicago",
+      "daysOfWeek": [
+        "MONDAY",
+        "TUESDAY",
+        "WEDNESDAY",
+        "THURSDAY",
+        "FRIDAY",
+        "SATURDAY",
+        "SUNDAY"
+      ]
+    },
+    "sources": {
+      "primary": "lotteryusa",
+      "fallbacks": [
+        "pick34_site"
+      ],
+      "officialUrls": [],
+      "lotteryusaUrls": []
+    },
+    "calendarPolicy": {
+      "supportsSunday": true
+    }
+  },
+  {
+    "id": "US-P3-IA-PICK-3-MIDDAY",
+    "state": "Iowa",
+    "stateCode": "IA",
+    "game": "pick3",
+    "gameName": "Pick 3",
+    "draw": "Midday Draw",
+    "schedule": {
+      "drawTime": "12:20 PM",
+      "timeZoneId": "America/Chicago",
+      "daysOfWeek": [
+        "MONDAY",
+        "TUESDAY",
+        "WEDNESDAY",
+        "THURSDAY",
+        "FRIDAY",
+        "SATURDAY",
+        "SUNDAY"
+      ]
+    },
+    "sources": {
+      "primary": "lotteryusa",
+      "fallbacks": [
+        "pick34_site"
+      ],
+      "officialUrls": [],
+      "lotteryusaUrls": []
+    },
+    "calendarPolicy": {
+      "supportsSunday": true
+    }
+  },
+  {
+    "id": "US-P3-ID-PICK-3-DAY",
+    "state": "Idaho",
+    "stateCode": "ID",
+    "game": "pick3",
+    "gameName": "Pick 3",
+    "draw": "Day Draw",
+    "schedule": {
+      "drawTime": "1:59 PM",
+      "timeZoneId": "America/Boise",
+      "daysOfWeek": [
+        "MONDAY",
+        "TUESDAY",
+        "WEDNESDAY",
+        "THURSDAY",
+        "FRIDAY",
+        "SATURDAY",
+        "SUNDAY"
+      ]
+    },
+    "sources": {
+      "primary": "lotteryusa",
+      "fallbacks": [
+        "pick34_site"
+      ],
+      "officialUrls": [],
+      "lotteryusaUrls": []
+    },
+    "calendarPolicy": {
+      "supportsSunday": true
+    }
+  },
+  {
+    "id": "US-P3-ID-PICK-3-NIGHT",
+    "state": "Idaho",
+    "stateCode": "ID",
+    "game": "pick3",
+    "gameName": "Pick 3",
+    "draw": "Night Draw",
+    "schedule": {
+      "drawTime": "7:59 PM",
+      "timeZoneId": "America/Boise",
+      "daysOfWeek": [
+        "MONDAY",
+        "TUESDAY",
+        "WEDNESDAY",
+        "THURSDAY",
+        "FRIDAY",
+        "SATURDAY",
+        "SUNDAY"
+      ]
+    },
+    "sources": {
+      "primary": "lotteryusa",
+      "fallbacks": [
+        "pick34_site"
+      ],
+      "officialUrls": [],
+      "lotteryusaUrls": []
+    },
+    "calendarPolicy": {
+      "supportsSunday": true
+    }
+  },
+  {
+    "id": "US-P3-IL-PICK-3-EVENING",
+    "state": "Illinois",
+    "stateCode": "IL",
+    "game": "pick3",
+    "gameName": "Pick 3",
+    "draw": "Evening Draw",
+    "schedule": {
+      "drawTime": "9:22 PM",
+      "timeZoneId": "America/Chicago",
+      "daysOfWeek": [
+        "MONDAY",
+        "TUESDAY",
+        "WEDNESDAY",
+        "THURSDAY",
+        "FRIDAY",
+        "SATURDAY",
+        "SUNDAY"
+      ]
+    },
+    "sources": {
+      "primary": "lotteryusa",
+      "fallbacks": [
+        "pick34_site"
+      ],
+      "officialUrls": [],
+      "lotteryusaUrls": []
+    },
+    "calendarPolicy": {
+      "supportsSunday": true
+    }
+  },
+  {
+    "id": "US-P3-IL-PICK-3-MIDDAY",
+    "state": "Illinois",
+    "stateCode": "IL",
+    "game": "pick3",
+    "gameName": "Pick 3",
+    "draw": "Midday Draw",
+    "schedule": {
+      "drawTime": "12:40 PM",
+      "timeZoneId": "America/Chicago",
+      "daysOfWeek": [
+        "MONDAY",
+        "TUESDAY",
+        "WEDNESDAY",
+        "THURSDAY",
+        "FRIDAY",
+        "SATURDAY",
+        "SUNDAY"
+      ]
+    },
+    "sources": {
+      "primary": "lotteryusa",
+      "fallbacks": [
+        "pick34_site"
+      ],
+      "officialUrls": [],
+      "lotteryusaUrls": []
+    },
+    "calendarPolicy": {
+      "supportsSunday": true
+    }
+  },
+  {
+    "id": "US-P3-IN-DAILY-3-EVENING",
+    "state": "Indiana",
+    "stateCode": "IN",
+    "game": "pick3",
+    "gameName": "Daily 3",
+    "draw": "Evening Draw",
+    "schedule": {
+      "drawTime": "11:00 PM",
+      "timeZoneId": "America/New_York",
+      "daysOfWeek": [
+        "MONDAY",
+        "TUESDAY",
+        "WEDNESDAY",
+        "THURSDAY",
+        "FRIDAY",
+        "SATURDAY",
+        "SUNDAY"
+      ]
+    },
+    "sources": {
+      "primary": "lotteryusa",
+      "fallbacks": [
+        "pick34_site"
+      ],
+      "officialUrls": [],
+      "lotteryusaUrls": []
+    },
+    "calendarPolicy": {
+      "supportsSunday": true
+    }
+  },
+  {
+    "id": "US-P3-IN-DAILY-3-MIDDAY",
+    "state": "Indiana",
+    "stateCode": "IN",
+    "game": "pick3",
+    "gameName": "Daily 3",
+    "draw": "Midday Draw",
+    "schedule": {
+      "drawTime": "1:20 PM",
+      "timeZoneId": "America/New_York",
+      "daysOfWeek": [
+        "MONDAY",
+        "TUESDAY",
+        "WEDNESDAY",
+        "THURSDAY",
+        "FRIDAY",
+        "SATURDAY",
+        "SUNDAY"
+      ]
+    },
+    "sources": {
+      "primary": "lotteryusa",
+      "fallbacks": [
+        "pick34_site"
+      ],
+      "officialUrls": [],
+      "lotteryusaUrls": []
+    },
+    "calendarPolicy": {
+      "supportsSunday": true
+    }
+  },
+  {
+    "id": "US-P3-KS-PICK-3-EVENING",
+    "state": "Kansas",
+    "stateCode": "KS",
+    "game": "pick3",
+    "gameName": "Pick 3",
+    "draw": "Evening Draw",
+    "schedule": {
+      "drawTime": "9:10 PM",
+      "timeZoneId": "America/Chicago",
+      "daysOfWeek": [
+        "MONDAY",
+        "TUESDAY",
+        "WEDNESDAY",
+        "THURSDAY",
+        "FRIDAY",
+        "SATURDAY",
+        "SUNDAY"
+      ]
+    },
+    "sources": {
+      "primary": "lotteryusa",
+      "fallbacks": [
+        "pick34_site"
+      ],
+      "officialUrls": [],
+      "lotteryusaUrls": []
+    },
+    "calendarPolicy": {
+      "supportsSunday": true
+    }
+  },
+  {
+    "id": "US-P3-KS-PICK-3-MIDDAY",
+    "state": "Kansas",
+    "stateCode": "KS",
+    "game": "pick3",
+    "gameName": "Pick 3",
+    "draw": "Midday Draw",
+    "schedule": {
+      "drawTime": "1:10 PM",
+      "timeZoneId": "America/Chicago",
+      "daysOfWeek": [
+        "MONDAY",
+        "TUESDAY",
+        "WEDNESDAY",
+        "THURSDAY",
+        "FRIDAY",
+        "SATURDAY",
+        "SUNDAY"
+      ]
+    },
+    "sources": {
+      "primary": "lotteryusa",
+      "fallbacks": [
+        "pick34_site"
+      ],
+      "officialUrls": [],
+      "lotteryusaUrls": []
+    },
+    "calendarPolicy": {
+      "supportsSunday": true
+    }
+  },
+  {
+    "id": "US-P3-KY-PICK-3-EVENING",
+    "state": "Kentucky",
+    "stateCode": "KY",
+    "game": "pick3",
+    "gameName": "Pick 3",
+    "draw": "Evening Draw",
+    "schedule": {
+      "drawTime": "11:00 PM",
+      "timeZoneId": "America/New_York",
+      "daysOfWeek": [
+        "MONDAY",
+        "TUESDAY",
+        "WEDNESDAY",
+        "THURSDAY",
+        "FRIDAY",
+        "SATURDAY",
+        "SUNDAY"
+      ]
+    },
+    "sources": {
+      "primary": "lotteryusa",
+      "fallbacks": [
+        "pick34_site"
+      ],
+      "officialUrls": [],
+      "lotteryusaUrls": []
+    },
+    "calendarPolicy": {
+      "supportsSunday": true
+    }
+  },
+  {
+    "id": "US-P3-KY-PICK-3-MIDDAY",
+    "state": "Kentucky",
+    "stateCode": "KY",
+    "game": "pick3",
+    "gameName": "Pick 3",
+    "draw": "Midday Draw",
+    "schedule": {
+      "drawTime": "1:20 PM",
+      "timeZoneId": "America/New_York",
+      "daysOfWeek": [
+        "MONDAY",
+        "TUESDAY",
+        "WEDNESDAY",
+        "THURSDAY",
+        "FRIDAY",
+        "SATURDAY",
+        "SUNDAY"
+      ]
+    },
+    "sources": {
+      "primary": "lotteryusa",
+      "fallbacks": [
+        "pick34_site"
+      ],
+      "officialUrls": [],
+      "lotteryusaUrls": []
+    },
+    "calendarPolicy": {
+      "supportsSunday": true
+    }
+  },
+  {
+    "id": "US-P3-LA-PICK-3-DAY",
+    "state": "Louisiana",
+    "stateCode": "LA",
+    "game": "pick3",
+    "gameName": "Pick 3",
+    "draw": "Day Draw",
+    "schedule": {
+      "drawTime": "9:59 PM",
+      "timeZoneId": "America/Chicago",
+      "daysOfWeek": [
+        "MONDAY",
+        "TUESDAY",
+        "WEDNESDAY",
+        "THURSDAY",
+        "FRIDAY",
+        "SATURDAY",
+        "SUNDAY"
+      ]
+    },
+    "sources": {
+      "primary": "lotteryusa",
+      "fallbacks": [
+        "pick34_site"
+      ],
+      "officialUrls": [],
+      "lotteryusaUrls": []
+    },
+    "calendarPolicy": {
+      "supportsSunday": true
+    }
+  },
+  {
+    "id": "US-P3-MD-PICK-3-EVENING",
+    "state": "Maryland",
+    "stateCode": "MD",
+    "game": "pick3",
+    "gameName": "Pick 3",
+    "draw": "Evening Draw",
+    "schedule": {
+      "drawTime": "7:56 PM",
+      "timeZoneId": "America/New_York",
+      "daysOfWeek": [
+        "MONDAY",
+        "TUESDAY",
+        "WEDNESDAY",
+        "THURSDAY",
+        "FRIDAY",
+        "SATURDAY",
+        "SUNDAY"
+      ]
+    },
+    "sources": {
+      "primary": "lotteryusa",
+      "fallbacks": [
+        "pick34_site"
+      ],
+      "officialUrls": [],
+      "lotteryusaUrls": []
+    },
+    "calendarPolicy": {
+      "supportsSunday": true
+    }
+  },
+  {
+    "id": "US-P3-MD-PICK-3-MIDDAY",
+    "state": "Maryland",
+    "stateCode": "MD",
+    "game": "pick3",
+    "gameName": "Pick 3",
+    "draw": "Midday Draw",
+    "schedule": {
+      "drawTime": "12:27 PM",
+      "timeZoneId": "America/New_York",
+      "daysOfWeek": [
+        "MONDAY",
+        "TUESDAY",
+        "WEDNESDAY",
+        "THURSDAY",
+        "FRIDAY",
+        "SATURDAY",
+        "SUNDAY"
+      ]
+    },
+    "sources": {
+      "primary": "lotteryusa",
+      "fallbacks": [
+        "pick34_site"
+      ],
+      "officialUrls": [],
+      "lotteryusaUrls": []
+    },
+    "calendarPolicy": {
+      "supportsSunday": true
+    }
+  },
+  {
+    "id": "US-P3-ME-PICK-3-EVENING",
+    "state": "Maine",
+    "stateCode": "ME",
+    "game": "pick3",
+    "gameName": "Pick 3",
+    "draw": "Evening Draw",
+    "schedule": {
+      "drawTime": "6:50 PM",
+      "timeZoneId": "America/New_York",
+      "daysOfWeek": [
+        "MONDAY",
+        "TUESDAY",
+        "WEDNESDAY",
+        "THURSDAY",
+        "FRIDAY",
+        "SATURDAY",
+        "SUNDAY"
+      ]
+    },
+    "sources": {
+      "primary": "lotteryusa",
+      "fallbacks": [
+        "pick34_site"
+      ],
+      "officialUrls": [],
+      "lotteryusaUrls": []
+    },
+    "calendarPolicy": {
+      "supportsSunday": true
+    }
+  },
+  {
+    "id": "US-P3-MI-DAILY-3-EVENING",
+    "state": "Michigan",
+    "stateCode": "MI",
+    "game": "pick3",
+    "gameName": "Daily 3",
+    "draw": "Evening Draw",
+    "schedule": {
+      "drawTime": "7:29 PM",
+      "timeZoneId": "America/New_York",
+      "daysOfWeek": [
+        "MONDAY",
+        "TUESDAY",
+        "WEDNESDAY",
+        "THURSDAY",
+        "FRIDAY",
+        "SATURDAY",
+        "SUNDAY"
+      ]
+    },
+    "sources": {
+      "primary": "lotteryusa",
+      "fallbacks": [
+        "pick34_site"
+      ],
+      "officialUrls": [],
+      "lotteryusaUrls": []
+    },
+    "calendarPolicy": {
+      "supportsSunday": true
+    }
+  },
+  {
+    "id": "US-P3-MI-DAILY-3-MIDDAY",
+    "state": "Michigan",
+    "stateCode": "MI",
+    "game": "pick3",
+    "gameName": "Daily 3",
+    "draw": "Midday Draw",
+    "schedule": {
+      "drawTime": "12:59 PM",
+      "timeZoneId": "America/New_York",
+      "daysOfWeek": [
+        "MONDAY",
+        "TUESDAY",
+        "WEDNESDAY",
+        "THURSDAY",
+        "FRIDAY",
+        "SATURDAY",
+        "SUNDAY"
+      ]
+    },
+    "sources": {
+      "primary": "lotteryusa",
+      "fallbacks": [
+        "pick34_site"
+      ],
+      "officialUrls": [],
+      "lotteryusaUrls": []
+    },
+    "calendarPolicy": {
+      "supportsSunday": true
+    }
+  },
+  {
+    "id": "US-P3-MN-PICK-3-DAY",
+    "state": "Minnesota",
+    "stateCode": "MN",
+    "game": "pick3",
+    "gameName": "Pick 3",
+    "draw": "Day Draw",
+    "schedule": {
+      "drawTime": "6:17 PM",
+      "timeZoneId": "America/Chicago",
+      "daysOfWeek": [
+        "MONDAY",
+        "TUESDAY",
+        "WEDNESDAY",
+        "THURSDAY",
+        "FRIDAY",
+        "SATURDAY",
+        "SUNDAY"
+      ]
+    },
+    "sources": {
+      "primary": "lotteryusa",
+      "fallbacks": [
+        "pick34_site"
+      ],
+      "officialUrls": [],
+      "lotteryusaUrls": []
+    },
+    "calendarPolicy": {
+      "supportsSunday": true
+    }
+  },
+  {
+    "id": "US-P3-MO-PICK-3-EVENING",
+    "state": "Missouri",
+    "stateCode": "MO",
+    "game": "pick3",
+    "gameName": "Pick 3",
+    "draw": "Evening Draw",
+    "schedule": {
+      "drawTime": "8:59 PM",
+      "timeZoneId": "America/Chicago",
+      "daysOfWeek": [
+        "MONDAY",
+        "TUESDAY",
+        "WEDNESDAY",
+        "THURSDAY",
+        "FRIDAY",
+        "SATURDAY",
+        "SUNDAY"
+      ]
+    },
+    "sources": {
+      "primary": "lotteryusa",
+      "fallbacks": [
+        "pick34_site"
+      ],
+      "officialUrls": [],
+      "lotteryusaUrls": []
+    },
+    "calendarPolicy": {
+      "supportsSunday": true
+    }
+  },
+  {
+    "id": "US-P3-MO-PICK-3-MIDDAY",
+    "state": "Missouri",
+    "stateCode": "MO",
+    "game": "pick3",
+    "gameName": "Pick 3",
+    "draw": "Midday Draw",
+    "schedule": {
+      "drawTime": "12:45 PM",
+      "timeZoneId": "America/Chicago",
+      "daysOfWeek": [
+        "MONDAY",
+        "TUESDAY",
+        "WEDNESDAY",
+        "THURSDAY",
+        "FRIDAY",
+        "SATURDAY",
+        "SUNDAY"
+      ]
+    },
+    "sources": {
+      "primary": "lotteryusa",
+      "fallbacks": [
+        "pick34_site"
+      ],
+      "officialUrls": [],
+      "lotteryusaUrls": []
+    },
+    "calendarPolicy": {
+      "supportsSunday": true
+    }
+  },
+  {
+    "id": "US-P3-MS-CASH-3-EVENING",
+    "state": "Mississippi",
+    "stateCode": "MS",
+    "game": "pick3",
+    "gameName": "Cash 3",
+    "draw": "Evening Draw",
+    "schedule": {
+      "drawTime": "9:30 PM",
+      "timeZoneId": "America/Chicago",
+      "daysOfWeek": [
+        "MONDAY",
+        "TUESDAY",
+        "WEDNESDAY",
+        "THURSDAY",
+        "FRIDAY",
+        "SATURDAY",
+        "SUNDAY"
+      ]
+    },
+    "sources": {
+      "primary": "lotteryusa",
+      "fallbacks": [
+        "pick34_site"
+      ],
+      "officialUrls": [],
+      "lotteryusaUrls": []
+    },
+    "calendarPolicy": {
+      "supportsSunday": true
+    }
+  },
+  {
+    "id": "US-P3-MS-CASH-3-MIDDAY",
+    "state": "Mississippi",
+    "stateCode": "MS",
+    "game": "pick3",
+    "gameName": "Cash 3",
+    "draw": "Midday Draw",
+    "schedule": {
+      "drawTime": "2:30 PM",
+      "timeZoneId": "America/Chicago",
+      "daysOfWeek": [
+        "MONDAY",
+        "TUESDAY",
+        "WEDNESDAY",
+        "THURSDAY",
+        "FRIDAY",
+        "SATURDAY",
+        "SUNDAY"
+      ]
+    },
+    "sources": {
+      "primary": "lotteryusa",
+      "fallbacks": [
+        "pick34_site"
+      ],
+      "officialUrls": [],
+      "lotteryusaUrls": []
+    },
+    "calendarPolicy": {
+      "supportsSunday": true
+    }
+  },
+  {
+    "id": "US-P3-NC-PICK-3-EVENING",
+    "state": "North Carolina",
+    "stateCode": "NC",
+    "game": "pick3",
+    "gameName": "Pick 3",
+    "draw": "Evening Draw",
+    "schedule": {
+      "drawTime": "11:22 PM",
+      "timeZoneId": "America/New_York",
+      "daysOfWeek": [
+        "MONDAY",
+        "TUESDAY",
+        "WEDNESDAY",
+        "THURSDAY",
+        "FRIDAY",
+        "SATURDAY",
+        "SUNDAY"
+      ]
+    },
+    "sources": {
+      "primary": "lotteryusa",
+      "fallbacks": [
+        "pick34_site"
+      ],
+      "officialUrls": [],
+      "lotteryusaUrls": []
+    },
+    "calendarPolicy": {
+      "supportsSunday": true
+    }
+  },
+  {
+    "id": "US-P3-NE-PICK-3-DAY",
+    "state": "Nebraska",
+    "stateCode": "NE",
+    "game": "pick3",
+    "gameName": "Pick 3",
+    "draw": "Day Draw",
+    "schedule": {
+      "drawTime": "10:00 PM",
+      "timeZoneId": "America/Chicago",
+      "daysOfWeek": [
+        "MONDAY",
+        "TUESDAY",
+        "WEDNESDAY",
+        "THURSDAY",
+        "FRIDAY",
+        "SATURDAY",
+        "SUNDAY"
+      ]
+    },
+    "sources": {
+      "primary": "lotteryusa",
+      "fallbacks": [
+        "pick34_site"
+      ],
+      "officialUrls": [],
+      "lotteryusaUrls": []
+    },
+    "calendarPolicy": {
+      "supportsSunday": true
+    }
+  },
+  {
+    "id": "US-P3-NM-PICK-3-PLUS-EVENING",
+    "state": "New Mexico",
+    "stateCode": "NM",
+    "game": "pick3",
+    "gameName": "Pick 3",
+    "draw": "Evening Draw",
+    "schedule": {
+      "drawTime": "9:30 PM",
+      "timeZoneId": "America/Denver",
+      "daysOfWeek": [
+        "MONDAY",
+        "TUESDAY",
+        "WEDNESDAY",
+        "THURSDAY",
+        "FRIDAY",
+        "SATURDAY",
+        "SUNDAY"
+      ]
+    },
+    "sources": {
+      "primary": "lotteryusa",
+      "fallbacks": [
+        "pick34_site"
+      ],
+      "officialUrls": [],
+      "lotteryusaUrls": []
+    },
+    "calendarPolicy": {
+      "supportsSunday": true
+    }
+  },
+  {
+    "id": "US-P3-NY-NUMBERS-EVENING",
+    "state": "New York",
+    "stateCode": "NY",
+    "game": "pick3",
+    "gameName": "Numbers",
+    "draw": "Evening Draw",
+    "schedule": {
+      "drawTime": "10:30 PM",
+      "timeZoneId": "America/New_York",
+      "daysOfWeek": [
+        "MONDAY",
+        "TUESDAY",
+        "WEDNESDAY",
+        "THURSDAY",
+        "FRIDAY",
+        "SATURDAY",
+        "SUNDAY"
+      ]
+    },
+    "sources": {
+      "primary": "lotteryusa",
+      "fallbacks": [
+        "pick34_site"
+      ],
+      "officialUrls": [],
+      "lotteryusaUrls": []
+    },
+    "calendarPolicy": {
+      "supportsSunday": true
+    }
+  },
+  {
+    "id": "US-P3-NY-NUMBERS-MIDDAY",
+    "state": "New York",
+    "stateCode": "NY",
+    "game": "pick3",
+    "gameName": "Numbers",
+    "draw": "Midday Draw",
+    "schedule": {
+      "drawTime": "2:30 PM",
+      "timeZoneId": "America/New_York",
+      "daysOfWeek": [
+        "MONDAY",
+        "TUESDAY",
+        "WEDNESDAY",
+        "THURSDAY",
+        "FRIDAY",
+        "SATURDAY",
+        "SUNDAY"
+      ]
+    },
+    "sources": {
+      "primary": "lotteryusa",
+      "fallbacks": [
+        "pick34_site"
+      ],
+      "officialUrls": [],
+      "lotteryusaUrls": []
+    },
+    "calendarPolicy": {
+      "supportsSunday": true
+    }
+  },
+  {
+    "id": "US-P3-NY-PICK-3-EVENING",
+    "state": "New York",
+    "stateCode": "NY",
+    "game": "pick3",
+    "gameName": "Pick 3",
+    "draw": "Evening Draw",
+    "schedule": {
+      "drawTime": "10:30 PM",
+      "timeZoneId": "America/New_York",
+      "daysOfWeek": [
+        "MONDAY",
+        "TUESDAY",
+        "WEDNESDAY",
+        "THURSDAY",
+        "FRIDAY",
+        "SATURDAY",
+        "SUNDAY"
+      ]
+    },
+    "sources": {
+      "primary": "lotteryusa",
+      "fallbacks": [
+        "pick34_site"
+      ],
+      "officialUrls": [],
+      "lotteryusaUrls": []
+    },
+    "calendarPolicy": {
+      "supportsSunday": true
+    }
+  },
+  {
+    "id": "US-P3-NY-PICK-3-MIDDAY",
+    "state": "New York",
+    "stateCode": "NY",
+    "game": "pick3",
+    "gameName": "Pick 3",
+    "draw": "Midday Draw",
+    "schedule": {
+      "drawTime": "2:30 PM",
+      "timeZoneId": "America/New_York",
+      "daysOfWeek": [
+        "MONDAY",
+        "TUESDAY",
+        "WEDNESDAY",
+        "THURSDAY",
+        "FRIDAY",
+        "SATURDAY",
+        "SUNDAY"
+      ]
+    },
+    "sources": {
+      "primary": "lotteryusa",
+      "fallbacks": [
+        "pick34_site"
+      ],
+      "officialUrls": [],
+      "lotteryusaUrls": []
+    },
+    "calendarPolicy": {
+      "supportsSunday": true
+    }
+  },
+  {
+    "id": "US-P3-OH-PICK-3-EVENING",
+    "state": "Ohio",
+    "stateCode": "OH",
+    "game": "pick3",
+    "gameName": "Pick 3",
+    "draw": "Evening Draw",
+    "schedule": {
+      "drawTime": "7:29 PM",
+      "timeZoneId": "America/New_York",
+      "daysOfWeek": [
+        "MONDAY",
+        "TUESDAY",
+        "WEDNESDAY",
+        "THURSDAY",
+        "FRIDAY",
+        "SATURDAY",
+        "SUNDAY"
+      ]
+    },
+    "sources": {
+      "primary": "lotteryusa",
+      "fallbacks": [
+        "pick34_site"
+      ],
+      "officialUrls": [],
+      "lotteryusaUrls": []
+    },
+    "calendarPolicy": {
+      "supportsSunday": true
+    }
+  },
+  {
+    "id": "US-P3-OH-PICK-3-MIDDAY",
+    "state": "Ohio",
+    "stateCode": "OH",
+    "game": "pick3",
+    "gameName": "Pick 3",
+    "draw": "Midday Draw",
+    "schedule": {
+      "drawTime": "12:29 PM",
+      "timeZoneId": "America/New_York",
+      "daysOfWeek": [
+        "MONDAY",
+        "TUESDAY",
+        "WEDNESDAY",
+        "THURSDAY",
+        "FRIDAY",
+        "SATURDAY",
+        "SUNDAY"
+      ]
+    },
+    "sources": {
+      "primary": "lotteryusa",
+      "fallbacks": [
+        "pick34_site"
+      ],
+      "officialUrls": [],
+      "lotteryusaUrls": []
+    },
+    "calendarPolicy": {
+      "supportsSunday": true
+    }
+  },
+  {
+    "id": "US-P3-OK-PICK-3-DAY",
+    "state": "Oklahoma",
+    "stateCode": "OK",
+    "game": "pick3",
+    "gameName": "Pick 3",
+    "draw": "Day Draw",
+    "schedule": {
+      "drawTime": "9:00 PM",
+      "timeZoneId": "America/Chicago",
+      "daysOfWeek": [
+        "MONDAY",
+        "TUESDAY",
+        "WEDNESDAY",
+        "THURSDAY",
+        "FRIDAY",
+        "SATURDAY",
+        "SUNDAY"
+      ]
+    },
+    "sources": {
+      "primary": "lotteryusa",
+      "fallbacks": [
+        "pick34_site"
+      ],
+      "officialUrls": [],
+      "lotteryusaUrls": []
+    },
+    "calendarPolicy": {
+      "supportsSunday": true
+    }
+  },
+  {
+    "id": "US-P3-PA-PICK-3-EVENING",
+    "state": "Pennsylvania",
+    "stateCode": "PA",
+    "game": "pick3",
+    "gameName": "Pick 3",
+    "draw": "Evening Draw",
+    "schedule": {
+      "drawTime": "6:59 PM",
+      "timeZoneId": "America/New_York",
+      "daysOfWeek": [
+        "MONDAY",
+        "TUESDAY",
+        "WEDNESDAY",
+        "THURSDAY",
+        "FRIDAY",
+        "SATURDAY",
+        "SUNDAY"
+      ]
+    },
+    "sources": {
+      "primary": "lotteryusa",
+      "fallbacks": [
+        "pick34_site"
+      ],
+      "officialUrls": [],
+      "lotteryusaUrls": []
+    },
+    "calendarPolicy": {
+      "supportsSunday": true
+    }
+  },
+  {
+    "id": "US-P3-SC-PICK-3-EVENING",
+    "state": "South Carolina",
+    "stateCode": "SC",
+    "game": "pick3",
+    "gameName": "Pick 3",
+    "draw": "Evening Draw",
+    "schedule": {
+      "drawTime": "6:59 PM",
+      "timeZoneId": "America/New_York",
+      "daysOfWeek": [
+        "MONDAY",
+        "TUESDAY",
+        "WEDNESDAY",
+        "THURSDAY",
+        "FRIDAY",
+        "SATURDAY",
+        "SUNDAY"
+      ]
+    },
+    "sources": {
+      "primary": "lotteryusa",
+      "fallbacks": [
+        "pick34_site"
+      ],
+      "officialUrls": [],
+      "lotteryusaUrls": []
+    },
+    "calendarPolicy": {
+      "supportsSunday": true
+    }
+  },
+  {
+    "id": "US-P3-SC-PICK-3-MIDDAY",
+    "state": "South Carolina",
+    "stateCode": "SC",
+    "game": "pick3",
+    "gameName": "Pick 3",
+    "draw": "Midday Draw",
+    "schedule": {
+      "drawTime": "12:59 PM",
+      "timeZoneId": "America/New_York",
+      "daysOfWeek": [
+        "MONDAY",
+        "TUESDAY",
+        "WEDNESDAY",
+        "THURSDAY",
+        "FRIDAY",
+        "SATURDAY"
+      ]
+    },
+    "sources": {
+      "primary": "lotteryusa",
+      "fallbacks": [
+        "pick34_site"
+      ],
+      "officialUrls": [],
+      "lotteryusaUrls": []
+    },
+    "calendarPolicy": {
+      "supportsSunday": false
+    }
+  },
+  {
+    "id": "US-P3-TN-CASH-3-06-28-PM",
+    "state": "Tennessee",
+    "stateCode": "TN",
+    "game": "pick3",
+    "gameName": "Cash 3",
+    "draw": "Draw",
+    "schedule": {
+      "drawTime": "6:28 PM",
+      "timeZoneId": "America/Chicago",
+      "daysOfWeek": [
+        "MONDAY",
+        "TUESDAY",
+        "WEDNESDAY",
+        "THURSDAY",
+        "FRIDAY",
+        "SATURDAY",
+        "SUNDAY"
+      ]
+    },
+    "sources": {
+      "primary": "official",
+      "fallbacks": [
+        "lotteryusa",
+        "pick34_site"
+      ],
+      "officialUrls": [
+        "https://www.tnlottery.com/games/how-to-play/cash3/"
+      ],
+      "lotteryusaUrls": [
+        "https://www.lotteryusa.com/tennessee/cash-3/"
+      ]
+    },
+    "calendarPolicy": {
+      "supportsSunday": true
+    }
+  },
+  {
+    "id": "US-P3-TX-PICK-3-DAY",
+    "state": "Texas",
+    "stateCode": "TX",
+    "game": "pick3",
+    "gameName": "Pick 3",
+    "draw": "Day Draw",
+    "schedule": {
+      "drawTime": "12:27 PM",
+      "timeZoneId": "America/Chicago",
+      "daysOfWeek": [
+        "MONDAY",
+        "TUESDAY",
+        "WEDNESDAY",
+        "THURSDAY",
+        "FRIDAY",
+        "SATURDAY"
+      ]
+    },
+    "sources": {
+      "primary": "official",
+      "fallbacks": [
+        "lotteryusa",
+        "pick34_site"
+      ],
+      "officialUrls": [
+        "https://www.texaslottery.com/export/sites/lottery/Games/Pick_3/index.html"
+      ],
+      "lotteryusaUrls": []
+    },
+    "calendarPolicy": {
+      "supportsSunday": false
+    }
+  },
+  {
+    "id": "US-P3-TX-PICK-3-EVENING",
+    "state": "Texas",
+    "stateCode": "TX",
+    "game": "pick3",
+    "gameName": "Pick 3",
+    "draw": "Evening Draw",
+    "schedule": {
+      "drawTime": "6:00 PM",
+      "timeZoneId": "America/Chicago",
+      "daysOfWeek": [
+        "MONDAY",
+        "TUESDAY",
+        "WEDNESDAY",
+        "THURSDAY",
+        "FRIDAY",
+        "SATURDAY"
+      ]
+    },
+    "sources": {
+      "primary": "official",
+      "fallbacks": [
+        "lotteryusa",
+        "pick34_site"
+      ],
+      "officialUrls": [
+        "https://www.texaslottery.com/export/sites/lottery/Games/Pick_3/index.html"
+      ],
+      "lotteryusaUrls": []
+    },
+    "calendarPolicy": {
+      "supportsSunday": false
+    }
+  },
+  {
+    "id": "US-P3-TX-PICK-3-MORNING",
+    "state": "Texas",
+    "stateCode": "TX",
+    "game": "pick3",
+    "gameName": "Pick 3",
+    "draw": "Morning Draw",
+    "schedule": {
+      "drawTime": "10:00 AM",
+      "timeZoneId": "America/Chicago",
+      "daysOfWeek": [
+        "MONDAY",
+        "TUESDAY",
+        "WEDNESDAY",
+        "THURSDAY",
+        "FRIDAY",
+        "SATURDAY"
+      ]
+    },
+    "sources": {
+      "primary": "official",
+      "fallbacks": [
+        "lotteryusa",
+        "pick34_site"
+      ],
+      "officialUrls": [
+        "https://www.texaslottery.com/export/sites/lottery/Games/Pick_3/index.html"
+      ],
+      "lotteryusaUrls": []
+    },
+    "calendarPolicy": {
+      "supportsSunday": false
+    }
+  },
+  {
+    "id": "US-P3-TX-PICK-3-NIGHT",
+    "state": "Texas",
+    "stateCode": "TX",
+    "game": "pick3",
+    "gameName": "Pick 3",
+    "draw": "Night Draw",
+    "schedule": {
+      "drawTime": "10:12 PM",
+      "timeZoneId": "America/Chicago",
+      "daysOfWeek": [
+        "MONDAY",
+        "TUESDAY",
+        "WEDNESDAY",
+        "THURSDAY",
+        "FRIDAY",
+        "SATURDAY"
+      ]
+    },
+    "sources": {
+      "primary": "official",
+      "fallbacks": [
+        "lotteryusa",
+        "pick34_site"
+      ],
+      "officialUrls": [
+        "https://www.texaslottery.com/export/sites/lottery/Games/Pick_3/index.html"
+      ],
+      "lotteryusaUrls": []
+    },
+    "calendarPolicy": {
+      "supportsSunday": false
+    }
+  },
+  {
+    "id": "US-P3-VA-PICK-3-DAY",
+    "state": "Virginia",
+    "stateCode": "VA",
+    "game": "pick3",
+    "gameName": "Pick 3",
+    "draw": "Day Draw",
+    "schedule": {
+      "drawTime": "1:59 PM",
+      "timeZoneId": "America/New_York",
+      "daysOfWeek": [
+        "MONDAY",
+        "TUESDAY",
+        "WEDNESDAY",
+        "THURSDAY",
+        "FRIDAY",
+        "SATURDAY",
+        "SUNDAY"
+      ]
+    },
+    "sources": {
+      "primary": "lotteryusa",
+      "fallbacks": [
+        "pick34_site"
+      ],
+      "officialUrls": [],
+      "lotteryusaUrls": []
+    },
+    "calendarPolicy": {
+      "supportsSunday": true
+    }
+  },
+  {
+    "id": "US-P3-VA-PICK-3-NIGHT",
+    "state": "Virginia",
+    "stateCode": "VA",
+    "game": "pick3",
+    "gameName": "Pick 3",
+    "draw": "Night Draw",
+    "schedule": {
+      "drawTime": "11:00 PM",
+      "timeZoneId": "America/New_York",
+      "daysOfWeek": [
+        "MONDAY",
+        "TUESDAY",
+        "WEDNESDAY",
+        "THURSDAY",
+        "FRIDAY",
+        "SATURDAY",
+        "SUNDAY"
+      ]
+    },
+    "sources": {
+      "primary": "lotteryusa",
+      "fallbacks": [
+        "pick34_site"
+      ],
+      "officialUrls": [],
+      "lotteryusaUrls": []
+    },
+    "calendarPolicy": {
+      "supportsSunday": true
+    }
+  },
+  {
+    "id": "US-P3-VT-PICK-3-EVENING",
+    "state": "Vermont",
+    "stateCode": "VT",
+    "game": "pick3",
+    "gameName": "Pick 3",
+    "draw": "Evening Draw",
+    "schedule": {
+      "drawTime": "6:59 PM",
+      "timeZoneId": "America/New_York",
+      "daysOfWeek": [
+        "MONDAY",
+        "TUESDAY",
+        "WEDNESDAY",
+        "THURSDAY",
+        "FRIDAY",
+        "SATURDAY",
+        "SUNDAY"
+      ]
+    },
+    "sources": {
+      "primary": "lotteryusa",
+      "fallbacks": [
+        "pick34_site"
+      ],
+      "officialUrls": [],
+      "lotteryusaUrls": []
+    },
+    "calendarPolicy": {
+      "supportsSunday": true
+    }
+  },
+  {
+    "id": "US-P3-WA-PICK-3-DAY",
+    "state": "Washington",
+    "stateCode": "WA",
+    "game": "pick3",
+    "gameName": "Pick 3",
+    "draw": "Day Draw",
+    "schedule": {
+      "drawTime": "8:00 PM",
+      "timeZoneId": "America/Los_Angeles",
+      "daysOfWeek": [
+        "MONDAY",
+        "TUESDAY",
+        "WEDNESDAY",
+        "THURSDAY",
+        "FRIDAY",
+        "SATURDAY",
+        "SUNDAY"
+      ]
+    },
+    "sources": {
+      "primary": "lotteryusa",
+      "fallbacks": [
+        "pick34_site"
+      ],
+      "officialUrls": [],
+      "lotteryusaUrls": []
+    },
+    "calendarPolicy": {
+      "supportsSunday": true
+    }
+  },
+  {
+    "id": "US-P3-WI-PICK-3-1-30PM",
+    "state": "Wisconsin",
+    "stateCode": "WI",
+    "game": "pick3",
+    "gameName": "Pick 3",
+    "draw": "1:30PM Draw",
+    "schedule": {
+      "drawTime": "1:30 PM",
+      "timeZoneId": "America/Chicago",
+      "daysOfWeek": [
+        "MONDAY",
+        "TUESDAY",
+        "WEDNESDAY",
+        "THURSDAY",
+        "FRIDAY",
+        "SATURDAY",
+        "SUNDAY"
+      ]
+    },
+    "sources": {
+      "primary": "lotteryusa",
+      "fallbacks": [
+        "pick34_site"
+      ],
+      "officialUrls": [],
+      "lotteryusaUrls": []
+    },
+    "calendarPolicy": {
+      "supportsSunday": true
+    }
+  },
+  {
+    "id": "US-P3-WI-PICK-3-9-00PM",
+    "state": "Wisconsin",
+    "stateCode": "WI",
+    "game": "pick3",
+    "gameName": "Pick 3",
+    "draw": "9:00PM Draw",
+    "schedule": {
+      "drawTime": "9:00 PM",
+      "timeZoneId": "America/Chicago",
+      "daysOfWeek": [
+        "MONDAY",
+        "TUESDAY",
+        "WEDNESDAY",
+        "THURSDAY",
+        "FRIDAY",
+        "SATURDAY",
+        "SUNDAY"
+      ]
+    },
+    "sources": {
+      "primary": "lotteryusa",
+      "fallbacks": [
+        "pick34_site"
+      ],
+      "officialUrls": [],
+      "lotteryusaUrls": []
+    },
+    "calendarPolicy": {
+      "supportsSunday": true
+    }
+  },
+  {
+    "id": "US-P3-WV-DAILY-3-DAY",
+    "state": "West Virginia",
+    "stateCode": "WV",
+    "game": "pick3",
+    "gameName": "Daily 3",
+    "draw": "Day Draw",
+    "schedule": {
+      "drawTime": "6:59 PM",
+      "timeZoneId": "America/New_York",
+      "daysOfWeek": [
+        "MONDAY",
+        "TUESDAY",
+        "WEDNESDAY",
+        "THURSDAY",
+        "FRIDAY",
+        "SATURDAY"
+      ]
+    },
+    "sources": {
+      "primary": "lotteryusa",
+      "fallbacks": [
+        "pick34_site"
+      ],
+      "officialUrls": [],
+      "lotteryusaUrls": []
+    },
+    "calendarPolicy": {
+      "supportsSunday": false
+    }
+  },
+  {
+    "id": "US-P4-AR-CASH-4-MIDDAY",
+    "state": "Arkansas",
+    "stateCode": "AR",
+    "game": "pick4",
+    "gameName": "Cash 4",
+    "draw": "Midday Draw",
+    "schedule": {
+      "drawTime": "12:59 PM",
+      "timeZoneId": "America/Chicago",
+      "daysOfWeek": [
+        "MONDAY",
+        "TUESDAY",
+        "WEDNESDAY",
+        "THURSDAY",
+        "FRIDAY",
+        "SATURDAY"
+      ]
+    },
+    "sources": {
+      "primary": "lotteryusa",
+      "fallbacks": [
+        "pick34_site"
+      ],
+      "officialUrls": [],
+      "lotteryusaUrls": []
+    },
+    "calendarPolicy": {
+      "supportsSunday": false
+    }
+  },
+  {
+    "id": "US-P4-CA-DAILY-4-DAY",
+    "state": "California",
+    "stateCode": "CA",
+    "game": "pick4",
+    "gameName": "Daily 4",
+    "draw": "Day Draw",
+    "schedule": {
+      "drawTime": "1:00 PM",
+      "timeZoneId": "America/Los_Angeles",
+      "daysOfWeek": [
+        "MONDAY",
+        "TUESDAY",
+        "WEDNESDAY",
+        "THURSDAY",
+        "FRIDAY",
+        "SATURDAY",
+        "SUNDAY"
+      ]
+    },
+    "sources": {
+      "primary": "lotteryusa",
+      "fallbacks": [
+        "pick34_site"
+      ],
+      "officialUrls": [],
+      "lotteryusaUrls": []
+    },
+    "calendarPolicy": {
+      "supportsSunday": true
+    }
+  },
+  {
+    "id": "US-P4-CT-PLAY-4-DAY",
+    "state": "Connecticut",
+    "stateCode": "CT",
+    "game": "pick4",
+    "gameName": "Play 4",
+    "draw": "Day Draw",
+    "schedule": {
+      "drawTime": "1:57 PM",
+      "timeZoneId": "America/New_York",
+      "daysOfWeek": [
+        "MONDAY",
+        "TUESDAY",
+        "WEDNESDAY",
+        "THURSDAY",
+        "FRIDAY",
+        "SATURDAY",
+        "SUNDAY"
+      ]
+    },
+    "sources": {
+      "primary": "lotteryusa",
+      "fallbacks": [
+        "pick34_site"
+      ],
+      "officialUrls": [],
+      "lotteryusaUrls": []
+    },
+    "calendarPolicy": {
+      "supportsSunday": true
+    }
+  },
+  {
+    "id": "US-P4-CT-PLAY-4-EVENING",
+    "state": "Connecticut",
+    "stateCode": "CT",
+    "game": "pick4",
+    "gameName": "Play 4",
+    "draw": "Evening Draw",
+    "schedule": {
+      "drawTime": "10:29 PM",
+      "timeZoneId": "America/New_York",
+      "daysOfWeek": [
+        "MONDAY",
+        "TUESDAY",
+        "WEDNESDAY",
+        "THURSDAY",
+        "FRIDAY",
+        "SATURDAY",
+        "SUNDAY"
+      ]
+    },
+    "sources": {
+      "primary": "lotteryusa",
+      "fallbacks": [
+        "pick34_site"
+      ],
+      "officialUrls": [],
+      "lotteryusaUrls": []
+    },
+    "calendarPolicy": {
+      "supportsSunday": true
+    }
+  },
+  {
+    "id": "US-P4-DC-MATCH-4-MIDDAY",
+    "state": "District of Columbia",
+    "stateCode": "DC",
+    "game": "pick4",
+    "gameName": "Match 4",
+    "draw": "Midday Draw",
+    "schedule": {
+      "drawTime": "1:50 PM",
+      "timeZoneId": "America/New_York",
+      "daysOfWeek": [
+        "MONDAY",
+        "TUESDAY",
+        "WEDNESDAY",
+        "THURSDAY",
+        "FRIDAY",
+        "SATURDAY",
+        "SUNDAY"
+      ]
+    },
+    "sources": {
+      "primary": "lotteryusa",
+      "fallbacks": [
+        "pick34_site"
+      ],
+      "officialUrls": [],
+      "lotteryusaUrls": []
+    },
+    "calendarPolicy": {
+      "supportsSunday": true
+    }
+  },
+  {
+    "id": "US-P4-DE-PLAY-4-MIDDAY",
+    "state": "Delaware",
+    "stateCode": "DE",
+    "game": "pick4",
+    "gameName": "Play 4",
+    "draw": "Midday Draw",
+    "schedule": {
+      "drawTime": "1:58 PM",
+      "timeZoneId": "America/New_York",
+      "daysOfWeek": [
+        "MONDAY",
+        "TUESDAY",
+        "WEDNESDAY",
+        "THURSDAY",
+        "FRIDAY",
+        "SATURDAY",
+        "SUNDAY"
+      ]
+    },
+    "sources": {
+      "primary": "lotteryusa",
+      "fallbacks": [
+        "pick34_site"
+      ],
+      "officialUrls": [],
+      "lotteryusaUrls": []
+    },
+    "calendarPolicy": {
+      "supportsSunday": true
+    }
+  },
+  {
+    "id": "US-P4-FL-PICK-4-EVENING",
+    "state": "Florida",
+    "stateCode": "FL",
+    "game": "pick4",
+    "gameName": "Pick 4",
+    "draw": "Evening Draw",
+    "schedule": {
+      "drawTime": "9:45 PM",
+      "timeZoneId": "America/New_York",
+      "daysOfWeek": [
+        "MONDAY",
+        "TUESDAY",
+        "WEDNESDAY",
+        "THURSDAY",
+        "FRIDAY",
+        "SATURDAY",
+        "SUNDAY"
+      ]
+    },
+    "sources": {
+      "primary": "lotteryusa",
+      "fallbacks": [
+        "pick34_site"
+      ],
+      "officialUrls": [],
+      "lotteryusaUrls": []
+    },
+    "calendarPolicy": {
+      "supportsSunday": true
+    }
+  },
+  {
+    "id": "US-P4-FL-PICK-4-MIDDAY",
+    "state": "Florida",
+    "stateCode": "FL",
+    "game": "pick4",
+    "gameName": "Pick 4",
+    "draw": "Midday Draw",
+    "schedule": {
+      "drawTime": "1:30 PM",
+      "timeZoneId": "America/New_York",
+      "daysOfWeek": [
+        "MONDAY",
+        "TUESDAY",
+        "WEDNESDAY",
+        "THURSDAY",
+        "FRIDAY",
+        "SATURDAY",
+        "SUNDAY"
+      ]
+    },
+    "sources": {
+      "primary": "lotteryusa",
+      "fallbacks": [
+        "pick34_site"
+      ],
+      "officialUrls": [],
+      "lotteryusaUrls": []
+    },
+    "calendarPolicy": {
+      "supportsSunday": true
+    }
+  },
+  {
+    "id": "US-P4-GA-CASH-4-MIDDAY",
+    "state": "Georgia",
+    "stateCode": "GA",
+    "game": "pick4",
+    "gameName": "Cash 4",
+    "draw": "Midday Draw",
+    "schedule": {
+      "drawTime": "12:29 PM",
+      "timeZoneId": "America/New_York",
+      "daysOfWeek": [
+        "MONDAY",
+        "TUESDAY",
+        "WEDNESDAY",
+        "THURSDAY",
+        "FRIDAY",
+        "SATURDAY",
+        "SUNDAY"
+      ]
+    },
+    "sources": {
+      "primary": "lotteryusa",
+      "fallbacks": [
+        "pick34_site"
+      ],
+      "officialUrls": [],
+      "lotteryusaUrls": []
+    },
+    "calendarPolicy": {
+      "supportsSunday": true
+    }
+  },
+  {
+    "id": "US-P4-IA-PICK-4-MIDDAY",
+    "state": "Iowa",
+    "stateCode": "IA",
+    "game": "pick4",
+    "gameName": "Pick 4",
+    "draw": "Midday Draw",
+    "schedule": {
+      "drawTime": "12:20 PM",
+      "timeZoneId": "America/Chicago",
+      "daysOfWeek": [
+        "MONDAY",
+        "TUESDAY",
+        "WEDNESDAY",
+        "THURSDAY",
+        "FRIDAY",
+        "SATURDAY",
+        "SUNDAY"
+      ]
+    },
+    "sources": {
+      "primary": "lotteryusa",
+      "fallbacks": [
+        "pick34_site"
+      ],
+      "officialUrls": [],
+      "lotteryusaUrls": []
+    },
+    "calendarPolicy": {
+      "supportsSunday": true
+    }
+  },
+  {
+    "id": "US-P4-ID-PICK-4-MIDDAY",
+    "state": "Idaho",
+    "stateCode": "ID",
+    "game": "pick4",
+    "gameName": "Pick 4",
+    "draw": "Midday Draw",
+    "schedule": {
+      "drawTime": "1:59 PM",
+      "timeZoneId": "America/Boise",
+      "daysOfWeek": [
+        "MONDAY",
+        "TUESDAY",
+        "WEDNESDAY",
+        "THURSDAY",
+        "FRIDAY",
+        "SATURDAY",
+        "SUNDAY"
+      ]
+    },
+    "sources": {
+      "primary": "lotteryusa",
+      "fallbacks": [
+        "pick34_site"
+      ],
+      "officialUrls": [],
+      "lotteryusaUrls": []
+    },
+    "calendarPolicy": {
+      "supportsSunday": true
+    }
+  },
+  {
+    "id": "US-P4-IL-PICK-4-EVENING",
+    "state": "Illinois",
+    "stateCode": "IL",
+    "game": "pick4",
+    "gameName": "Pick 4",
+    "draw": "Evening Draw",
+    "schedule": {
+      "drawTime": "9:22 PM",
+      "timeZoneId": "America/Chicago",
+      "daysOfWeek": [
+        "MONDAY",
+        "TUESDAY",
+        "WEDNESDAY",
+        "THURSDAY",
+        "FRIDAY",
+        "SATURDAY",
+        "SUNDAY"
+      ]
+    },
+    "sources": {
+      "primary": "lotteryusa",
+      "fallbacks": [
+        "pick34_site"
+      ],
+      "officialUrls": [],
+      "lotteryusaUrls": []
+    },
+    "calendarPolicy": {
+      "supportsSunday": true
+    }
+  },
+  {
+    "id": "US-P4-IL-PICK-4-MORNING",
+    "state": "Illinois",
+    "stateCode": "IL",
+    "game": "pick4",
+    "gameName": "Pick 4",
+    "draw": "Morning Draw",
+    "schedule": {
+      "drawTime": "12:40 PM",
+      "timeZoneId": "America/Chicago",
+      "daysOfWeek": [
+        "MONDAY",
+        "TUESDAY",
+        "WEDNESDAY",
+        "THURSDAY",
+        "FRIDAY",
+        "SATURDAY",
+        "SUNDAY"
+      ]
+    },
+    "sources": {
+      "primary": "lotteryusa",
+      "fallbacks": [
+        "pick34_site"
+      ],
+      "officialUrls": [],
+      "lotteryusaUrls": []
+    },
+    "calendarPolicy": {
+      "supportsSunday": true
+    }
+  },
+  {
+    "id": "US-P4-IN-DAILY-4-EVENING",
+    "state": "Indiana",
+    "stateCode": "IN",
+    "game": "pick4",
+    "gameName": "Daily 4",
+    "draw": "Evening Draw",
+    "schedule": {
+      "drawTime": "11:00 PM",
+      "timeZoneId": "America/New_York",
+      "daysOfWeek": [
+        "MONDAY",
+        "TUESDAY",
+        "WEDNESDAY",
+        "THURSDAY",
+        "FRIDAY",
+        "SATURDAY",
+        "SUNDAY"
+      ]
+    },
+    "sources": {
+      "primary": "lotteryusa",
+      "fallbacks": [
+        "pick34_site"
+      ],
+      "officialUrls": [],
+      "lotteryusaUrls": []
+    },
+    "calendarPolicy": {
+      "supportsSunday": true
+    }
+  },
+  {
+    "id": "US-P4-IN-DAILY-4-MIDDAY",
+    "state": "Indiana",
+    "stateCode": "IN",
+    "game": "pick4",
+    "gameName": "Daily 4",
+    "draw": "Midday Draw",
+    "schedule": {
+      "drawTime": "1:20 PM",
+      "timeZoneId": "America/New_York",
+      "daysOfWeek": [
+        "MONDAY",
+        "TUESDAY",
+        "WEDNESDAY",
+        "THURSDAY",
+        "FRIDAY",
+        "SATURDAY",
+        "SUNDAY"
+      ]
+    },
+    "sources": {
+      "primary": "lotteryusa",
+      "fallbacks": [
+        "pick34_site"
+      ],
+      "officialUrls": [],
+      "lotteryusaUrls": []
+    },
+    "calendarPolicy": {
+      "supportsSunday": true
+    }
+  },
+  {
+    "id": "US-P4-KY-PICK-4-MIDDAY",
+    "state": "Kentucky",
+    "stateCode": "KY",
+    "game": "pick4",
+    "gameName": "Pick 4",
+    "draw": "Midday Draw",
+    "schedule": {
+      "drawTime": "1:20 PM",
+      "timeZoneId": "America/New_York",
+      "daysOfWeek": [
+        "MONDAY",
+        "TUESDAY",
+        "WEDNESDAY",
+        "THURSDAY",
+        "FRIDAY",
+        "SATURDAY",
+        "SUNDAY"
+      ]
+    },
+    "sources": {
+      "primary": "lotteryusa",
+      "fallbacks": [
+        "pick34_site"
+      ],
+      "officialUrls": [],
+      "lotteryusaUrls": []
+    },
+    "calendarPolicy": {
+      "supportsSunday": true
+    }
+  },
+  {
+    "id": "US-P4-LA-PICK-4-DAY",
+    "state": "Louisiana",
+    "stateCode": "LA",
+    "game": "pick4",
+    "gameName": "Pick 4",
+    "draw": "Day Draw",
+    "schedule": {
+      "drawTime": "9:59 PM",
+      "timeZoneId": "America/Chicago",
+      "daysOfWeek": [
+        "MONDAY",
+        "TUESDAY",
+        "WEDNESDAY",
+        "THURSDAY",
+        "FRIDAY",
+        "SATURDAY",
+        "SUNDAY"
+      ]
+    },
+    "sources": {
+      "primary": "lotteryusa",
+      "fallbacks": [
+        "pick34_site"
+      ],
+      "officialUrls": [],
+      "lotteryusaUrls": []
+    },
+    "calendarPolicy": {
+      "supportsSunday": true
+    }
+  },
+  {
+    "id": "US-P4-MA-PICK-4-MIDDAY",
+    "state": "Massachusetts",
+    "stateCode": "MA",
+    "game": "pick4",
+    "gameName": "Pick 4",
+    "draw": "Midday Draw",
+    "schedule": {
+      "drawTime": "2:00 PM",
+      "timeZoneId": "America/New_York",
+      "daysOfWeek": [
+        "MONDAY",
+        "TUESDAY",
+        "WEDNESDAY",
+        "THURSDAY",
+        "FRIDAY",
+        "SATURDAY",
+        "SUNDAY"
+      ]
+    },
+    "sources": {
+      "primary": "lotteryusa",
+      "fallbacks": [
+        "pick34_site"
+      ],
+      "officialUrls": [],
+      "lotteryusaUrls": []
+    },
+    "calendarPolicy": {
+      "supportsSunday": true
+    }
+  },
+  {
+    "id": "US-P4-MD-PICK-4-MIDDAY",
+    "state": "Maryland",
+    "stateCode": "MD",
+    "game": "pick4",
+    "gameName": "Pick 4",
+    "draw": "Midday Draw",
+    "schedule": {
+      "drawTime": "12:27 PM",
+      "timeZoneId": "America/New_York",
+      "daysOfWeek": [
+        "MONDAY",
+        "TUESDAY",
+        "WEDNESDAY",
+        "THURSDAY",
+        "FRIDAY",
+        "SATURDAY",
+        "SUNDAY"
+      ]
+    },
+    "sources": {
+      "primary": "lotteryusa",
+      "fallbacks": [
+        "pick34_site"
+      ],
+      "officialUrls": [],
+      "lotteryusaUrls": []
+    },
+    "calendarPolicy": {
+      "supportsSunday": true
+    }
+  },
+  {
+    "id": "US-P4-ME-PICK-4-MIDDAY",
+    "state": "Maine",
+    "stateCode": "ME",
+    "game": "pick4",
+    "gameName": "Pick 4",
+    "draw": "Midday Draw",
+    "schedule": {
+      "drawTime": "1:10 PM",
+      "timeZoneId": "America/New_York",
+      "daysOfWeek": [
+        "MONDAY",
+        "TUESDAY",
+        "WEDNESDAY",
+        "THURSDAY",
+        "FRIDAY",
+        "SATURDAY",
+        "SUNDAY"
+      ]
+    },
+    "sources": {
+      "primary": "lotteryusa",
+      "fallbacks": [
+        "pick34_site"
+      ],
+      "officialUrls": [],
+      "lotteryusaUrls": []
+    },
+    "calendarPolicy": {
+      "supportsSunday": true
+    }
+  },
+  {
+    "id": "US-P4-MI-DAILY-4-MIDDAY",
+    "state": "Michigan",
+    "stateCode": "MI",
+    "game": "pick4",
+    "gameName": "Daily 4",
+    "draw": "Midday Draw",
+    "schedule": {
+      "drawTime": "12:59 PM",
+      "timeZoneId": "America/New_York",
+      "daysOfWeek": [
+        "MONDAY",
+        "TUESDAY",
+        "WEDNESDAY",
+        "THURSDAY",
+        "FRIDAY",
+        "SATURDAY",
+        "SUNDAY"
+      ]
+    },
+    "sources": {
+      "primary": "lotteryusa",
+      "fallbacks": [
+        "pick34_site"
+      ],
+      "officialUrls": [],
+      "lotteryusaUrls": []
+    },
+    "calendarPolicy": {
+      "supportsSunday": true
+    }
+  },
+  {
+    "id": "US-P4-MO-PICK-4-DAY",
+    "state": "Missouri",
+    "stateCode": "MO",
+    "game": "pick4",
+    "gameName": "Pick 4",
+    "draw": "Day Draw",
+    "schedule": {
+      "drawTime": "12:45 PM",
+      "timeZoneId": "America/Chicago",
+      "daysOfWeek": [
+        "MONDAY",
+        "TUESDAY",
+        "WEDNESDAY",
+        "THURSDAY",
+        "FRIDAY",
+        "SATURDAY",
+        "SUNDAY"
+      ]
+    },
+    "sources": {
+      "primary": "lotteryusa",
+      "fallbacks": [
+        "pick34_site"
+      ],
+      "officialUrls": [],
+      "lotteryusaUrls": []
+    },
+    "calendarPolicy": {
+      "supportsSunday": true
+    }
+  },
+  {
+    "id": "US-P4-MO-PICK-4-EVENING",
+    "state": "Missouri",
+    "stateCode": "MO",
+    "game": "pick4",
+    "gameName": "Pick 4",
+    "draw": "Evening Draw",
+    "schedule": {
+      "drawTime": "8:59 PM",
+      "timeZoneId": "America/Chicago",
+      "daysOfWeek": [
+        "MONDAY",
+        "TUESDAY",
+        "WEDNESDAY",
+        "THURSDAY",
+        "FRIDAY",
+        "SATURDAY",
+        "SUNDAY"
+      ]
+    },
+    "sources": {
+      "primary": "lotteryusa",
+      "fallbacks": [
+        "pick34_site"
+      ],
+      "officialUrls": [],
+      "lotteryusaUrls": []
+    },
+    "calendarPolicy": {
+      "supportsSunday": true
+    }
+  },
+  {
+    "id": "US-P4-MS-CASH-4-EVENING",
+    "state": "Mississippi",
+    "stateCode": "MS",
+    "game": "pick4",
+    "gameName": "Cash 4",
+    "draw": "Evening Draw",
+    "schedule": {
+      "drawTime": "9:30 PM",
+      "timeZoneId": "America/Chicago",
+      "daysOfWeek": [
+        "MONDAY",
+        "TUESDAY",
+        "WEDNESDAY",
+        "THURSDAY",
+        "FRIDAY",
+        "SATURDAY",
+        "SUNDAY"
+      ]
+    },
+    "sources": {
+      "primary": "lotteryusa",
+      "fallbacks": [
+        "pick34_site"
+      ],
+      "officialUrls": [],
+      "lotteryusaUrls": []
+    },
+    "calendarPolicy": {
+      "supportsSunday": true
+    }
+  },
+  {
+    "id": "US-P4-MS-CASH-4-MIDDAY",
+    "state": "Mississippi",
+    "stateCode": "MS",
+    "game": "pick4",
+    "gameName": "Cash 4",
+    "draw": "Midday Draw",
+    "schedule": {
+      "drawTime": "2:30 PM",
+      "timeZoneId": "America/Chicago",
+      "daysOfWeek": [
+        "MONDAY",
+        "TUESDAY",
+        "WEDNESDAY",
+        "THURSDAY",
+        "FRIDAY",
+        "SATURDAY",
+        "SUNDAY"
+      ]
+    },
+    "sources": {
+      "primary": "lotteryusa",
+      "fallbacks": [
+        "pick34_site"
+      ],
+      "officialUrls": [],
+      "lotteryusaUrls": []
+    },
+    "calendarPolicy": {
+      "supportsSunday": true
+    }
+  },
+  {
+    "id": "US-P4-NC-PICK-4-EVENING",
+    "state": "North Carolina",
+    "stateCode": "NC",
+    "game": "pick4",
+    "gameName": "Pick 4",
+    "draw": "Evening Draw",
+    "schedule": {
+      "drawTime": "11:22 PM",
+      "timeZoneId": "America/New_York",
+      "daysOfWeek": [
+        "MONDAY",
+        "TUESDAY",
+        "WEDNESDAY",
+        "THURSDAY",
+        "FRIDAY",
+        "SATURDAY",
+        "SUNDAY"
+      ]
+    },
+    "sources": {
+      "primary": "lotteryusa",
+      "fallbacks": [
+        "pick34_site"
+      ],
+      "officialUrls": [],
+      "lotteryusaUrls": []
+    },
+    "calendarPolicy": {
+      "supportsSunday": true
+    }
+  },
+  {
+    "id": "US-P4-NC-PICK-4-MIDDAY",
+    "state": "North Carolina",
+    "stateCode": "NC",
+    "game": "pick4",
+    "gameName": "Pick 4",
+    "draw": "Midday Draw",
+    "schedule": {
+      "drawTime": "3:00 PM",
+      "timeZoneId": "America/New_York",
+      "daysOfWeek": [
+        "MONDAY",
+        "TUESDAY",
+        "WEDNESDAY",
+        "THURSDAY",
+        "FRIDAY",
+        "SATURDAY",
+        "SUNDAY"
+      ]
+    },
+    "sources": {
+      "primary": "lotteryusa",
+      "fallbacks": [
+        "pick34_site"
+      ],
+      "officialUrls": [],
+      "lotteryusaUrls": []
+    },
+    "calendarPolicy": {
+      "supportsSunday": true
+    }
+  },
+  {
+    "id": "US-P4-NE-PICK-4-DAY",
+    "state": "Nebraska",
+    "stateCode": "NE",
+    "game": "pick4",
+    "gameName": "Pick 4",
+    "draw": "Day Draw",
+    "schedule": {
+      "drawTime": "10:00 PM",
+      "timeZoneId": "America/Chicago",
+      "daysOfWeek": [
+        "MONDAY",
+        "TUESDAY",
+        "WEDNESDAY",
+        "THURSDAY",
+        "FRIDAY",
+        "SATURDAY",
+        "SUNDAY"
+      ]
+    },
+    "sources": {
+      "primary": "lotteryusa",
+      "fallbacks": [
+        "pick34_site"
+      ],
+      "officialUrls": [],
+      "lotteryusaUrls": []
+    },
+    "calendarPolicy": {
+      "supportsSunday": true
+    }
+  },
+  {
+    "id": "US-P4-NH-PICK-4-MIDDAY",
+    "state": "New Hampshire",
+    "stateCode": "NH",
+    "game": "pick4",
+    "gameName": "Pick 4",
+    "draw": "Midday Draw",
+    "schedule": {
+      "drawTime": "1:10 PM",
+      "timeZoneId": "America/New_York",
+      "daysOfWeek": [
+        "MONDAY",
+        "TUESDAY",
+        "WEDNESDAY",
+        "THURSDAY",
+        "FRIDAY",
+        "SATURDAY",
+        "SUNDAY"
+      ]
+    },
+    "sources": {
+      "primary": "lotteryusa",
+      "fallbacks": [
+        "pick34_site"
+      ],
+      "officialUrls": [],
+      "lotteryusaUrls": []
+    },
+    "calendarPolicy": {
+      "supportsSunday": true
+    }
+  },
+  {
+    "id": "US-P4-NM-PICK-4-PLUS-MIDDAY",
+    "state": "New Mexico",
+    "stateCode": "NM",
+    "game": "pick4",
+    "gameName": "Pick 4",
+    "draw": "Midday Draw",
+    "schedule": {
+      "drawTime": "1:00 PM",
+      "timeZoneId": "America/Denver",
+      "daysOfWeek": [
+        "MONDAY",
+        "TUESDAY",
+        "WEDNESDAY",
+        "THURSDAY",
+        "FRIDAY",
+        "SATURDAY",
+        "SUNDAY"
+      ]
+    },
+    "sources": {
+      "primary": "lotteryusa",
+      "fallbacks": [
+        "pick34_site"
+      ],
+      "officialUrls": [],
+      "lotteryusaUrls": []
+    },
+    "calendarPolicy": {
+      "supportsSunday": true
+    }
+  },
+  {
+    "id": "US-P4-NY-WIN-4-MIDDAY",
+    "state": "New York",
+    "stateCode": "NY",
+    "game": "pick4",
+    "gameName": "Win 4",
+    "draw": "Midday Draw",
+    "schedule": {
+      "drawTime": "2:30 PM",
+      "timeZoneId": "America/New_York",
+      "daysOfWeek": [
+        "MONDAY",
+        "TUESDAY",
+        "WEDNESDAY",
+        "THURSDAY",
+        "FRIDAY",
+        "SATURDAY",
+        "SUNDAY"
+      ]
+    },
+    "sources": {
+      "primary": "lotteryusa",
+      "fallbacks": [
+        "pick34_site"
+      ],
+      "officialUrls": [],
+      "lotteryusaUrls": []
+    },
+    "calendarPolicy": {
+      "supportsSunday": true
+    }
+  },
+  {
+    "id": "US-P4-OH-PICK-4-MIDDAY",
+    "state": "Ohio",
+    "stateCode": "OH",
+    "game": "pick4",
+    "gameName": "Pick 4",
+    "draw": "Midday Draw",
+    "schedule": {
+      "drawTime": "12:29 PM",
+      "timeZoneId": "America/New_York",
+      "daysOfWeek": [
+        "MONDAY",
+        "TUESDAY",
+        "WEDNESDAY",
+        "THURSDAY",
+        "FRIDAY",
+        "SATURDAY",
+        "SUNDAY"
+      ]
+    },
+    "sources": {
+      "primary": "lotteryusa",
+      "fallbacks": [
+        "pick34_site"
+      ],
+      "officialUrls": [],
+      "lotteryusaUrls": []
+    },
+    "calendarPolicy": {
+      "supportsSunday": true
+    }
+  },
+  {
+    "id": "US-P4-OR-PICK-4-EVENING",
+    "state": "Oregon",
+    "stateCode": "OR",
+    "game": "pick4",
+    "gameName": "Pick 4",
+    "draw": "Evening Draw",
+    "schedule": {
+      "drawTime": "7:00 PM",
+      "timeZoneId": "America/Los_Angeles",
+      "daysOfWeek": [
+        "MONDAY",
+        "TUESDAY",
+        "WEDNESDAY",
+        "THURSDAY",
+        "FRIDAY",
+        "SATURDAY",
+        "SUNDAY"
+      ]
+    },
+    "sources": {
+      "primary": "lotteryusa",
+      "fallbacks": [
+        "pick34_site"
+      ],
+      "officialUrls": [],
+      "lotteryusaUrls": []
+    },
+    "calendarPolicy": {
+      "supportsSunday": true
+    }
+  },
+  {
+    "id": "US-P4-PA-PICK-4-DAY",
+    "state": "Pennsylvania",
+    "stateCode": "PA",
+    "game": "pick4",
+    "gameName": "Pick 4",
+    "draw": "Day Draw",
+    "schedule": {
+      "drawTime": "1:35 PM",
+      "timeZoneId": "America/New_York",
+      "daysOfWeek": [
+        "MONDAY",
+        "TUESDAY",
+        "WEDNESDAY",
+        "THURSDAY",
+        "FRIDAY",
+        "SATURDAY",
+        "SUNDAY"
+      ]
+    },
+    "sources": {
+      "primary": "lotteryusa",
+      "fallbacks": [
+        "pick34_site"
+      ],
+      "officialUrls": [],
+      "lotteryusaUrls": []
+    },
+    "calendarPolicy": {
+      "supportsSunday": true
+    }
+  },
+  {
+    "id": "US-P4-PA-PICK-4-EVENING",
+    "state": "Pennsylvania",
+    "stateCode": "PA",
+    "game": "pick4",
+    "gameName": "Pick 4",
+    "draw": "Evening Draw",
+    "schedule": {
+      "drawTime": "6:59 PM",
+      "timeZoneId": "America/New_York",
+      "daysOfWeek": [
+        "MONDAY",
+        "TUESDAY",
+        "WEDNESDAY",
+        "THURSDAY",
+        "FRIDAY",
+        "SATURDAY",
+        "SUNDAY"
+      ]
+    },
+    "sources": {
+      "primary": "lotteryusa",
+      "fallbacks": [
+        "pick34_site"
+      ],
+      "officialUrls": [],
+      "lotteryusaUrls": []
+    },
+    "calendarPolicy": {
+      "supportsSunday": true
+    }
+  },
+  {
+    "id": "US-P4-RI-PICK-4-MIDDAY",
+    "state": "Rhode Island",
+    "stateCode": "RI",
+    "game": "pick4",
+    "gameName": "Pick 4",
+    "draw": "Midday Draw",
+    "schedule": {
+      "drawTime": "1:20 PM",
+      "timeZoneId": "America/New_York",
+      "daysOfWeek": [
+        "MONDAY",
+        "TUESDAY",
+        "WEDNESDAY",
+        "THURSDAY",
+        "FRIDAY",
+        "SATURDAY",
+        "SUNDAY"
+      ]
+    },
+    "sources": {
+      "primary": "lotteryusa",
+      "fallbacks": [
+        "pick34_site"
+      ],
+      "officialUrls": [],
+      "lotteryusaUrls": []
+    },
+    "calendarPolicy": {
+      "supportsSunday": true
+    }
+  },
+  {
+    "id": "US-P4-SC-PICK-4-EVENING",
+    "state": "South Carolina",
+    "stateCode": "SC",
+    "game": "pick4",
+    "gameName": "Pick 4",
+    "draw": "Evening Draw",
+    "schedule": {
+      "drawTime": "6:59 PM",
+      "timeZoneId": "America/New_York",
+      "daysOfWeek": [
+        "MONDAY",
+        "TUESDAY",
+        "WEDNESDAY",
+        "THURSDAY",
+        "FRIDAY",
+        "SATURDAY",
+        "SUNDAY"
+      ]
+    },
+    "sources": {
+      "primary": "official",
+      "fallbacks": [
+        "lotteryusa",
+        "pick34_site"
+      ],
+      "officialUrls": [
+        "https://www.sceducationlottery.com/Games/Pick4"
+      ],
+      "lotteryusaUrls": [
+        "https://www.lotteryusa.com/south-carolina/pick-4/"
+      ]
+    },
+    "calendarPolicy": {
+      "supportsSunday": true
+    }
+  },
+  {
+    "id": "US-P4-SC-PICK-4-MIDDAY",
+    "state": "South Carolina",
+    "stateCode": "SC",
+    "game": "pick4",
+    "gameName": "Pick 4",
+    "draw": "Midday Draw",
+    "schedule": {
+      "drawTime": "12:59 PM",
+      "timeZoneId": "America/New_York",
+      "daysOfWeek": [
+        "MONDAY",
+        "TUESDAY",
+        "WEDNESDAY",
+        "THURSDAY",
+        "FRIDAY",
+        "SATURDAY"
+      ]
+    },
+    "sources": {
+      "primary": "lotteryusa",
+      "fallbacks": [
+        "pick34_site"
+      ],
+      "officialUrls": [],
+      "lotteryusaUrls": []
+    },
+    "calendarPolicy": {
+      "supportsSunday": false
+    }
+  },
+  {
+    "id": "US-P4-TN-CASH-4-DAY",
+    "state": "Tennessee",
+    "stateCode": "TN",
+    "game": "pick4",
+    "gameName": "Cash 4",
+    "draw": "Day Draw",
+    "schedule": {
+      "drawTime": "12:28 PM",
+      "timeZoneId": "America/Chicago",
+      "daysOfWeek": [
+        "MONDAY",
+        "TUESDAY",
+        "WEDNESDAY",
+        "THURSDAY",
+        "FRIDAY",
+        "SATURDAY"
+      ]
+    },
+    "sources": {
+      "primary": "lotteryusa",
+      "fallbacks": [
+        "pick34_site"
+      ],
+      "officialUrls": [],
+      "lotteryusaUrls": []
+    },
+    "calendarPolicy": {
+      "supportsSunday": false
+    }
+  },
+  {
+    "id": "US-P4-TN-CASH-4-EVENING",
+    "state": "Tennessee",
+    "stateCode": "TN",
+    "game": "pick4",
+    "gameName": "Cash 4",
+    "draw": "Evening Draw",
+    "schedule": {
+      "drawTime": "6:28 PM",
+      "timeZoneId": "America/Chicago",
+      "daysOfWeek": [
+        "MONDAY",
+        "TUESDAY",
+        "WEDNESDAY",
+        "THURSDAY",
+        "FRIDAY",
+        "SATURDAY",
+        "SUNDAY"
+      ]
+    },
+    "sources": {
+      "primary": "lotteryusa",
+      "fallbacks": [
+        "pick34_site"
+      ],
+      "officialUrls": [],
+      "lotteryusaUrls": []
+    },
+    "calendarPolicy": {
+      "supportsSunday": true
+    }
+  },
+  {
+    "id": "US-P4-TN-CASH-4-MORNING",
+    "state": "Tennessee",
+    "stateCode": "TN",
+    "game": "pick4",
+    "gameName": "Cash 4",
+    "draw": "Morning Draw",
+    "schedule": {
+      "drawTime": "9:28 AM",
+      "timeZoneId": "America/Chicago",
+      "daysOfWeek": [
+        "MONDAY",
+        "TUESDAY",
+        "WEDNESDAY",
+        "THURSDAY",
+        "FRIDAY",
+        "SATURDAY"
+      ]
+    },
+    "sources": {
+      "primary": "lotteryusa",
+      "fallbacks": [
+        "pick34_site"
+      ],
+      "officialUrls": [],
+      "lotteryusaUrls": []
+    },
+    "calendarPolicy": {
+      "supportsSunday": false
+    }
+  },
+  {
+    "id": "US-P4-TX-DAILY-4-DAY",
+    "state": "Texas",
+    "stateCode": "TX",
+    "game": "pick4",
+    "gameName": "Daily 4",
+    "draw": "Day Draw",
+    "schedule": {
+      "drawTime": "12:27 PM",
+      "timeZoneId": "America/Chicago",
+      "daysOfWeek": [
+        "MONDAY",
+        "TUESDAY",
+        "WEDNESDAY",
+        "THURSDAY",
+        "FRIDAY",
+        "SATURDAY"
+      ]
+    },
+    "sources": {
+      "primary": "official",
+      "fallbacks": [
+        "lotteryusa",
+        "pick34_site"
+      ],
+      "officialUrls": [
+        "https://www.texaslottery.com/export/sites/lottery/Games/Daily_4/index.html"
+      ],
+      "lotteryusaUrls": []
+    },
+    "calendarPolicy": {
+      "supportsSunday": false
+    }
+  },
+  {
+    "id": "US-P4-TX-DAILY-4-EVENING",
+    "state": "Texas",
+    "stateCode": "TX",
+    "game": "pick4",
+    "gameName": "Daily 4",
+    "draw": "Evening Draw",
+    "schedule": {
+      "drawTime": "6:00 PM",
+      "timeZoneId": "America/Chicago",
+      "daysOfWeek": [
+        "MONDAY",
+        "TUESDAY",
+        "WEDNESDAY",
+        "THURSDAY",
+        "FRIDAY",
+        "SATURDAY"
+      ]
+    },
+    "sources": {
+      "primary": "official",
+      "fallbacks": [
+        "lotteryusa",
+        "pick34_site"
+      ],
+      "officialUrls": [
+        "https://www.texaslottery.com/export/sites/lottery/Games/Daily_4/index.html"
+      ],
+      "lotteryusaUrls": []
+    },
+    "calendarPolicy": {
+      "supportsSunday": false
+    }
+  },
+  {
+    "id": "US-P4-TX-DAILY-4-MORNING",
+    "state": "Texas",
+    "stateCode": "TX",
+    "game": "pick4",
+    "gameName": "Daily 4",
+    "draw": "Morning Draw",
+    "schedule": {
+      "drawTime": "10:00 AM",
+      "timeZoneId": "America/Chicago",
+      "daysOfWeek": [
+        "MONDAY",
+        "TUESDAY",
+        "WEDNESDAY",
+        "THURSDAY",
+        "FRIDAY",
+        "SATURDAY"
+      ]
+    },
+    "sources": {
+      "primary": "official",
+      "fallbacks": [
+        "lotteryusa",
+        "pick34_site"
+      ],
+      "officialUrls": [
+        "https://www.texaslottery.com/export/sites/lottery/Games/Daily_4/index.html"
+      ],
+      "lotteryusaUrls": []
+    },
+    "calendarPolicy": {
+      "supportsSunday": false
+    }
+  },
+  {
+    "id": "US-P4-TX-DAILY-4-NIGHT",
+    "state": "Texas",
+    "stateCode": "TX",
+    "game": "pick4",
+    "gameName": "Daily 4",
+    "draw": "Night Draw",
+    "schedule": {
+      "drawTime": "10:12 PM",
+      "timeZoneId": "America/Chicago",
+      "daysOfWeek": [
+        "MONDAY",
+        "TUESDAY",
+        "WEDNESDAY",
+        "THURSDAY",
+        "FRIDAY",
+        "SATURDAY"
+      ]
+    },
+    "sources": {
+      "primary": "official",
+      "fallbacks": [
+        "lotteryusa",
+        "pick34_site"
+      ],
+      "officialUrls": [
+        "https://www.texaslottery.com/export/sites/lottery/Games/Daily_4/index.html"
+      ],
+      "lotteryusaUrls": []
+    },
+    "calendarPolicy": {
+      "supportsSunday": false
+    }
+  },
+  {
+    "id": "US-P4-VA-PICK-4-EVENING",
+    "state": "Virginia",
+    "stateCode": "VA",
+    "game": "pick4",
+    "gameName": "Pick 4",
+    "draw": "Evening Draw",
+    "schedule": {
+      "drawTime": "11:00 PM",
+      "timeZoneId": "America/New_York",
+      "daysOfWeek": [
+        "MONDAY",
+        "TUESDAY",
+        "WEDNESDAY",
+        "THURSDAY",
+        "FRIDAY",
+        "SATURDAY",
+        "SUNDAY"
+      ]
+    },
+    "sources": {
+      "primary": "lotteryusa",
+      "fallbacks": [
+        "pick34_site"
+      ],
+      "officialUrls": [],
+      "lotteryusaUrls": []
+    },
+    "calendarPolicy": {
+      "supportsSunday": true
+    }
+  },
+  {
+    "id": "US-P4-VA-PICK-4-MIDDAY",
+    "state": "Virginia",
+    "stateCode": "VA",
+    "game": "pick4",
+    "gameName": "Pick 4",
+    "draw": "Midday Draw",
+    "schedule": {
+      "drawTime": "1:59 PM",
+      "timeZoneId": "America/New_York",
+      "daysOfWeek": [
+        "MONDAY",
+        "TUESDAY",
+        "WEDNESDAY",
+        "THURSDAY",
+        "FRIDAY",
+        "SATURDAY",
+        "SUNDAY"
+      ]
+    },
+    "sources": {
+      "primary": "lotteryusa",
+      "fallbacks": [
+        "pick34_site"
+      ],
+      "officialUrls": [],
+      "lotteryusaUrls": []
+    },
+    "calendarPolicy": {
+      "supportsSunday": true
+    }
+  },
+  {
+    "id": "US-P4-VT-PICK-4-MIDDAY",
+    "state": "Vermont",
+    "stateCode": "VT",
+    "game": "pick4",
+    "gameName": "Pick 4",
+    "draw": "Midday Draw",
+    "schedule": {
+      "drawTime": "1:10 PM",
+      "timeZoneId": "America/New_York",
+      "daysOfWeek": [
+        "MONDAY",
+        "TUESDAY",
+        "WEDNESDAY",
+        "THURSDAY",
+        "FRIDAY",
+        "SATURDAY",
+        "SUNDAY"
+      ]
+    },
+    "sources": {
+      "primary": "lotteryusa",
+      "fallbacks": [
+        "pick34_site"
+      ],
+      "officialUrls": [],
+      "lotteryusaUrls": []
+    },
+    "calendarPolicy": {
+      "supportsSunday": true
+    }
+  },
+  {
+    "id": "US-P4-WI-PICK-4-MIDDAY",
+    "state": "Wisconsin",
+    "stateCode": "WI",
+    "game": "pick4",
+    "gameName": "Pick 4",
+    "draw": "Midday Draw",
+    "schedule": {
+      "drawTime": "1:30 PM",
+      "timeZoneId": "America/Chicago",
+      "daysOfWeek": [
+        "MONDAY",
+        "TUESDAY",
+        "WEDNESDAY",
+        "THURSDAY",
+        "FRIDAY",
+        "SATURDAY",
+        "SUNDAY"
+      ]
+    },
+    "sources": {
+      "primary": "lotteryusa",
+      "fallbacks": [
+        "pick34_site"
+      ],
+      "officialUrls": [],
+      "lotteryusaUrls": []
+    },
+    "calendarPolicy": {
+      "supportsSunday": true
+    }
+  },
+  {
+    "id": "US-P4-WV-DAILY-4-DAY",
+    "state": "West Virginia",
+    "stateCode": "WV",
+    "game": "pick4",
+    "gameName": "Daily 4",
+    "draw": "Day Draw",
+    "schedule": {
+      "drawTime": "6:59 PM",
+      "timeZoneId": "America/New_York",
+      "daysOfWeek": [
+        "MONDAY",
+        "TUESDAY",
+        "WEDNESDAY",
+        "THURSDAY",
+        "FRIDAY",
+        "SATURDAY"
+      ]
+    },
+    "sources": {
+      "primary": "lotteryusa",
+      "fallbacks": [
+        "pick34_site"
+      ],
+      "officialUrls": [],
+      "lotteryusaUrls": []
+    },
+    "calendarPolicy": {
+      "supportsSunday": false
+    }
+  }
+]

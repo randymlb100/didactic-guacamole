@@ -3,7 +3,7 @@ LotteryNet RD — Scraper → Supabase
 Scrapea loteriasdominicanas.com y guarda en lotterynet_kv
 key: lot_results_cache_by_day
 """
-import os, json, datetime, urllib.request, urllib.parse, re
+import os, json, datetime, urllib.request, urllib.parse, re, pathlib
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
 from bs4 import BeautifulSoup
@@ -68,6 +68,12 @@ class ExpectedPickDraw:
     game_name: str
     draw: str
     preferred_urls: tuple = ()
+    official_urls: tuple = ()
+    draw_time: str = ""
+    time_zone_id: str = "America/New_York"
+    days_of_week: tuple = ("MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY", "SUNDAY")
+    primary_source: str = "lotteryusa"
+    fallback_sources: tuple = ()
 
 
 @dataclass(frozen=True)
@@ -77,103 +83,33 @@ class PickSourcePlan:
     fallback_order: tuple
 
 
-OFFICIAL_PICK_SOURCE_URLS_BY_ID = {
-    "US-P3-TX-PICK-3-MORNING": ("https://www.texaslottery.com/export/sites/lottery/Games/Pick_3/index.html",),
-    "US-P3-TX-PICK-3-DAY": ("https://www.texaslottery.com/export/sites/lottery/Games/Pick_3/index.html",),
-    "US-P3-TX-PICK-3-EVENING": ("https://www.texaslottery.com/export/sites/lottery/Games/Pick_3/index.html",),
-    "US-P3-TX-PICK-3-NIGHT": ("https://www.texaslottery.com/export/sites/lottery/Games/Pick_3/index.html",),
-    "US-P4-TX-DAILY-4-MORNING": ("https://www.texaslottery.com/export/sites/lottery/Games/Daily_4/index.html",),
-    "US-P4-TX-DAILY-4-DAY": ("https://www.texaslottery.com/export/sites/lottery/Games/Daily_4/index.html",),
-    "US-P4-TX-DAILY-4-EVENING": ("https://www.texaslottery.com/export/sites/lottery/Games/Daily_4/index.html",),
-    "US-P4-TX-DAILY-4-NIGHT": ("https://www.texaslottery.com/export/sites/lottery/Games/Daily_4/index.html",),
-    "US-P3-AR-CASH-3-EVENING": ("https://www.myarkansaslottery.com/games/cash-3",),
-    "US-P3-TN-CASH-3-06-28-PM": ("https://www.tnlottery.com/games/how-to-play/cash3/",),
-    "19": ("https://www.njlottery.com/en-us/drawgames/pick3.html",),
-    "20": ("https://www.njlottery.com/en-us/drawgames/pick3.html",),
-    "21": ("https://www.njlottery.com/en-us/drawgames/pick4.html",),
-    "22": ("https://www.njlottery.com/en-us/drawgames/pick4.html",),
-    "US-P4-SC-PICK-4-EVENING": ("https://www.sceducationlottery.com/Games/Pick4",),
-}
+def load_pick_draw_registry():
+    registry_path = pathlib.Path(__file__).with_name("pick_draw_registry.json")
+    rows = json.loads(registry_path.read_text(encoding="utf-8"))
+    entries = []
+    for row in rows:
+        schedule = row.get("schedule") or {}
+        sources = row.get("sources") or {}
+        entries.append(ExpectedPickDraw(
+            id=row["id"],
+            state=row["state"],
+            state_code=row["stateCode"],
+            game=row["game"],
+            game_name=row["gameName"],
+            draw=row["draw"],
+            preferred_urls=tuple(sources.get("lotteryusaUrls") or ()),
+            official_urls=tuple(sources.get("officialUrls") or ()),
+            draw_time=str(schedule.get("drawTime") or ""),
+            time_zone_id=str(schedule.get("timeZoneId") or "America/New_York"),
+            days_of_week=tuple(schedule.get("daysOfWeek") or ("MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY", "SUNDAY")),
+            primary_source=str(sources.get("primary") or "lotteryusa"),
+            fallback_sources=tuple(sources.get("fallbacks") or ()),
+        ))
+    return tuple(entries)
 
 
-PICK_LOTTERYUSA_FALLBACK_DRAWS = (
-    ExpectedPickDraw("US-P3-IN-DAILY-3-MIDDAY", "Indiana", "IN", "pick3", "Daily 3", "Midday Draw"),
-    ExpectedPickDraw("US-P3-IN-DAILY-3-EVENING", "Indiana", "IN", "pick3", "Daily 3", "Evening Draw"),
-    ExpectedPickDraw("US-P4-IN-DAILY-4-MIDDAY", "Indiana", "IN", "pick4", "Daily 4", "Midday Draw"),
-    ExpectedPickDraw("US-P4-IN-DAILY-4-EVENING", "Indiana", "IN", "pick4", "Daily 4", "Evening Draw"),
-    ExpectedPickDraw(
-        "US-P3-AR-CASH-3-EVENING",
-        "Arkansas",
-        "AR",
-        "pick3",
-        "Cash 3",
-        "Evening Draw",
-        ("https://www.lotteryusa.com/arkansas/cash-3/",),
-    ),
-    ExpectedPickDraw(
-        "US-P3-DC-3-MIDDAY",
-        "District of Columbia",
-        "DC",
-        "pick3",
-        "DC Lucky",
-        "Midday Draw",
-        ("https://www.lotteryusa.com/district-of-columbia/dc-lucky-midday/",),
-    ),
-    ExpectedPickDraw(
-        "US-P3-TN-CASH-3-06-28-PM",
-        "Tennessee",
-        "TN",
-        "pick3",
-        "Cash 3",
-        "Evening Draw",
-        ("https://www.lotteryusa.com/tennessee/cash-3/",),
-    ),
-    ExpectedPickDraw(
-        "19",
-        "New Jersey",
-        "NJ",
-        "pick3",
-        "Pick 3",
-        "Midday Draw",
-        ("https://www.lotteryusa.com/new-jersey/midday-pick-3/",),
-    ),
-    ExpectedPickDraw(
-        "20",
-        "New Jersey",
-        "NJ",
-        "pick3",
-        "Pick 3",
-        "Evening Draw",
-        ("https://www.lotteryusa.com/new-jersey/pick-3/",),
-    ),
-    ExpectedPickDraw(
-        "21",
-        "New Jersey",
-        "NJ",
-        "pick4",
-        "Pick 4",
-        "Midday Draw",
-        ("https://www.lotteryusa.com/new-jersey/midday-pick-4/",),
-    ),
-    ExpectedPickDraw(
-        "22",
-        "New Jersey",
-        "NJ",
-        "pick4",
-        "Pick 4",
-        "Evening Draw",
-        ("https://www.lotteryusa.com/new-jersey/pick-4/",),
-    ),
-    ExpectedPickDraw(
-        "US-P4-SC-PICK-4-EVENING",
-        "South Carolina",
-        "SC",
-        "pick4",
-        "Pick 4",
-        "Evening Draw",
-        ("https://www.lotteryusa.com/south-carolina/pick-4/",),
-    ),
-)
+PICK_DRAW_REGISTRY = load_pick_draw_registry()
+PICK_DRAW_REGISTRY_BY_ID = {draw.id: draw for draw in PICK_DRAW_REGISTRY}
 US_STATE_CODES = {
     "Alabama": "AL",
     "Alaska": "AK",
@@ -493,6 +429,9 @@ def expected_pick_draw_from_row(row):
     result_id = str(row.get("id", "")).strip()
     if not result_id:
         return None
+    registry_draw = PICK_DRAW_REGISTRY_BY_ID.get(result_id)
+    if registry_draw:
+        return registry_draw
     game = normalize_us_pick_game(row.get("game"))
     if not game:
         game = "pick4" if result_id.startswith("US-P4-") else "pick3" if result_id.startswith("US-P3-") else ""
@@ -506,6 +445,11 @@ def expected_pick_draw_from_row(row):
         game_name=str(row.get("gameName", "")).strip() or ("Pick 4" if game == "pick4" else "Pick 3"),
         draw=str(row.get("draw", "")).strip() or "Draw",
     )
+
+
+def hydrate_pick_draw(draw):
+    registry_draw = PICK_DRAW_REGISTRY_BY_ID.get(str(draw.id).strip())
+    return registry_draw or draw
 
 
 def expected_pick_draws_from_rows(rows):
@@ -531,23 +475,24 @@ def pick_draws_needing_fallback(expected_draws, existing_rows, target_date, max_
 
 
 def pick_draw_applies_on_date(draw, target_date):
+    draw = hydrate_pick_draw(draw)
     try:
         requested = datetime.datetime.strptime(str(target_date), "%d-%m-%Y").date()
     except ValueError:
         return True
-    if requested.weekday() != 6:
+    weekday_names = (
+        "MONDAY",
+        "TUESDAY",
+        "WEDNESDAY",
+        "THURSDAY",
+        "FRIDAY",
+        "SATURDAY",
+        "SUNDAY",
+    )
+    allowed_days = tuple(str(day).upper() for day in (draw.days_of_week or ()))
+    if not allowed_days:
         return True
-    draw_name = str(draw.draw or "").strip().lower()
-    state_code = str(draw.state_code or "").strip().upper()
-    if state_code == "AR":
-        return "midday" not in draw_name
-    if state_code == "SC":
-        return "midday" not in draw_name
-    if state_code == "TN":
-        return "evening" in draw_name
-    if state_code in {"TX", "WV"}:
-        return False
-    return True
+    return weekday_names[requested.weekday()] in allowed_days
 
 
 def build_pick_status_rows(expected_draws, current_rows, target_date, now_dr=None):
@@ -1162,22 +1107,28 @@ def lotteryusa_state_slug(state):
 
 
 def official_pick_url_candidates(draw):
-    explicit_urls = OFFICIAL_PICK_SOURCE_URLS_BY_ID.get(str(draw.id).strip(), ())
-    return tuple(url for url in explicit_urls if url)
+    draw = hydrate_pick_draw(draw)
+    return tuple(url for url in getattr(draw, "official_urls", ()) if url)
 
 
 def build_pick_source_plan(draw):
+    draw = hydrate_pick_draw(draw)
     official_urls = official_pick_url_candidates(draw)
-    if official_urls:
+    primary = str(getattr(draw, "primary_source", "") or "lotteryusa")
+    fallbacks = tuple(
+        source for source in (primary,) + tuple(getattr(draw, "fallback_sources", ()))
+        if source
+    )
+    if primary == "official" and official_urls:
         return PickSourcePlan(
             primary="official",
             primary_urls=official_urls,
-            fallback_order=("official", "lotteryusa"),
+            fallback_order=fallbacks or ("official", "lotteryusa"),
         )
     return PickSourcePlan(
-        primary="lotteryusa",
-        primary_urls=(),
-        fallback_order=("lotteryusa",),
+        primary=primary,
+        primary_urls=official_urls if primary == "official" else (),
+        fallback_order=fallbacks or ("lotteryusa",),
     )
 
 
@@ -1276,11 +1227,43 @@ def fetch_official_pick_draw(draw, target_date):
     return None
 
 
+def fetch_pick34_site_draw(draw, target_date):
+    seed_row = {
+        "id": draw.id,
+        "state": draw.state,
+        "stateCode": draw.state_code,
+        "game": draw.game,
+        "gameName": draw.game_name,
+        "draw": draw.draw,
+        "playTypes": ["straight", "box"],
+    }
+    if draw.state_code == "NJ":
+        for row in fetch_new_jersey_pick_home(draw.game):
+            if row.get("id") == draw.id and row.get("date") == target_date and has_valid_pick_result(row, target_date):
+                row["status"] = PICK_RESULT_STATUS_PUBLISHED
+                row.setdefault("backfilled", True)
+                return row
+    history_rows = fetch_us_pick_history_batch(draw.game, [seed_row], target_date).get((draw.state_code, draw.game_name), [])
+    for row in history_rows:
+        if row.get("id") == draw.id and has_valid_pick_result(row, target_date):
+            row["status"] = PICK_RESULT_STATUS_PUBLISHED
+            row.setdefault("backfilled", True)
+            return row
+    for row in fetch_us_pick_overview(draw.game):
+        if row.get("id") == draw.id and row.get("date") == target_date and has_valid_pick_result(row, target_date):
+            row["status"] = PICK_RESULT_STATUS_PUBLISHED
+            row.setdefault("backfilled", True)
+            return row
+    return None
+
+
 def fetch_pick_draw_by_source(draw, target_date, source_name):
     if source_name == "official":
         return fetch_official_pick_draw(draw, target_date)
     if source_name == "lotteryusa":
         return fetch_lotteryusa_pick_draw(draw, target_date)
+    if source_name == "pick34_site":
+        return fetch_pick34_site_draw(draw, target_date)
     return None
 
 
@@ -1377,7 +1360,7 @@ def configured_pick_fallback_draws(requested_games):
     games.discard("")
     if not games:
         games = {"pick3", "pick4"}
-    return [draw for draw in PICK_LOTTERYUSA_FALLBACK_DRAWS if draw.game in games]
+    return [draw for draw in PICK_DRAW_REGISTRY if draw.game in games]
 
 
 def merge_pick_rows_without_empty_overwrite(existing_rows, fresh_rows, target_date):

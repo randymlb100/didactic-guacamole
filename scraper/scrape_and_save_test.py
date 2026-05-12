@@ -680,8 +680,27 @@ class ScraperContractsTest(unittest.TestCase):
         plan = scraper.build_pick_source_plan(draw)
 
         self.assertEqual("official", plan.primary)
-        self.assertEqual(("official", "lotteryusa"), plan.fallback_order)
+        self.assertEqual(("official", "lotteryusa", "pick34_site"), plan.fallback_order)
         self.assertTrue(plan.primary_urls)
+
+    def test_pick_draw_registry_covers_full_catalog(self):
+        registry = scraper.configured_pick_fallback_draws(["pick3", "pick4"])
+        registry_ids = {draw.id for draw in registry}
+
+        self.assertEqual(119, len(registry))
+        self.assertIn("US-P3-FL-PICK-3-MIDDAY", registry_ids)
+        self.assertIn("US-P4-TX-DAILY-4-NIGHT", registry_ids)
+        self.assertIn("19", registry_ids)
+        self.assertIn("22", registry_ids)
+
+    def test_pick_draw_registry_uses_calendar_days_instead_of_state_if_chain(self):
+        texas = next(draw for draw in scraper.configured_pick_fallback_draws(["pick3"]) if draw.id == "US-P3-TX-PICK-3-MORNING")
+        sc_evening = next(draw for draw in scraper.configured_pick_fallback_draws(["pick4"]) if draw.id == "US-P4-SC-PICK-4-EVENING")
+        sc_midday = next(draw for draw in scraper.configured_pick_fallback_draws(["pick4"]) if draw.id == "US-P4-SC-PICK-4-MIDDAY")
+
+        self.assertFalse(scraper.pick_draw_applies_on_date(texas, "10-05-2026"))
+        self.assertTrue(scraper.pick_draw_applies_on_date(sc_evening, "10-05-2026"))
+        self.assertFalse(scraper.pick_draw_applies_on_date(sc_midday, "10-05-2026"))
 
     def test_fetch_pick_fallback_rows_tries_official_before_lotteryusa(self):
         expected = [
@@ -719,36 +738,14 @@ class ScraperContractsTest(unittest.TestCase):
         official_fetcher.assert_called_once()
         lotteryusa_fetcher.assert_not_called()
 
-    def test_configured_fallback_draws_cover_known_sunday_pick_gaps(self):
-        self.assertEqual(
-            [
-                "US-P3-IN-DAILY-3-MIDDAY",
-                "US-P3-IN-DAILY-3-EVENING",
-                "US-P4-IN-DAILY-4-MIDDAY",
-                "US-P4-IN-DAILY-4-EVENING",
-                "US-P3-AR-CASH-3-EVENING",
-                "US-P3-DC-3-MIDDAY",
-                "US-P3-TN-CASH-3-06-28-PM",
-                "19",
-                "20",
-                "21",
-                "22",
-                "US-P4-SC-PICK-4-EVENING",
-            ],
-            [draw.id for draw in scraper.configured_pick_fallback_draws(["pick3", "pick4"])],
-        )
-        self.assertEqual(
-            [
-                "US-P3-IN-DAILY-3-MIDDAY",
-                "US-P3-IN-DAILY-3-EVENING",
-                "US-P3-AR-CASH-3-EVENING",
-                "US-P3-DC-3-MIDDAY",
-                "US-P3-TN-CASH-3-06-28-PM",
-                "19",
-                "20",
-            ],
-            [draw.id for draw in scraper.configured_pick_fallback_draws(["pick3"])],
-        )
+    def test_configured_fallback_draws_filter_by_game_from_registry(self):
+        pick3_ids = [draw.id for draw in scraper.configured_pick_fallback_draws(["pick3"])]
+        pick4_ids = [draw.id for draw in scraper.configured_pick_fallback_draws(["pick4"])]
+
+        self.assertTrue(all(draw_id == "19" or draw_id == "20" or draw_id.startswith("US-P3-") for draw_id in pick3_ids))
+        self.assertTrue(all(draw_id == "21" or draw_id == "22" or draw_id.startswith("US-P4-") for draw_id in pick4_ids))
+        self.assertIn("US-P3-TX-PICK-3-MORNING", pick3_ids)
+        self.assertIn("US-P4-TX-DAILY-4-NIGHT", pick4_ids)
 
     def test_scrape_us_picks_does_not_overwrite_existing_valid_with_empty_fallback(self):
         existing = [{
