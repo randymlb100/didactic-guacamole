@@ -1,6 +1,7 @@
 import os
 import unittest
 import datetime
+from unittest.mock import Mock, patch
 
 import scrape_and_save as scraper
 
@@ -442,6 +443,145 @@ class ScraperContractsTest(unittest.TestCase):
             "lot_results_cache_by_day:08-05-2026",
             scraper.pick_results_cache_key("08-05-2026"),
         )
+
+    def test_valid_pick_result_requires_number_and_exact_date(self):
+        self.assertTrue(scraper.has_valid_pick_result({
+            "id": "US-P3-FL-PICK-3-EVENING",
+            "date": "08-05-2026",
+            "number": "9-2-0",
+        }, "08-05-2026"))
+        self.assertFalse(scraper.has_valid_pick_result({
+            "id": "US-P3-FL-PICK-3-EVENING",
+            "date": "07-05-2026",
+            "number": "9-2-0",
+        }, "08-05-2026"))
+        self.assertFalse(scraper.has_valid_pick_result({
+            "id": "US-P3-FL-PICK-3-EVENING",
+            "date": "08-05-2026",
+            "number": "",
+        }, "08-05-2026"))
+
+    def test_pick_fallback_plan_skips_cached_and_limits_calls(self):
+        expected = [
+            scraper.ExpectedPickDraw(
+                id=f"US-P3-TX-PICK-3-{index}",
+                state="Texas",
+                state_code="TX",
+                game="pick3",
+                game_name="Pick 3",
+                draw=f"{index}:00 PM Draw",
+            )
+            for index in range(0, 30)
+        ]
+        existing = [{
+            "id": "US-P3-TX-PICK-3-0",
+            "date": "08-05-2026",
+            "number": "1-2-3",
+        }]
+
+        missing = scraper.pick_draws_needing_fallback(
+            expected,
+            existing,
+            "08-05-2026",
+            max_calls=25,
+            now_dr=datetime.datetime(2026, 5, 9, 9, 0),
+        )
+
+        self.assertEqual(25, len(missing))
+        self.assertNotIn("US-P3-TX-PICK-3-0", [draw.id for draw in missing])
+
+    def test_pick_fallback_plan_does_not_query_future_dates(self):
+        expected = [scraper.ExpectedPickDraw(
+            id="US-P3-TX-PICK-3-EVENING",
+            state="Texas",
+            state_code="TX",
+            game="pick3",
+            game_name="Pick 3",
+            draw="Evening Draw",
+        )]
+
+        missing = scraper.pick_draws_needing_fallback(
+            expected,
+            [],
+            "10-05-2026",
+            max_calls=25,
+            now_dr=datetime.datetime(2026, 5, 9, 9, 0),
+        )
+
+        self.assertEqual([], missing)
+
+    def test_smart_fallback_only_fetches_missing_draws(self):
+        expected = [
+            scraper.ExpectedPickDraw(
+                id="US-P3-IN-DAILY-3-MIDDAY",
+                state="Indiana",
+                state_code="IN",
+                game="pick3",
+                game_name="Daily 3",
+                draw="Midday Draw",
+            ),
+            scraper.ExpectedPickDraw(
+                id="US-P3-IN-DAILY-3-EVENING",
+                state="Indiana",
+                state_code="IN",
+                game="pick3",
+                game_name="Daily 3",
+                draw="Evening Draw",
+            ),
+        ]
+        primary = [{
+            "id": "US-P3-IN-DAILY-3-EVENING",
+            "date": "11-05-2026",
+            "number": "3-1-7",
+        }]
+        fetcher = Mock(return_value={
+            "id": "US-P3-IN-DAILY-3-MIDDAY",
+            "date": "11-05-2026",
+            "number": "5-8-6",
+            "source": "lotteryusa.com",
+        })
+
+        rows = scraper.fetch_pick_fallback_rows(
+            expected,
+            primary,
+            "11-05-2026",
+            max_calls=25,
+            now_dr=datetime.datetime(2026, 5, 12, 9, 0),
+            fetcher=fetcher,
+        )
+
+        self.assertEqual(["US-P3-IN-DAILY-3-MIDDAY"], [row["id"] for row in rows])
+        fetcher.assert_called_once()
+
+    def test_configured_fallback_draws_are_controlled_pilot_list(self):
+        self.assertEqual(
+            [
+                "US-P3-IN-DAILY-3-MIDDAY",
+                "US-P3-IN-DAILY-3-EVENING",
+                "US-P4-IN-DAILY-4-MIDDAY",
+                "US-P4-IN-DAILY-4-EVENING",
+            ],
+            [draw.id for draw in scraper.configured_pick_fallback_draws(["pick3", "pick4"])],
+        )
+        self.assertEqual(
+            ["US-P3-IN-DAILY-3-MIDDAY", "US-P3-IN-DAILY-3-EVENING"],
+            [draw.id for draw in scraper.configured_pick_fallback_draws(["pick3"])],
+        )
+
+    def test_scrape_us_picks_does_not_overwrite_existing_valid_with_empty_fallback(self):
+        existing = [{
+            "id": "US-P3-IN-DAILY-3-MIDDAY",
+            "date": "11-05-2026",
+            "number": "5-8-6",
+            "source": "supabase-cache",
+        }]
+        with patch.object(scraper, "fetch_us_pick_overview", return_value=[]), \
+            patch.object(scraper, "fetch_us_pick_history_batch", return_value={}), \
+            patch.object(scraper, "fetch_new_jersey_pick_home", return_value=[]), \
+            patch.object(scraper, "fetch_pick_fallback_rows", return_value=[]):
+            rows = scraper.scrape_us_picks("11-05-2026", games=["pick3"], existing_rows=existing)
+
+        self.assertEqual(existing, rows)
 
 
 if __name__ == "__main__":

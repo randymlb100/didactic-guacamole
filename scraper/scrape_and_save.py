@@ -5,6 +5,7 @@ key: lot_results_cache_by_day
 """
 import os, json, datetime, urllib.request, urllib.parse, re
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from dataclasses import dataclass
 from bs4 import BeautifulSoup
 
 SUPABASE_URL = os.environ.get("SUPABASE_URL", "https://unhoulkujbtsypccpirc.supabase.co")
@@ -40,6 +41,27 @@ US_PICK_SOURCE_NAMES = {
     "pick3": "pick-3.com",
     "pick4": "pick-4.com",
 }
+PICK_FALLBACK_MAX_CALLS = int(os.environ.get("PICK_FALLBACK_MAX_CALLS", "25"))
+PICK_FALLBACK_WORKERS = int(os.environ.get("PICK_FALLBACK_WORKERS", "4"))
+PICK_SOURCE_TIMEOUT_SECONDS = int(os.environ.get("PICK_SOURCE_TIMEOUT_SECONDS", "8"))
+
+
+@dataclass(frozen=True)
+class ExpectedPickDraw:
+    id: str
+    state: str
+    state_code: str
+    game: str
+    game_name: str
+    draw: str
+
+
+PICK_LOTTERYUSA_FALLBACK_DRAWS = (
+    ExpectedPickDraw("US-P3-IN-DAILY-3-MIDDAY", "Indiana", "IN", "pick3", "Daily 3", "Midday Draw"),
+    ExpectedPickDraw("US-P3-IN-DAILY-3-EVENING", "Indiana", "IN", "pick3", "Daily 3", "Evening Draw"),
+    ExpectedPickDraw("US-P4-IN-DAILY-4-MIDDAY", "Indiana", "IN", "pick4", "Daily 4", "Midday Draw"),
+    ExpectedPickDraw("US-P4-IN-DAILY-4-EVENING", "Indiana", "IN", "pick4", "Daily 4", "Evening Draw"),
+)
 US_STATE_CODES = {
     "Alabama": "AL",
     "Alaska": "AK",
@@ -243,6 +265,65 @@ def build_us_pick_result_id(game, state_code, game_name, draw_label):
         slug_token(game_name),
         slug_token(draw),
     ])
+
+
+def has_valid_pick_result(row, target_date):
+    if not isinstance(row, dict):
+        return False
+    if str(row.get("date", "")).strip() != str(target_date or "").strip():
+        return False
+    number = str(row.get("number") or row.get("pick3") or row.get("pick4") or "").strip()
+    return bool(re.fullmatch(r"\d{1,2}(?:-\d{1,2}){2,3}", number))
+
+
+def is_pick_target_date_eligible_for_live_scrape(target_date, now_dr=None):
+    try:
+        target = datetime.datetime.strptime(str(target_date), "%d-%m-%Y").date()
+    except ValueError:
+        return False
+    current = (now_dr or datetime.datetime.now()).date()
+    return target <= current
+
+
+def expected_pick_draw_from_row(row):
+    result_id = str(row.get("id", "")).strip()
+    if not result_id:
+        return None
+    game = normalize_us_pick_game(row.get("game"))
+    if not game:
+        game = "pick4" if result_id.startswith("US-P4-") else "pick3" if result_id.startswith("US-P3-") else ""
+    if game not in ("pick3", "pick4"):
+        return None
+    return ExpectedPickDraw(
+        id=result_id,
+        state=str(row.get("state", "")).strip(),
+        state_code=str(row.get("stateCode", "")).strip(),
+        game=game,
+        game_name=str(row.get("gameName", "")).strip() or ("Pick 4" if game == "pick4" else "Pick 3"),
+        draw=str(row.get("draw", "")).strip() or "Draw",
+    )
+
+
+def expected_pick_draws_from_rows(rows):
+    by_id = {}
+    for row in rows or []:
+        draw = expected_pick_draw_from_row(row)
+        if draw:
+            by_id[draw.id] = draw
+    return [by_id[key] for key in sorted(by_id)]
+
+
+def pick_draws_needing_fallback(expected_draws, existing_rows, target_date, max_calls=None, now_dr=None):
+    if not is_pick_target_date_eligible_for_live_scrape(target_date, now_dr=now_dr):
+        return []
+    available = {
+        str(row.get("id", "")).strip()
+        for row in existing_rows or []
+        if has_valid_pick_result(row, target_date)
+    }
+    limit = PICK_FALLBACK_MAX_CALLS if max_calls is None else max(0, int(max_calls))
+    missing = [draw for draw in expected_draws if draw.id not in available]
+    return missing[:limit]
 
 
 def parse_us_pick_draw_date(raw):
@@ -796,9 +877,119 @@ def fetch_us_pick_history_batch(game, state_rows, target_date):
     return rows_by_key
 
 
-def scrape_us_picks(date_str=None, games=None):
+def lotteryusa_state_slug(state):
+    text = str(state or "").lower()
+    text = re.sub(r"[^a-z0-9]+", "-", text)
+    return text.strip("-")
+
+
+def lotteryusa_pick_url_candidates(draw):
+    state_slug = lotteryusa_state_slug(draw.state)
+    if not state_slug:
+        return []
+    game_digit = "4" if draw.game == "pick4" else "3"
+    game_name = slug_token(draw.game_name).lower()
+    draw_name = slug_token(draw.draw.replace(" Draw", "")).lower()
+    candidates = []
+    if draw.state_code == "IN" and game_name == f"daily-{game_digit}":
+        if draw_name == "midday":
+            candidates.append(f"https://www.lotteryusa.com/{state_slug}/midday-{game_digit}/")
+        elif draw_name == "evening":
+            candidates.append(f"https://www.lotteryusa.com/{state_slug}/daily-{game_digit}/")
+    if draw_name and draw_name != "draw":
+        candidates.extend([
+            f"https://www.lotteryusa.com/{state_slug}/{draw_name}-pick-{game_digit}/",
+            f"https://www.lotteryusa.com/{state_slug}/pick-{game_digit}-{draw_name}/",
+            f"https://www.lotteryusa.com/{state_slug}/{draw_name}-{game_digit}/",
+        ])
+    candidates.extend([
+        f"https://www.lotteryusa.com/{state_slug}/pick-{game_digit}/",
+        f"https://www.lotteryusa.com/{state_slug}/{game_name}/",
+    ])
+    return list(dict.fromkeys(candidates))
+
+
+def fetch_lotteryusa_pick_draw(draw, target_date):
+    digits = 4 if draw.game == "pick4" else 3
+    for url in lotteryusa_pick_url_candidates(draw):
+        row = fetch_lotteryusa_results(
+            url,
+            draw.id,
+            " ".join(part for part in [draw.state, draw.game_name, draw.draw] if part),
+            digits,
+            target_date,
+            timeout=PICK_SOURCE_TIMEOUT_SECONDS,
+        )
+        if row and has_valid_pick_result(row, target_date):
+            row["source"] = "lotteryusa.com"
+            row["game"] = draw.game
+            row["state"] = draw.state
+            row["stateCode"] = draw.state_code
+            row["gameName"] = draw.game_name
+            row["draw"] = draw.draw
+            row["playTypes"] = ["straight", "box"]
+            row["lastCheckedAt"] = utc_now_iso()
+            row["sourceAttempts"] = [{"source": "lotteryusa.com", "url": url, "status": "matched"}]
+            return row
+    return None
+
+
+def fetch_pick_fallback_rows(expected_draws, current_rows, target_date, max_calls=None, now_dr=None, fetcher=None):
+    draws = pick_draws_needing_fallback(
+        expected_draws,
+        current_rows,
+        target_date,
+        max_calls=PICK_FALLBACK_MAX_CALLS if max_calls is None else max_calls,
+        now_dr=now_dr,
+    )
+    if not draws:
+        return []
+    fetch = fetcher or fetch_lotteryusa_pick_draw
+    rows = []
+    max_workers = max(1, min(PICK_FALLBACK_WORKERS, len(draws)))
+    with ThreadPoolExecutor(max_workers=max_workers) as executor:
+        future_to_draw = {executor.submit(fetch, draw, target_date): draw for draw in draws}
+        for future in as_completed(future_to_draw):
+            draw = future_to_draw[future]
+            try:
+                row = future.result()
+            except Exception as e:
+                print(f"  Pick fallback error for {draw.id}: {e}")
+                continue
+            if row and row.get("id") == draw.id and has_valid_pick_result(row, target_date):
+                rows.append(row)
+    return sorted(rows, key=lambda row: row.get("id", ""))
+
+
+def configured_pick_fallback_draws(requested_games):
+    games = {normalize_us_pick_game(game) for game in requested_games or ()}
+    games.discard("")
+    if not games:
+        games = {"pick3", "pick4"}
+    return [draw for draw in PICK_LOTTERYUSA_FALLBACK_DRAWS if draw.game in games]
+
+
+def merge_pick_rows_without_empty_overwrite(existing_rows, fresh_rows, target_date):
+    merged = {
+        str(row.get("id", "")).strip(): dict(row)
+        for row in existing_rows or []
+        if str(row.get("id", "")).strip() and has_valid_pick_result(row, target_date)
+    }
+    for row in fresh_rows or []:
+        result_id = str(row.get("id", "")).strip()
+        if not result_id or not has_valid_pick_result(row, target_date):
+            continue
+        merged[result_id] = dict(row)
+    return list(merged.values())
+
+
+def scrape_us_picks(date_str=None, games=None, existing_rows=None, now_dr=None):
     target_date = date_str or get_dr_date_str()
-    rows_by_id = {}
+    rows_by_id = {
+        str(row.get("id", "")).strip(): dict(row)
+        for row in existing_rows or []
+        if str(row.get("id", "")).strip() and has_valid_pick_result(row, target_date)
+    }
     requested_games = tuple(g for g in (games or ("pick3", "pick4")) if normalize_us_pick_game(g))
     for game in requested_games:
         overview_rows = fetch_us_pick_overview(game)
@@ -827,10 +1018,24 @@ def scrape_us_picks(date_str=None, games=None):
                 rows_by_id[row["id"]] = row
             for row in fetch_new_jersey_pick_home(game):
                 rows_by_id[row["id"]] = row
-    rows = list(rows_by_id.values())
+    rows = merge_pick_rows_without_empty_overwrite([], rows_by_id.values(), target_date)
+    fallback_rows = fetch_pick_fallback_rows(
+        configured_pick_fallback_draws(requested_games),
+        rows,
+        target_date,
+        max_calls=PICK_FALLBACK_MAX_CALLS,
+        now_dr=now_dr,
+    )
+    rows = merge_pick_rows_without_empty_overwrite(rows, fallback_rows, target_date)
     if target_date:
         rows = [row for row in rows if row.get("date") == target_date]
-    return sorted(rows, key=lambda row: (row["state"], row["game"], row["draw"], row["gameName"]))
+    return sorted(rows, key=lambda row: (
+        row.get("state", ""),
+        row.get("game", ""),
+        row.get("draw", ""),
+        row.get("gameName", ""),
+        row.get("id", ""),
+    ))
 
 
 def iso_date_to_dr_date(raw):
@@ -1067,7 +1272,7 @@ def fetch_enloteria_haiti_bolet(date_str=None, fallback_days=2):
     )
 
 
-def fetch_lotteryusa_results(url, lottery_id, lottery_name, digits, target_date):
+def fetch_lotteryusa_results(url, lottery_id, lottery_name, digits, target_date, timeout=20):
     req = urllib.request.Request(
         url,
         headers={
@@ -1076,7 +1281,7 @@ def fetch_lotteryusa_results(url, lottery_id, lottery_name, digits, target_date)
         },
     )
     try:
-        html = urllib.request.urlopen(req, timeout=20).read()
+        html = urllib.request.urlopen(req, timeout=timeout).read()
     except Exception as e:
         print(f"  Lottery USA error for {lottery_name}: {e}")
         return None
@@ -1308,6 +1513,31 @@ def pick_results_cache_key(date_str):
     return f"pick_results_cache_by_day:{date_str}"
 
 
+def fetch_existing_us_picks_from_supabase(date_str):
+    key = pick_results_cache_key(date_str)
+    params = urllib.parse.urlencode({"key": f"eq.{key}", "select": "value"})
+    url = f"{SUPABASE_URL}/rest/v1/lotterynet_kv?{params}"
+    req = urllib.request.Request(
+        url,
+        headers={
+            "apikey": SUPABASE_KEY,
+            "Authorization": f"Bearer {SUPABASE_KEY}",
+        },
+    )
+    try:
+        resp = urllib.request.urlopen(req, timeout=8)
+        rows = json.loads(resp.read().decode())
+        if rows and rows[0].get("value"):
+            existing = rows[0]["value"]
+            if isinstance(existing, str):
+                existing = json.loads(existing)
+            if isinstance(existing, list):
+                return existing
+    except Exception as e:
+        print(f"Warning: could not fetch existing pick results: {e}")
+    return []
+
+
 def save_us_picks_to_supabase(date_str, rows):
     key = pick_results_cache_key(date_str)
     value = json.dumps(rows, ensure_ascii=False)
@@ -1496,7 +1726,8 @@ if __name__ == "__main__":
             print(f"No results found for {target_date} — skipping RD save")
 
         print(f"\n[US Pick] Scraping {target_date}...")
-        pick_results = unique_us_pick_results(scrape_us_picks(target_date))
+        existing_pick_results = fetch_existing_us_picks_from_supabase(target_date)
+        pick_results = unique_us_pick_results(scrape_us_picks(target_date, existing_rows=existing_pick_results))
         print(f"Found {len(pick_results)} US Pick results")
         if pick_results:
             pick3_count = sum(1 for row in pick_results if row.get("game") == "pick3")

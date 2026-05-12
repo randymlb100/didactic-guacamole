@@ -87,25 +87,25 @@ def scrape_cached(date_key):
     return rows
 
 
-def pick_scrape_cached(date_key):
+def pick_scrape_cached(date_key, existing_rows=None):
     now = time.time()
     cached = _pick_scrape_cache.get(date_key)
     if cached and now - cached["stored_at"] < SCRAPE_CACHE_TTL_SECONDS:
         return cached["rows"]
-    rows = scrape_us_picks(date_key)
+    rows = scrape_us_picks(date_key, existing_rows=existing_rows)
     _pick_scrape_cache[date_key] = {"stored_at": now, "rows": rows}
     return rows
 
 
-def pick_scrape_cached_for_game(date_key, game_filter):
+def pick_scrape_cached_for_game(date_key, game_filter, existing_rows=None):
     if game_filter not in ("pick3", "pick4"):
-        return pick_scrape_cached(date_key)
+        return pick_scrape_cached(date_key, existing_rows=existing_rows)
     cache_key = f"{date_key}:{game_filter}"
     now = time.time()
     cached = _pick_scrape_cache.get(cache_key)
     if cached and now - cached["stored_at"] < SCRAPE_CACHE_TTL_SECONDS:
         return cached["rows"]
-    rows = scrape_us_picks(date_key, games=(game_filter,))
+    rows = scrape_us_picks(date_key, games=(game_filter,), existing_rows=existing_rows)
     _pick_scrape_cache[cache_key] = {"stored_at": now, "rows": rows}
     return rows
 
@@ -330,7 +330,8 @@ def run_system_scraper():
                 "results": lottery_rows,
             }
         if mode in ("pick", "both"):
-            pick_rows = unique_sorted_pick_results(pick_scrape_cached(date_key))
+            existing_pick_rows = fetch_pick_rows_from_supabase(date_key)
+            pick_rows = unique_sorted_pick_results(pick_scrape_cached(date_key, existing_rows=existing_pick_rows))
             save_us_picks_to_supabase(date_key, pick_rows)
             payload["picks"] = {
                 "count": len(pick_rows),

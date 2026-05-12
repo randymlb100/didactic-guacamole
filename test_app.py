@@ -205,6 +205,31 @@ class RenderApiContractsTest(unittest.TestCase):
         save_lottery.assert_not_called()
         save_picks.assert_called_once()
 
+    def test_run_system_scraper_pick_mode_passes_existing_pick_cache(self):
+        existing_pick_rows = [{
+            "id": "US-P3-FL-PICK-3-EVENING",
+            "date": "02-05-2026",
+            "number": "9-2-0",
+        }]
+        refreshed_pick_rows = [{
+            "id": "US-P3-FL-PICK-3-EVENING",
+            "date": "02-05-2026",
+            "number": "9-2-0",
+        }]
+        with patch("app.scrape") as lottery_scrape, \
+            patch("app.fetch_pick_rows_from_supabase", return_value=existing_pick_rows), \
+            patch("app.scrape_us_picks", return_value=refreshed_pick_rows) as pick_scrape, \
+            patch("app.save_to_supabase") as save_lottery, \
+            patch("app.save_us_picks_to_supabase") as save_picks, \
+            patch.dict("os.environ", {"SUPABASE_KEY": "test-key"}):
+            response = self.client.post("/run-system-scraper?date=02-05-2026&mode=pick")
+
+        self.assertEqual(200, response.status_code)
+        pick_scrape.assert_called_once_with("02-05-2026", existing_rows=existing_pick_rows)
+        lottery_scrape.assert_not_called()
+        save_lottery.assert_not_called()
+        save_picks.assert_called_once()
+
     def test_run_scraper_uses_configured_fallback_key_when_render_env_is_missing(self):
         lottery_rows = [
             {"id": "1", "name": "La Primera Día", "date": "02-05-2026", "number": "01-02-03"},
