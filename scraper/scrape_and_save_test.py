@@ -683,7 +683,7 @@ class ScraperContractsTest(unittest.TestCase):
         self.assertEqual(("official", "lotteryusa", "pick34_site"), plan.fallback_order)
         self.assertTrue(plan.primary_urls)
 
-    def test_pick_source_plan_falls_back_to_lotteryusa_when_official_parser_not_supported_yet(self):
+    def test_pick_source_plan_prefers_official_source_for_new_jersey_draws(self):
         draw = scraper.ExpectedPickDraw(
             id="19",
             state="New Jersey",
@@ -691,6 +691,22 @@ class ScraperContractsTest(unittest.TestCase):
             game="pick3",
             game_name="Pick 3",
             draw="Midday Draw",
+        )
+
+        plan = scraper.build_pick_source_plan(draw)
+
+        self.assertEqual("official", plan.primary)
+        self.assertTrue(plan.primary_urls)
+        self.assertEqual(("official", "lotteryusa", "pick34_site"), plan.fallback_order)
+
+    def test_pick_source_plan_falls_back_to_lotteryusa_when_official_parser_not_supported_yet(self):
+        draw = scraper.ExpectedPickDraw(
+            id="US-P3-TN-CASH-3-06-28-PM",
+            state="Tennessee",
+            state_code="TN",
+            game="pick3",
+            game_name="Cash 3",
+            draw="Evening Draw",
         )
 
         plan = scraper.build_pick_source_plan(draw)
@@ -752,6 +768,87 @@ class ScraperContractsTest(unittest.TestCase):
         row = scraper.parse_south_carolina_official_pick_draw_html(html, draw, "10-05-2026")
 
         self.assertEqual("3-6-6-7", row["number"])
+        self.assertEqual("official", row["source"])
+        self.assertEqual("published", row["status"])
+
+    def test_parse_new_jersey_official_pick_draw_payload_midday(self):
+        payload = {
+            "draws": [
+                {
+                    "gameName": "Pick 3",
+                    "id": "24135",
+                    "name": "MIDDAY",
+                    "status": "CLOSED",
+                    "drawTime": 1778590800000,
+                    "results": [
+                        {"primary": ["893"], "drawType": "Regular"},
+                        {"primary": ["FB-7", "793", "873", "897"], "drawType": "FIREBALL"},
+                    ],
+                },
+                {
+                    "gameName": "Pick 3",
+                    "id": "24134",
+                    "name": "EVENING",
+                    "status": "CLOSED",
+                    "drawTime": 1778629200000,
+                    "results": [
+                        {"primary": ["231"], "drawType": "Regular"},
+                    ],
+                },
+            ]
+        }
+        draw = scraper.ExpectedPickDraw(
+            id="19",
+            state="New Jersey",
+            state_code="NJ",
+            game="pick3",
+            game_name="Pick 3",
+            draw="Midday Draw",
+        )
+
+        row = scraper.parse_new_jersey_official_pick_draw_payload(payload, draw, "12-05-2026")
+
+        self.assertEqual("8-9-3", row["number"])
+        self.assertEqual("official", row["source"])
+        self.assertEqual("published", row["status"])
+
+    def test_parse_new_jersey_official_pick_draw_payload_evening_pick4(self):
+        payload = {
+            "draws": [
+                {
+                    "gameName": "Pick 4",
+                    "id": "24133",
+                    "name": "MIDDAY",
+                    "status": "CLOSED",
+                    "drawTime": 1778590800000,
+                    "results": [
+                        {"primary": ["1178"], "drawType": "Regular"},
+                    ],
+                },
+                {
+                    "gameName": "Pick 4",
+                    "id": "24132",
+                    "name": "EVENING",
+                    "status": "CLOSED",
+                    "drawTime": 1778629200000,
+                    "results": [
+                        {"primary": ["7464"], "drawType": "Regular"},
+                    ],
+                },
+            ]
+        }
+        draw = scraper.ExpectedPickDraw(
+            id="22",
+            state="New Jersey",
+            state_code="NJ",
+            game="pick4",
+            game_name="Pick 4",
+            draw="Evening Draw",
+        )
+
+        row = scraper.parse_new_jersey_official_pick_draw_payload(payload, draw, "12-05-2026")
+
+        self.assertEqual("7-4-6-4", row["number"])
         self.assertEqual("official", row["source"])
         self.assertEqual("published", row["status"])
 

@@ -7,6 +7,7 @@ import os, json, datetime, urllib.request, urllib.parse, re, pathlib
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
 from bs4 import BeautifulSoup
+from zoneinfo import ZoneInfo
 
 DEFAULT_SUPABASE_URL = "https://unhoulkujbtsypccpirc.supabase.co"
 DEFAULT_SUPABASE_PUBLISHABLE_KEY = "sb_publishable_A0LxL11fjdQGehmIPnyPZQ_6ty7T8lK"
@@ -1179,7 +1180,7 @@ def texas_pick_draw_label(draw):
 
 def official_pick_parser_supported(draw):
     draw = hydrate_pick_draw(draw)
-    return str(draw.state_code or "").upper() in {"TX", "AR", "SC"}
+    return str(draw.state_code or "").upper() in {"TX", "AR", "SC", "NJ"}
 
 
 def build_official_pick_row(draw, target_date, number, url):
@@ -1287,6 +1288,63 @@ def parse_south_carolina_official_pick_draw_html(html_text, draw, target_date, u
     return build_official_pick_row(draw, target_date, "-".join(match.groups()), url)
 
 
+def new_jersey_draw_feed_label(draw):
+    return "MIDDAY" if "midday" in str(draw.draw or "").lower() else "EVENING"
+
+
+def new_jersey_draw_feed_game_name(draw):
+    return "Pick 4" if draw.game == "pick4" else "Pick 3"
+
+
+def parse_new_jersey_official_pick_draw_payload(payload, draw, target_date, url="official://new-jersey"):
+    target_day = datetime.datetime.strptime(target_date, "%d-%m-%Y").date()
+    target_zone = ZoneInfo(getattr(draw, "time_zone_id", None) or "America/New_York")
+    expected_label = new_jersey_draw_feed_label(draw)
+    expected_game = new_jersey_draw_feed_game_name(draw)
+    digits = 4 if draw.game == "pick4" else 3
+    for item in (payload or {}).get("draws", ()):
+        if str(item.get("gameName") or "").strip() != expected_game:
+            continue
+        if str(item.get("name") or "").strip().upper() != expected_label:
+            continue
+        draw_time_ms = item.get("drawTime")
+        if not draw_time_ms:
+            continue
+        draw_day = datetime.datetime.fromtimestamp(int(draw_time_ms) / 1000, tz=datetime.timezone.utc).astimezone(target_zone).date()
+        if draw_day != target_day:
+            continue
+        for result in item.get("results") or ():
+            if str(result.get("drawType") or "").strip().lower() != "regular":
+                continue
+            primary_values = result.get("primary") or ()
+            if not primary_values:
+                continue
+            digits_only = re.sub(r"\D", "", str(primary_values[0]))
+            if len(digits_only) < digits:
+                continue
+            return build_official_pick_row(draw, target_date, "-".join(list(digits_only[:digits])), url)
+    return None
+
+
+def fetch_new_jersey_official_pick_draw(url, draw, target_date):
+    game_name = urllib.parse.quote(new_jersey_draw_feed_game_name(draw))
+    feed_url = f"https://www.njlottery.com/api/v1/draw-games/draws/page?game-names={game_name}&status=CLOSED&previous-draws=10"
+    req = urllib.request.Request(
+        feed_url,
+        headers={
+            "User-Agent": "Mozilla/5.0",
+            "Accept": "application/json,text/plain,*/*",
+            "Referer": url,
+        },
+    )
+    try:
+        payload = json.loads(urllib.request.urlopen(req, timeout=PICK_SOURCE_TIMEOUT_SECONDS).read().decode("utf-8", "ignore"))
+    except Exception as e:
+        print(f"  New Jersey official error for {draw.id}: {e}")
+        return None
+    return parse_new_jersey_official_pick_draw_payload(payload, draw, target_date, url=feed_url)
+
+
 def fetch_official_pick_draw(draw, target_date):
     if draw.state_code == "TX":
         for url in official_pick_url_candidates(draw):
@@ -1327,6 +1385,12 @@ def fetch_official_pick_draw(draw, target_date):
                 print(f"  South Carolina official error for {draw.id}: {e}")
                 continue
             row = parse_south_carolina_official_pick_draw_html(html, draw, target_date, url=url)
+            if row and has_valid_pick_result(row, target_date):
+                return row
+        return None
+    if draw.state_code == "NJ":
+        for url in official_pick_url_candidates(draw):
+            row = fetch_new_jersey_official_pick_draw(url, draw, target_date)
             if row and has_valid_pick_result(row, target_date):
                 return row
         return None
