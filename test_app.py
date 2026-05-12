@@ -230,6 +230,32 @@ class RenderApiContractsTest(unittest.TestCase):
         save_lottery.assert_not_called()
         save_picks.assert_called_once()
 
+    def test_system_results_live_pick_refresh_saves_updated_cache(self):
+        existing_pick_rows = [{
+            "id": "US-P3-FL-PICK-3-EVENING",
+            "date": "02-05-2026",
+            "number": "9-2-0",
+        }]
+        refreshed_pick_rows = [{
+            "id": "US-P3-FL-PICK-3-EVENING",
+            "date": "02-05-2026",
+            "number": "9-2-0",
+        }]
+        with patch("app.fetch_pick_rows_from_supabase", return_value=existing_pick_rows), \
+            patch("app.scrape_us_picks", return_value=refreshed_pick_rows) as pick_scrape, \
+            patch("app.save_us_picks_to_supabase") as save_picks:
+            response = self.client.get("/system-results?date=02-05-2026&mode=pick&live=1")
+
+        payload = json.loads(response.data.decode("utf-8"))
+        self.assertEqual(200, response.status_code)
+        self.assertEqual("live-scraper", payload["source"])
+        self.assertEqual(1, payload["picks"]["count"])
+        pick_scrape.assert_called_once_with("02-05-2026", existing_rows=existing_pick_rows)
+        save_picks.assert_called_once()
+        self.assertEqual("02-05-2026", save_picks.call_args.args[0])
+        self.assertEqual("US-P3-FL-PICK-3-EVENING", save_picks.call_args.args[1][0]["id"])
+        self.assertEqual("9-2-0", save_picks.call_args.args[1][0]["number"])
+
     def test_run_scraper_uses_configured_fallback_key_when_render_env_is_missing(self):
         lottery_rows = [
             {"id": "1", "name": "La Primera Día", "date": "02-05-2026", "number": "01-02-03"},

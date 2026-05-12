@@ -148,7 +148,13 @@ def fetch_pick_rows_from_supabase(date_key):
 
 def pick_rows_for_request_date(date_key, game_filter=""):
     if should_use_live_scrape():
-        rows = pick_scrape_cached_for_game(date_key, game_filter)
+        existing_rows = fetch_pick_rows_from_supabase(date_key)
+        rows = pick_scrape_cached_for_game(date_key, game_filter, existing_rows=existing_rows)
+        if rows and SUPABASE_KEY.strip():
+            try:
+                save_us_picks_to_supabase(date_key, unique_sorted_pick_results(rows))
+            except Exception as error:
+                print(f"Warning: could not save live pick refresh: {error}")
     else:
         rows = fetch_pick_rows_from_supabase(date_key)
         if not rows:
