@@ -1119,11 +1119,18 @@ def build_pick_source_plan(draw):
         source for source in (primary,) + tuple(getattr(draw, "fallback_sources", ()))
         if source
     )
-    if primary == "official" and official_urls:
+    if primary == "official" and official_urls and official_pick_parser_supported(draw):
         return PickSourcePlan(
             primary="official",
             primary_urls=official_urls,
             fallback_order=fallbacks or ("official", "lotteryusa"),
+        )
+    if primary == "official":
+        effective_fallbacks = tuple(source for source in fallbacks if source != "official")
+        return PickSourcePlan(
+            primary=effective_fallbacks[0] if effective_fallbacks else "lotteryusa",
+            primary_urls=(),
+            fallback_order=effective_fallbacks or ("lotteryusa",),
         )
     return PickSourcePlan(
         primary=primary,
@@ -1168,6 +1175,35 @@ def texas_pick_draw_label(draw):
         "evening": "Evening",
         "night": "Night",
     }.get(label, draw.draw.replace(" Draw", "").strip())
+
+
+def official_pick_parser_supported(draw):
+    draw = hydrate_pick_draw(draw)
+    return str(draw.state_code or "").upper() in {"TX", "AR", "SC"}
+
+
+def build_official_pick_row(draw, target_date, number, url):
+    digits = 4 if draw.game == "pick4" else 3
+    parts = [part for part in str(number or "").replace(" ", "").split("-") if part]
+    if len(parts) < digits:
+        return None
+    return {
+        "id": draw.id,
+        "name": " ".join(part for part in [draw.state, draw.game_name, draw.draw] if part),
+        "date": target_date,
+        "number": "-".join(parts[:digits]),
+        "status": PICK_RESULT_STATUS_PUBLISHED,
+        "source": "official",
+        "game": draw.game,
+        "state": draw.state,
+        "stateCode": draw.state_code,
+        "gameName": draw.game_name,
+        "draw": draw.draw,
+        "playTypes": ["straight", "box"],
+        "backfilled": True,
+        "lastCheckedAt": utc_now_iso(),
+        "sourceAttempts": [{"source": "official", "url": url, "status": "matched"}],
+    }
 
 
 def fetch_texas_official_pick_draw(url, draw, target_date):
@@ -1217,10 +1253,80 @@ def fetch_texas_official_pick_draw(url, draw, target_date):
     }
 
 
+def parse_arkansas_official_pick_draw_html(html_text, draw, target_date, url="official://arkansas"):
+    text = BeautifulSoup(str(html_text or ""), "html.parser").get_text("\n", strip=True)
+    target_long = datetime.datetime.strptime(target_date, "%d-%m-%Y").strftime("%B %d, %Y")
+    draw_label = "Midday" if "midday" in str(draw.draw).lower() else "Evening"
+    digits = 4 if draw.game == "pick4" else 3
+    pattern = re.compile(
+        rf"{re.escape(target_long)} {draw_label} Drawing\s+"
+        + r"\s+".join([r"(\d)"] * digits),
+        re.IGNORECASE,
+    )
+    match = pattern.search(text)
+    if not match:
+        return None
+    return build_official_pick_row(draw, target_date, "-".join(match.groups()), url)
+
+
+def parse_south_carolina_official_pick_draw_html(html_text, draw, target_date, url="official://south-carolina"):
+    text = BeautifulSoup(str(html_text or ""), "html.parser").get_text("\n", strip=True)
+    target_long = datetime.datetime.strptime(target_date, "%d-%m-%Y").strftime("%B %d, %Y")
+    draw_label = "Midday" if "midday" in str(draw.draw).lower() else "Evening"
+    digits = 4 if draw.game == "pick4" else 3
+    pattern = re.compile(
+        rf"{re.escape(target_long)}\s+"
+        + r"\s+".join([r"(\d)"] * digits)
+        + r"\s+FIREBALL:\s+\d+\s+"
+        + re.escape(draw_label),
+        re.IGNORECASE,
+    )
+    match = pattern.search(text)
+    if not match:
+        return None
+    return build_official_pick_row(draw, target_date, "-".join(match.groups()), url)
+
+
 def fetch_official_pick_draw(draw, target_date):
     if draw.state_code == "TX":
         for url in official_pick_url_candidates(draw):
             row = fetch_texas_official_pick_draw(url, draw, target_date)
+            if row and has_valid_pick_result(row, target_date):
+                return row
+        return None
+    if draw.state_code == "AR":
+        for url in official_pick_url_candidates(draw):
+            req = urllib.request.Request(
+                url,
+                headers={
+                    "User-Agent": "Mozilla/5.0",
+                    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+                },
+            )
+            try:
+                html = urllib.request.urlopen(req, timeout=PICK_SOURCE_TIMEOUT_SECONDS).read().decode("utf-8", "ignore")
+            except Exception as e:
+                print(f"  Arkansas official error for {draw.id}: {e}")
+                continue
+            row = parse_arkansas_official_pick_draw_html(html, draw, target_date, url=url)
+            if row and has_valid_pick_result(row, target_date):
+                return row
+        return None
+    if draw.state_code == "SC":
+        for url in official_pick_url_candidates(draw):
+            req = urllib.request.Request(
+                url,
+                headers={
+                    "User-Agent": "Mozilla/5.0",
+                    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+                },
+            )
+            try:
+                html = urllib.request.urlopen(req, timeout=PICK_SOURCE_TIMEOUT_SECONDS).read().decode("utf-8", "ignore")
+            except Exception as e:
+                print(f"  South Carolina official error for {draw.id}: {e}")
+                continue
+            row = parse_south_carolina_official_pick_draw_html(html, draw, target_date, url=url)
             if row and has_valid_pick_result(row, target_date):
                 return row
         return None

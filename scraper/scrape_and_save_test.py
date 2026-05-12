@@ -683,6 +683,78 @@ class ScraperContractsTest(unittest.TestCase):
         self.assertEqual(("official", "lotteryusa", "pick34_site"), plan.fallback_order)
         self.assertTrue(plan.primary_urls)
 
+    def test_pick_source_plan_falls_back_to_lotteryusa_when_official_parser_not_supported_yet(self):
+        draw = scraper.ExpectedPickDraw(
+            id="19",
+            state="New Jersey",
+            state_code="NJ",
+            game="pick3",
+            game_name="Pick 3",
+            draw="Midday Draw",
+        )
+
+        plan = scraper.build_pick_source_plan(draw)
+
+        self.assertEqual("lotteryusa", plan.primary)
+        self.assertEqual((), plan.primary_urls)
+        self.assertEqual(("lotteryusa", "pick34_site"), plan.fallback_order)
+
+    def test_fetch_arkansas_official_pick_draw_parses_recent_drawings(self):
+        html = """
+        <div>Recent Cash 3 Drawings</div>
+        <div>May 12, 2026 Midday Drawing</div>
+        <div>0</div><div>5</div><div>0</div>
+        <div>May 11, 2026 Evening Drawing</div>
+        <div>1</div><div>0</div><div>6</div>
+        <div>May 10, 2026 Evening Drawing</div>
+        <div>0</div><div>9</div><div>4</div>
+        """
+        draw = scraper.ExpectedPickDraw(
+            id="US-P3-AR-CASH-3-EVENING",
+            state="Arkansas",
+            state_code="AR",
+            game="pick3",
+            game_name="Cash 3",
+            draw="Evening Draw",
+        )
+
+        row = scraper.parse_arkansas_official_pick_draw_html(html, draw, "10-05-2026")
+
+        self.assertEqual("0-9-4", row["number"])
+        self.assertEqual("official", row["source"])
+        self.assertEqual("published", row["status"])
+
+    def test_fetch_south_carolina_official_pick_draw_parses_recent_drawings(self):
+        html = """
+        <div>Winning Numbers for the Most Recent Drawings</div>
+        <div>May 12, 2026</div>
+        <div>3</div><div>0</div><div>7</div><div>7</div>
+        <div>FIREBALL:</div><div>0</div>
+        <div>Evening</div>
+        <div>May 12, 2026</div>
+        <div>7</div><div>0</div><div>5</div><div>8</div>
+        <div>FIREBALL:</div><div>2</div>
+        <div>Midday</div>
+        <div>May 10, 2026</div>
+        <div>3</div><div>6</div><div>6</div><div>7</div>
+        <div>FIREBALL:</div><div>1</div>
+        <div>Evening</div>
+        """
+        draw = scraper.ExpectedPickDraw(
+            id="US-P4-SC-PICK-4-EVENING",
+            state="South Carolina",
+            state_code="SC",
+            game="pick4",
+            game_name="Pick 4",
+            draw="Evening Draw",
+        )
+
+        row = scraper.parse_south_carolina_official_pick_draw_html(html, draw, "10-05-2026")
+
+        self.assertEqual("3-6-6-7", row["number"])
+        self.assertEqual("official", row["source"])
+        self.assertEqual("published", row["status"])
+
     def test_pick_draw_registry_covers_full_catalog(self):
         registry = scraper.configured_pick_fallback_draws(["pick3", "pick4"])
         registry_ids = {draw.id for draw in registry}
