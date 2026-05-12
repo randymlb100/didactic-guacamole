@@ -29,6 +29,7 @@ port = int(os.environ.get("PORT", 5000))
 SCRAPE_CACHE_TTL_SECONDS = int(os.environ.get("SCRAPE_CACHE_TTL_SECONDS", "120"))
 _scrape_cache = {}
 _pick_scrape_cache = {}
+# Render redeploy marker: keep service restart explicit when production gets stuck.
 
 
 def json_utf8(data, status=200):
