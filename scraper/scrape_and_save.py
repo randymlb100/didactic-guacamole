@@ -40,6 +40,10 @@ US_PICK_SOURCE_NAMES = {
     "pick3": "pick-3.com",
     "pick4": "pick-4.com",
 }
+US_PICK_LOTTERYUSA_BACKFILLS = [
+    ("https://www.lotteryusa.com/indiana/daily-3/", "US-P3-IN-DAILY-3-EVENING", "Indiana Daily 3 Evening", 3),
+    ("https://www.lotteryusa.com/indiana/daily-4/", "US-P4-IN-DAILY-4-EVENING", "Indiana Daily 4 Evening", 4),
+]
 
 US_STATE_CODES = {
     "Alabama": "AL",
@@ -822,9 +826,30 @@ def scrape_us_picks(date_str=None, games=None):
             for row in fetch_new_jersey_pick_home(game):
                 rows_by_id[row["id"]] = row
     rows = list(rows_by_id.values())
+    for row in fetch_us_pick_lotteryusa_backfills(target_date):
+        rows_by_id[row["id"]] = row
+    rows = list(rows_by_id.values())
     if target_date:
         rows = [row for row in rows if row.get("date") == target_date]
     return sorted(rows, key=lambda row: (row["state"], row["game"], row["draw"], row["gameName"]))
+
+
+def fetch_us_pick_lotteryusa_backfills(date_str):
+    rows = []
+    for url, lottery_id, lottery_name, digits in US_PICK_LOTTERYUSA_BACKFILLS:
+        row = fetch_lotteryusa_results(url, lottery_id, lottery_name, digits, date_str)
+        if not row:
+            continue
+        row["source"] = "lotteryusa.com"
+        row["game"] = "pick4" if digits == 4 else "pick3"
+        row["pick4" if digits == 4 else "pick3"] = row["number"]
+        row["state"] = "Indiana"
+        row["stateCode"] = "IN"
+        row["gameName"] = "Daily 4" if digits == 4 else "Daily 3"
+        row["draw"] = "Evening Draw"
+        row["playTypes"] = ["straight", "box"]
+        rows.append(row)
+    return rows
 
 
 def iso_date_to_dr_date(raw):
