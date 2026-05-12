@@ -565,18 +565,50 @@ class ScraperContractsTest(unittest.TestCase):
         self.assertEqual(["US-P3-IN-DAILY-3-MIDDAY"], [row["id"] for row in rows])
         fetcher.assert_called_once()
 
-    def test_configured_fallback_draws_are_controlled_pilot_list(self):
+    def test_lotteryusa_pick_url_candidates_prefer_explicit_urls(self):
+        draw = scraper.ExpectedPickDraw(
+            id="US-P3-DC-3-MIDDAY",
+            state="District of Columbia",
+            state_code="DC",
+            game="pick3",
+            game_name="DC Lucky",
+            draw="Midday Draw",
+            preferred_urls=("https://www.lotteryusa.com/district-of-columbia/dc-lucky-midday/",),
+        )
+
+        candidates = scraper.lotteryusa_pick_url_candidates(draw)
+
+        self.assertEqual("https://www.lotteryusa.com/district-of-columbia/dc-lucky-midday/", candidates[0])
+        self.assertIn("https://www.lotteryusa.com/district-of-columbia/pick-3/", candidates)
+
+    def test_configured_fallback_draws_cover_known_sunday_pick_gaps(self):
         self.assertEqual(
             [
                 "US-P3-IN-DAILY-3-MIDDAY",
                 "US-P3-IN-DAILY-3-EVENING",
                 "US-P4-IN-DAILY-4-MIDDAY",
                 "US-P4-IN-DAILY-4-EVENING",
+                "US-P3-AR-CASH-3-EVENING",
+                "US-P3-DC-3-MIDDAY",
+                "US-P3-TN-CASH-3-06-28-PM",
+                "19",
+                "20",
+                "21",
+                "22",
+                "US-P4-SC-PICK-4-EVENING",
             ],
             [draw.id for draw in scraper.configured_pick_fallback_draws(["pick3", "pick4"])],
         )
         self.assertEqual(
-            ["US-P3-IN-DAILY-3-MIDDAY", "US-P3-IN-DAILY-3-EVENING"],
+            [
+                "US-P3-IN-DAILY-3-MIDDAY",
+                "US-P3-IN-DAILY-3-EVENING",
+                "US-P3-AR-CASH-3-EVENING",
+                "US-P3-DC-3-MIDDAY",
+                "US-P3-TN-CASH-3-06-28-PM",
+                "19",
+                "20",
+            ],
             [draw.id for draw in scraper.configured_pick_fallback_draws(["pick3"])],
         )
 

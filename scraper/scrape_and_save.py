@@ -63,6 +63,7 @@ class ExpectedPickDraw:
     game: str
     game_name: str
     draw: str
+    preferred_urls: tuple = ()
 
 
 PICK_LOTTERYUSA_FALLBACK_DRAWS = (
@@ -70,6 +71,78 @@ PICK_LOTTERYUSA_FALLBACK_DRAWS = (
     ExpectedPickDraw("US-P3-IN-DAILY-3-EVENING", "Indiana", "IN", "pick3", "Daily 3", "Evening Draw"),
     ExpectedPickDraw("US-P4-IN-DAILY-4-MIDDAY", "Indiana", "IN", "pick4", "Daily 4", "Midday Draw"),
     ExpectedPickDraw("US-P4-IN-DAILY-4-EVENING", "Indiana", "IN", "pick4", "Daily 4", "Evening Draw"),
+    ExpectedPickDraw(
+        "US-P3-AR-CASH-3-EVENING",
+        "Arkansas",
+        "AR",
+        "pick3",
+        "Cash 3",
+        "Evening Draw",
+        ("https://www.lotteryusa.com/arkansas/cash-3/",),
+    ),
+    ExpectedPickDraw(
+        "US-P3-DC-3-MIDDAY",
+        "District of Columbia",
+        "DC",
+        "pick3",
+        "DC Lucky",
+        "Midday Draw",
+        ("https://www.lotteryusa.com/district-of-columbia/dc-lucky-midday/",),
+    ),
+    ExpectedPickDraw(
+        "US-P3-TN-CASH-3-06-28-PM",
+        "Tennessee",
+        "TN",
+        "pick3",
+        "Cash 3",
+        "Evening Draw",
+        ("https://www.lotteryusa.com/tennessee/cash-3/",),
+    ),
+    ExpectedPickDraw(
+        "19",
+        "New Jersey",
+        "NJ",
+        "pick3",
+        "Pick 3",
+        "Midday Draw",
+        ("https://www.lotteryusa.com/new-jersey/midday-pick-3/",),
+    ),
+    ExpectedPickDraw(
+        "20",
+        "New Jersey",
+        "NJ",
+        "pick3",
+        "Pick 3",
+        "Evening Draw",
+        ("https://www.lotteryusa.com/new-jersey/pick-3/",),
+    ),
+    ExpectedPickDraw(
+        "21",
+        "New Jersey",
+        "NJ",
+        "pick4",
+        "Pick 4",
+        "Midday Draw",
+        ("https://www.lotteryusa.com/new-jersey/midday-pick-4/",),
+    ),
+    ExpectedPickDraw(
+        "22",
+        "New Jersey",
+        "NJ",
+        "pick4",
+        "Pick 4",
+        "Evening Draw",
+        ("https://www.lotteryusa.com/new-jersey/pick-4/",),
+    ),
+    ExpectedPickDraw(
+        "US-P4-SC-PICK-4-EVENING",
+        "South Carolina",
+        "SC",
+        "pick4",
+        "Pick 4",
+        "Evening Draw",
+        ("https://www.lotteryusa.com/south-carolina/pick-4/",),
+    ),
 )
 US_STATE_CODES = {
     "Alabama": "AL",
@@ -894,12 +967,13 @@ def lotteryusa_state_slug(state):
 
 def lotteryusa_pick_url_candidates(draw):
     state_slug = lotteryusa_state_slug(draw.state)
+    custom_urls = [url for url in getattr(draw, "preferred_urls", ()) if url]
     if not state_slug:
-        return []
+        return custom_urls
     game_digit = "4" if draw.game == "pick4" else "3"
     game_name = slug_token(draw.game_name).lower()
     draw_name = slug_token(draw.draw.replace(" Draw", "")).lower()
-    candidates = []
+    candidates = list(custom_urls)
     if draw.state_code == "IN" and game_name == f"daily-{game_digit}":
         if draw_name == "midday":
             candidates.append(f"https://www.lotteryusa.com/{state_slug}/midday-{game_digit}/")
