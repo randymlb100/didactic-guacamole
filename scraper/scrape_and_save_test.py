@@ -24,6 +24,18 @@ class ScraperContractsTest(unittest.TestCase):
         self.assertFalse(scraper.should_fail_without_supabase_key("present", env))
         self.assertFalse(scraper.should_fail_without_supabase_key("", {}))
 
+    @patch.dict(os.environ, {}, clear=True)
+    def test_configured_supabase_url_uses_default_when_env_missing(self):
+        self.assertEqual(scraper.DEFAULT_SUPABASE_URL, scraper.configured_supabase_url())
+
+    @patch.dict(os.environ, {"SUPABASE_URL": ""}, clear=True)
+    def test_configured_supabase_url_ignores_blank_env(self):
+        self.assertEqual(scraper.DEFAULT_SUPABASE_URL, scraper.configured_supabase_url())
+
+    @patch.dict(os.environ, {"SUPABASE_URL": "https://example.supabase.co/"}, clear=True)
+    def test_configured_supabase_url_trims_trailing_slash(self):
+        self.assertEqual("https://example.supabase.co", scraper.configured_supabase_url())
+
     def test_parse_miloteria_date_handles_api_formats(self):
         self.assertEqual("26-04-2026", scraper.parse_miloteria_date("Sunday, Apr 26, 2026"))
         self.assertEqual("26-04-2026", scraper.parse_miloteria_date("04/26/2026 11:00:00 PM"))

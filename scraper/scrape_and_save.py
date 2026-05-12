@@ -8,8 +8,16 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
 from bs4 import BeautifulSoup
 
-SUPABASE_URL = os.environ.get("SUPABASE_URL", "https://unhoulkujbtsypccpirc.supabase.co")
+DEFAULT_SUPABASE_URL = "https://unhoulkujbtsypccpirc.supabase.co"
 DEFAULT_SUPABASE_PUBLISHABLE_KEY = "sb_publishable_A0LxL11fjdQGehmIPnyPZQ_6ty7T8lK"
+
+
+def configured_supabase_url():
+    return (
+        os.environ.get("SUPABASE_URL")
+        or os.environ.get("SUPABASE_PROJECT_URL")
+        or DEFAULT_SUPABASE_URL
+    ).rstrip("/")
 
 
 def configured_supabase_key():
@@ -22,6 +30,7 @@ def configured_supabase_key():
     )
 
 
+SUPABASE_URL = configured_supabase_url()
 SUPABASE_KEY = configured_supabase_key()
 TRACKED_REMOTE_RESULT_IDS = {"23", "24", "27", "28"}
 US_PICK_NORMAL_CATALOG_STATE_CODES = {"NJ"}
