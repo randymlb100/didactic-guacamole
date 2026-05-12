@@ -330,6 +330,52 @@ class ScraperContractsTest(unittest.TestCase):
         self.assertEqual("pick-4.com", rows[0]["source"])
         self.assertEqual("0-6-1-3", rows[0]["number"])
 
+    def test_parse_pick_history_reads_single_daily_draw_without_label(self):
+        html = """
+        <div class="resultsBox">
+          <div class="date">Monday, May 11, 2026</div>
+          <span>5</span><span>9</span><span>9</span>
+          <a>Check My Numbers</a>
+        </div>
+        """
+
+        rows = scraper.parse_us_pick_history_page(
+            html,
+            game="pick3",
+            state_code="LA",
+            state_name="Louisiana",
+            game_name="Pick 3",
+            target_date="11-05-2026",
+        )
+
+        self.assertEqual(1, len(rows))
+        self.assertEqual("US-P3-LA-PICK-3-DAY", rows[0]["id"])
+        self.assertEqual("Day Draw", rows[0]["draw"])
+        self.assertEqual("5-9-9", rows[0]["number"])
+
+    def test_parse_pick_history_keeps_midday_evening_rows_with_superball(self):
+        html = """
+        <div class="resultsBox">
+          <div class="date">Sunday, May 10, 2026</div>
+          <span>Midday</span><span>8</span><span>1</span><span>3</span><span>6</span>
+          <span>Evening</span><span>4</span><span>0</span><span>1</span><span>1</span>
+        </div>
+        """
+
+        rows = scraper.parse_us_pick_history_page(
+            html,
+            game="pick3",
+            state_code="IN",
+            state_name="Indiana",
+            game_name="Daily 3",
+            target_date="10-05-2026",
+        )
+
+        self.assertEqual(
+            [("US-P3-IN-DAILY-3-EVENING", "4-0-1"), ("US-P3-IN-DAILY-3-MIDDAY", "8-1-3")],
+            [(row["id"], row["number"]) for row in rows],
+        )
+
     def test_parse_boliteros_feed_reads_pick_rows_and_skips_new_jersey(self):
         html = """
         <section>
