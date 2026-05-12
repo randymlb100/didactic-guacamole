@@ -70,6 +70,32 @@ class ExpectedPickDraw:
     preferred_urls: tuple = ()
 
 
+@dataclass(frozen=True)
+class PickSourcePlan:
+    primary: str
+    primary_urls: tuple
+    fallback_order: tuple
+
+
+OFFICIAL_PICK_SOURCE_URLS_BY_ID = {
+    "US-P3-TX-PICK-3-MORNING": ("https://www.texaslottery.com/export/sites/lottery/Games/Pick_3/index.html",),
+    "US-P3-TX-PICK-3-DAY": ("https://www.texaslottery.com/export/sites/lottery/Games/Pick_3/index.html",),
+    "US-P3-TX-PICK-3-EVENING": ("https://www.texaslottery.com/export/sites/lottery/Games/Pick_3/index.html",),
+    "US-P3-TX-PICK-3-NIGHT": ("https://www.texaslottery.com/export/sites/lottery/Games/Pick_3/index.html",),
+    "US-P4-TX-DAILY-4-MORNING": ("https://www.texaslottery.com/export/sites/lottery/Games/Daily_4/index.html",),
+    "US-P4-TX-DAILY-4-DAY": ("https://www.texaslottery.com/export/sites/lottery/Games/Daily_4/index.html",),
+    "US-P4-TX-DAILY-4-EVENING": ("https://www.texaslottery.com/export/sites/lottery/Games/Daily_4/index.html",),
+    "US-P4-TX-DAILY-4-NIGHT": ("https://www.texaslottery.com/export/sites/lottery/Games/Daily_4/index.html",),
+    "US-P3-AR-CASH-3-EVENING": ("https://www.myarkansaslottery.com/games/cash-3",),
+    "US-P3-TN-CASH-3-06-28-PM": ("https://www.tnlottery.com/games/how-to-play/cash3/",),
+    "19": ("https://www.njlottery.com/en-us/drawgames/pick3.html",),
+    "20": ("https://www.njlottery.com/en-us/drawgames/pick3.html",),
+    "21": ("https://www.njlottery.com/en-us/drawgames/pick4.html",),
+    "22": ("https://www.njlottery.com/en-us/drawgames/pick4.html",),
+    "US-P4-SC-PICK-4-EVENING": ("https://www.sceducationlottery.com/Games/Pick4",),
+}
+
+
 PICK_LOTTERYUSA_FALLBACK_DRAWS = (
     ExpectedPickDraw("US-P3-IN-DAILY-3-MIDDAY", "Indiana", "IN", "pick3", "Daily 3", "Midday Draw"),
     ExpectedPickDraw("US-P3-IN-DAILY-3-EVENING", "Indiana", "IN", "pick3", "Daily 3", "Evening Draw"),
@@ -1135,6 +1161,26 @@ def lotteryusa_state_slug(state):
     return text.strip("-")
 
 
+def official_pick_url_candidates(draw):
+    explicit_urls = OFFICIAL_PICK_SOURCE_URLS_BY_ID.get(str(draw.id).strip(), ())
+    return tuple(url for url in explicit_urls if url)
+
+
+def build_pick_source_plan(draw):
+    official_urls = official_pick_url_candidates(draw)
+    if official_urls:
+        return PickSourcePlan(
+            primary="official",
+            primary_urls=official_urls,
+            fallback_order=("official", "lotteryusa"),
+        )
+    return PickSourcePlan(
+        primary="lotteryusa",
+        primary_urls=(),
+        fallback_order=("lotteryusa",),
+    )
+
+
 def lotteryusa_pick_url_candidates(draw):
     state_slug = lotteryusa_state_slug(draw.state)
     custom_urls = [url for url in getattr(draw, "preferred_urls", ()) if url]
@@ -1160,6 +1206,108 @@ def lotteryusa_pick_url_candidates(draw):
         f"https://www.lotteryusa.com/{state_slug}/{game_name}/",
     ])
     return list(dict.fromkeys(candidates))
+
+
+def texas_pick_draw_label(draw):
+    label = slug_token(draw.draw.replace(" Draw", "")).lower()
+    return {
+        "midday": "Day",
+        "day": "Day",
+        "morning": "Morning",
+        "evening": "Evening",
+        "night": "Night",
+    }.get(label, draw.draw.replace(" Draw", "").strip())
+
+
+def fetch_texas_official_pick_draw(url, draw, target_date):
+    req = urllib.request.Request(
+        url,
+        headers={
+            "User-Agent": "Mozilla/5.0",
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        },
+    )
+    try:
+        html = urllib.request.urlopen(req, timeout=PICK_SOURCE_TIMEOUT_SECONDS).read().decode("utf-8", "ignore")
+    except Exception as e:
+        print(f"  Texas official error for {draw.id}: {e}")
+        return None
+    target_mmddyyyy = datetime.datetime.strptime(target_date, "%d-%m-%Y").strftime("%m/%d/%Y")
+    draw_label = re.escape(texas_pick_draw_label(draw))
+    digits = 4 if draw.game == "pick4" else 3
+    page_text = BeautifulSoup(html, "html.parser").get_text("\n", strip=True)
+    game_title = "Daily 4" if draw.game == "pick4" else "Pick 3"
+    pattern = re.compile(
+        rf"{re.escape(game_title)} Winning Numbers for:\s*{re.escape(target_mmddyyyy)} {draw_label}\s*"
+        + (r"(\d)\s*(\d)\s*(\d)\s*(\d)" if digits == 4 else r"(\d)\s*(\d)\s*(\d)")
+        + r"\s*FIREBALL",
+        re.IGNORECASE | re.DOTALL,
+    )
+    match = pattern.search(page_text)
+    if not match:
+        return None
+    numbers = [value for value in match.groups() if value is not None]
+    return {
+        "id": draw.id,
+        "name": " ".join(part for part in [draw.state, draw.game_name, draw.draw] if part),
+        "date": target_date,
+        "number": "-".join(numbers[:digits]),
+        "status": PICK_RESULT_STATUS_PUBLISHED,
+        "source": "official",
+        "game": draw.game,
+        "state": draw.state,
+        "stateCode": draw.state_code,
+        "gameName": draw.game_name,
+        "draw": draw.draw,
+        "playTypes": ["straight", "box"],
+        "backfilled": True,
+        "lastCheckedAt": utc_now_iso(),
+        "sourceAttempts": [{"source": "official", "url": url, "status": "matched"}],
+    }
+
+
+def fetch_official_pick_draw(draw, target_date):
+    if draw.state_code == "TX":
+        for url in official_pick_url_candidates(draw):
+            row = fetch_texas_official_pick_draw(url, draw, target_date)
+            if row and has_valid_pick_result(row, target_date):
+                return row
+        return None
+    return None
+
+
+def fetch_pick_draw_by_source(draw, target_date, source_name):
+    if source_name == "official":
+        return fetch_official_pick_draw(draw, target_date)
+    if source_name == "lotteryusa":
+        return fetch_lotteryusa_pick_draw(draw, target_date)
+    return None
+
+
+def fetch_pick_draw_with_source_plan(draw, target_date, source_fetchers=None):
+    plan = build_pick_source_plan(draw)
+    fetchers = source_fetchers or {}
+    attempts = []
+    for source_name in plan.fallback_order:
+        fetch = fetchers.get(source_name)
+        if fetch is None:
+            fetch = lambda selected_draw, selected_date, source_name=source_name: fetch_pick_draw_by_source(
+                selected_draw,
+                selected_date,
+                source_name,
+            )
+        row = fetch(draw, target_date)
+        if row and row.get("id") == draw.id and has_valid_pick_result(row, target_date):
+            source_attempts = list(row.get("sourceAttempts") or [])
+            row["sourceAttempts"] = attempts + source_attempts
+            if not row.get("source"):
+                row["source"] = source_name
+            return row
+        attempts.append({
+            "source": source_name,
+            "status": "miss",
+        })
+    return None
 
 
 def fetch_lotteryusa_pick_draw(draw, target_date):
@@ -1189,7 +1337,15 @@ def fetch_lotteryusa_pick_draw(draw, target_date):
     return None
 
 
-def fetch_pick_fallback_rows(expected_draws, current_rows, target_date, max_calls=None, now_dr=None, fetcher=None):
+def fetch_pick_fallback_rows(
+    expected_draws,
+    current_rows,
+    target_date,
+    max_calls=None,
+    now_dr=None,
+    fetcher=None,
+    source_fetchers=None,
+):
     draws = pick_draws_needing_fallback(
         expected_draws,
         current_rows,
@@ -1199,7 +1355,7 @@ def fetch_pick_fallback_rows(expected_draws, current_rows, target_date, max_call
     )
     if not draws:
         return []
-    fetch = fetcher or fetch_lotteryusa_pick_draw
+    fetch = fetcher or (lambda draw, date: fetch_pick_draw_with_source_plan(draw, date, source_fetchers=source_fetchers))
     rows = []
     max_workers = max(1, min(PICK_FALLBACK_WORKERS, len(draws)))
     with ThreadPoolExecutor(max_workers=max_workers) as executor:

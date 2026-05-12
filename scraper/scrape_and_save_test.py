@@ -667,6 +667,58 @@ class ScraperContractsTest(unittest.TestCase):
         self.assertEqual("https://www.lotteryusa.com/district-of-columbia/dc-lucky-midday/", candidates[0])
         self.assertIn("https://www.lotteryusa.com/district-of-columbia/pick-3/", candidates)
 
+    def test_pick_source_plan_prefers_official_source_for_supported_state_draws(self):
+        draw = scraper.ExpectedPickDraw(
+            id="US-P3-TX-PICK-3-MORNING",
+            state="Texas",
+            state_code="TX",
+            game="pick3",
+            game_name="Pick 3",
+            draw="Morning Draw",
+        )
+
+        plan = scraper.build_pick_source_plan(draw)
+
+        self.assertEqual("official", plan.primary)
+        self.assertEqual(("official", "lotteryusa"), plan.fallback_order)
+        self.assertTrue(plan.primary_urls)
+
+    def test_fetch_pick_fallback_rows_tries_official_before_lotteryusa(self):
+        expected = [
+            scraper.ExpectedPickDraw(
+                id="US-P3-TX-PICK-3-MORNING",
+                state="Texas",
+                state_code="TX",
+                game="pick3",
+                game_name="Pick 3",
+                draw="Morning Draw",
+            ),
+        ]
+        official_fetcher = Mock(return_value={
+            "id": "US-P3-TX-PICK-3-MORNING",
+            "date": "12-05-2026",
+            "number": "3-3-5",
+            "status": "published",
+            "source": "official",
+        })
+        lotteryusa_fetcher = Mock(return_value=None)
+
+        rows = scraper.fetch_pick_fallback_rows(
+            expected,
+            current_rows=[],
+            target_date="12-05-2026",
+            max_calls=5,
+            now_dr=datetime.datetime(2026, 5, 12, 12, 0),
+            source_fetchers={
+                "official": official_fetcher,
+                "lotteryusa": lotteryusa_fetcher,
+            },
+        )
+
+        self.assertEqual(["US-P3-TX-PICK-3-MORNING"], [row["id"] for row in rows])
+        official_fetcher.assert_called_once()
+        lotteryusa_fetcher.assert_not_called()
+
     def test_configured_fallback_draws_cover_known_sunday_pick_gaps(self):
         self.assertEqual(
             [
