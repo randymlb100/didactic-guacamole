@@ -1028,6 +1028,8 @@ def scrape_us_picks(date_str=None, games=None, existing_rows=None, now_dr=None):
             for row in fetch_new_jersey_pick_home(game):
                 rows_by_id[row["id"]] = row
     rows = merge_pick_rows_without_empty_overwrite([], rows_by_id.values(), target_date)
+    if target_date and target_date == get_dr_date_str() and not rows:
+        return []
     fallback_rows = fetch_pick_fallback_rows(
         configured_pick_fallback_draws(requested_games),
         rows,

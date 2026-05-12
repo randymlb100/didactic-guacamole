@@ -595,6 +595,22 @@ class ScraperContractsTest(unittest.TestCase):
 
         self.assertEqual(existing, rows)
 
+    def test_scrape_us_picks_skips_fallback_for_today_when_primary_sources_are_empty(self):
+        with patch.object(scraper, "get_dr_date_str", return_value="12-05-2026"), \
+            patch.object(scraper, "fetch_us_pick_overview", return_value=[]), \
+            patch.object(scraper, "fetch_us_pick_history_batch", return_value={}), \
+            patch.object(scraper, "fetch_new_jersey_pick_home", return_value=[]), \
+            patch.object(scraper, "fetch_pick_fallback_rows") as fallback:
+            rows = scraper.scrape_us_picks(
+                "12-05-2026",
+                games=["pick3"],
+                existing_rows=[],
+                now_dr=datetime.datetime(2026, 5, 12, 9, 0),
+            )
+
+        self.assertEqual([], rows)
+        fallback.assert_not_called()
+
 
 if __name__ == "__main__":
     unittest.main()

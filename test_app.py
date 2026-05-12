@@ -1,4 +1,5 @@
 import json
+import time
 import unittest
 from unittest.mock import patch
 
@@ -255,6 +256,27 @@ class RenderApiContractsTest(unittest.TestCase):
         self.assertEqual("02-05-2026", save_picks.call_args.args[0])
         self.assertEqual("US-P3-FL-PICK-3-EVENING", save_picks.call_args.args[1][0]["id"])
         self.assertEqual("9-2-0", save_picks.call_args.args[1][0]["number"])
+
+    def test_system_results_live_both_runs_lottery_and_pick_in_parallel(self):
+        def slow_lottery(_date_key):
+            time.sleep(0.25)
+            return [{"id": "1", "name": "La Primera Día", "date": "02-05-2026", "number": "01-02-03"}]
+
+        def slow_pick(_date_key, _game_filter=""):
+            time.sleep(0.25)
+            return [{"id": "US-P3-FL-PICK-3-EVENING", "name": "Florida Pick 3 Evening Draw", "date": "02-05-2026", "number": "9-2-0", "pick3": "9-2-0"}]
+
+        with patch("app.lottery_rows_for_request_date", side_effect=slow_lottery), \
+            patch("app.pick_rows_for_request_date", side_effect=slow_pick):
+            started = time.perf_counter()
+            response = self.client.get("/system-results?date=02-05-2026&mode=both&live=1")
+            elapsed = time.perf_counter() - started
+
+        payload = json.loads(response.data.decode("utf-8"))
+        self.assertEqual(200, response.status_code)
+        self.assertEqual(1, payload["lotteries"]["count"])
+        self.assertEqual(1, payload["picks"]["count"])
+        self.assertLess(elapsed, 0.45, f"expected parallel live fetch, got {elapsed:.3f}s")
 
     def test_run_scraper_uses_configured_fallback_key_when_render_env_is_missing(self):
         lottery_rows = [
