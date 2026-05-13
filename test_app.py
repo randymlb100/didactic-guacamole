@@ -32,6 +32,7 @@ class RenderApiContractsTest(unittest.TestCase):
         app._pick_scrape_cache.clear()
         app._lottery_refresh_inflight.clear()
         app._pick_refresh_inflight.clear()
+        app._pick_refresh_last_started.clear()
         app._live_system_results_cache.clear()
 
     def test_root_returns_28_unique_results(self):
@@ -363,6 +364,17 @@ class RenderApiContractsTest(unittest.TestCase):
         self.assertEqual(1, first_payload["picks"]["count"])
         self.assertEqual(1, second_payload["picks"]["count"])
         pick_fetch.assert_called_once_with("02-05-2026", "")
+
+    def test_schedule_background_pick_refresh_rate_limits_same_date(self):
+        with patch("app.threading.Thread") as thread_ctor, \
+            patch("app.time.time", side_effect=[1000.0, 1010.0]):
+            first = app.schedule_background_pick_refresh("02-05-2026")
+            app._pick_refresh_inflight.clear()
+            second = app.schedule_background_pick_refresh("02-05-2026")
+
+        self.assertTrue(first)
+        self.assertFalse(second)
+        thread_ctor.assert_called_once()
 
     def test_pick_results_expose_no_draw_and_backfill_metadata(self):
         pick_rows = [

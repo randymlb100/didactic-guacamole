@@ -29,6 +29,7 @@ CORS(app)
 port = int(os.environ.get("PORT", 5000))
 SCRAPE_CACHE_TTL_SECONDS = int(os.environ.get("SCRAPE_CACHE_TTL_SECONDS", "120"))
 LIVE_RESPONSE_CACHE_TTL_SECONDS = int(os.environ.get("LIVE_RESPONSE_CACHE_TTL_SECONDS", "5"))
+PICK_BACKGROUND_REFRESH_MIN_INTERVAL_SECONDS = int(os.environ.get("PICK_BACKGROUND_REFRESH_MIN_INTERVAL_SECONDS", "30"))
 _scrape_cache = {}
 _pick_scrape_cache = {}
 _live_system_results_cache = {}
@@ -36,6 +37,7 @@ _lottery_refresh_lock = threading.Lock()
 _lottery_refresh_inflight = set()
 _pick_refresh_lock = threading.Lock()
 _pick_refresh_inflight = set()
+_pick_refresh_last_started = {}
 # Render redeploy marker: keep service restart explicit when production gets stuck.
 
 
@@ -182,9 +184,14 @@ def refresh_pick_cache_async(date_key):
 
 def schedule_background_pick_refresh(date_key):
     with _pick_refresh_lock:
+        now = time.time()
         if date_key in _pick_refresh_inflight:
             return False
+        last_started = _pick_refresh_last_started.get(date_key, 0)
+        if now - last_started < PICK_BACKGROUND_REFRESH_MIN_INTERVAL_SECONDS:
+            return False
         _pick_refresh_inflight.add(date_key)
+        _pick_refresh_last_started[date_key] = now
     thread = threading.Thread(
         target=refresh_pick_cache_async,
         args=(date_key,),
