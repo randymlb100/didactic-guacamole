@@ -763,6 +763,48 @@ class RenderApiContractsTest(unittest.TestCase):
         self.assertTrue(body["ok"])
         save_mock.assert_called_once_with(payload)
 
+    def test_fetch_users_state_targets_legacy_users_table(self):
+        payload = [{"payload": {"admins": [], "cajeros": [], "supervisores": []}}]
+
+        class FakeResponse:
+            def read(self):
+                return json.dumps(payload).encode("utf-8")
+
+        def fake_urlopen(request, timeout=0):
+            self.assertIn("/rest/v1/lotterynet_users_state?", request.full_url)
+            self.assertIn("scope=eq.global", request.full_url)
+            self.assertIn("select=payload", request.full_url)
+            self.assertEqual(8, timeout)
+            return FakeResponse()
+
+        with patch("app.urllib.request.urlopen", side_effect=fake_urlopen):
+            value = app.fetch_users_state_from_supabase()
+
+        self.assertEqual({"admins": [], "cajeros": [], "supervisores": []}, value)
+
+    def test_save_users_state_targets_legacy_users_table(self):
+        captured = {}
+
+        def fake_urlopen(request, timeout=0):
+            captured["url"] = request.full_url
+            captured["method"] = request.get_method()
+            captured["body"] = request.data.decode("utf-8")
+            captured["timeout"] = timeout
+            class FakeResponse:
+                def read(self):
+                    return b""
+            return FakeResponse()
+
+        with patch("app.urllib.request.urlopen", side_effect=fake_urlopen):
+            app.save_users_state_to_supabase({"admins": [], "cajeros": [], "supervisores": []})
+
+        body = json.loads(captured["body"])
+        self.assertEqual("/rest/v1/lotterynet_users_state?on_conflict=scope", captured["url"].replace(app.SUPABASE_URL, ""))
+        self.assertEqual("POST", captured["method"])
+        self.assertEqual("global", body["scope"])
+        self.assertIn("payload", body)
+        self.assertEqual(15, captured["timeout"])
+
 
 if __name__ == "__main__":
     unittest.main()

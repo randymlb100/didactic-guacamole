@@ -150,9 +150,9 @@ def fetch_manual_overrides_from_supabase(date_key):
 def fetch_users_state_from_supabase():
     if not SUPABASE_KEY.strip():
         return None
-    params = urllib.parse.urlencode({"key": f"eq.{USERS_STATE_KEY}", "select": "value"})
+    params = urllib.parse.urlencode({"scope": "eq.global", "select": "payload"})
     req = urllib.request.Request(
-        f"{SUPABASE_URL}/rest/v1/lotterynet_kv?{params}",
+        f"{SUPABASE_URL}/rest/v1/lotterynet_users_state?{params}",
         headers={
             "apikey": SUPABASE_KEY,
             "Authorization": f"Bearer {SUPABASE_KEY}",
@@ -161,7 +161,7 @@ def fetch_users_state_from_supabase():
     )
     resp = urllib.request.urlopen(req, timeout=8)
     rows = json.loads(resp.read().decode("utf-8"))
-    value = rows[0].get("value") if rows else None
+    value = rows[0].get("payload") if rows else None
     if isinstance(value, str):
         value = json.loads(value)
     return value if isinstance(value, dict) else None
@@ -171,12 +171,12 @@ def save_users_state_to_supabase(payload):
     if not SUPABASE_KEY.strip():
         raise RuntimeError("SUPABASE_KEY is not configured")
     body = json.dumps({
-        "key": USERS_STATE_KEY,
-        "value": payload,
-        "upd": utc_now_iso(),
+        "scope": "global",
+        "payload": payload,
+        "updated_at": utc_now_iso(),
     }).encode("utf-8")
     req = urllib.request.Request(
-        f"{SUPABASE_URL}/rest/v1/lotterynet_kv",
+        f"{SUPABASE_URL}/rest/v1/lotterynet_users_state?on_conflict=scope",
         data=body,
         headers={
             "Content-Type": "application/json",
