@@ -30,6 +30,8 @@ class RenderApiContractsTest(unittest.TestCase):
         self.client = app.app.test_client()
         app._scrape_cache.clear()
         app._pick_scrape_cache.clear()
+        app._lottery_refresh_inflight.clear()
+        app._pick_refresh_inflight.clear()
 
     def test_root_returns_28_unique_results(self):
         rows = fake_results() + [fake_results()[1]]
@@ -256,6 +258,59 @@ class RenderApiContractsTest(unittest.TestCase):
         self.assertEqual("02-05-2026", save_picks.call_args.args[0])
         self.assertEqual("US-P3-FL-PICK-3-EVENING", save_picks.call_args.args[1][0]["id"])
         self.assertEqual("9-2-0", save_picks.call_args.args[1][0]["number"])
+
+    def test_today_live_pick_uses_cached_snapshot_and_triggers_background_refresh(self):
+        existing_pick_rows = [{
+            "id": "US-P3-FL-PICK-3-EVENING",
+            "state": "Florida",
+            "stateCode": "FL",
+            "game": "pick3",
+            "gameName": "Pick 3",
+            "draw": "Evening Draw",
+            "date": "02-05-2026",
+            "number": "9-2-0",
+            "pick3": "9-2-0",
+        }]
+        with patch("app.fetch_pick_rows_from_supabase", return_value=existing_pick_rows), \
+            patch("app.get_dr_date_str", return_value="02-05-2026"), \
+            patch("app.schedule_background_pick_refresh", return_value=True) as background_refresh, \
+            patch("app.scrape_us_picks") as pick_scrape, \
+            patch("app.save_us_picks_to_supabase") as save_picks:
+            response = self.client.get("/system-results?date=02-05-2026&mode=pick&live=1")
+
+        payload = json.loads(response.data.decode("utf-8"))
+        self.assertEqual(200, response.status_code)
+        self.assertEqual("live-scraper", payload["source"])
+        self.assertEqual(1, payload["picks"]["count"])
+        background_refresh.assert_called_once_with("02-05-2026")
+        pick_scrape.assert_not_called()
+        save_picks.assert_not_called()
+
+    def test_today_live_pick_without_cached_snapshot_scrapes_inline(self):
+        refreshed_pick_rows = [{
+            "id": "US-P3-FL-PICK-3-EVENING",
+            "state": "Florida",
+            "stateCode": "FL",
+            "game": "pick3",
+            "gameName": "Pick 3",
+            "draw": "Evening Draw",
+            "date": "02-05-2026",
+            "number": "9-2-0",
+            "pick3": "9-2-0",
+        }]
+        with patch("app.fetch_pick_rows_from_supabase", return_value=[]), \
+            patch("app.get_dr_date_str", return_value="02-05-2026"), \
+            patch("app.schedule_background_pick_refresh", return_value=False) as background_refresh, \
+            patch("app.scrape_us_picks", return_value=refreshed_pick_rows) as pick_scrape, \
+            patch("app.save_us_picks_to_supabase") as save_picks:
+            response = self.client.get("/system-results?date=02-05-2026&mode=pick&live=1")
+
+        payload = json.loads(response.data.decode("utf-8"))
+        self.assertEqual(200, response.status_code)
+        self.assertEqual(1, payload["picks"]["count"])
+        background_refresh.assert_not_called()
+        pick_scrape.assert_called_once_with("02-05-2026", existing_rows=[])
+        save_picks.assert_called_once()
 
     def test_pick_results_expose_no_draw_and_backfill_metadata(self):
         pick_rows = [

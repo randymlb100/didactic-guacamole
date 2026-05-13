@@ -32,6 +32,8 @@ _scrape_cache = {}
 _pick_scrape_cache = {}
 _lottery_refresh_lock = threading.Lock()
 _lottery_refresh_inflight = set()
+_pick_refresh_lock = threading.Lock()
+_pick_refresh_inflight = set()
 # Render redeploy marker: keep service restart explicit when production gets stuck.
 
 
@@ -139,6 +141,43 @@ def schedule_background_lottery_refresh(date_key):
     return True
 
 
+def set_pick_scrape_cache(date_key, rows):
+    normalized = unique_sorted_pick_results(rows)
+    _pick_scrape_cache[date_key] = {"stored_at": time.time(), "rows": normalized}
+    for game_filter in ("pick3", "pick4"):
+        filtered = [row for row in normalized if row.get("game") == game_filter]
+        _pick_scrape_cache[f"{date_key}:{game_filter}"] = {"stored_at": time.time(), "rows": filtered}
+
+
+def refresh_pick_cache_async(date_key):
+    try:
+        existing_rows = fetch_pick_rows_from_supabase(date_key)
+        rows = unique_sorted_pick_results(scrape_us_picks(date_key, existing_rows=existing_rows))
+        set_pick_scrape_cache(date_key, rows)
+        if rows and SUPABASE_KEY.strip():
+            save_us_picks_to_supabase(date_key, rows)
+    except Exception as error:
+        print(f"Warning: background pick refresh failed for {date_key}: {error}")
+    finally:
+        with _pick_refresh_lock:
+            _pick_refresh_inflight.discard(date_key)
+
+
+def schedule_background_pick_refresh(date_key):
+    with _pick_refresh_lock:
+        if date_key in _pick_refresh_inflight:
+            return False
+        _pick_refresh_inflight.add(date_key)
+    thread = threading.Thread(
+        target=refresh_pick_cache_async,
+        args=(date_key,),
+        daemon=True,
+        name=f"pick-refresh-{date_key}",
+    )
+    thread.start()
+    return True
+
+
 def pick_scrape_cached(date_key, existing_rows=None):
     now = time.time()
     cached = _pick_scrape_cache.get(date_key)
@@ -206,12 +245,16 @@ def fetch_pick_rows_from_supabase(date_key):
 def pick_rows_for_request_date(date_key, game_filter=""):
     if should_use_live_scrape():
         existing_rows = fetch_pick_rows_from_supabase(date_key)
-        rows = pick_scrape_cached_for_game(date_key, game_filter, existing_rows=existing_rows)
-        if rows and SUPABASE_KEY.strip():
-            try:
-                save_us_picks_to_supabase(date_key, unique_sorted_pick_results(rows))
-            except Exception as error:
-                print(f"Warning: could not save live pick refresh: {error}")
+        if existing_rows and date_key == get_dr_date_str():
+            schedule_background_pick_refresh(date_key)
+            rows = existing_rows
+        else:
+            rows = pick_scrape_cached_for_game(date_key, game_filter, existing_rows=existing_rows)
+            if rows and SUPABASE_KEY.strip():
+                try:
+                    save_us_picks_to_supabase(date_key, unique_sorted_pick_results(rows))
+                except Exception as error:
+                    print(f"Warning: could not save live pick refresh: {error}")
     else:
         rows = fetch_pick_rows_from_supabase(date_key)
         if not rows:
