@@ -158,6 +158,52 @@ def set_live_system_results_cache(date_key, mode, payload):
         "stored_at": time.time(),
         "payload": payload,
     }
+    if mode == "both":
+        if "lotteries" in payload:
+            _live_system_results_cache[f"{date_key}:lottery"] = {
+                "stored_at": time.time(),
+                "payload": {
+                    "date": payload["date"],
+                    "mode": "lottery",
+                    "source": payload.get("source", "live-scraper"),
+                    "generatedAt": payload.get("generatedAt"),
+                    "lotteries": payload["lotteries"],
+                },
+            }
+        if "picks" in payload:
+            _live_system_results_cache[f"{date_key}:pick"] = {
+                "stored_at": time.time(),
+                "payload": {
+                    "date": payload["date"],
+                    "mode": "pick",
+                    "source": payload.get("source", "live-scraper"),
+                    "generatedAt": payload.get("generatedAt"),
+                    "picks": payload["picks"],
+                },
+            }
+
+
+def get_composed_live_system_results_cache(date_key, mode):
+    cached_payload = get_fresh_live_system_results_cache(date_key, mode)
+    if cached_payload is not None:
+        return cached_payload
+    if mode != "both":
+        return None
+    cached_lottery = get_fresh_live_system_results_cache(date_key, "lottery")
+    cached_pick = get_fresh_live_system_results_cache(date_key, "pick")
+    if cached_lottery is None or cached_pick is None:
+        return None
+    return {
+        "date": date_key,
+        "mode": "both",
+        "source": "live-scraper",
+        "generatedAt": max(
+            str(cached_lottery.get("generatedAt") or ""),
+            str(cached_pick.get("generatedAt") or ""),
+        ),
+        "lotteries": cached_lottery["lotteries"],
+        "picks": cached_pick["picks"],
+    }
 
 
 def set_pick_scrape_cache(date_key, rows):
@@ -406,7 +452,7 @@ def system_results():
         mode = "lottery"
     date_key = request.args.get("date") or get_dr_date_str()
     if should_use_live_scrape() and date_key == get_dr_date_str():
-        cached_payload = get_fresh_live_system_results_cache(date_key, mode)
+        cached_payload = get_composed_live_system_results_cache(date_key, mode)
         if cached_payload is not None:
             return json_utf8(cached_payload)
     payload = {

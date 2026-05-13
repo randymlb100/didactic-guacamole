@@ -376,6 +376,41 @@ class RenderApiContractsTest(unittest.TestCase):
         self.assertFalse(second)
         thread_ctor.assert_called_once()
 
+    def test_today_live_both_reuses_fresh_section_caches(self):
+        lottery_payload = {
+            "date": "02-05-2026",
+            "mode": "lottery",
+            "source": "live-scraper",
+            "generatedAt": "2026-05-02T12:00:00Z",
+            "lotteries": {
+                "section": "lotteries",
+                "count": 1,
+                "results": [{"id": "1", "name": "La Primera Día", "date": "02-05-2026", "number": "01-02-03"}],
+            },
+        }
+        pick_payload = {
+            "date": "02-05-2026",
+            "mode": "pick",
+            "source": "live-scraper",
+            "generatedAt": "2026-05-02T12:00:01Z",
+            "picks": {
+                "section": "picks",
+                "count": 1,
+                "results": [{"id": "US-P3-FL-PICK-3-EVENING", "name": "Florida Pick 3 Evening Draw", "date": "02-05-2026", "number": "9-2-0"}],
+            },
+        }
+        app.set_live_system_results_cache("02-05-2026", "lottery", lottery_payload)
+        app.set_live_system_results_cache("02-05-2026", "pick", pick_payload)
+        with patch("app.get_dr_date_str", return_value="02-05-2026"), \
+            patch("app.live_results_sections_for_date") as live_fetch:
+            response = self.client.get("/system-results?date=02-05-2026&mode=both&live=1")
+
+        payload = json.loads(response.data.decode("utf-8"))
+        self.assertEqual(200, response.status_code)
+        self.assertEqual(1, payload["lotteries"]["count"])
+        self.assertEqual(1, payload["picks"]["count"])
+        live_fetch.assert_not_called()
+
     def test_pick_results_expose_no_draw_and_backfill_metadata(self):
         pick_rows = [
             {
