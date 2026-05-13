@@ -312,6 +312,32 @@ class RenderApiContractsTest(unittest.TestCase):
         pick_scrape.assert_called_once_with("02-05-2026", existing_rows=[])
         save_picks.assert_called_once()
 
+    def test_today_live_pick_reuses_fresh_memory_snapshot_without_supabase_lookup(self):
+        cached_pick_rows = [{
+            "id": "US-P3-FL-PICK-3-EVENING",
+            "state": "Florida",
+            "stateCode": "FL",
+            "game": "pick3",
+            "gameName": "Pick 3",
+            "draw": "Evening Draw",
+            "date": "02-05-2026",
+            "number": "9-2-0",
+            "pick3": "9-2-0",
+        }]
+        app.set_pick_scrape_cache("02-05-2026", cached_pick_rows)
+        with patch("app.get_dr_date_str", return_value="02-05-2026"), \
+            patch("app.fetch_pick_rows_from_supabase") as fetch_picks, \
+            patch("app.schedule_background_pick_refresh") as background_refresh, \
+            patch("app.scrape_us_picks") as pick_scrape:
+            response = self.client.get("/system-results?date=02-05-2026&mode=pick&live=1")
+
+        payload = json.loads(response.data.decode("utf-8"))
+        self.assertEqual(200, response.status_code)
+        self.assertEqual(1, payload["picks"]["count"])
+        fetch_picks.assert_not_called()
+        background_refresh.assert_not_called()
+        pick_scrape.assert_not_called()
+
     def test_pick_results_expose_no_draw_and_backfill_metadata(self):
         pick_rows = [
             {

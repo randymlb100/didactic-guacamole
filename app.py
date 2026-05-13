@@ -201,6 +201,16 @@ def pick_scrape_cached_for_game(date_key, game_filter, existing_rows=None):
     return rows
 
 
+def get_fresh_pick_cache(date_key, game_filter=""):
+    cache_key = f"{date_key}:{game_filter}" if game_filter in ("pick3", "pick4") else date_key
+    cached = _pick_scrape_cache.get(cache_key)
+    if not cached:
+        return []
+    if time.time() - cached["stored_at"] >= SCRAPE_CACHE_TTL_SECONDS:
+        return []
+    return cached["rows"]
+
+
 def should_use_live_scrape():
     return request.args.get("live") == "1"
 
@@ -244,8 +254,13 @@ def fetch_pick_rows_from_supabase(date_key):
 
 def pick_rows_for_request_date(date_key, game_filter=""):
     if should_use_live_scrape():
+        if date_key == get_dr_date_str():
+            fresh_cached_rows = get_fresh_pick_cache(date_key, game_filter)
+            if fresh_cached_rows:
+                return unique_sorted_pick_results(fresh_cached_rows)
         existing_rows = fetch_pick_rows_from_supabase(date_key)
         if existing_rows and date_key == get_dr_date_str():
+            set_pick_scrape_cache(date_key, existing_rows)
             schedule_background_pick_refresh(date_key)
             rows = existing_rows
         else:
