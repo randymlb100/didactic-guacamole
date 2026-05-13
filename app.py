@@ -28,8 +28,10 @@ app = Flask(__name__)
 CORS(app)
 port = int(os.environ.get("PORT", 5000))
 SCRAPE_CACHE_TTL_SECONDS = int(os.environ.get("SCRAPE_CACHE_TTL_SECONDS", "120"))
+LIVE_RESPONSE_CACHE_TTL_SECONDS = int(os.environ.get("LIVE_RESPONSE_CACHE_TTL_SECONDS", "5"))
 _scrape_cache = {}
 _pick_scrape_cache = {}
+_live_system_results_cache = {}
 _lottery_refresh_lock = threading.Lock()
 _lottery_refresh_inflight = set()
 _pick_refresh_lock = threading.Lock()
@@ -137,8 +139,23 @@ def schedule_background_lottery_refresh(date_key):
         daemon=True,
         name=f"lottery-refresh-{date_key}",
     )
-    thread.start()
-    return True
+
+
+def get_fresh_live_system_results_cache(date_key, mode):
+    cache_key = f"{date_key}:{mode}"
+    cached = _live_system_results_cache.get(cache_key)
+    if not cached:
+        return None
+    if time.time() - cached["stored_at"] >= LIVE_RESPONSE_CACHE_TTL_SECONDS:
+        return None
+    return cached["payload"]
+
+
+def set_live_system_results_cache(date_key, mode, payload):
+    _live_system_results_cache[f"{date_key}:{mode}"] = {
+        "stored_at": time.time(),
+        "payload": payload,
+    }
 
 
 def set_pick_scrape_cache(date_key, rows):
@@ -381,6 +398,10 @@ def system_results():
     if mode not in ("lottery", "pick", "both"):
         mode = "lottery"
     date_key = request.args.get("date") or get_dr_date_str()
+    if should_use_live_scrape() and date_key == get_dr_date_str():
+        cached_payload = get_fresh_live_system_results_cache(date_key, mode)
+        if cached_payload is not None:
+            return json_utf8(cached_payload)
     payload = {
         "date": date_key,
         "mode": mode,
@@ -413,6 +434,8 @@ def system_results():
         }
     if not any(payload.get(section, {}).get("count", 0) for section in ("lotteries", "picks")):
         payload["source"] = "live-scraper" if should_use_live_scrape() else "cache-miss"
+    if should_use_live_scrape() and date_key == get_dr_date_str():
+        set_live_system_results_cache(date_key, mode, payload)
     return json_utf8(payload)
 
 

@@ -32,6 +32,7 @@ class RenderApiContractsTest(unittest.TestCase):
         app._pick_scrape_cache.clear()
         app._lottery_refresh_inflight.clear()
         app._pick_refresh_inflight.clear()
+        app._live_system_results_cache.clear()
 
     def test_root_returns_28_unique_results(self):
         rows = fake_results() + [fake_results()[1]]
@@ -337,6 +338,31 @@ class RenderApiContractsTest(unittest.TestCase):
         fetch_picks.assert_not_called()
         background_refresh.assert_not_called()
         pick_scrape.assert_not_called()
+
+    def test_today_live_pick_reuses_recent_live_response_cache(self):
+        pick_rows = [{
+            "id": "US-P3-FL-PICK-3-EVENING",
+            "state": "Florida",
+            "stateCode": "FL",
+            "game": "pick3",
+            "gameName": "Pick 3",
+            "draw": "Evening Draw",
+            "date": "02-05-2026",
+            "number": "9-2-0",
+            "pick3": "9-2-0",
+        }]
+        with patch("app.get_dr_date_str", return_value="02-05-2026"), \
+            patch("app.pick_rows_for_request_date", return_value=pick_rows) as pick_fetch:
+            first = self.client.get("/system-results?date=02-05-2026&mode=pick&live=1")
+            second = self.client.get("/system-results?date=02-05-2026&mode=pick&live=1")
+
+        first_payload = json.loads(first.data.decode("utf-8"))
+        second_payload = json.loads(second.data.decode("utf-8"))
+        self.assertEqual(200, first.status_code)
+        self.assertEqual(200, second.status_code)
+        self.assertEqual(1, first_payload["picks"]["count"])
+        self.assertEqual(1, second_payload["picks"]["count"])
+        pick_fetch.assert_called_once_with("02-05-2026", "")
 
     def test_pick_results_expose_no_draw_and_backfill_metadata(self):
         pick_rows = [
