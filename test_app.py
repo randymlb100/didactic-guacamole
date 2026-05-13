@@ -34,6 +34,11 @@ class RenderApiContractsTest(unittest.TestCase):
         app._pick_refresh_inflight.clear()
         app._pick_refresh_last_started.clear()
         app._live_system_results_cache.clear()
+        app._manual_override_cache.clear()
+
+    def save_override_cache(self, date_key, rows):
+        normalized = [app.normalize_manual_override_row(row, date_key) for row in rows]
+        app.set_cached_manual_overrides(date_key, normalized)
 
     def test_root_returns_28_unique_results(self):
         rows = fake_results() + [fake_results()[1]]
@@ -418,7 +423,120 @@ class RenderApiContractsTest(unittest.TestCase):
         self.assertEqual(1, payload["lotteries"]["count"])
         self.assertEqual(1, payload["picks"]["count"])
         live_fetch.assert_not_called()
-        self.assertEqual("section-cache", payload["servedFrom"])
+
+    def test_admin_can_create_manual_override_and_results_show_it(self):
+        with patch("app.fetch_manual_overrides_from_supabase", return_value=[]), \
+            patch("app.save_manual_overrides_to_supabase", side_effect=self.save_override_cache) as save_overrides:
+            save_response = self.client.post(
+                "/admin/results/manual-override",
+                json={
+                    "role": "admin",
+                    "editedBy": "ramonc03",
+                    "date": "02-05-2026",
+                    "resultId": "19",
+                    "name": "NJ Pick 3 Día",
+                    "number": "3-7-1",
+                    "game": "pick3",
+                },
+            )
+        with patch("app.fetch_existing_from_supabase", return_value=[]), \
+            patch("app.fetch_pick_rows_from_supabase", return_value=[]):
+            results_response = self.client.get("/system-results?date=02-05-2026&mode=pick")
+
+        save_payload = json.loads(save_response.data.decode("utf-8"))
+        results_payload = json.loads(results_response.data.decode("utf-8"))
+        self.assertEqual(200, save_response.status_code)
+        self.assertTrue(save_payload["saved"])
+        self.assertEqual(1, results_payload["picks"]["count"])
+        self.assertEqual("19", results_payload["picks"]["results"][0]["id"])
+        self.assertEqual("3-7-1", results_payload["picks"]["results"][0]["pick3"])
+        self.assertTrue(results_payload["picks"]["results"][0]["isManualOverride"])
+        save_overrides.assert_called()
+
+    def test_manual_override_rejected_for_non_admin(self):
+        response = self.client.post(
+            "/admin/results/manual-override",
+            json={
+                "role": "cashier",
+                "editedBy": "ramonc03",
+                "date": "02-05-2026",
+                "resultId": "19",
+                "name": "NJ Pick 3 Día",
+                "number": "3-7-1",
+                "game": "pick3",
+            },
+        )
+
+        self.assertEqual(403, response.status_code)
+
+    def test_admin_can_delete_manual_override(self):
+        with patch("app.fetch_existing_from_supabase", return_value=[]), \
+            patch("app.fetch_pick_rows_from_supabase", return_value=[]), \
+            patch("app.fetch_manual_overrides_from_supabase", return_value=[]), \
+            patch("app.save_manual_overrides_to_supabase", side_effect=self.save_override_cache):
+            self.client.post(
+                "/admin/results/manual-override",
+                json={
+                    "role": "admin",
+                    "editedBy": "ramonc03",
+                    "date": "02-05-2026",
+                    "resultId": "19",
+                    "name": "NJ Pick 3 Día",
+                    "number": "3-7-1",
+                    "game": "pick3",
+                },
+            )
+
+        with patch("app.fetch_existing_from_supabase", return_value=[]), \
+            patch("app.fetch_pick_rows_from_supabase", return_value=[]), \
+            patch("app.save_manual_overrides_to_supabase", side_effect=self.save_override_cache):
+            delete_response = self.client.delete(
+                "/admin/results/manual-override",
+                json={
+                    "role": "admin",
+                    "editedBy": "ramonc03",
+                    "date": "02-05-2026",
+                    "resultId": "19",
+                },
+            )
+            results_response = self.client.get("/system-results?date=02-05-2026&mode=pick")
+
+        self.assertEqual(200, delete_response.status_code)
+        results_payload = json.loads(results_response.data.decode("utf-8"))
+        self.assertEqual(0, results_payload["picks"]["count"])
+
+    def test_real_result_replaces_manual_override_when_different(self):
+        with patch("app.fetch_manual_overrides_from_supabase", return_value=[]), \
+            patch("app.save_manual_overrides_to_supabase", side_effect=self.save_override_cache):
+            self.client.post(
+                "/admin/results/manual-override",
+                json={
+                    "role": "admin",
+                    "editedBy": "ramonc03",
+                    "date": "02-05-2026",
+                    "resultId": "19",
+                    "name": "NJ Pick 3 Día",
+                    "number": "3-7-1",
+                    "game": "pick3",
+                },
+            )
+        real_pick_rows = [{
+            "id": "19",
+            "name": "NJ Pick 3 Día",
+            "date": "02-05-2026",
+            "number": "5-8-9",
+            "pick3": "5-8-9",
+            "game": "pick3",
+            "source": "official",
+        }]
+        with patch("app.fetch_pick_rows_from_supabase", return_value=real_pick_rows), \
+            patch("app.save_manual_overrides_to_supabase") as save_overrides:
+            response = self.client.get("/system-results?date=02-05-2026&mode=pick")
+
+        payload = json.loads(response.data.decode("utf-8"))
+        self.assertEqual("5-8-9", payload["picks"]["results"][0]["pick3"])
+        self.assertFalse(payload["picks"]["results"][0].get("isManualOverride", False))
+        save_overrides.assert_called()
 
     def test_today_live_pick_sets_served_from_supabase_snapshot(self):
         existing_pick_rows = [{

@@ -1,6 +1,7 @@
 import datetime
 import json
 import os
+import re
 import threading
 import time
 import urllib.parse
@@ -33,12 +34,15 @@ PICK_BACKGROUND_REFRESH_MIN_INTERVAL_SECONDS = int(os.environ.get("PICK_BACKGROU
 _scrape_cache = {}
 _pick_scrape_cache = {}
 _live_system_results_cache = {}
+_manual_override_cache = {}
 _lottery_refresh_lock = threading.Lock()
 _lottery_refresh_inflight = set()
 _pick_refresh_lock = threading.Lock()
 _pick_refresh_inflight = set()
 _pick_refresh_last_started = {}
 # Render redeploy marker: keep service restart explicit when production gets stuck.
+
+ADMIN_ROLES = {"admin", "master"}
 
 
 def json_utf8(data, status=200):
@@ -81,6 +85,9 @@ def normalize_result_row(row):
         "playTypes",
         "backfilled",
         "noDrawReason",
+        "isManualOverride",
+        "manualEditedBy",
+        "manualEditedAt",
     ):
         value = row.get(key)
         if value is not None and value != "":
@@ -101,6 +108,188 @@ def normalize_pick_row(row):
     if state or game_name or draw:
         normalized["name"] = " ".join(part for part in [state, game_name, draw] if part)
     return normalized
+
+
+def manual_results_override_cache_key(date_key):
+    return f"manual_results_overrides_by_day:{date_key}"
+
+
+def get_cached_manual_overrides(date_key):
+    cached = _manual_override_cache.get(date_key)
+    if not cached:
+        return None
+    if time.time() - cached["stored_at"] >= SCRAPE_CACHE_TTL_SECONDS:
+        return None
+    return cached["rows"]
+
+
+def set_cached_manual_overrides(date_key, rows):
+    _manual_override_cache[date_key] = {
+        "stored_at": time.time(),
+        "rows": rows,
+    }
+
+
+def fetch_manual_overrides_from_supabase(date_key):
+    cached = get_cached_manual_overrides(date_key)
+    if cached is not None:
+        return cached
+    if not SUPABASE_KEY.strip():
+        return []
+    params = urllib.parse.urlencode({"key": f"eq.{manual_results_override_cache_key(date_key)}", "select": "value"})
+    req = urllib.request.Request(
+        f"{SUPABASE_URL}/rest/v1/lotterynet_kv?{params}",
+        headers={
+            "apikey": SUPABASE_KEY,
+            "Authorization": f"Bearer {SUPABASE_KEY}",
+        },
+    )
+
+
+def utc_now_iso():
+    return datetime.datetime.now(datetime.UTC).isoformat().replace("+00:00", "Z")
+    try:
+        resp = urllib.request.urlopen(req, timeout=5)
+        rows = json.loads(resp.read().decode("utf-8"))
+        if rows and rows[0].get("value"):
+            value = rows[0]["value"]
+            if isinstance(value, str):
+                value = json.loads(value)
+            if isinstance(value, list):
+                normalized = [normalize_manual_override_row(row, date_key) for row in value if row]
+                set_cached_manual_overrides(date_key, normalized)
+                return normalized
+    except Exception as error:
+        print(f"Warning: could not fetch manual overrides: {error}")
+    return []
+
+
+def save_manual_overrides_to_supabase(date_key, rows):
+    normalized_rows = [normalize_manual_override_row(row, date_key) for row in rows if row]
+    set_cached_manual_overrides(date_key, normalized_rows)
+    if not SUPABASE_KEY.strip():
+        return
+    value = json.dumps(normalized_rows, ensure_ascii=False)
+    payload = json.dumps({
+        "key": manual_results_override_cache_key(date_key),
+        "value": value,
+        "upd": utc_now_iso(),
+    }).encode("utf-8")
+    req = urllib.request.Request(
+        f"{SUPABASE_URL}/rest/v1/lotterynet_kv",
+        data=payload,
+        headers={
+            "Content-Type": "application/json",
+            "apikey": SUPABASE_KEY,
+            "Authorization": f"Bearer {SUPABASE_KEY}",
+            "Prefer": "resolution=merge-duplicates",
+        },
+        method="POST",
+    )
+    urllib.request.urlopen(req, timeout=15)
+
+
+def normalize_manual_override_row(row, date_key):
+    normalized = dict(row)
+    normalized["id"] = str(row.get("id") or row.get("resultId") or "").strip()
+    normalized["name"] = str(row.get("name") or "").strip()
+    normalized["date"] = str(row.get("date") or date_key).strip() or date_key
+    normalized["number"] = str(row.get("number") or "").strip()
+    normalized["game"] = str(row.get("game") or "").strip().lower().replace("-", "")
+    normalized["source"] = "manual-override"
+    normalized["status"] = "published"
+    normalized["isManualOverride"] = True
+    normalized["backfilled"] = False
+    edited_by = str(row.get("editedBy") or row.get("manualEditedBy") or "").strip()
+    edited_at = str(row.get("editedAt") or row.get("manualEditedAt") or utc_now_iso()).strip()
+    if edited_by:
+        normalized["editedBy"] = edited_by
+        normalized["manualEditedBy"] = edited_by
+    normalized["editedAt"] = edited_at
+    normalized["manualEditedAt"] = edited_at
+    if normalized["game"] == "pick3":
+        normalized["pick3"] = normalized["number"]
+        normalized.pop("pick4", None)
+    elif normalized["game"] == "pick4":
+        normalized["pick4"] = normalized["number"]
+        normalized.pop("pick3", None)
+    return normalized
+
+
+def manual_override_is_pick(row):
+    game = str(row.get("game", "")).lower().replace("-", "")
+    row_id = str(row.get("id", "")).upper()
+    name = str(row.get("name", "")).lower()
+    return game in {"pick3", "pick4"} or row_id.startswith("US-P3-") or row_id.startswith("US-P4-") or row_id in {"19", "20", "21", "22"} or "pick 3" in name or "pick 4" in name
+
+
+def normalize_override_number(raw_number):
+    digits = [part for part in str(raw_number or "").split("-") if part != ""]
+    return "-".join(digits)
+
+
+def resolved_row_number(row):
+    if row.get("pick4"):
+        return normalize_override_number(row.get("pick4"))
+    if row.get("pick3"):
+        return normalize_override_number(row.get("pick3"))
+    if row.get("number"):
+        return normalize_override_number(row.get("number"))
+    classic = [str(row.get("first", "")).strip(), str(row.get("second", "")).strip(), str(row.get("third", "")).strip()]
+    classic = [value for value in classic if value]
+    if classic:
+        return "-".join(classic)
+    return ""
+
+
+def row_has_published_number(row):
+    if str(row.get("status", "")).strip().lower() == "no_draw":
+        return False
+    return bool(resolved_row_number(row))
+
+
+def validate_override_number(number, game):
+    if game == "pick3":
+        return bool(re.match(r"^\d-\d-\d$", number))
+    if game == "pick4":
+        return bool(re.match(r"^\d-\d-\d-\d$", number))
+    return bool(re.match(r"^\d{2}-\d{2}-\d{2}$", number))
+
+
+def apply_manual_overrides(date_key, rows, include_pick):
+    overrides = fetch_manual_overrides_from_supabase(date_key)
+    if not overrides:
+        return rows
+    filtered_overrides = [row for row in overrides if manual_override_is_pick(row) == include_pick]
+    if not filtered_overrides:
+        return rows
+    by_id = {str(row.get("id", "")).strip(): dict(row) for row in rows if str(row.get("id", "")).strip()}
+    override_map = {str(row.get("id", "")).strip(): normalize_manual_override_row(row, date_key) for row in filtered_overrides}
+    remaining_overrides = {str(row.get("id", "")).strip(): normalize_manual_override_row(row, date_key) for row in overrides}
+    changed = False
+    for result_id, override in override_map.items():
+        current = by_id.get(result_id)
+        if current and row_has_published_number(current):
+            current_number = resolved_row_number(current)
+            if current_number == normalize_override_number(override.get("number")):
+                remaining_overrides.pop(result_id, None)
+                changed = True
+            else:
+                remaining_overrides.pop(result_id, None)
+                changed = True
+            continue
+        by_id[result_id] = normalize_pick_row(override) if include_pick else normalize_result_row(override)
+    if changed:
+        save_manual_overrides_to_supabase(date_key, list(remaining_overrides.values()))
+    return unique_sorted_pick_results(by_id.values()) if include_pick else unique_sorted_results(by_id.values())
+
+
+def request_json_body():
+    return request.get_json(silent=True) or {}
+
+
+def is_admin_role(value):
+    return str(value or "").strip().lower() in ADMIN_ROLES
 
 
 def scrape_cached(date_key):
@@ -340,7 +529,7 @@ def lottery_rows_for_request_date(date_key):
         set_live_served_from_flag("lottery", "inline-scrape")
         return unique_sorted_results(scrape_cached(date_key))
     lottery_rows, _ = split_lottery_and_pick_rows(fetch_existing_from_supabase(date_key))
-    return unique_sorted_results(lottery_rows)
+    return apply_manual_overrides(date_key, unique_sorted_results(lottery_rows), include_pick=False)
 
 
 def fetch_pick_rows_from_supabase(date_key):
@@ -395,7 +584,7 @@ def pick_rows_for_request_date(date_key, game_filter=""):
             _, rows = split_lottery_and_pick_rows(fetch_existing_from_supabase(date_key))
     if game_filter in ("pick3", "pick4"):
         rows = [row for row in rows if row.get("game") == game_filter]
-    return unique_sorted_pick_results(rows)
+    return apply_manual_overrides(date_key, unique_sorted_pick_results(rows), include_pick=True)
 
 
 def unique_sorted_results(rows):
@@ -549,6 +738,62 @@ def system_results():
         set_live_system_results_cache(date_key, mode, payload)
         log_live_request(date_key, mode, payload.get("servedFrom", "inline-scrape"), started_at)
     return json_utf8(payload)
+
+
+@app.route("/admin/results/manual-override", methods=["POST"])
+def upsert_manual_result_override():
+    payload = request_json_body()
+    if not is_admin_role(payload.get("role")):
+        return json_utf8({"saved": False, "error": "Admin role required"}, status=403)
+    date_key = str(payload.get("date") or get_dr_date_str()).strip()
+    result_id = str(payload.get("resultId") or payload.get("id") or "").strip()
+    name = str(payload.get("name") or "").strip()
+    number = str(payload.get("number") or "").strip()
+    game = str(payload.get("game") or "").strip().lower().replace("-", "")
+    edited_by = str(payload.get("editedBy") or payload.get("username") or "").strip()
+    if not result_id or not name or not number:
+        return json_utf8({"saved": False, "error": "date, resultId, name and number are required"}, status=400)
+    if not validate_override_number(number, game):
+        return json_utf8({"saved": False, "error": "Invalid number format for result type"}, status=400)
+    overrides = fetch_manual_overrides_from_supabase(date_key)
+    remaining = [row for row in overrides if str(row.get("id", "")).strip() != result_id]
+    override_row = normalize_manual_override_row({
+        "id": result_id,
+        "name": name,
+        "date": date_key,
+        "number": number,
+        "game": game,
+        "editedBy": edited_by,
+        "editedAt": utc_now_iso(),
+    }, date_key)
+    remaining.append(override_row)
+    save_manual_overrides_to_supabase(date_key, remaining)
+    return json_utf8({
+        "saved": True,
+        "date": date_key,
+        "resultId": result_id,
+        "override": override_row,
+    })
+
+
+@app.route("/admin/results/manual-override", methods=["DELETE"])
+def delete_manual_result_override():
+    payload = request_json_body()
+    if not is_admin_role(payload.get("role")):
+        return json_utf8({"saved": False, "error": "Admin role required"}, status=403)
+    date_key = str(payload.get("date") or get_dr_date_str()).strip()
+    result_id = str(payload.get("resultId") or payload.get("id") or "").strip()
+    if not result_id:
+        return json_utf8({"saved": False, "error": "resultId is required"}, status=400)
+    overrides = fetch_manual_overrides_from_supabase(date_key)
+    remaining = [row for row in overrides if str(row.get("id", "")).strip() != result_id]
+    save_manual_overrides_to_supabase(date_key, remaining)
+    return json_utf8({
+        "saved": True,
+        "date": date_key,
+        "resultId": result_id,
+        "deleted": True,
+    })
 
 
 @app.route("/run-scraper", methods=["GET", "POST"])
