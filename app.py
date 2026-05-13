@@ -43,6 +43,7 @@ _pick_refresh_last_started = {}
 # Render redeploy marker: keep service restart explicit when production gets stuck.
 
 ADMIN_ROLES = {"admin", "master"}
+USERS_STATE_KEY = "sys_users_v4"
 
 
 def json_utf8(data, status=200):
@@ -144,6 +145,48 @@ def fetch_manual_overrides_from_supabase(date_key):
             "Authorization": f"Bearer {SUPABASE_KEY}",
         },
     )
+
+
+def fetch_users_state_from_supabase():
+    if not SUPABASE_KEY.strip():
+        return None
+    params = urllib.parse.urlencode({"key": f"eq.{USERS_STATE_KEY}", "select": "value"})
+    req = urllib.request.Request(
+        f"{SUPABASE_URL}/rest/v1/lotterynet_kv?{params}",
+        headers={
+            "apikey": SUPABASE_KEY,
+            "Authorization": f"Bearer {SUPABASE_KEY}",
+            "Accept": "application/json",
+        },
+    )
+    resp = urllib.request.urlopen(req, timeout=8)
+    rows = json.loads(resp.read().decode("utf-8"))
+    value = rows[0].get("value") if rows else None
+    if isinstance(value, str):
+        value = json.loads(value)
+    return value if isinstance(value, dict) else None
+
+
+def save_users_state_to_supabase(payload):
+    if not SUPABASE_KEY.strip():
+        raise RuntimeError("SUPABASE_KEY is not configured")
+    body = json.dumps({
+        "key": USERS_STATE_KEY,
+        "value": payload,
+        "upd": utc_now_iso(),
+    }).encode("utf-8")
+    req = urllib.request.Request(
+        f"{SUPABASE_URL}/rest/v1/lotterynet_kv",
+        data=body,
+        headers={
+            "Content-Type": "application/json",
+            "apikey": SUPABASE_KEY,
+            "Authorization": f"Bearer {SUPABASE_KEY}",
+            "Prefer": "resolution=merge-duplicates",
+        },
+        method="POST",
+    )
+    urllib.request.urlopen(req, timeout=15)
 
 
 def utc_now_iso():
@@ -870,6 +913,36 @@ def run_system_scraper():
         payload["error"] = str(error)
         return json_utf8(payload, status=500)
     return json_utf8(payload)
+
+
+@app.route("/users-state", methods=["GET"])
+def users_state():
+    payload = fetch_users_state_from_supabase()
+    if payload is None:
+        return json_utf8({"ok": False, "payload": None, "source": "supabase-kv"}, status=404)
+    admins = payload.get("admins") if isinstance(payload, dict) else []
+    cashiers = payload.get("cajeros") if isinstance(payload, dict) else []
+    supervisors = payload.get("supervisores") if isinstance(payload, dict) else payload.get("supervisors", [])
+    return json_utf8({
+        "ok": True,
+        "source": "supabase-kv",
+        "adminCount": len(admins or []),
+        "supervisorCount": len(supervisors or []),
+        "cashierCount": len(cashiers or []),
+        "payload": payload,
+    })
+
+
+@app.route("/users-state", methods=["POST"])
+def update_users_state():
+    body = request.get_json(silent=True) or {}
+    payload = body.get("payload") if isinstance(body, dict) and "payload" in body else body
+    if not isinstance(payload, dict):
+        return json_utf8({"ok": False, "message": "Payload invalido."}, status=400)
+    if "admins" not in payload or "cajeros" not in payload:
+        return json_utf8({"ok": False, "message": "Payload de usuarios incompleto."}, status=400)
+    save_users_state_to_supabase(payload)
+    return json_utf8({"ok": True, "source": "supabase-kv"})
 
 
 @app.route("/health", methods=["GET"])

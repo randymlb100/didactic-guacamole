@@ -741,6 +741,28 @@ class RenderApiContractsTest(unittest.TestCase):
         save_lottery.assert_called_once()
         save_picks.assert_called_once()
 
+    def test_users_state_reads_payload_from_supabase_kv(self):
+        payload = {"admins": [{"id": "a1"}], "cajeros": [{"id": "c1"}], "supervisores": []}
+        with patch("app.fetch_users_state_from_supabase", return_value=payload):
+            response = self.client.get("/users-state")
+
+        body = json.loads(response.data.decode("utf-8"))
+        self.assertEqual(200, response.status_code)
+        self.assertTrue(body["ok"])
+        self.assertEqual(1, body["adminCount"])
+        self.assertEqual(1, body["cashierCount"])
+        self.assertEqual(payload, body["payload"])
+
+    def test_users_state_update_persists_payload_to_supabase_kv(self):
+        payload = {"admins": [], "cajeros": [], "supervisores": []}
+        with patch("app.save_users_state_to_supabase") as save_mock:
+            response = self.client.post("/users-state", json={"payload": payload})
+
+        body = json.loads(response.data.decode("utf-8"))
+        self.assertEqual(200, response.status_code)
+        self.assertTrue(body["ok"])
+        save_mock.assert_called_once_with(payload)
+
 
 if __name__ == "__main__":
     unittest.main()
