@@ -363,7 +363,15 @@ class RenderApiContractsTest(unittest.TestCase):
         self.assertEqual(200, second.status_code)
         self.assertEqual(1, first_payload["picks"]["count"])
         self.assertEqual(1, second_payload["picks"]["count"])
-        pick_fetch.assert_called_once_with("02-05-2026", "")
+        pick_fetch.assert_called_once_with("02-05-2026")
+
+    def test_schedule_background_lottery_refresh_starts_thread(self):
+        with patch("app.threading.Thread") as thread_ctor:
+            started = app.schedule_background_lottery_refresh("02-05-2026")
+
+        self.assertTrue(started)
+        thread_ctor.assert_called_once()
+        thread_ctor.return_value.start.assert_called_once()
 
     def test_schedule_background_pick_refresh_rate_limits_same_date(self):
         with patch("app.threading.Thread") as thread_ctor, \
@@ -410,6 +418,92 @@ class RenderApiContractsTest(unittest.TestCase):
         self.assertEqual(1, payload["lotteries"]["count"])
         self.assertEqual(1, payload["picks"]["count"])
         live_fetch.assert_not_called()
+        self.assertEqual("section-cache", payload["servedFrom"])
+
+    def test_today_live_pick_sets_served_from_supabase_snapshot(self):
+        existing_pick_rows = [{
+            "id": "US-P3-FL-PICK-3-EVENING",
+            "state": "Florida",
+            "stateCode": "FL",
+            "game": "pick3",
+            "gameName": "Pick 3",
+            "draw": "Evening Draw",
+            "date": "02-05-2026",
+            "number": "9-2-0",
+            "pick3": "9-2-0",
+        }]
+        with patch("app.fetch_pick_rows_from_supabase", return_value=existing_pick_rows), \
+            patch("app.get_dr_date_str", return_value="02-05-2026"), \
+            patch("app.schedule_background_pick_refresh", return_value=True):
+            response = self.client.get("/system-results?date=02-05-2026&mode=pick&live=1")
+
+        payload = json.loads(response.data.decode("utf-8"))
+        self.assertEqual("supabase-snapshot", payload["servedFrom"])
+
+    def test_today_live_pick_sets_served_from_inline_scrape(self):
+        refreshed_pick_rows = [{
+            "id": "US-P3-FL-PICK-3-EVENING",
+            "state": "Florida",
+            "stateCode": "FL",
+            "game": "pick3",
+            "gameName": "Pick 3",
+            "draw": "Evening Draw",
+            "date": "02-05-2026",
+            "number": "9-2-0",
+            "pick3": "9-2-0",
+        }]
+        with patch("app.fetch_pick_rows_from_supabase", return_value=[]), \
+            patch("app.get_dr_date_str", return_value="02-05-2026"), \
+            patch("app.schedule_background_pick_refresh", return_value=False), \
+            patch("app.scrape_us_picks", return_value=refreshed_pick_rows), \
+            patch("app.save_us_picks_to_supabase"):
+            response = self.client.get("/system-results?date=02-05-2026&mode=pick&live=1")
+
+        payload = json.loads(response.data.decode("utf-8"))
+        self.assertEqual("inline-scrape", payload["servedFrom"])
+
+    def test_today_live_pick_sets_served_from_response_cache(self):
+        pick_rows = [{
+            "id": "US-P3-FL-PICK-3-EVENING",
+            "state": "Florida",
+            "stateCode": "FL",
+            "game": "pick3",
+            "gameName": "Pick 3",
+            "draw": "Evening Draw",
+            "date": "02-05-2026",
+            "number": "9-2-0",
+            "pick3": "9-2-0",
+        }]
+        with patch("app.get_dr_date_str", return_value="02-05-2026"), \
+            patch("app.pick_rows_for_request_date", return_value=pick_rows):
+            self.client.get("/system-results?date=02-05-2026&mode=pick&live=1")
+            response = self.client.get("/system-results?date=02-05-2026&mode=pick&live=1")
+
+        payload = json.loads(response.data.decode("utf-8"))
+        self.assertEqual("response-cache", payload["servedFrom"])
+
+    def test_today_live_system_results_logs_served_path_and_duration(self):
+        pick_rows = [{
+            "id": "US-P3-FL-PICK-3-EVENING",
+            "state": "Florida",
+            "stateCode": "FL",
+            "game": "pick3",
+            "gameName": "Pick 3",
+            "draw": "Evening Draw",
+            "date": "02-05-2026",
+            "number": "9-2-0",
+            "pick3": "9-2-0",
+        }]
+        with patch("app.get_dr_date_str", return_value="02-05-2026"), \
+            patch("app.pick_rows_for_request_date", return_value=pick_rows), \
+            patch("builtins.print") as print_mock:
+            self.client.get("/system-results?date=02-05-2026&mode=pick&live=1")
+
+        printed = " ".join(str(arg) for arg in print_mock.call_args.args)
+        self.assertIn("Results live request", printed)
+        self.assertIn("mode=pick", printed)
+        self.assertIn("servedFrom=", printed)
+        self.assertIn("durationMs=", printed)
 
     def test_pick_results_expose_no_draw_and_backfill_metadata(self):
         pick_rows = [

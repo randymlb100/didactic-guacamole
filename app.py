@@ -7,7 +7,7 @@ import urllib.parse
 import urllib.request
 from concurrent.futures import ThreadPoolExecutor
 
-from flask import Flask, Response, copy_current_request_context, jsonify, request
+from flask import Flask, Response, copy_current_request_context, g, jsonify, request
 from flask_cors import CORS
 
 from scraper.scrape_and_save import (
@@ -141,6 +141,24 @@ def schedule_background_lottery_refresh(date_key):
         daemon=True,
         name=f"lottery-refresh-{date_key}",
     )
+    thread.start()
+    return True
+
+
+def set_live_served_from_flag(section, value):
+    try:
+        setattr(g, f"{section}_live_served_from", value)
+    except RuntimeError:
+        return
+
+
+def get_live_served_from_flag(section):
+    try:
+        return getattr(g, f"{section}_live_served_from", "")
+    except RuntimeError:
+        return ""
+    thread.start()
+    return True
 
 
 def get_fresh_live_system_results_cache(date_key, mode):
@@ -186,7 +204,9 @@ def set_live_system_results_cache(date_key, mode, payload):
 def get_composed_live_system_results_cache(date_key, mode):
     cached_payload = get_fresh_live_system_results_cache(date_key, mode)
     if cached_payload is not None:
-        return cached_payload
+        cached_copy = dict(cached_payload)
+        cached_copy["servedFrom"] = "response-cache"
+        return cached_copy
     if mode != "both":
         return None
     cached_lottery = get_fresh_live_system_results_cache(date_key, "lottery")
@@ -197,6 +217,7 @@ def get_composed_live_system_results_cache(date_key, mode):
         "date": date_key,
         "mode": "both",
         "source": "live-scraper",
+        "servedFrom": "section-cache",
         "generatedAt": max(
             str(cached_lottery.get("generatedAt") or ""),
             str(cached_pick.get("generatedAt") or ""),
@@ -204,6 +225,29 @@ def get_composed_live_system_results_cache(date_key, mode):
         "lotteries": cached_lottery["lotteries"],
         "picks": cached_pick["picks"],
     }
+
+
+def live_served_from(date_key, mode, lottery_rows, pick_rows):
+    if mode == "lottery":
+        return get_live_served_from_flag("lottery") or "inline-scrape"
+    if mode == "pick":
+        return get_live_served_from_flag("pick") or "inline-scrape"
+    if mode == "both":
+        lottery_served_from = get_live_served_from_flag("lottery") or "inline-scrape"
+        pick_served_from = get_live_served_from_flag("pick") or "inline-scrape"
+        if lottery_served_from == "supabase-snapshot" and pick_served_from == "supabase-snapshot":
+            return "supabase-snapshot"
+        if "section-cache" in (lottery_served_from, pick_served_from):
+            return "section-cache"
+        return "inline-scrape"
+    return "inline-scrape"
+
+
+def log_live_request(date_key, mode, served_from, started_at):
+    duration_ms = round((time.perf_counter() - started_at) * 1000, 1)
+    print(
+        f"Results live request date={date_key} mode={mode} servedFrom={served_from} durationMs={duration_ms}"
+    )
 
 
 def set_pick_scrape_cache(date_key, rows):
@@ -290,8 +334,10 @@ def lottery_rows_for_request_date(date_key):
         cached_lottery_rows, _ = split_lottery_and_pick_rows(fetch_existing_from_supabase(date_key))
         cached_lottery_rows = unique_sorted_results(cached_lottery_rows)
         if cached_lottery_rows and date_key == get_dr_date_str():
+            set_live_served_from_flag("lottery", "supabase-snapshot")
             schedule_background_lottery_refresh(date_key)
             return cached_lottery_rows
+        set_live_served_from_flag("lottery", "inline-scrape")
         return unique_sorted_results(scrape_cached(date_key))
     lottery_rows, _ = split_lottery_and_pick_rows(fetch_existing_from_supabase(date_key))
     return unique_sorted_results(lottery_rows)
@@ -327,13 +373,16 @@ def pick_rows_for_request_date(date_key, game_filter=""):
         if date_key == get_dr_date_str():
             fresh_cached_rows = get_fresh_pick_cache(date_key, game_filter)
             if fresh_cached_rows:
+                set_live_served_from_flag("pick", "section-cache")
                 return unique_sorted_pick_results(fresh_cached_rows)
         existing_rows = fetch_pick_rows_from_supabase(date_key)
         if existing_rows and date_key == get_dr_date_str():
             set_pick_scrape_cache(date_key, existing_rows)
+            set_live_served_from_flag("pick", "supabase-snapshot")
             schedule_background_pick_refresh(date_key)
             rows = existing_rows
         else:
+            set_live_served_from_flag("pick", "inline-scrape")
             rows = pick_scrape_cached_for_game(date_key, game_filter, existing_rows=existing_rows)
             if rows and SUPABASE_KEY.strip():
                 try:
@@ -447,6 +496,7 @@ def pick_results_with_metadata():
 
 @app.route("/system-results", methods=["GET"])
 def system_results():
+    started_at = time.perf_counter()
     mode = (request.args.get("mode") or "lottery").strip().lower()
     if mode not in ("lottery", "pick", "both"):
         mode = "lottery"
@@ -454,6 +504,7 @@ def system_results():
     if should_use_live_scrape() and date_key == get_dr_date_str():
         cached_payload = get_composed_live_system_results_cache(date_key, mode)
         if cached_payload is not None:
+            log_live_request(date_key, mode, cached_payload.get("servedFrom", "response-cache"), started_at)
             return json_utf8(cached_payload)
     payload = {
         "date": date_key,
@@ -464,11 +515,16 @@ def system_results():
     lottery_rows = []
     pick_rows = []
     if should_use_live_scrape():
-        lottery_rows, pick_rows = live_results_sections_for_date(
-            date_key,
-            include_lottery=mode in ("lottery", "both"),
-            include_pick=mode in ("pick", "both"),
-        )
+        if mode == "lottery":
+            lottery_rows = lottery_rows_for_request_date(date_key)
+        elif mode == "pick":
+            pick_rows = pick_rows_for_request_date(date_key)
+        else:
+            lottery_rows, pick_rows = live_results_sections_for_date(
+                date_key,
+                include_lottery=True,
+                include_pick=True,
+            )
     if mode in ("lottery", "both"):
         if not should_use_live_scrape():
             lottery_rows = lottery_rows_for_request_date(date_key)
@@ -488,7 +544,10 @@ def system_results():
     if not any(payload.get(section, {}).get("count", 0) for section in ("lotteries", "picks")):
         payload["source"] = "live-scraper" if should_use_live_scrape() else "cache-miss"
     if should_use_live_scrape() and date_key == get_dr_date_str():
+        payload["servedFrom"] = live_served_from(date_key, mode, lottery_rows, pick_rows)
+    if should_use_live_scrape() and date_key == get_dr_date_str():
         set_live_system_results_cache(date_key, mode, payload)
+        log_live_request(date_key, mode, payload.get("servedFrom", "inline-scrape"), started_at)
     return json_utf8(payload)
 
 
