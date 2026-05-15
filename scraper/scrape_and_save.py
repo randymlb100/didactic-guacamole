@@ -379,6 +379,8 @@ def parse_lotteryusa_date(raw):
 
 
 LOTTERYUSA_BASE_URL = "https://www.lotteryusa.com"
+US_PICK_STATIC_CATALOG_PATH = os.path.join(os.path.dirname(__file__), "us_pick_catalog.json")
+_static_us_pick_catalog = None
 LOTTERYUSA_STATE_SLUG_OVERRIDES = {
     "DC": "district-of-columbia",
     "Washington DC": "district-of-columbia",
@@ -397,6 +399,55 @@ def lotteryusa_state_slug(state_name):
     return LOTTERYUSA_STATE_SLUG_OVERRIDES.get(state) or lotteryusa_slug(state)
 
 
+def state_name_from_code(state_code):
+    code = str(state_code or "").strip().upper()
+    for state_name, candidate_code in US_STATE_CODES.items():
+        if candidate_code == code and len(state_name) > 2:
+            return "Washington DC" if state_name == "DC" else state_name
+    return ""
+
+
+def normalize_static_us_pick_catalog_row(row):
+    normalized = enrich_us_pick_result_row(dict(row))
+    game = catalog_row_game(normalized)
+    if not normalized.get("state") and normalized.get("stateCode"):
+        normalized["state"] = state_name_from_code(normalized.get("stateCode"))
+    if not normalized.get("gameName") and game:
+        normalized["gameName"] = "Pick 3" if game == "pick3" else "Pick 4"
+    if not normalized.get("name"):
+        normalized["name"] = " ".join(
+            part for part in (
+                normalized.get("state"),
+                normalized.get("gameName"),
+                normalized.get("draw"),
+            )
+            if part
+        )
+    normalized["game"] = game
+    normalized.setdefault("playTypes", ["straight", "box"])
+    return normalized
+
+
+def static_us_pick_catalog_rows(games=None):
+    global _static_us_pick_catalog
+    if _static_us_pick_catalog is None:
+        try:
+            with open(US_PICK_STATIC_CATALOG_PATH, "r", encoding="utf-8") as catalog_file:
+                raw_rows = json.load(catalog_file)
+        except Exception as error:
+            logger.warning("Could not load static US pick catalog: %s", error)
+            raw_rows = []
+        _static_us_pick_catalog = [
+            normalize_static_us_pick_catalog_row(row)
+            for row in raw_rows
+            if str(row.get("id", "")).strip()
+        ]
+    selected_games = {normalize_us_pick_game(game) for game in (games or []) if normalize_us_pick_game(game)}
+    if not selected_games:
+        return list(_static_us_pick_catalog)
+    return [row for row in _static_us_pick_catalog if catalog_row_game(row) in selected_games]
+
+
 def normalize_lotteryusa_draw_label(raw):
     text = str(raw or "").strip()
     text = re.sub(r"\s+", " ", text)
@@ -413,9 +464,9 @@ def normalize_lotteryusa_draw_label(raw):
     ):
         if re.search(rf"\b{token}\b", text, re.I):
             return label
-    match = re.search(r"\b(\d{1,2}:?\d{0,2}\s*(?:AM|PM))\b", text, re.I)
+    match = re.search(r"\b(\d{1,2}:?\d{0,2}\s*(?:A\.?M\.?|P\.?M\.?))\b", text, re.I)
     if match:
-        value = match.group(1).upper().replace(" ", "")
+        value = match.group(1).upper().replace(" ", "").replace(".", "")
         if ":" not in value:
             value = value[:-2] + ":00" + value[-2:]
         return f"{value} Draw"
@@ -426,13 +477,15 @@ def strip_lotteryusa_draw_words(raw):
     text = str(raw or "").strip()
     text = re.sub(r"^Go to\s+", "", text, flags=re.I)
     text = re.sub(r"\b(Mid[- ]?day|Morning|Afternoon|Evening|Night|Day)\b", "", text, flags=re.I)
-    text = re.sub(r"\b\d{1,2}:?\d{0,2}\s*(?:AM|PM)\b", "", text, flags=re.I)
+    text = re.sub(r"\b\d{1,2}:?\d{0,2}\s*(?:A\.?M\.?|P\.?M\.?)\b", "", text, flags=re.I)
+    text = text.replace("-", " ")
     return re.sub(r"\s+", " ", text).strip()
 
 
 def normalize_lotteryusa_game_name(raw):
     text = strip_lotteryusa_draw_words(raw)
     text = text.replace("Play3", "Play 3")
+    text = text.replace("Play4", "Play 4")
     text = text.replace("DC-3", "3").replace("DC 3", "3")
     text = text.replace("DC-4", "Match 4").replace("DC 4", "Match 4")
     return text.strip()
@@ -440,7 +493,7 @@ def normalize_lotteryusa_game_name(raw):
 
 def lotteryusa_pick_game_from_label(raw):
     text = str(raw or "").lower()
-    if any(token in text for token in ("pick 4", "pick-4", "cash 4", "cash-4", "daily 4", "daily-4", "play 4", "play-4", "win 4", "win-4", "match 4", "match-4", "dc-4", "dc 4")):
+    if any(token in text for token in ("pick 4", "pick-4", "cash 4", "cash-4", "daily 4", "daily-4", "play4", "play 4", "play-4", "win 4", "win-4", "match 4", "match-4", "dc-4", "dc 4")):
         return "pick4"
     if any(token in text for token in ("pick 3", "pick-3", "cash 3", "cash-3", "daily 3", "daily-3", "play 3", "play-3", "play3", "numbers", "dc-3", "dc 3")):
         return "pick3"
@@ -451,16 +504,22 @@ def parse_lotteryusa_state_pick_sources(html_text, state_name, state_code):
     soup = BeautifulSoup(str(html_text or ""), "html.parser")
     sources = []
     seen_urls = set()
+    state_path = f"/{lotteryusa_state_slug(state_name)}/"
     for anchor in soup.find_all("a", href=True):
         label = re.sub(r"\s+", " ", anchor.get_text(" ", strip=True)).strip()
         label = re.sub(r"^Go to\s+", "", label, flags=re.I).strip()
         game = lotteryusa_pick_game_from_label(label)
+        if str(state_code).upper() in {"MA", "RI"} and "numbers" in label.lower():
+            game = "pick4"
         if not game:
             continue
         href = str(anchor.get("href") or "").strip()
         if not href or "/quick-picks" in href:
             continue
         url = urllib.parse.urljoin(LOTTERYUSA_BASE_URL, href)
+        parsed_url = urllib.parse.urlparse(url)
+        if parsed_url.netloc != "www.lotteryusa.com" or not parsed_url.path.startswith(state_path):
+            continue
         if url in seen_urls:
             continue
         seen_urls.add(url)
@@ -1048,9 +1107,10 @@ async def _async_scrape_us_picks(date_str=None, games=None, existing_rows=None, 
     c = client or get_http_client()
     rows_by_id = {}
     game_list = games or ("pick3", "pick4")
+    catalog_source_rows = existing_rows or static_us_pick_catalog_rows(games=game_list)
     existing_catalog = [
         enrich_us_pick_result_row(dict(row))
-        for row in (existing_rows or [])
+        for row in (catalog_source_rows or [])
         if catalog_row_game(row) in {"pick3", "pick4"}
     ]
 
@@ -1704,6 +1764,25 @@ def normalize_draw_key(raw):
     return re.sub(r"[^A-Z0-9]+", "", normalize_lotteryusa_draw_label(raw).upper())
 
 
+def lotteryusa_draw_keys_compatible(source_draw, row_draw):
+    source_key = normalize_draw_key(source_draw)
+    row_key = normalize_draw_key(row_draw)
+    if source_key == row_key:
+        return True
+    if source_key == "DRAW" or row_key == "DRAW":
+        return True
+    compatible_groups = [
+        {"DAYDRAW", "MIDDAYDRAW", "MORNINGDRAW"},
+        {"EVENINGDRAW", "NIGHTDRAW", "0628PMDRAW", "900PMDRAW"},
+        {"100PMDRAW", "MORNINGDRAW", "MIDDAYDRAW", "DAYDRAW"},
+        {"130PMDRAW", "MIDDAYDRAW", "DAYDRAW"},
+        {"400PMDRAW", "DAYDRAW"},
+        {"700PMDRAW", "EVENINGDRAW"},
+        {"1000PMDRAW", "NIGHTDRAW"},
+    ]
+    return any(source_key in group and row_key in group for group in compatible_groups)
+
+
 def normalize_game_key(raw):
     text = str(raw or "").upper()
     text = text.replace("PLAY3", "PLAY 3")
@@ -1719,7 +1798,7 @@ def lotteryusa_source_matches_catalog_row(source, row):
     game = catalog_row_game(row)
     if source.get("game") != game:
         return False
-    if normalize_draw_key(source.get("draw")) != normalize_draw_key(row.get("draw")):
+    if not lotteryusa_draw_keys_compatible(source.get("draw"), row.get("draw")):
         return False
     source_game = normalize_game_key(source.get("gameName"))
     row_game = normalize_game_key(row.get("gameName"))
@@ -1732,7 +1811,7 @@ def lotteryusa_source_matches_catalog_row(source, row):
         ("3", "DC3"),
         ("MATCH4", "DC4"),
     }
-    return (source_game, row_game) in compatible_pairs
+    return (source_game, row_game) in compatible_pairs or bool(source_game and row_game)
 
 
 def parse_lotteryusa_result_page_row(html_text, source, target_date):

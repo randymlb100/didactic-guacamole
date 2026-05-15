@@ -610,6 +610,21 @@ class ScraperContractsTest(unittest.TestCase):
         self.assertEqual("https://www.lotteryusa.com/florida/midday-pick-3/", by_draw[("Pick 3", "Midday Draw")]["url"])
         self.assertEqual("https://www.lotteryusa.com/florida/pick-4/", by_draw[("Pick 4", "Evening Draw")]["url"])
 
+    def test_lotteryusa_state_pick_sources_parse_connecticut_play4_day(self):
+        html = """
+        <a href="/connecticut/play-3/">Play3 Day</a>
+        <a href="/connecticut/midday-4/">Play4 Day</a>
+        <a href="/connecticut/play-4/">Play4 Night</a>
+        """
+
+        sources = scraper.parse_lotteryusa_state_pick_sources(html, "Connecticut", "CT")
+
+        by_draw = {(source["gameName"], source["draw"]): source for source in sources}
+        self.assertEqual(
+            "https://www.lotteryusa.com/connecticut/midday-4/",
+            by_draw[("Play 4", "Day Draw")]["url"],
+        )
+
     def test_lotteryusa_catalog_rows_keep_existing_app_ids(self):
         html_by_url = {
             "https://www.lotteryusa.com/florida/": """
@@ -766,6 +781,7 @@ class ScraperContractsTest(unittest.TestCase):
         }]
 
         with patch.object(scraper, "_async_fetch_us_pick_overview", AsyncMock(return_value=overview_rows)), \
+                patch.object(scraper, "static_us_pick_catalog_rows", return_value=[]), \
                 patch.object(scraper, "_async_fetch_us_pick_state_history", AsyncMock(return_value=[])), \
                 patch.object(scraper, "_async_fetch_new_jersey_pick_home", AsyncMock(return_value=[])), \
                 patch.object(scraper, "_async_fetch_nj_picks_lotteryusa", AsyncMock(return_value=[])), \
@@ -799,6 +815,7 @@ class ScraperContractsTest(unittest.TestCase):
         }]
 
         with patch.object(scraper, "_async_fetch_us_pick_overview", AsyncMock(return_value=overview_rows)), \
+                patch.object(scraper, "static_us_pick_catalog_rows", return_value=[]), \
                 patch.object(scraper, "_async_fetch_us_pick_state_history", AsyncMock(return_value=[])), \
                 patch.object(scraper, "_async_fetch_new_jersey_pick_home", AsyncMock(return_value=[])), \
                 patch.object(scraper, "_async_fetch_nj_picks_lotteryusa", AsyncMock(return_value=nj_rows)), \
