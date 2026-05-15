@@ -253,7 +253,7 @@ async def async_http_get(url, client=None, accept_json=False):
 async def async_lotteryusa_http_get(url, client=None):
     c = client or get_http_client()
     max_attempts = max(1, int(os.environ.get("LOTTERYUSA_PICK_RETRY_MAX", "1")))
-    timeout_seconds = max(1.0, float(os.environ.get("LOTTERYUSA_PICK_TIMEOUT", "15")))
+    timeout_seconds = max(1.0, float(os.environ.get("LOTTERYUSA_PICK_TIMEOUT", "12")))
     request_timeout = httpx.Timeout(timeout_seconds, connect=min(5.0, timeout_seconds))
     for attempt in range(1, max_attempts + 1):
         try:
@@ -1889,7 +1889,7 @@ def parse_lotteryusa_result_page_row(html_text, source, target_date):
 async def _async_fetch_lotteryusa_pick_catalog_rows(date_str, catalog_rows, client=None):
     target_date = date_str or get_et_date_str()
     c = client or get_http_client()
-    concurrency = int(os.environ.get("LOTTERYUSA_PICK_CONCURRENCY", "8"))
+    concurrency = int(os.environ.get("LOTTERYUSA_PICK_CONCURRENCY", "12"))
     limiter = asyncio.Semaphore(max(1, concurrency))
 
     async def _limited_get(url):

@@ -283,6 +283,19 @@ class RenderApiContractsTest(unittest.TestCase):
         save_lottery.assert_not_called()
         save_picks.assert_called_once()
 
+    def test_pick_scrape_cache_ttl_starts_after_refresh_finishes(self):
+        refreshed_pick_rows = [{
+            "id": "US-P3-FL-PICK-3-EVENING",
+            "date": "02-05-2026",
+            "number": "9-2-0",
+        }]
+        with patch("app.time.time", side_effect=[100, 250]), \
+            patch("app.scrape_us_picks", return_value=refreshed_pick_rows):
+            rows = app.pick_scrape_cached("02-05-2026")
+
+        self.assertEqual(refreshed_pick_rows, rows)
+        self.assertEqual(250, app._pick_scrape_cache["02-05-2026"]["stored_at"])
+
     def test_run_pick_scraper_defaults_to_background_refresh(self):
         cached_rows = [{
             "id": "US-P3-FL-PICK-3-EVENING",

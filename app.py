@@ -378,7 +378,7 @@ def scrape_cached(date_key):
     if cached and now - cached["stored_at"] < SCRAPE_CACHE_TTL_SECONDS:
         return cached["rows"]
     rows = scrape(date_key)
-    _scrape_cache[date_key] = {"stored_at": now, "rows": rows}
+    _scrape_cache[date_key] = {"stored_at": time.time(), "rows": rows}
     return rows
 
 
@@ -572,7 +572,7 @@ def pick_scrape_cached(date_key, existing_rows=None):
     if cached and now - cached["stored_at"] < SCRAPE_CACHE_TTL_SECONDS:
         return cached["rows"]
     rows = scrape_us_picks(date_key, existing_rows=existing_rows)
-    _pick_scrape_cache[date_key] = {"stored_at": now, "rows": rows}
+    _pick_scrape_cache[date_key] = {"stored_at": time.time(), "rows": rows}
     return rows
 
 
@@ -585,7 +585,7 @@ def pick_scrape_cached_for_game(date_key, game_filter, existing_rows=None):
     if cached and now - cached["stored_at"] < SCRAPE_CACHE_TTL_SECONDS:
         return cached["rows"]
     rows = scrape_us_picks(date_key, games=(game_filter,), existing_rows=existing_rows)
-    _pick_scrape_cache[cache_key] = {"stored_at": now, "rows": rows}
+    _pick_scrape_cache[cache_key] = {"stored_at": time.time(), "rows": rows}
     return rows
 
 
