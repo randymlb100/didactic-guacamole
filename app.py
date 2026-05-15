@@ -40,6 +40,12 @@ _lottery_refresh_inflight = set()
 _pick_refresh_lock = threading.Lock()
 _pick_refresh_inflight = set()
 _pick_refresh_last_started = {}
+INTERNAL_SHARED_SECRET = os.environ.get("LOTTERYNET_ADMIN_SHARED_SECRET", "").strip()
+PUBLIC_CACHE_INVALIDATION_PREFIXES = (
+    "lot_results_cache_by_day:",
+    "pick_results_cache_by_day:",
+    "manual_results_overrides_by_day:",
+)
 # Render redeploy marker: keep service restart explicit when production gets stuck.
 
 ADMIN_ROLES = {"admin", "master"}
@@ -333,6 +339,35 @@ def request_json_body():
 
 def is_admin_role(value):
     return str(value or "").strip().lower() in ADMIN_ROLES
+
+
+def is_internal_secret_valid(request_obj):
+    if not INTERNAL_SHARED_SECRET:
+        return False
+    provided = (request_obj.headers.get("x-lotterynet-admin-secret") or "").strip()
+    return provided == INTERNAL_SHARED_SECRET
+
+
+def is_public_cache_invalidation_key(cache_key):
+    return any(str(cache_key or "").startswith(prefix) for prefix in PUBLIC_CACHE_INVALIDATION_PREFIXES)
+
+
+def invalidate_results_cache_key(cache_key):
+    cache_key = str(cache_key or "").strip()
+    if not cache_key:
+        return
+    if ":" in cache_key:
+        date_key = cache_key.split(":", 1)[1]
+    else:
+        date_key = ""
+    _scrape_cache.pop(date_key, None)
+    _pick_scrape_cache.pop(date_key, None)
+    _pick_scrape_cache.pop(f"{date_key}:pick3", None)
+    _pick_scrape_cache.pop(f"{date_key}:pick4", None)
+    _manual_override_cache.pop(date_key, None)
+    live_keys = [key for key in list(_live_system_results_cache.keys()) if str(key).startswith(f"{date_key}:")]
+    for live_key in live_keys:
+        _live_system_results_cache.pop(live_key, None)
 
 
 def scrape_cached(date_key):
@@ -915,6 +950,40 @@ def run_system_scraper():
     return json_utf8(payload)
 
 
+@app.route("/run-pick-scraper", methods=["GET", "POST"])
+def run_pick_scraper():
+    date_key = request.args.get("date") or get_dr_date_str()
+    existing_pick_rows = fetch_pick_rows_from_supabase(date_key)
+    pick_rows = unique_sorted_pick_results(pick_scrape_cached(date_key, existing_rows=existing_pick_rows))
+    if not SUPABASE_KEY.strip():
+        return json_utf8({
+            "date": date_key,
+            "section": "picks",
+            "count": len(pick_rows),
+            "saved": False,
+            "error": "SUPABASE_KEY is not configured in Render",
+            "results": pick_rows,
+        }, status=503)
+    try:
+        save_us_picks_to_supabase(date_key, pick_rows)
+    except Exception as error:
+        return json_utf8({
+            "date": date_key,
+            "section": "picks",
+            "count": len(pick_rows),
+            "saved": False,
+            "error": str(error),
+            "results": pick_rows,
+        }, status=500)
+    return json_utf8({
+        "date": date_key,
+        "section": "picks",
+        "count": len(pick_rows),
+        "saved": True,
+        "results": pick_rows,
+    })
+
+
 @app.route("/users-state", methods=["GET"])
 def users_state():
     payload = fetch_users_state_from_supabase()
@@ -943,6 +1012,39 @@ def update_users_state():
         return json_utf8({"ok": False, "message": "Payload de usuarios incompleto."}, status=400)
     save_users_state_to_supabase(payload)
     return json_utf8({"ok": True, "source": "supabase-kv"})
+
+
+@app.route("/internal/supabase-cache-invalidate", methods=["POST"])
+def internal_supabase_cache_invalidate():
+    if not is_internal_secret_valid(request):
+        return json_utf8({"ok": False, "message": "Unauthorized"}, status=401)
+    payload = request_json_body()
+    keys = []
+    direct_key = str(payload.get("key") or "").strip()
+    if direct_key:
+        keys.append(direct_key)
+    record = payload.get("record") if isinstance(payload.get("record"), dict) else {}
+    old_record = payload.get("old_record") if isinstance(payload.get("old_record"), dict) else {}
+    for candidate in (record.get("key"), old_record.get("key")):
+        candidate_key = str(candidate or "").strip()
+        if candidate_key:
+            keys.append(candidate_key)
+    invalidated = []
+    rejected = []
+    for cache_key in keys:
+        if cache_key in invalidated:
+            continue
+        if is_public_cache_invalidation_key(cache_key):
+            invalidate_results_cache_key(cache_key)
+            invalidated.append(cache_key)
+        else:
+            rejected.append(cache_key)
+    status_code = 200 if invalidated else 400
+    return json_utf8({
+        "ok": bool(invalidated),
+        "invalidatedKeys": invalidated,
+        "rejectedKeys": rejected,
+    }, status=status_code)
 
 
 @app.route("/health", methods=["GET"])
