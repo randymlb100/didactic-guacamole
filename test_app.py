@@ -33,6 +33,8 @@ class RenderApiContractsTest(unittest.TestCase):
         app._lottery_refresh_inflight.clear()
         app._pick_refresh_inflight.clear()
         app._pick_refresh_last_started.clear()
+        app._pick_refresh_last_completed.clear()
+        app._pick_refresh_last_error.clear()
         app._live_system_results_cache.clear()
         app._manual_override_cache.clear()
 
@@ -175,6 +177,7 @@ class RenderApiContractsTest(unittest.TestCase):
 
     def test_system_results_does_not_scrape_when_cache_missing(self):
         with patch("app.fetch_existing_from_supabase", return_value=[]), \
+            patch("app.get_dr_date_str", return_value="03-05-2026"), \
             patch("app.fetch_pick_rows_from_supabase", return_value=[]), \
             patch("app.scrape") as scrape_mock:
             response = self.client.get("/system-results?date=02-05-2026&mode=both")
@@ -184,6 +187,20 @@ class RenderApiContractsTest(unittest.TestCase):
         self.assertEqual("cache-miss", payload["source"])
         self.assertEqual(0, payload["lotteries"]["count"])
         self.assertEqual(0, payload["picks"]["count"])
+
+    def test_system_results_today_pick_cache_miss_schedules_background_refresh(self):
+        with patch("app.fetch_existing_from_supabase", return_value=[]), \
+            patch("app.fetch_pick_rows_from_supabase", return_value=[]), \
+            patch("app.get_dr_date_str", return_value="02-05-2026"), \
+            patch("app.schedule_background_pick_refresh", return_value=True) as background_refresh, \
+            patch("app.scrape_us_picks") as pick_scrape:
+            response = self.client.get("/system-results?date=02-05-2026&mode=pick")
+
+        payload = json.loads(response.data.decode("utf-8"))
+        self.assertEqual(200, response.status_code)
+        self.assertEqual(0, payload["picks"]["count"])
+        background_refresh.assert_called_once_with("02-05-2026")
+        pick_scrape.assert_not_called()
 
     def test_run_system_scraper_can_save_pick_only_without_touching_lottery(self):
         pick_rows = [
@@ -238,6 +255,60 @@ class RenderApiContractsTest(unittest.TestCase):
         pick_scrape.assert_called_once_with("02-05-2026", existing_rows=existing_pick_rows)
         lottery_scrape.assert_not_called()
         save_lottery.assert_not_called()
+        save_picks.assert_called_once()
+
+    def test_run_pick_scraper_defaults_to_background_refresh(self):
+        cached_rows = [{
+            "id": "US-P3-FL-PICK-3-EVENING",
+            "state": "Florida",
+            "stateCode": "FL",
+            "game": "pick3",
+            "gameName": "Pick 3",
+            "draw": "Evening Draw",
+            "date": "02-05-2026",
+            "number": "9-2-0",
+        }]
+        with patch("app.schedule_background_pick_refresh", return_value=True) as background_refresh, \
+            patch("app.fetch_pick_rows_from_supabase", return_value=cached_rows), \
+            patch("app.scrape_us_picks") as pick_scrape, \
+            patch("app.save_us_picks_to_supabase") as save_picks:
+            response = self.client.get("/run-pick-scraper?date=02-05-2026")
+
+        payload = json.loads(response.data.decode("utf-8"))
+        self.assertEqual(202, response.status_code)
+        self.assertTrue(payload["scheduled"])
+        self.assertTrue(payload["refreshing"])
+        self.assertEqual(1, payload["count"])
+        background_refresh.assert_called_once_with("02-05-2026", force=True)
+        pick_scrape.assert_not_called()
+        save_picks.assert_not_called()
+
+    def test_run_pick_scraper_sync_mode_still_scrapes_and_saves(self):
+        existing_pick_rows = [{
+            "id": "US-P3-FL-PICK-3-EVENING",
+            "date": "02-05-2026",
+            "number": "9-2-0",
+        }]
+        refreshed_pick_rows = [{
+            "id": "US-P3-FL-PICK-3-EVENING",
+            "state": "Florida",
+            "stateCode": "FL",
+            "game": "pick3",
+            "gameName": "Pick 3",
+            "draw": "Evening Draw",
+            "date": "02-05-2026",
+            "number": "9-2-0",
+        }]
+        with patch("app.fetch_pick_rows_from_supabase", return_value=existing_pick_rows), \
+            patch("app.scrape_us_picks", return_value=refreshed_pick_rows) as pick_scrape, \
+            patch("app.save_us_picks_to_supabase") as save_picks:
+            response = self.client.get("/run-pick-scraper?date=02-05-2026&sync=1")
+
+        payload = json.loads(response.data.decode("utf-8"))
+        self.assertEqual(200, response.status_code)
+        self.assertTrue(payload["saved"])
+        self.assertEqual(1, payload["count"])
+        pick_scrape.assert_called_once_with("02-05-2026", existing_rows=existing_pick_rows)
         save_picks.assert_called_once()
 
     def test_system_results_live_pick_refresh_saves_updated_cache(self):

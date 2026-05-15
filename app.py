@@ -40,6 +40,8 @@ _lottery_refresh_inflight = set()
 _pick_refresh_lock = threading.Lock()
 _pick_refresh_inflight = set()
 _pick_refresh_last_started = {}
+_pick_refresh_last_completed = {}
+_pick_refresh_last_error = {}
 INTERNAL_SHARED_SECRET = os.environ.get("LOTTERYNET_ADMIN_SHARED_SECRET", "").strip()
 PUBLIC_CACHE_INVALIDATION_PREFIXES = (
     "lot_results_cache_by_day:",
@@ -532,20 +534,23 @@ def refresh_pick_cache_async(date_key):
         set_pick_scrape_cache(date_key, rows)
         if rows and SUPABASE_KEY.strip():
             save_us_picks_to_supabase(date_key, rows)
+        _pick_refresh_last_completed[date_key] = utc_now_iso()
+        _pick_refresh_last_error.pop(date_key, None)
     except Exception as error:
+        _pick_refresh_last_error[date_key] = str(error)
         print(f"Warning: background pick refresh failed for {date_key}: {error}")
     finally:
         with _pick_refresh_lock:
             _pick_refresh_inflight.discard(date_key)
 
 
-def schedule_background_pick_refresh(date_key):
+def schedule_background_pick_refresh(date_key, force=False):
     with _pick_refresh_lock:
         now = time.time()
         if date_key in _pick_refresh_inflight:
             return False
         last_started = _pick_refresh_last_started.get(date_key, 0)
-        if now - last_started < PICK_BACKGROUND_REFRESH_MIN_INTERVAL_SECONDS:
+        if not force and now - last_started < PICK_BACKGROUND_REFRESH_MIN_INTERVAL_SECONDS:
             return False
         _pick_refresh_inflight.add(date_key)
         _pick_refresh_last_started[date_key] = now
@@ -659,7 +664,15 @@ def pick_rows_for_request_date(date_key, game_filter=""):
     else:
         rows = fetch_pick_rows_from_supabase(date_key)
         if not rows:
-            _, rows = split_lottery_and_pick_rows(fetch_existing_from_supabase(date_key))
+            if date_key == get_dr_date_str():
+                fresh_cached_rows = get_fresh_pick_cache(date_key, game_filter)
+                if fresh_cached_rows:
+                    rows = fresh_cached_rows
+                else:
+                    schedule_background_pick_refresh(date_key)
+                    _, rows = split_lottery_and_pick_rows(fetch_existing_from_supabase(date_key))
+            else:
+                _, rows = split_lottery_and_pick_rows(fetch_existing_from_supabase(date_key))
     if game_filter in ("pick3", "pick4"):
         rows = [row for row in rows if row.get("game") == game_filter]
     return apply_manual_overrides(date_key, unique_sorted_pick_results(rows), include_pick=True)
@@ -953,6 +966,24 @@ def run_system_scraper():
 @app.route("/run-pick-scraper", methods=["GET", "POST"])
 def run_pick_scraper():
     date_key = request.args.get("date") or get_dr_date_str()
+    sync_requested = request.args.get("sync") == "1" or request_json_body().get("sync") is True
+    if not sync_requested:
+        started = schedule_background_pick_refresh(date_key, force=True)
+        snapshot_rows = fetch_pick_rows_from_supabase(date_key)
+        if not snapshot_rows:
+            snapshot_rows = get_fresh_pick_cache(date_key)
+        payload = {
+            "date": date_key,
+            "section": "picks",
+            "count": len(snapshot_rows),
+            "saved": None,
+            "scheduled": started,
+            "refreshing": started or date_key in _pick_refresh_inflight,
+            "lastCompletedAt": _pick_refresh_last_completed.get(date_key),
+            "lastError": _pick_refresh_last_error.get(date_key),
+            "results": unique_sorted_pick_results(snapshot_rows),
+        }
+        return json_utf8(payload, status=202 if payload["refreshing"] else 200)
     existing_pick_rows = fetch_pick_rows_from_supabase(date_key)
     pick_rows = unique_sorted_pick_results(pick_scrape_cached(date_key, existing_rows=existing_pick_rows))
     if not SUPABASE_KEY.strip():
