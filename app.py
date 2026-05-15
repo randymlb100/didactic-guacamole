@@ -685,13 +685,12 @@ def pick_rows_for_request_date(date_key, game_filter=""):
     else:
         rows = fetch_pick_rows_from_supabase(date_key)
         if not rows:
-            if date_key == get_dr_date_str():
-                fresh_cached_rows = get_fresh_pick_cache(date_key, game_filter)
-                if fresh_cached_rows:
-                    rows = fresh_cached_rows
-                else:
-                    schedule_background_pick_refresh(date_key)
-                    _, rows = split_lottery_and_pick_rows(fetch_existing_from_supabase(date_key))
+            fresh_cached_rows = get_fresh_pick_cache(date_key, game_filter)
+            if fresh_cached_rows:
+                rows = fresh_cached_rows
+            elif date_key == get_dr_date_str():
+                schedule_background_pick_refresh(date_key)
+                _, rows = split_lottery_and_pick_rows(fetch_existing_from_supabase(date_key))
             else:
                 _, rows = split_lottery_and_pick_rows(fetch_existing_from_supabase(date_key))
     if game_filter in ("pick3", "pick4"):

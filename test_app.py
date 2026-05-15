@@ -202,6 +202,32 @@ class RenderApiContractsTest(unittest.TestCase):
         background_refresh.assert_called_once_with("02-05-2026")
         pick_scrape.assert_not_called()
 
+    def test_system_results_historical_pick_uses_fresh_memory_cache(self):
+        cached_rows = [{
+            "id": "US-P3-FL-PICK-3-EVENING",
+            "state": "Florida",
+            "stateCode": "FL",
+            "game": "pick3",
+            "gameName": "Pick 3",
+            "draw": "Evening Draw",
+            "date": "02-05-2026",
+            "number": "9-2-0",
+        }]
+        app.set_pick_scrape_cache("02-05-2026", cached_rows)
+        with patch("app.fetch_existing_from_supabase", return_value=[]), \
+            patch("app.fetch_pick_rows_from_supabase", return_value=[]), \
+            patch("app.get_dr_date_str", return_value="03-05-2026"), \
+            patch("app.schedule_background_pick_refresh") as background_refresh, \
+            patch("app.scrape_us_picks") as pick_scrape:
+            response = self.client.get("/system-results?date=02-05-2026&mode=pick")
+
+        payload = json.loads(response.data.decode("utf-8"))
+        self.assertEqual(200, response.status_code)
+        self.assertEqual(1, payload["picks"]["count"])
+        self.assertEqual("9-2-0", payload["picks"]["results"][0]["number"])
+        background_refresh.assert_not_called()
+        pick_scrape.assert_not_called()
+
     def test_run_system_scraper_can_save_pick_only_without_touching_lottery(self):
         pick_rows = [
             {
