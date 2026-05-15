@@ -596,6 +596,90 @@ class ScraperContractsTest(unittest.TestCase):
 
         self.assertEqual([], rows)
 
+    def test_lotteryusa_state_pick_sources_parse_draw_links(self):
+        html = """
+        <a href="/florida/midday-pick-3/">Pick 3 Midday</a>
+        <a href="/florida/pick-3/">Pick 3 Evening</a>
+        <a href="/florida/midday-pick-4/">Pick 4 Midday</a>
+        <a href="/florida/pick-4/">Pick 4 Evening</a>
+        """
+
+        sources = scraper.parse_lotteryusa_state_pick_sources(html, "Florida", "FL")
+
+        by_draw = {(source["gameName"], source["draw"]): source for source in sources}
+        self.assertEqual("https://www.lotteryusa.com/florida/midday-pick-3/", by_draw[("Pick 3", "Midday Draw")]["url"])
+        self.assertEqual("https://www.lotteryusa.com/florida/pick-4/", by_draw[("Pick 4", "Evening Draw")]["url"])
+
+    def test_lotteryusa_catalog_rows_keep_existing_app_ids(self):
+        html_by_url = {
+            "https://www.lotteryusa.com/florida/": """
+            <a href="/florida/pick-4/">Pick 4 Evening</a>
+            """,
+            "https://www.lotteryusa.com/florida/pick-4/": """
+            <table><tbody id="js-state-results-table">
+              <tr class="c-draw-card">
+                <td><span class="c-draw-card__draw-date-sub">May 14, 2026</span></td>
+                <td><ul><li class="c-ball">2</li><li class="c-ball">8</li><li class="c-ball">4</li><li class="c-ball">4</li></ul></td>
+              </tr>
+            </tbody></table>
+            """,
+        }
+
+        async def fake_get(url, client=None):
+            class FakeResponse:
+                text = html_by_url[url]
+                content = text.encode("utf-8")
+            return FakeResponse()
+
+        catalog = [{
+            "id": "US-P4-FL-PICK-4-EVENING",
+            "state": "Florida",
+            "stateCode": "FL",
+            "game": "pick4",
+            "gameName": "Pick 4",
+            "draw": "Evening Draw",
+        }]
+
+        with patch.object(scraper, "async_http_get", side_effect=fake_get):
+            rows = scraper.sync_run(scraper._async_fetch_lotteryusa_pick_catalog_rows("14-05-2026", catalog))
+
+        self.assertEqual(1, len(rows))
+        self.assertEqual("US-P4-FL-PICK-4-EVENING", rows[0]["id"])
+        self.assertEqual("2-8-4-4", rows[0]["number"])
+        self.assertEqual("lotteryusa.com", rows[0]["source"])
+
+    def test_scrape_us_picks_with_catalog_skips_slow_pick_domains(self):
+        catalog = [{
+            "id": "US-P4-FL-PICK-4-EVENING",
+            "state": "Florida",
+            "stateCode": "FL",
+            "game": "pick4",
+            "gameName": "Pick 4",
+            "draw": "Evening Draw",
+        }]
+        lotteryusa_rows = [{
+            "id": "US-P4-FL-PICK-4-EVENING",
+            "state": "Florida",
+            "stateCode": "FL",
+            "game": "pick4",
+            "gameName": "Pick 4",
+            "draw": "Evening Draw",
+            "date": "14-05-2026",
+            "number": "2-8-4-4",
+            "source": "lotteryusa.com",
+        }]
+
+        async def fake_catalog(date_str, catalog_rows, client=None):
+            return lotteryusa_rows
+
+        with patch.object(scraper, "_async_fetch_lotteryusa_pick_catalog_rows", side_effect=fake_catalog), \
+            patch.object(scraper, "_async_fetch_us_pick_overview") as overview:
+            rows = scraper.scrape_us_picks("14-05-2026", games=("pick4",), existing_rows=catalog)
+
+        self.assertEqual(1, len(rows))
+        self.assertEqual("2-8-4-4", rows[0]["number"])
+        overview.assert_not_called()
+
     def test_merge_us_pick_results_preserves_existing_published_over_new_pending(self):
         existing = [{
             "id": "US-P4-FL-PICK-4-EVENING",

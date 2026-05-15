@@ -311,6 +311,35 @@ class RenderApiContractsTest(unittest.TestCase):
         pick_scrape.assert_called_once_with("02-05-2026", existing_rows=existing_pick_rows)
         save_picks.assert_called_once()
 
+    def test_run_pick_scraper_sync_uses_recent_catalog_when_current_cache_empty(self):
+        recent_pick_rows = [{
+            "id": "US-P4-FL-PICK-4-EVENING",
+            "state": "Florida",
+            "stateCode": "FL",
+            "game": "pick4",
+            "gameName": "Pick 4",
+            "draw": "Evening Draw",
+            "date": "01-05-2026",
+            "number": "1-2-3-4",
+        }]
+        refreshed_pick_rows = [{
+            "id": "US-P4-FL-PICK-4-EVENING",
+            "state": "Florida",
+            "stateCode": "FL",
+            "game": "pick4",
+            "gameName": "Pick 4",
+            "draw": "Evening Draw",
+            "date": "02-05-2026",
+            "number": "2-8-4-4",
+        }]
+        with patch("app.fetch_pick_rows_from_supabase", side_effect=[[], recent_pick_rows]), \
+            patch("app.scrape_us_picks", return_value=refreshed_pick_rows) as pick_scrape, \
+            patch("app.save_us_picks_to_supabase"):
+            response = self.client.get("/run-pick-scraper?date=02-05-2026&sync=1")
+
+        self.assertEqual(200, response.status_code)
+        pick_scrape.assert_called_once_with("02-05-2026", existing_rows=recent_pick_rows)
+
     def test_system_results_live_pick_refresh_saves_updated_cache(self):
         existing_pick_rows = [{
             "id": "US-P3-FL-PICK-3-EVENING",

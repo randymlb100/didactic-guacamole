@@ -378,6 +378,107 @@ def parse_lotteryusa_date(raw):
     return parsed.strftime("%d-%m-%Y")
 
 
+LOTTERYUSA_BASE_URL = "https://www.lotteryusa.com"
+LOTTERYUSA_STATE_SLUG_OVERRIDES = {
+    "DC": "district-of-columbia",
+    "Washington DC": "district-of-columbia",
+}
+
+
+def lotteryusa_slug(raw):
+    text = str(raw or "").strip().lower()
+    text = text.replace("&", "and")
+    text = re.sub(r"[^a-z0-9]+", "-", text)
+    return text.strip("-")
+
+
+def lotteryusa_state_slug(state_name):
+    state = str(state_name or "").strip()
+    return LOTTERYUSA_STATE_SLUG_OVERRIDES.get(state) or lotteryusa_slug(state)
+
+
+def normalize_lotteryusa_draw_label(raw):
+    text = str(raw or "").strip()
+    text = re.sub(r"\s+", " ", text)
+    text = text.replace("Mid-day", "Midday").replace("Mid Day", "Midday")
+    if not text:
+        return ""
+    for token, label in (
+        ("Midday", "Midday Draw"),
+        ("Morning", "Morning Draw"),
+        ("Afternoon", "Afternoon Draw"),
+        ("Evening", "Evening Draw"),
+        ("Night", "Night Draw"),
+        ("Day", "Day Draw"),
+    ):
+        if re.search(rf"\b{token}\b", text, re.I):
+            return label
+    match = re.search(r"\b(\d{1,2}:?\d{0,2}\s*(?:AM|PM))\b", text, re.I)
+    if match:
+        value = match.group(1).upper().replace(" ", "")
+        if ":" not in value:
+            value = value[:-2] + ":00" + value[-2:]
+        return f"{value} Draw"
+    return "Draw"
+
+
+def strip_lotteryusa_draw_words(raw):
+    text = str(raw or "").strip()
+    text = re.sub(r"^Go to\s+", "", text, flags=re.I)
+    text = re.sub(r"\b(Mid[- ]?day|Morning|Afternoon|Evening|Night|Day)\b", "", text, flags=re.I)
+    text = re.sub(r"\b\d{1,2}:?\d{0,2}\s*(?:AM|PM)\b", "", text, flags=re.I)
+    return re.sub(r"\s+", " ", text).strip()
+
+
+def normalize_lotteryusa_game_name(raw):
+    text = strip_lotteryusa_draw_words(raw)
+    text = text.replace("Play3", "Play 3")
+    text = text.replace("DC-3", "3").replace("DC 3", "3")
+    text = text.replace("DC-4", "Match 4").replace("DC 4", "Match 4")
+    return text.strip()
+
+
+def lotteryusa_pick_game_from_label(raw):
+    text = str(raw or "").lower()
+    if any(token in text for token in ("pick 4", "pick-4", "cash 4", "cash-4", "daily 4", "daily-4", "play 4", "play-4", "win 4", "win-4", "match 4", "match-4", "dc-4", "dc 4")):
+        return "pick4"
+    if any(token in text for token in ("pick 3", "pick-3", "cash 3", "cash-3", "daily 3", "daily-3", "play 3", "play-3", "play3", "numbers", "dc-3", "dc 3")):
+        return "pick3"
+    return ""
+
+
+def parse_lotteryusa_state_pick_sources(html_text, state_name, state_code):
+    soup = BeautifulSoup(str(html_text or ""), "html.parser")
+    sources = []
+    seen_urls = set()
+    for anchor in soup.find_all("a", href=True):
+        label = re.sub(r"\s+", " ", anchor.get_text(" ", strip=True)).strip()
+        label = re.sub(r"^Go to\s+", "", label, flags=re.I).strip()
+        game = lotteryusa_pick_game_from_label(label)
+        if not game:
+            continue
+        href = str(anchor.get("href") or "").strip()
+        if not href or "/quick-picks" in href:
+            continue
+        url = urllib.parse.urljoin(LOTTERYUSA_BASE_URL, href)
+        if url in seen_urls:
+            continue
+        seen_urls.add(url)
+        game_name = normalize_lotteryusa_game_name(label)
+        if not game_name:
+            continue
+        sources.append({
+            "url": url,
+            "state": state_name,
+            "stateCode": state_code,
+            "game": game,
+            "gameName": game_name,
+            "draw": normalize_lotteryusa_draw_label(label),
+            "digits": 3 if game == "pick3" else 4,
+        })
+    return sources
+
+
 def slug_token(raw):
     text = str(raw or "").upper()
     text = re.sub(r"[^A-Z0-9]+", "-", text)
@@ -943,14 +1044,39 @@ def fetch_us_pick_overview(game):
 
 
 async def _async_scrape_us_picks(date_str=None, games=None, existing_rows=None, client=None):
-    _ = existing_rows  # kept for API compat; scraper always fetches fresh
     target_date = date_str or get_dr_date_str()
     c = client or get_http_client()
     rows_by_id = {}
     game_list = games or ("pick3", "pick4")
+    existing_catalog = [
+        enrich_us_pick_result_row(dict(row))
+        for row in (existing_rows or [])
+        if catalog_row_game(row) in {"pick3", "pick4"}
+    ]
 
     async def _process_game(game):
         game_rows_by_id = {}
+        catalog_rows = [row for row in existing_catalog if catalog_row_game(row) == normalize_us_pick_game(game)]
+        for catalog_row in await _async_fetch_lotteryusa_pick_catalog_rows(target_date, catalog_rows, client=c):
+            game_rows_by_id[catalog_row["id"]] = catalog_row
+        if catalog_rows:
+            missing_catalog_ids = [
+                str(row.get("id", "")).strip()
+                for row in catalog_rows
+                if str(row.get("id", "")).strip() and str(row.get("id", "")).strip() not in game_rows_by_id
+            ]
+            if missing_catalog_ids:
+                for fallback_row in await _async_fetch_lotteryusa_pick_fallbacks(
+                    target_date,
+                    ids=missing_catalog_ids,
+                    client=c,
+                ):
+                    previous = game_rows_by_id.get(fallback_row["id"]) or {}
+                    merged = dict(previous)
+                    merged.update(fallback_row)
+                    merged["source"] = "lotteryusa.com"
+                    game_rows_by_id[fallback_row["id"]] = enrich_us_pick_result_row(merged)
+            return game_rows_by_id
         overview_rows = await _async_fetch_us_pick_overview(game, client=c)
         if target_date:
             history_keys = set()
@@ -1040,10 +1166,15 @@ async def _async_scrape_us_picks(date_str=None, games=None, existing_rows=None, 
                 for result_id, row in game_rows_by_id.items()
                 if not str(row.get("number", "")).strip()
             )
-            if missing_ids:
+            if missing_ids or not game_rows_by_id:
+                fallback_ids = missing_ids or [
+                    result_id
+                    for result_id, source in LOTTERYUSA_PICK_FALLBACK_SOURCES.items()
+                    if normalize_us_pick_game(source.get("game")) == normalize_us_pick_game(game)
+                ]
                 for fallback_row in await _async_fetch_lotteryusa_pick_fallbacks(
                     target_date,
-                    ids=missing_ids,
+                    ids=fallback_ids,
                     client=c,
                 ):
                     previous = game_rows_by_id.get(fallback_row["id"]) or {}
@@ -1555,6 +1686,155 @@ async def _async_fetch_lotteryusa_pick_fallbacks(date_str=None, ids=None, client
         return []
     rows = await asyncio.gather(*sources)
     return [row for row in rows if row is not None]
+
+
+def catalog_row_game(row):
+    game = normalize_us_pick_game(row.get("game"))
+    if game:
+        return game
+    result_id = str(row.get("id", "")).upper()
+    if result_id.startswith("US-P4-") or str(row.get("pick4", "")).strip():
+        return "pick4"
+    if result_id.startswith("US-P3-") or str(row.get("pick3", "")).strip():
+        return "pick3"
+    return ""
+
+
+def normalize_draw_key(raw):
+    return re.sub(r"[^A-Z0-9]+", "", normalize_lotteryusa_draw_label(raw).upper())
+
+
+def normalize_game_key(raw):
+    text = str(raw or "").upper()
+    text = text.replace("PLAY3", "PLAY 3")
+    text = re.sub(r"[^A-Z0-9]+", "", text)
+    aliases = {
+        "DC3": "3",
+        "DC4": "MATCH4",
+    }
+    return aliases.get(text, text)
+
+
+def lotteryusa_source_matches_catalog_row(source, row):
+    game = catalog_row_game(row)
+    if source.get("game") != game:
+        return False
+    if normalize_draw_key(source.get("draw")) != normalize_draw_key(row.get("draw")):
+        return False
+    source_game = normalize_game_key(source.get("gameName"))
+    row_game = normalize_game_key(row.get("gameName"))
+    if source_game == row_game:
+        return True
+    compatible_pairs = {
+        ("NUMBERS", "PICK3"),
+        ("PICK3", "NUMBERS"),
+        ("PLAY3", "PLAY3"),
+        ("3", "DC3"),
+        ("MATCH4", "DC4"),
+    }
+    return (source_game, row_game) in compatible_pairs
+
+
+def parse_lotteryusa_result_page_row(html_text, source, target_date):
+    soup = BeautifulSoup(str(html_text or ""), "html.parser")
+    digits = int(source.get("digits") or 0)
+    for row in soup.select("tbody#js-state-results-table tr.c-draw-card"):
+        date_el = row.select_one(".c-draw-card__draw-date-sub")
+        draw_date = parse_lotteryusa_date(date_el.get_text(" ", strip=True) if date_el else "")
+        if draw_date != target_date:
+            continue
+        balls = []
+        for ball in row.select("li.c-ball"):
+            classes = ball.get("class") or []
+            if "c-ball--fire" in classes:
+                continue
+            value = ball.get_text(strip=True)
+            if re.fullmatch(r"\d{1,2}", value):
+                balls.append(value)
+        if len(balls) < digits:
+            return None
+        return {
+            "date": target_date,
+            "number": "-".join(balls[:digits]),
+        }
+    return None
+
+
+async def _async_fetch_lotteryusa_pick_catalog_rows(date_str, catalog_rows, client=None):
+    target_date = date_str or get_et_date_str()
+    c = client or get_http_client()
+    concurrency = int(os.environ.get("LOTTERYUSA_PICK_CONCURRENCY", "8"))
+    limiter = asyncio.Semaphore(max(1, concurrency))
+
+    async def _limited_get(url):
+        async with limiter:
+            return await async_http_get(url, client=c)
+
+    rows = [
+        enrich_us_pick_result_row(dict(row))
+        for row in (catalog_rows or [])
+        if catalog_row_game(row) in {"pick3", "pick4"}
+    ]
+    state_keys = {}
+    for row in rows:
+        state = str(row.get("state") or "").strip()
+        state_code = str(row.get("stateCode") or "").strip()
+        if state and state_code:
+            state_keys[(state, state_code)] = f"{LOTTERYUSA_BASE_URL}/{lotteryusa_state_slug(state)}/"
+
+    async def _fetch_state_sources(state, state_code, url):
+        try:
+            resp = await _limited_get(url)
+        except Exception as error:
+            logger.warning("Lottery USA state catalog error for %s: %s", state, error)
+            return []
+        return parse_lotteryusa_state_pick_sources(resp.text, state, state_code)
+
+    state_source_lists = await asyncio.gather(*[
+        _fetch_state_sources(state, state_code, url)
+        for (state, state_code), url in state_keys.items()
+    ])
+    sources_by_state = {}
+    for source_list in state_source_lists:
+        for source in source_list:
+            sources_by_state.setdefault(source["stateCode"], []).append(source)
+
+    jobs = {}
+    source_for_row = {}
+    for row in rows:
+        state_code = str(row.get("stateCode") or "").strip()
+        for source in sources_by_state.get(state_code, []):
+            if lotteryusa_source_matches_catalog_row(source, row):
+                jobs[source["url"]] = source
+                source_for_row.setdefault(source["url"], []).append(row)
+                break
+
+    async def _fetch_result(source):
+        try:
+            resp = await _limited_get(source["url"])
+        except Exception as error:
+            logger.warning("Lottery USA pick catalog error for %s: %s", source["url"], error)
+            return source["url"], None
+        return source["url"], parse_lotteryusa_result_page_row(resp.text, source, target_date)
+
+    fetched = await asyncio.gather(*[_fetch_result(source) for source in jobs.values()])
+    results = []
+    for url, parsed in fetched:
+        if not parsed:
+            continue
+        for template in source_for_row.get(url, []):
+            row = enrich_us_pick_result_row(dict(template))
+            row["date"] = target_date
+            row["number"] = parsed["number"]
+            row["source"] = "lotteryusa.com"
+            if catalog_row_game(row) == "pick3":
+                row["pick3"] = parsed["number"]
+                row.pop("pick4", None)
+            elif catalog_row_game(row) == "pick4":
+                row["pick4"] = parsed["number"]
+                row.pop("pick3", None)
+            results.append(row)
+    return unique_us_pick_results(results)
 
 
 async def _async_fetch_miloteria_new_jersey(date_str=None, client=None):

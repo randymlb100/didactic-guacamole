@@ -530,6 +530,8 @@ def set_pick_scrape_cache(date_key, rows):
 def refresh_pick_cache_async(date_key):
     try:
         existing_rows = fetch_pick_rows_from_supabase(date_key)
+        if not existing_rows:
+            existing_rows = fetch_recent_pick_catalog_from_supabase(date_key)
         rows = unique_sorted_pick_results(scrape_us_picks(date_key, existing_rows=existing_rows))
         set_pick_scrape_cache(date_key, rows)
         if rows and SUPABASE_KEY.strip():
@@ -637,6 +639,25 @@ def fetch_pick_rows_from_supabase(date_key):
                 return value
     except Exception as error:
         print(f"Warning: could not fetch pick cache: {error}")
+    return []
+
+
+def previous_date_keys(date_key, days=2):
+    try:
+        parsed = datetime.datetime.strptime(str(date_key), "%d-%m-%Y")
+    except ValueError:
+        return []
+    return [
+        (parsed - datetime.timedelta(days=offset)).strftime("%d-%m-%Y")
+        for offset in range(1, int(days) + 1)
+    ]
+
+
+def fetch_recent_pick_catalog_from_supabase(date_key):
+    for previous_date in previous_date_keys(date_key, days=2):
+        rows = fetch_pick_rows_from_supabase(previous_date)
+        if rows:
+            return rows
     return []
 
 
@@ -950,6 +971,8 @@ def run_system_scraper():
             }
         if mode in ("pick", "both"):
             existing_pick_rows = fetch_pick_rows_from_supabase(date_key)
+            if not existing_pick_rows:
+                existing_pick_rows = fetch_recent_pick_catalog_from_supabase(date_key)
             pick_rows = unique_sorted_pick_results(pick_scrape_cached(date_key, existing_rows=existing_pick_rows))
             save_us_picks_to_supabase(date_key, pick_rows)
             payload["picks"] = {
@@ -985,6 +1008,8 @@ def run_pick_scraper():
         }
         return json_utf8(payload, status=202 if payload["refreshing"] else 200)
     existing_pick_rows = fetch_pick_rows_from_supabase(date_key)
+    if not existing_pick_rows:
+        existing_pick_rows = fetch_recent_pick_catalog_from_supabase(date_key)
     pick_rows = unique_sorted_pick_results(pick_scrape_cached(date_key, existing_rows=existing_pick_rows))
     if not SUPABASE_KEY.strip():
         return json_utf8({
