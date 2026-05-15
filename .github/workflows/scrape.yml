@@ -4,6 +4,11 @@ on:
   schedule:
     - cron: "*/10 * * * *"
   workflow_dispatch:
+    inputs:
+      dates:
+        description: "Optional dates to scrape, separated by spaces. Example: 15-05-2026 14-05-2026 13-05-2026"
+        required: false
+        type: string
 
 jobs:
   scrape:
@@ -39,4 +44,10 @@ jobs:
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_KEY: ${{ secrets.SUPABASE_PUBLISHABLE_KEY || secrets.SUPABASE_ANON_KEY }}
-        run: python scraper/scrape_and_save.py
+          SCRAPE_DATES: ${{ inputs.dates }}
+        run: |
+          if [ -n "$SCRAPE_DATES" ]; then
+            python scraper/scrape_and_save.py $SCRAPE_DATES
+          else
+            python scraper/scrape_and_save.py
+          fi

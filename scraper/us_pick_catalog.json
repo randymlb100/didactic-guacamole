@@ -1988,12 +1988,12 @@
     "lotteryUsaUrl": "https://www.lotteryusa.com/district-of-columbia/dc-4/"
   },
   {
-    "id": "US-P3-WV-DAILY-3-09-00-PM",
+    "id": "US-P3-WV-DAILY-3-DAY",
     "state": "West Virginia",
     "stateCode": "WV",
     "game": "pick3",
     "gameName": "Daily 3",
-    "draw": "09:00 PM Draw",
+    "draw": "Day Draw",
     "playTypes": [
       "straight",
       "box"

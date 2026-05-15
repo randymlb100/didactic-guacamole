@@ -88,6 +88,15 @@ class ScraperContractsTest(unittest.TestCase):
             scraper.build_us_pick_result_id("pick4", "NY", "Win 4", "Evening Draw"),
         )
 
+    def test_static_catalog_keeps_west_virginia_daily_3_on_app_day_id(self):
+        rows = [
+            row for row in scraper.static_us_pick_catalog_rows(games=["pick3"])
+            if row.get("stateCode") == "WV" and row.get("gameName") == "Daily 3"
+        ]
+
+        self.assertEqual(["US-P3-WV-DAILY-3-DAY"], [row["id"] for row in rows])
+        self.assertEqual(["Day Draw"], [row["draw"] for row in rows])
+
     def test_parse_pick_overview_keeps_midday_and_evening_as_separate_rows(self):
         html = """
         <section>
