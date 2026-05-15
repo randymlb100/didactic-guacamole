@@ -239,6 +239,26 @@ async def async_http_get(url, client=None, accept_json=False):
                 raise
 
 
+async def async_lotteryusa_http_get(url, client=None):
+    c = client or get_http_client()
+    max_attempts = max(1, int(os.environ.get("LOTTERYUSA_PICK_RETRY_MAX", "1")))
+    timeout_seconds = max(1.0, float(os.environ.get("LOTTERYUSA_PICK_TIMEOUT", "15")))
+    request_timeout = httpx.Timeout(timeout_seconds, connect=min(5.0, timeout_seconds))
+    for attempt in range(1, max_attempts + 1):
+        try:
+            resp = await c.get(url, timeout=request_timeout)
+            if resp.is_error:
+                resp.raise_for_status()
+            return resp
+        except httpx.HTTPStatusError:
+            raise
+        except (httpx.RequestError, httpx.TimeoutException) as exc:
+            logger.warning("Lottery USA HTTP error fetching %s (attempt %d/%d): %s", url, attempt, max_attempts, exc)
+            if attempt >= max_attempts:
+                raise
+            await asyncio.sleep(_RETRY_BASE_DELAY * (2 ** (attempt - 1)))
+
+
 async def async_http_post(url, data_bytes, content_type="application/x-www-form-urlencoded; charset=UTF-8", client=None):
     c = client or get_http_client()
     headers = {"Content-Type": content_type}
@@ -446,6 +466,22 @@ def static_us_pick_catalog_rows(games=None):
     if not selected_games:
         return list(_static_us_pick_catalog)
     return [row for row in _static_us_pick_catalog if catalog_row_game(row) in selected_games]
+
+
+def lotteryusa_catalog_row_url(row):
+    raw_url = str(
+        row.get("lotteryUsaUrl")
+        or row.get("lotteryusaUrl")
+        or row.get("sourceUrl")
+        or ""
+    ).strip()
+    if not raw_url:
+        return ""
+    url = urllib.parse.urljoin(LOTTERYUSA_BASE_URL, raw_url)
+    parsed = urllib.parse.urlparse(url)
+    if parsed.scheme not in {"http", "https"} or parsed.netloc != "www.lotteryusa.com":
+        return ""
+    return url
 
 
 def normalize_lotteryusa_draw_label(raw):
@@ -1847,15 +1883,40 @@ async def _async_fetch_lotteryusa_pick_catalog_rows(date_str, catalog_rows, clie
 
     async def _limited_get(url):
         async with limiter:
-            return await async_http_get(url, client=c)
+            return await async_lotteryusa_http_get(url, client=c)
 
     rows = [
         enrich_us_pick_result_row(dict(row))
         for row in (catalog_rows or [])
         if catalog_row_game(row) in {"pick3", "pick4"}
     ]
-    state_keys = {}
+
+    jobs = {}
+    source_for_row = {}
+    direct_ids = set()
     for row in rows:
+        direct_url = lotteryusa_catalog_row_url(row)
+        if not direct_url:
+            continue
+        source = {
+            "url": direct_url,
+            "state": row.get("state"),
+            "stateCode": row.get("stateCode"),
+            "game": catalog_row_game(row),
+            "gameName": row.get("gameName"),
+            "draw": row.get("draw"),
+            "digits": 3 if catalog_row_game(row) == "pick3" else 4,
+        }
+        jobs[direct_url] = source
+        source_for_row.setdefault(direct_url, []).append(row)
+        direct_ids.add(str(row.get("id") or ""))
+
+    discovery_rows = [
+        row for row in rows
+        if str(row.get("id") or "") not in direct_ids
+    ]
+    state_keys = {}
+    for row in discovery_rows:
         state = str(row.get("state") or "").strip()
         state_code = str(row.get("stateCode") or "").strip()
         if state and state_code:
@@ -1878,9 +1939,7 @@ async def _async_fetch_lotteryusa_pick_catalog_rows(date_str, catalog_rows, clie
         for source in source_list:
             sources_by_state.setdefault(source["stateCode"], []).append(source)
 
-    jobs = {}
-    source_for_row = {}
-    for row in rows:
+    for row in discovery_rows:
         state_code = str(row.get("stateCode") or "").strip()
         for source in sources_by_state.get(state_code, []):
             if lotteryusa_source_matches_catalog_row(source, row):
@@ -1893,12 +1952,23 @@ async def _async_fetch_lotteryusa_pick_catalog_rows(date_str, catalog_rows, clie
             resp = await _limited_get(source["url"])
         except Exception as error:
             logger.warning("Lottery USA pick catalog error for %s: %s", source["url"], error)
-            return source["url"], None
-        return source["url"], parse_lotteryusa_result_page_row(resp.text, source, target_date)
+            return source["url"], None, True
+        return source["url"], parse_lotteryusa_result_page_row(resp.text, source, target_date), False
 
-    fetched = await asyncio.gather(*[_fetch_result(source) for source in jobs.values()])
+    fetched = list(await asyncio.gather(*[_fetch_result(source) for source in jobs.values()]))
+    retry_limit = max(0, int(os.environ.get("LOTTERYUSA_PICK_SECOND_PASS_LIMIT", "24")))
+    failed_sources = [
+        jobs[url]
+        for url, parsed, failed in fetched
+        if failed and url in jobs
+    ][:retry_limit]
+    if failed_sources:
+        retried = await asyncio.gather(*[_fetch_result(source) for source in failed_sources])
+        fetched_by_url = {url: (url, parsed, failed) for url, parsed, failed in fetched}
+        fetched_by_url.update({url: (url, parsed, failed) for url, parsed, failed in retried})
+        fetched = list(fetched_by_url.values())
     results = []
-    for url, parsed in fetched:
+    for url, parsed, _failed in fetched:
         if not parsed:
             continue
         for template in source_for_row.get(url, []):

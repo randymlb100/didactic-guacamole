@@ -655,13 +655,89 @@ class ScraperContractsTest(unittest.TestCase):
             "draw": "Evening Draw",
         }]
 
-        with patch.object(scraper, "async_http_get", side_effect=fake_get):
+        with patch.object(scraper, "async_lotteryusa_http_get", side_effect=fake_get):
             rows = scraper.sync_run(scraper._async_fetch_lotteryusa_pick_catalog_rows("14-05-2026", catalog))
 
         self.assertEqual(1, len(rows))
         self.assertEqual("US-P4-FL-PICK-4-EVENING", rows[0]["id"])
         self.assertEqual("2-8-4-4", rows[0]["number"])
         self.assertEqual("lotteryusa.com", rows[0]["source"])
+
+    def test_lotteryusa_catalog_rows_use_direct_url_without_state_catalog_request(self):
+        html_by_url = {
+            "https://www.lotteryusa.com/connecticut/midday-4/": """
+            <table><tbody id="js-state-results-table">
+              <tr class="c-draw-card">
+                <td><span class="c-draw-card__draw-date-sub">May 14, 2026</span></td>
+                <td><ul><li class="c-ball">8</li><li class="c-ball">3</li><li class="c-ball">5</li><li class="c-ball">7</li></ul></td>
+              </tr>
+            </tbody></table>
+            """,
+        }
+
+        async def fake_get(url, client=None):
+            if url == "https://www.lotteryusa.com/connecticut/":
+                raise AssertionError("state catalog should not be fetched when a direct URL exists")
+
+            class FakeResponse:
+                text = html_by_url[url]
+                content = text.encode("utf-8")
+            return FakeResponse()
+
+        catalog = [{
+            "id": "US-P4-CT-PLAY-4-DAY",
+            "state": "Connecticut",
+            "stateCode": "CT",
+            "game": "pick4",
+            "gameName": "Play 4",
+            "draw": "Day Draw",
+            "lotteryUsaUrl": "https://www.lotteryusa.com/connecticut/midday-4/",
+        }]
+
+        with patch.object(scraper, "async_lotteryusa_http_get", side_effect=fake_get):
+            rows = scraper.sync_run(scraper._async_fetch_lotteryusa_pick_catalog_rows("14-05-2026", catalog))
+
+        self.assertEqual(1, len(rows))
+        self.assertEqual("US-P4-CT-PLAY-4-DAY", rows[0]["id"])
+        self.assertEqual("8-3-5-7", rows[0]["number"])
+
+    def test_lotteryusa_catalog_rows_retry_transient_direct_url_error(self):
+        html = """
+        <table><tbody id="js-state-results-table">
+          <tr class="c-draw-card">
+            <td><span class="c-draw-card__draw-date-sub">May 14, 2026</span></td>
+            <td><ul><li class="c-ball">2</li><li class="c-ball">1</li><li class="c-ball">0</li><li class="c-ball">4</li></ul></td>
+          </tr>
+        </tbody></table>
+        """
+        calls = {"count": 0}
+
+        async def fake_get(url, client=None):
+            calls["count"] += 1
+            if calls["count"] == 1:
+                raise TimeoutError("temporary timeout")
+
+            class FakeResponse:
+                text = html
+                content = text.encode("utf-8")
+            return FakeResponse()
+
+        catalog = [{
+            "id": "US-P4-DE-PLAY-4-EVENING",
+            "state": "Delaware",
+            "stateCode": "DE",
+            "game": "pick4",
+            "gameName": "Play 4",
+            "draw": "Evening Draw",
+            "lotteryUsaUrl": "https://www.lotteryusa.com/delaware/play-4/",
+        }]
+
+        with patch.object(scraper, "async_lotteryusa_http_get", side_effect=fake_get):
+            rows = scraper.sync_run(scraper._async_fetch_lotteryusa_pick_catalog_rows("14-05-2026", catalog))
+
+        self.assertEqual(2, calls["count"])
+        self.assertEqual(1, len(rows))
+        self.assertEqual("2-1-0-4", rows[0]["number"])
 
     def test_scrape_us_picks_with_catalog_skips_slow_pick_domains(self):
         catalog = [{

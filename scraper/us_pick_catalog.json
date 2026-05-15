@@ -7,7 +7,8 @@
     "playTypes": [
       "straight",
       "box"
-    ]
+    ],
+    "lotteryUsaUrl": "https://www.lotteryusa.com/new-hampshire/midday-3/"
   },
   {
     "id": "US-P3-NH--EVENING",
@@ -17,7 +18,8 @@
     "playTypes": [
       "straight",
       "box"
-    ]
+    ],
+    "lotteryUsaUrl": "https://www.lotteryusa.com/new-hampshire/pick-3/"
   },
   {
     "state": "Arizona",
@@ -30,7 +32,8 @@
     "playTypes": [
       "straight",
       "box"
-    ]
+    ],
+    "lotteryUsaUrl": "https://www.lotteryusa.com/arizona/pick-3/"
   },
   {
     "id": "US-P3-AR-CASH-3-EVENING",
@@ -42,7 +45,8 @@
     "playTypes": [
       "straight",
       "box"
-    ]
+    ],
+    "lotteryUsaUrl": "https://www.lotteryusa.com/arkansas/cash-3/"
   },
   {
     "id": "US-P3-AR-CASH-3-MIDDAY",
@@ -54,7 +58,8 @@
     "playTypes": [
       "straight",
       "box"
-    ]
+    ],
+    "lotteryUsaUrl": "https://www.lotteryusa.com/arkansas/midday-cash-3/"
   },
   {
     "id": "US-P4-AR-CASH-4-EVENING",
@@ -66,7 +71,8 @@
     "playTypes": [
       "straight",
       "box"
-    ]
+    ],
+    "lotteryUsaUrl": "https://www.lotteryusa.com/arkansas/cash-4/"
   },
   {
     "id": "US-P4-AR-CASH-4-MIDDAY",
@@ -78,7 +84,8 @@
     "playTypes": [
       "straight",
       "box"
-    ]
+    ],
+    "lotteryUsaUrl": "https://www.lotteryusa.com/arkansas/midday-cash-4/"
   },
   {
     "id": "US-P3-CA-PICK-3-EVENING",
@@ -90,7 +97,8 @@
     "playTypes": [
       "straight",
       "box"
-    ]
+    ],
+    "lotteryUsaUrl": "https://www.lotteryusa.com/california/daily-3/"
   },
   {
     "id": "US-P3-CA-PICK-3-MIDDAY",
@@ -102,7 +110,8 @@
     "playTypes": [
       "straight",
       "box"
-    ]
+    ],
+    "lotteryUsaUrl": "https://www.lotteryusa.com/california/midday-3/"
   },
   {
     "id": "US-P4-CA-DAILY-4-DAY",
@@ -114,7 +123,8 @@
     "playTypes": [
       "straight",
       "box"
-    ]
+    ],
+    "lotteryUsaUrl": "https://www.lotteryusa.com/california/daily-4/"
   },
   {
     "id": "US-P3-CO-PICK-3-EVENING",
@@ -126,7 +136,8 @@
     "playTypes": [
       "straight",
       "box"
-    ]
+    ],
+    "lotteryUsaUrl": "https://www.lotteryusa.com/colorado/pick-3/"
   },
   {
     "id": "US-P3-CO-PICK-3-MIDDAY",
@@ -138,7 +149,8 @@
     "playTypes": [
       "straight",
       "box"
-    ]
+    ],
+    "lotteryUsaUrl": "https://www.lotteryusa.com/colorado/pick-3-midday/"
   },
   {
     "id": "US-P3-CT-PLAY3-DAY",
@@ -150,7 +162,8 @@
     "playTypes": [
       "straight",
       "box"
-    ]
+    ],
+    "lotteryUsaUrl": "https://www.lotteryusa.com/connecticut/midday-3/"
   },
   {
     "id": "US-P3-CT-PLAY3-NIGHT",
@@ -162,7 +175,8 @@
     "playTypes": [
       "straight",
       "box"
-    ]
+    ],
+    "lotteryUsaUrl": "https://www.lotteryusa.com/connecticut/play-3/"
   },
   {
     "id": "US-P4-CT-PLAY-4-DAY",
@@ -174,7 +188,8 @@
     "playTypes": [
       "straight",
       "box"
-    ]
+    ],
+    "lotteryUsaUrl": "https://www.lotteryusa.com/connecticut/midday-4/"
   },
   {
     "state": "Connecticut",
@@ -187,7 +202,8 @@
     "playTypes": [
       "straight",
       "box"
-    ]
+    ],
+    "lotteryUsaUrl": "https://www.lotteryusa.com/connecticut/play-4/"
   },
   {
     "id": "US-P3-DE-PLAY-3-DAY",
@@ -199,7 +215,8 @@
     "playTypes": [
       "straight",
       "box"
-    ]
+    ],
+    "lotteryUsaUrl": "https://www.lotteryusa.com/delaware/play-3-midday/"
   },
   {
     "id": "US-P3-DE-PLAY-3-NIGHT",
@@ -211,7 +228,8 @@
     "playTypes": [
       "straight",
       "box"
-    ]
+    ],
+    "lotteryUsaUrl": "https://www.lotteryusa.com/delaware/play-3/"
   },
   {
     "id": "US-P4-DE-PLAY-4-EVENING",
@@ -223,7 +241,8 @@
     "playTypes": [
       "straight",
       "box"
-    ]
+    ],
+    "lotteryUsaUrl": "https://www.lotteryusa.com/delaware/play-4/"
   },
   {
     "id": "US-P4-DE-PLAY-4-MIDDAY",
@@ -235,7 +254,8 @@
     "playTypes": [
       "straight",
       "box"
-    ]
+    ],
+    "lotteryUsaUrl": "https://www.lotteryusa.com/delaware/play-4-midday/"
   },
   {
     "id": "US-P3-FL-PICK-3-EVENING",
@@ -247,7 +267,8 @@
     "playTypes": [
       "straight",
       "box"
-    ]
+    ],
+    "lotteryUsaUrl": "https://www.lotteryusa.com/florida/pick-3/"
   },
   {
     "id": "US-P3-FL-PICK-3-MIDDAY",
@@ -259,7 +280,8 @@
     "playTypes": [
       "straight",
       "box"
-    ]
+    ],
+    "lotteryUsaUrl": "https://www.lotteryusa.com/florida/midday-pick-3/"
   },
   {
     "state": "Florida",
@@ -272,7 +294,8 @@
     "playTypes": [
       "straight",
       "box"
-    ]
+    ],
+    "lotteryUsaUrl": "https://www.lotteryusa.com/florida/pick-4/"
   },
   {
     "id": "US-P4-FL-PICK-4-MIDDAY",
@@ -284,7 +307,8 @@
     "playTypes": [
       "straight",
       "box"
-    ]
+    ],
+    "lotteryUsaUrl": "https://www.lotteryusa.com/florida/midday-pick-4/"
   },
   {
     "id": "US-P3-GA-PICK-3-EVENING",
@@ -296,7 +320,8 @@
     "playTypes": [
       "straight",
       "box"
-    ]
+    ],
+    "lotteryUsaUrl": "https://www.lotteryusa.com/georgia/cash-3-evening/"
   },
   {
     "id": "US-P3-GA-PICK-3-MIDDAY",
@@ -308,7 +333,8 @@
     "playTypes": [
       "straight",
       "box"
-    ]
+    ],
+    "lotteryUsaUrl": "https://www.lotteryusa.com/georgia/midday-3/"
   },
   {
     "id": "US-P3-GA-PICK-3-NIGHT",
@@ -320,7 +346,8 @@
     "playTypes": [
       "straight",
       "box"
-    ]
+    ],
+    "lotteryUsaUrl": "https://www.lotteryusa.com/georgia/cash-3-evening/"
   },
   {
     "id": "US-P4-GA-CASH-4-EVENING",
@@ -332,7 +359,8 @@
     "playTypes": [
       "straight",
       "box"
-    ]
+    ],
+    "lotteryUsaUrl": "https://www.lotteryusa.com/georgia/cash-4-evening/"
   },
   {
     "id": "US-P4-GA-CASH-4-MIDDAY",
@@ -344,7 +372,8 @@
     "playTypes": [
       "straight",
       "box"
-    ]
+    ],
+    "lotteryUsaUrl": "https://www.lotteryusa.com/georgia/midday-4/"
   },
   {
     "id": "US-P4-GA-CASH-4-NIGHT",
@@ -356,7 +385,8 @@
     "playTypes": [
       "straight",
       "box"
-    ]
+    ],
+    "lotteryUsaUrl": "https://www.lotteryusa.com/georgia/cash-4-evening/"
   },
   {
     "id": "US-P3-ID-PICK-3-DAY",
@@ -368,7 +398,8 @@
     "playTypes": [
       "straight",
       "box"
-    ]
+    ],
+    "lotteryUsaUrl": "https://www.lotteryusa.com/idaho/midday-pick-3/"
   },
   {
     "id": "US-P3-ID-PICK-3-NIGHT",
@@ -380,7 +411,8 @@
     "playTypes": [
       "straight",
       "box"
-    ]
+    ],
+    "lotteryUsaUrl": "https://www.lotteryusa.com/idaho/pick-3/"
   },
   {
     "id": "US-P4-ID-PICK-4-EVENING",
@@ -392,7 +424,8 @@
     "playTypes": [
       "straight",
       "box"
-    ]
+    ],
+    "lotteryUsaUrl": "https://www.lotteryusa.com/idaho/pick-4/"
   },
   {
     "id": "US-P4-ID-PICK-4-MIDDAY",
@@ -404,7 +437,8 @@
     "playTypes": [
       "straight",
       "box"
-    ]
+    ],
+    "lotteryUsaUrl": "https://www.lotteryusa.com/idaho/pick-4-day/"
   },
   {
     "id": "US-P3-IL-PICK-3-EVENING",
@@ -416,7 +450,8 @@
     "playTypes": [
       "straight",
       "box"
-    ]
+    ],
+    "lotteryUsaUrl": "https://www.lotteryusa.com/illinois/daily-3/"
   },
   {
     "id": "US-P3-IL-PICK-3-MIDDAY",
@@ -428,7 +463,8 @@
     "playTypes": [
       "straight",
       "box"
-    ]
+    ],
+    "lotteryUsaUrl": "https://www.lotteryusa.com/illinois/midday-3/"
   },
   {
     "state": "Illinois",
@@ -441,7 +477,8 @@
     "playTypes": [
       "straight",
       "box"
-    ]
+    ],
+    "lotteryUsaUrl": "https://www.lotteryusa.com/illinois/daily-4/"
   },
   {
     "id": "US-P4-IL-PICK-4-MORNING",
@@ -453,7 +490,8 @@
     "playTypes": [
       "straight",
       "box"
-    ]
+    ],
+    "lotteryUsaUrl": "https://www.lotteryusa.com/illinois/midday-4/"
   },
   {
     "id": "US-P3-IN-DAILY-3-EVENING",
@@ -465,7 +503,8 @@
     "playTypes": [
       "straight",
       "box"
-    ]
+    ],
+    "lotteryUsaUrl": "https://www.lotteryusa.com/indiana/daily-3/"
   },
   {
     "id": "US-P3-IN-DAILY-3-MIDDAY",
@@ -477,7 +516,8 @@
     "playTypes": [
       "straight",
       "box"
-    ]
+    ],
+    "lotteryUsaUrl": "https://www.lotteryusa.com/indiana/midday-3/"
   },
   {
     "state": "Indiana",
@@ -490,7 +530,8 @@
     "playTypes": [
       "straight",
       "box"
-    ]
+    ],
+    "lotteryUsaUrl": "https://www.lotteryusa.com/indiana/daily-4/"
   },
   {
     "id": "US-P4-IN-DAILY-4-MIDDAY",
@@ -502,7 +543,8 @@
     "playTypes": [
       "straight",
       "box"
-    ]
+    ],
+    "lotteryUsaUrl": "https://www.lotteryusa.com/indiana/midday-4/"
   },
   {
     "id": "US-P3-IA-PICK-3-EVENING",
@@ -514,7 +556,8 @@
     "playTypes": [
       "straight",
       "box"
-    ]
+    ],
+    "lotteryUsaUrl": "https://www.lotteryusa.com/iowa/pick-3/"
   },
   {
     "id": "US-P3-IA-PICK-3-MIDDAY",
@@ -526,7 +569,8 @@
     "playTypes": [
       "straight",
       "box"
-    ]
+    ],
+    "lotteryUsaUrl": "https://www.lotteryusa.com/iowa/midday-3/"
   },
   {
     "id": "US-P4-IA-PICK-4-EVENING",
@@ -538,7 +582,8 @@
     "playTypes": [
       "straight",
       "box"
-    ]
+    ],
+    "lotteryUsaUrl": "https://www.lotteryusa.com/iowa/pick-4/"
   },
   {
     "id": "US-P4-IA-PICK-4-MIDDAY",
@@ -550,7 +595,8 @@
     "playTypes": [
       "straight",
       "box"
-    ]
+    ],
+    "lotteryUsaUrl": "https://www.lotteryusa.com/iowa/midday-4/"
   },
   {
     "id": "US-P3-KS-PICK-3-EVENING",
@@ -562,7 +608,8 @@
     "playTypes": [
       "straight",
       "box"
-    ]
+    ],
+    "lotteryUsaUrl": "https://www.lotteryusa.com/kansas/pick-3/"
   },
   {
     "id": "US-P3-KS-PICK-3-MIDDAY",
@@ -574,7 +621,8 @@
     "playTypes": [
       "straight",
       "box"
-    ]
+    ],
+    "lotteryUsaUrl": "https://www.lotteryusa.com/kansas/midday-pick-3/"
   },
   {
     "id": "US-P3-KY-PICK-3-EVENING",
@@ -586,7 +634,8 @@
     "playTypes": [
       "straight",
       "box"
-    ]
+    ],
+    "lotteryUsaUrl": "https://www.lotteryusa.com/kentucky/pick-3/"
   },
   {
     "id": "US-P3-KY-PICK-3-MIDDAY",
@@ -598,7 +647,8 @@
     "playTypes": [
       "straight",
       "box"
-    ]
+    ],
+    "lotteryUsaUrl": "https://www.lotteryusa.com/kentucky/midday-pick-3/"
   },
   {
     "id": "US-P4-KY-PICK-4-EVENING",
@@ -610,7 +660,8 @@
     "playTypes": [
       "straight",
       "box"
-    ]
+    ],
+    "lotteryUsaUrl": "https://www.lotteryusa.com/kentucky/pick-4/"
   },
   {
     "id": "US-P4-KY-PICK-4-MIDDAY",
@@ -622,7 +673,8 @@
     "playTypes": [
       "straight",
       "box"
-    ]
+    ],
+    "lotteryUsaUrl": "https://www.lotteryusa.com/kentucky/midday-pick-4/"
   },
   {
     "id": "US-P3-LA-PICK-3-DAY",
@@ -634,7 +686,8 @@
     "playTypes": [
       "straight",
       "box"
-    ]
+    ],
+    "lotteryUsaUrl": "https://www.lotteryusa.com/louisiana/pick-3/"
   },
   {
     "id": "US-P4-LA-PICK-4-DAY",
@@ -646,7 +699,8 @@
     "playTypes": [
       "straight",
       "box"
-    ]
+    ],
+    "lotteryUsaUrl": "https://www.lotteryusa.com/louisiana/pick-4/"
   },
   {
     "id": "US-P3-ME-PICK-3-DAY",
@@ -658,7 +712,8 @@
     "playTypes": [
       "straight",
       "box"
-    ]
+    ],
+    "lotteryUsaUrl": "https://www.lotteryusa.com/maine/midday-3/"
   },
   {
     "id": "US-P3-ME-PICK-3-EVENING",
@@ -670,7 +725,8 @@
     "playTypes": [
       "straight",
       "box"
-    ]
+    ],
+    "lotteryUsaUrl": "https://www.lotteryusa.com/maine/pick-3/"
   },
   {
     "id": "US-P4-ME-PICK-4-EVENING",
@@ -682,7 +738,8 @@
     "playTypes": [
       "straight",
       "box"
-    ]
+    ],
+    "lotteryUsaUrl": "https://www.lotteryusa.com/maine/pick-4/"
   },
   {
     "id": "US-P4-ME-PICK-4-MIDDAY",
@@ -694,7 +751,8 @@
     "playTypes": [
       "straight",
       "box"
-    ]
+    ],
+    "lotteryUsaUrl": "https://www.lotteryusa.com/maine/midday-4/"
   },
   {
     "id": "US-P3-MD-PICK-3-EVENING",
@@ -706,7 +764,8 @@
     "playTypes": [
       "straight",
       "box"
-    ]
+    ],
+    "lotteryUsaUrl": "https://www.lotteryusa.com/maryland/pick-3/"
   },
   {
     "id": "US-P3-MD-PICK-3-MIDDAY",
@@ -718,7 +777,8 @@
     "playTypes": [
       "straight",
       "box"
-    ]
+    ],
+    "lotteryUsaUrl": "https://www.lotteryusa.com/maryland/midday-pick-3/"
   },
   {
     "id": "US-P4-MD-PICK-4-EVENING",
@@ -730,7 +790,8 @@
     "playTypes": [
       "straight",
       "box"
-    ]
+    ],
+    "lotteryUsaUrl": "https://www.lotteryusa.com/maryland/pick-4/"
   },
   {
     "id": "US-P4-MD-PICK-4-MIDDAY",
@@ -742,7 +803,8 @@
     "playTypes": [
       "straight",
       "box"
-    ]
+    ],
+    "lotteryUsaUrl": "https://www.lotteryusa.com/maryland/midday-pick-4/"
   },
   {
     "id": "US-P4-MA-PICK-4-EVENING",
@@ -754,7 +816,8 @@
     "playTypes": [
       "straight",
       "box"
-    ]
+    ],
+    "lotteryUsaUrl": "https://www.lotteryusa.com/massachusetts/numbers/"
   },
   {
     "id": "US-P4-MA-PICK-4-MIDDAY",
@@ -766,7 +829,8 @@
     "playTypes": [
       "straight",
       "box"
-    ]
+    ],
+    "lotteryUsaUrl": "https://www.lotteryusa.com/massachusetts/midday-numbers/"
   },
   {
     "id": "US-P3-MI-DAILY-3-EVENING",
@@ -778,7 +842,8 @@
     "playTypes": [
       "straight",
       "box"
-    ]
+    ],
+    "lotteryUsaUrl": "https://www.lotteryusa.com/michigan/daily-3/"
   },
   {
     "id": "US-P3-MI-DAILY-3-MIDDAY",
@@ -790,7 +855,8 @@
     "playTypes": [
       "straight",
       "box"
-    ]
+    ],
+    "lotteryUsaUrl": "https://www.lotteryusa.com/michigan/midday-3/"
   },
   {
     "id": "US-P4-MI-DAILY-4-EVENING",
@@ -802,7 +868,8 @@
     "playTypes": [
       "straight",
       "box"
-    ]
+    ],
+    "lotteryUsaUrl": "https://www.lotteryusa.com/michigan/daily-4/"
   },
   {
     "id": "US-P4-MI-DAILY-4-MIDDAY",
@@ -814,7 +881,8 @@
     "playTypes": [
       "straight",
       "box"
-    ]
+    ],
+    "lotteryUsaUrl": "https://www.lotteryusa.com/michigan/midday-4/"
   },
   {
     "id": "US-P3-MN-PICK-3-DAY",
@@ -826,7 +894,8 @@
     "playTypes": [
       "straight",
       "box"
-    ]
+    ],
+    "lotteryUsaUrl": "https://www.lotteryusa.com/minnesota/pick-3/"
   },
   {
     "id": "US-P3-MS-CASH-3-EVENING",
@@ -838,7 +907,8 @@
     "playTypes": [
       "straight",
       "box"
-    ]
+    ],
+    "lotteryUsaUrl": "https://www.lotteryusa.com/mississippi/cash-3/"
   },
   {
     "id": "US-P3-MS-CASH-3-MIDDAY",
@@ -850,7 +920,8 @@
     "playTypes": [
       "straight",
       "box"
-    ]
+    ],
+    "lotteryUsaUrl": "https://www.lotteryusa.com/mississippi/cash-3-midday/"
   },
   {
     "state": "Mississippi",
@@ -863,7 +934,8 @@
     "playTypes": [
       "straight",
       "box"
-    ]
+    ],
+    "lotteryUsaUrl": "https://www.lotteryusa.com/mississippi/cash-4/"
   },
   {
     "id": "US-P4-MS-CASH-4-MIDDAY",
@@ -875,7 +947,8 @@
     "playTypes": [
       "straight",
       "box"
-    ]
+    ],
+    "lotteryUsaUrl": "https://www.lotteryusa.com/mississippi/cash-4-midday/"
   },
   {
     "id": "US-P3-MO-PICK-3-EVENING",
@@ -887,7 +960,8 @@
     "playTypes": [
       "straight",
       "box"
-    ]
+    ],
+    "lotteryUsaUrl": "https://www.lotteryusa.com/missouri/pick-3/"
   },
   {
     "id": "US-P3-MO-PICK-3-MIDDAY",
@@ -899,7 +973,8 @@
     "playTypes": [
       "straight",
       "box"
-    ]
+    ],
+    "lotteryUsaUrl": "https://www.lotteryusa.com/missouri/midday-pick-3/"
   },
   {
     "id": "US-P4-MO-PICK-4-DAY",
@@ -911,7 +986,8 @@
     "playTypes": [
       "straight",
       "box"
-    ]
+    ],
+    "lotteryUsaUrl": "https://www.lotteryusa.com/missouri/midday-pick-4/"
   },
   {
     "state": "Missouri",
@@ -924,7 +1000,8 @@
     "playTypes": [
       "straight",
       "box"
-    ]
+    ],
+    "lotteryUsaUrl": "https://www.lotteryusa.com/missouri/pick-4/"
   },
   {
     "state": "Nebraska",
@@ -937,7 +1014,8 @@
     "playTypes": [
       "straight",
       "box"
-    ]
+    ],
+    "lotteryUsaUrl": "https://www.lotteryusa.com/nebraska/pick-3/"
   },
   {
     "state": "Nebraska",
@@ -950,7 +1028,8 @@
     "playTypes": [
       "straight",
       "box"
-    ]
+    ],
+    "lotteryUsaUrl": "https://www.lotteryusa.com/nebraska/pick-4/"
   },
   {
     "id": "US-P4-NH-PICK-4-EVENING",
@@ -962,7 +1041,8 @@
     "playTypes": [
       "straight",
       "box"
-    ]
+    ],
+    "lotteryUsaUrl": "https://www.lotteryusa.com/new-hampshire/pick-4/"
   },
   {
     "id": "US-P4-NH-PICK-4-MIDDAY",
@@ -974,7 +1054,8 @@
     "playTypes": [
       "straight",
       "box"
-    ]
+    ],
+    "lotteryUsaUrl": "https://www.lotteryusa.com/new-hampshire/midday-4/"
   },
   {
     "id": "US-P3-NJ-PICK-3-EVENING",
@@ -986,7 +1067,8 @@
     "playTypes": [
       "straight",
       "box"
-    ]
+    ],
+    "lotteryUsaUrl": "https://www.lotteryusa.com/new-jersey/pick-3/"
   },
   {
     "state": "New Jersey",
@@ -999,7 +1081,8 @@
     "playTypes": [
       "straight",
       "box"
-    ]
+    ],
+    "lotteryUsaUrl": "https://www.lotteryusa.com/new-jersey/pick-3/"
   },
   {
     "id": "US-P3-NJ-PICK-3-MIDDAY",
@@ -1011,7 +1094,8 @@
     "playTypes": [
       "straight",
       "box"
-    ]
+    ],
+    "lotteryUsaUrl": "https://www.lotteryusa.com/new-jersey/midday-pick-3/"
   },
   {
     "state": "New Jersey",
@@ -1020,11 +1104,12 @@
     "gameName": "Pick 3",
     "draw": "Midday Draw",
     "id": "19",
-    "name": "NJ Pick 3 Día",
+    "name": "NJ Pick 3 D\u00eda",
     "playTypes": [
       "straight",
       "box"
-    ]
+    ],
+    "lotteryUsaUrl": "https://www.lotteryusa.com/new-jersey/midday-pick-3/"
   },
   {
     "state": "New Jersey",
@@ -1037,7 +1122,8 @@
     "playTypes": [
       "straight",
       "box"
-    ]
+    ],
+    "lotteryUsaUrl": "https://www.lotteryusa.com/new-jersey/pick-4/"
   },
   {
     "id": "US-P4-NJ-PICK-4-EVENING",
@@ -1049,7 +1135,8 @@
     "playTypes": [
       "straight",
       "box"
-    ]
+    ],
+    "lotteryUsaUrl": "https://www.lotteryusa.com/new-jersey/pick-4/"
   },
   {
     "state": "New Jersey",
@@ -1058,11 +1145,12 @@
     "gameName": "Pick 4",
     "draw": "Midday Draw",
     "id": "21",
-    "name": "NJ Pick 4 Día",
+    "name": "NJ Pick 4 D\u00eda",
     "playTypes": [
       "straight",
       "box"
-    ]
+    ],
+    "lotteryUsaUrl": "https://www.lotteryusa.com/new-jersey/midday-pick-4/"
   },
   {
     "id": "US-P4-NJ-PICK-4-MIDDAY",
@@ -1074,7 +1162,8 @@
     "playTypes": [
       "straight",
       "box"
-    ]
+    ],
+    "lotteryUsaUrl": "https://www.lotteryusa.com/new-jersey/midday-pick-4/"
   },
   {
     "id": "US-P3-NM-PICK-3-PLUS-DAY",
@@ -1086,7 +1175,8 @@
     "playTypes": [
       "straight",
       "box"
-    ]
+    ],
+    "lotteryUsaUrl": "https://www.lotteryusa.com/new-mexico/midday-pick-3-plus/"
   },
   {
     "id": "US-P3-NM-PICK-3-PLUS-EVENING",
@@ -1098,7 +1188,8 @@
     "playTypes": [
       "straight",
       "box"
-    ]
+    ],
+    "lotteryUsaUrl": "https://www.lotteryusa.com/new-mexico/pick-3-plus/"
   },
   {
     "id": "US-P4-NM-PICK-4-PLUS-EVENING",
@@ -1110,7 +1201,8 @@
     "playTypes": [
       "straight",
       "box"
-    ]
+    ],
+    "lotteryUsaUrl": "https://www.lotteryusa.com/new-mexico/pick-4-plus/"
   },
   {
     "id": "US-P4-NM-PICK-4-PLUS-MIDDAY",
@@ -1122,7 +1214,8 @@
     "playTypes": [
       "straight",
       "box"
-    ]
+    ],
+    "lotteryUsaUrl": "https://www.lotteryusa.com/new-mexico/midday-pick-4-plus/"
   },
   {
     "id": "US-P3-NY-NUMBERS-EVENING",
@@ -1134,7 +1227,8 @@
     "playTypes": [
       "straight",
       "box"
-    ]
+    ],
+    "lotteryUsaUrl": "https://www.lotteryusa.com/new-york/numbers/"
   },
   {
     "id": "US-P3-NY-PICK-3-EVENING",
@@ -1146,7 +1240,8 @@
     "playTypes": [
       "straight",
       "box"
-    ]
+    ],
+    "lotteryUsaUrl": "https://www.lotteryusa.com/new-york/numbers/"
   },
   {
     "id": "US-P3-NY-NUMBERS-MIDDAY",
@@ -1158,7 +1253,8 @@
     "playTypes": [
       "straight",
       "box"
-    ]
+    ],
+    "lotteryUsaUrl": "https://www.lotteryusa.com/new-york/midday-numbers/"
   },
   {
     "id": "US-P3-NY-PICK-3-MIDDAY",
@@ -1170,7 +1266,8 @@
     "playTypes": [
       "straight",
       "box"
-    ]
+    ],
+    "lotteryUsaUrl": "https://www.lotteryusa.com/new-york/midday-numbers/"
   },
   {
     "id": "US-P4-NY-WIN-4-EVENING",
@@ -1182,7 +1279,8 @@
     "playTypes": [
       "straight",
       "box"
-    ]
+    ],
+    "lotteryUsaUrl": "https://www.lotteryusa.com/new-york/win-4/"
   },
   {
     "id": "US-P4-NY-WIN-4-MIDDAY",
@@ -1194,7 +1292,8 @@
     "playTypes": [
       "straight",
       "box"
-    ]
+    ],
+    "lotteryUsaUrl": "https://www.lotteryusa.com/new-york/midday-win-4/"
   },
   {
     "id": "US-P3-NC-PICK-3-DAY",
@@ -1206,7 +1305,8 @@
     "playTypes": [
       "straight",
       "box"
-    ]
+    ],
+    "lotteryUsaUrl": "https://www.lotteryusa.com/north-carolina/midday-3/"
   },
   {
     "id": "US-P3-NC-PICK-3-EVENING",
@@ -1218,7 +1318,8 @@
     "playTypes": [
       "straight",
       "box"
-    ]
+    ],
+    "lotteryUsaUrl": "https://www.lotteryusa.com/north-carolina/midday-3/"
   },
   {
     "state": "North Carolina",
@@ -1231,7 +1332,8 @@
     "playTypes": [
       "straight",
       "box"
-    ]
+    ],
+    "lotteryUsaUrl": "https://www.lotteryusa.com/north-carolina/midday-pick-4/"
   },
   {
     "id": "US-P4-NC-PICK-4-MIDDAY",
@@ -1243,7 +1345,8 @@
     "playTypes": [
       "straight",
       "box"
-    ]
+    ],
+    "lotteryUsaUrl": "https://www.lotteryusa.com/north-carolina/midday-pick-4/"
   },
   {
     "id": "US-P3-OH-PICK-3-EVENING",
@@ -1255,7 +1358,8 @@
     "playTypes": [
       "straight",
       "box"
-    ]
+    ],
+    "lotteryUsaUrl": "https://www.lotteryusa.com/ohio/pick-3/"
   },
   {
     "id": "US-P3-OH-PICK-3-MIDDAY",
@@ -1267,7 +1371,8 @@
     "playTypes": [
       "straight",
       "box"
-    ]
+    ],
+    "lotteryUsaUrl": "https://www.lotteryusa.com/ohio/midday-pick-3/"
   },
   {
     "id": "US-P4-OH-PICK-4-EVENING",
@@ -1279,7 +1384,8 @@
     "playTypes": [
       "straight",
       "box"
-    ]
+    ],
+    "lotteryUsaUrl": "https://www.lotteryusa.com/ohio/pick-4/"
   },
   {
     "id": "US-P4-OH-PICK-4-MIDDAY",
@@ -1291,7 +1397,8 @@
     "playTypes": [
       "straight",
       "box"
-    ]
+    ],
+    "lotteryUsaUrl": "https://www.lotteryusa.com/ohio/midday-pick-4/"
   },
   {
     "state": "Oklahoma",
@@ -1304,7 +1411,8 @@
     "playTypes": [
       "straight",
       "box"
-    ]
+    ],
+    "lotteryUsaUrl": "https://www.lotteryusa.com/oklahoma/pick-3/"
   },
   {
     "id": "US-P4-OR-PICK-4-DAY",
@@ -1316,7 +1424,8 @@
     "playTypes": [
       "straight",
       "box"
-    ]
+    ],
+    "lotteryUsaUrl": "https://www.lotteryusa.com/oregon/pick-4-1pm/"
   },
   {
     "id": "US-P4-OR-PICK-4-EVENING",
@@ -1328,7 +1437,8 @@
     "playTypes": [
       "straight",
       "box"
-    ]
+    ],
+    "lotteryUsaUrl": "https://www.lotteryusa.com/oregon/pick-4-7pm/"
   },
   {
     "id": "US-P4-OR-PICK-4-MORNING",
@@ -1340,7 +1450,8 @@
     "playTypes": [
       "straight",
       "box"
-    ]
+    ],
+    "lotteryUsaUrl": "https://www.lotteryusa.com/oregon/pick-4-1pm/"
   },
   {
     "id": "US-P4-OR-PICK-4-NIGHT",
@@ -1352,7 +1463,8 @@
     "playTypes": [
       "straight",
       "box"
-    ]
+    ],
+    "lotteryUsaUrl": "https://www.lotteryusa.com/oregon/pick-4-10pm/"
   },
   {
     "id": "US-P3-PA-PICK-3-DAY",
@@ -1364,7 +1476,8 @@
     "playTypes": [
       "straight",
       "box"
-    ]
+    ],
+    "lotteryUsaUrl": "https://www.lotteryusa.com/pennsylvania/midday-pick-3/"
   },
   {
     "id": "US-P3-PA-PICK-3-EVENING",
@@ -1376,7 +1489,8 @@
     "playTypes": [
       "straight",
       "box"
-    ]
+    ],
+    "lotteryUsaUrl": "https://www.lotteryusa.com/pennsylvania/pick-3/"
   },
   {
     "id": "US-P4-PA-PICK-4-DAY",
@@ -1388,7 +1502,8 @@
     "playTypes": [
       "straight",
       "box"
-    ]
+    ],
+    "lotteryUsaUrl": "https://www.lotteryusa.com/pennsylvania/midday-pick-4/"
   },
   {
     "id": "US-P4-PA-PICK-4-EVENING",
@@ -1400,7 +1515,8 @@
     "playTypes": [
       "straight",
       "box"
-    ]
+    ],
+    "lotteryUsaUrl": "https://www.lotteryusa.com/pennsylvania/pick-4/"
   },
   {
     "id": "US-P4-RI-PICK-4-EVENING",
@@ -1412,7 +1528,8 @@
     "playTypes": [
       "straight",
       "box"
-    ]
+    ],
+    "lotteryUsaUrl": "https://www.lotteryusa.com/rhode-island/numbers/"
   },
   {
     "id": "US-P4-RI-PICK-4-MIDDAY",
@@ -1424,7 +1541,8 @@
     "playTypes": [
       "straight",
       "box"
-    ]
+    ],
+    "lotteryUsaUrl": "https://www.lotteryusa.com/rhode-island/midday-numbers/"
   },
   {
     "id": "US-P3-SC-PICK-3-EVENING",
@@ -1436,7 +1554,8 @@
     "playTypes": [
       "straight",
       "box"
-    ]
+    ],
+    "lotteryUsaUrl": "https://www.lotteryusa.com/south-carolina/pick-3/"
   },
   {
     "id": "US-P3-SC-PICK-3-MIDDAY",
@@ -1448,7 +1567,8 @@
     "playTypes": [
       "straight",
       "box"
-    ]
+    ],
+    "lotteryUsaUrl": "https://www.lotteryusa.com/south-carolina/midday-pick-3/"
   },
   {
     "id": "US-P4-SC-PICK-4-EVENING",
@@ -1460,7 +1580,8 @@
     "playTypes": [
       "straight",
       "box"
-    ]
+    ],
+    "lotteryUsaUrl": "https://www.lotteryusa.com/south-carolina/pick-4/"
   },
   {
     "id": "US-P4-SC-PICK-4-MIDDAY",
@@ -1472,7 +1593,8 @@
     "playTypes": [
       "straight",
       "box"
-    ]
+    ],
+    "lotteryUsaUrl": "https://www.lotteryusa.com/south-carolina/midday-pick-4/"
   },
   {
     "id": "US-P3-TN-CASH-3-06-28-PM",
@@ -1484,7 +1606,8 @@
     "playTypes": [
       "straight",
       "box"
-    ]
+    ],
+    "lotteryUsaUrl": "https://www.lotteryusa.com/tennessee/cash-3/"
   },
   {
     "id": "US-P3-TN-CASH-3-MIDDAY",
@@ -1496,7 +1619,8 @@
     "playTypes": [
       "straight",
       "box"
-    ]
+    ],
+    "lotteryUsaUrl": "https://www.lotteryusa.com/tennessee/morning-cash-3/"
   },
   {
     "id": "US-P3-TN-CASH-3-MORNING",
@@ -1508,7 +1632,8 @@
     "playTypes": [
       "straight",
       "box"
-    ]
+    ],
+    "lotteryUsaUrl": "https://www.lotteryusa.com/tennessee/morning-cash-3/"
   },
   {
     "id": "US-P4-TN-CASH-4-DAY",
@@ -1520,7 +1645,8 @@
     "playTypes": [
       "straight",
       "box"
-    ]
+    ],
+    "lotteryUsaUrl": "https://www.lotteryusa.com/tennessee/morning-cash-4/"
   },
   {
     "id": "US-P4-TN-CASH-4-EVENING",
@@ -1532,7 +1658,8 @@
     "playTypes": [
       "straight",
       "box"
-    ]
+    ],
+    "lotteryUsaUrl": "https://www.lotteryusa.com/tennessee/cash-4/"
   },
   {
     "id": "US-P4-TN-CASH-4-MORNING",
@@ -1544,7 +1671,8 @@
     "playTypes": [
       "straight",
       "box"
-    ]
+    ],
+    "lotteryUsaUrl": "https://www.lotteryusa.com/tennessee/morning-cash-4/"
   },
   {
     "id": "US-P3-TX-PICK-3-DAY",
@@ -1556,7 +1684,8 @@
     "playTypes": [
       "straight",
       "box"
-    ]
+    ],
+    "lotteryUsaUrl": "https://www.lotteryusa.com/texas/morning-pick-3/"
   },
   {
     "id": "US-P3-TX-PICK-3-EVENING",
@@ -1568,7 +1697,8 @@
     "playTypes": [
       "straight",
       "box"
-    ]
+    ],
+    "lotteryUsaUrl": "https://www.lotteryusa.com/texas/evening-pick-3/"
   },
   {
     "id": "US-P3-TX-PICK-3-MORNING",
@@ -1580,7 +1710,8 @@
     "playTypes": [
       "straight",
       "box"
-    ]
+    ],
+    "lotteryUsaUrl": "https://www.lotteryusa.com/texas/morning-pick-3/"
   },
   {
     "id": "US-P3-TX-PICK-3-NIGHT",
@@ -1592,7 +1723,8 @@
     "playTypes": [
       "straight",
       "box"
-    ]
+    ],
+    "lotteryUsaUrl": "https://www.lotteryusa.com/texas/evening-pick-3/"
   },
   {
     "id": "US-P4-TX-DAILY-4-DAY",
@@ -1604,7 +1736,8 @@
     "playTypes": [
       "straight",
       "box"
-    ]
+    ],
+    "lotteryUsaUrl": "https://www.lotteryusa.com/texas/morning-pick-4/"
   },
   {
     "id": "US-P4-TX-DAILY-4-EVENING",
@@ -1616,7 +1749,8 @@
     "playTypes": [
       "straight",
       "box"
-    ]
+    ],
+    "lotteryUsaUrl": "https://www.lotteryusa.com/texas/evening-pick-4/"
   },
   {
     "id": "US-P4-TX-DAILY-4-MORNING",
@@ -1628,7 +1762,8 @@
     "playTypes": [
       "straight",
       "box"
-    ]
+    ],
+    "lotteryUsaUrl": "https://www.lotteryusa.com/texas/morning-pick-4/"
   },
   {
     "state": "Texas",
@@ -1641,7 +1776,8 @@
     "playTypes": [
       "straight",
       "box"
-    ]
+    ],
+    "lotteryUsaUrl": "https://www.lotteryusa.com/texas/evening-pick-4/"
   },
   {
     "id": "US-P3-VT-PICK-3-DAY",
@@ -1653,7 +1789,8 @@
     "playTypes": [
       "straight",
       "box"
-    ]
+    ],
+    "lotteryUsaUrl": "https://www.lotteryusa.com/vermont/midday-3/"
   },
   {
     "id": "US-P3-VT-PICK-3-EVENING",
@@ -1665,7 +1802,8 @@
     "playTypes": [
       "straight",
       "box"
-    ]
+    ],
+    "lotteryUsaUrl": "https://www.lotteryusa.com/vermont/pick-3/"
   },
   {
     "id": "US-P4-VT-PICK-4-EVENING",
@@ -1677,7 +1815,8 @@
     "playTypes": [
       "straight",
       "box"
-    ]
+    ],
+    "lotteryUsaUrl": "https://www.lotteryusa.com/vermont/pick-4/"
   },
   {
     "id": "US-P4-VT-PICK-4-MIDDAY",
@@ -1689,7 +1828,8 @@
     "playTypes": [
       "straight",
       "box"
-    ]
+    ],
+    "lotteryUsaUrl": "https://www.lotteryusa.com/vermont/midday-4/"
   },
   {
     "id": "US-P3-VA-PICK-3-DAY",
@@ -1701,7 +1841,8 @@
     "playTypes": [
       "straight",
       "box"
-    ]
+    ],
+    "lotteryUsaUrl": "https://www.lotteryusa.com/virginia/midday-3/"
   },
   {
     "id": "US-P3-VA-PICK-3-NIGHT",
@@ -1713,7 +1854,8 @@
     "playTypes": [
       "straight",
       "box"
-    ]
+    ],
+    "lotteryUsaUrl": "https://www.lotteryusa.com/virginia/pick-3/"
   },
   {
     "state": "Virginia",
@@ -1726,7 +1868,8 @@
     "playTypes": [
       "straight",
       "box"
-    ]
+    ],
+    "lotteryUsaUrl": "https://www.lotteryusa.com/virginia/pick-4/"
   },
   {
     "id": "US-P4-VA-PICK-4-MIDDAY",
@@ -1738,7 +1881,8 @@
     "playTypes": [
       "straight",
       "box"
-    ]
+    ],
+    "lotteryUsaUrl": "https://www.lotteryusa.com/virginia/midday-4/"
   },
   {
     "id": "US-P3-WA-PICK-3-DAY",
@@ -1750,7 +1894,8 @@
     "playTypes": [
       "straight",
       "box"
-    ]
+    ],
+    "lotteryUsaUrl": "https://www.lotteryusa.com/washington/daily/"
   },
   {
     "id": "US-P4-WA-MATCH-4-EVENING",
@@ -1761,7 +1906,8 @@
     "draw": "Evening Draw",
     "playTypes": [
       "straight"
-    ]
+    ],
+    "lotteryUsaUrl": "https://www.lotteryusa.com/washington/match-4/"
   },
   {
     "id": "US-P3-DC-3-EVENING",
@@ -1773,7 +1919,8 @@
     "playTypes": [
       "straight",
       "box"
-    ]
+    ],
+    "lotteryUsaUrl": "https://www.lotteryusa.com/district-of-columbia/dc-lucky-numbers/"
   },
   {
     "id": "US-P3-DC-3-MIDDAY",
@@ -1785,7 +1932,8 @@
     "playTypes": [
       "straight",
       "box"
-    ]
+    ],
+    "lotteryUsaUrl": "https://www.lotteryusa.com/district-of-columbia/dc-lucky-midday/"
   },
   {
     "id": "US-P3-DC-3-NIGHT",
@@ -1797,7 +1945,8 @@
     "playTypes": [
       "straight",
       "box"
-    ]
+    ],
+    "lotteryUsaUrl": "https://www.lotteryusa.com/district-of-columbia/dc-lucky-numbers/"
   },
   {
     "id": "US-P4-DC-MATCH-4-EVENING",
@@ -1809,7 +1958,8 @@
     "playTypes": [
       "straight",
       "box"
-    ]
+    ],
+    "lotteryUsaUrl": "https://www.lotteryusa.com/district-of-columbia/dc-4/"
   },
   {
     "id": "US-P4-DC-MATCH-4-MIDDAY",
@@ -1821,7 +1971,8 @@
     "playTypes": [
       "straight",
       "box"
-    ]
+    ],
+    "lotteryUsaUrl": "https://www.lotteryusa.com/district-of-columbia/dc-4-midday/"
   },
   {
     "id": "US-P4-DC-MATCH-4-NIGHT",
@@ -1833,7 +1984,8 @@
     "playTypes": [
       "straight",
       "box"
-    ]
+    ],
+    "lotteryUsaUrl": "https://www.lotteryusa.com/district-of-columbia/dc-4/"
   },
   {
     "id": "US-P3-WV-DAILY-3-09-00-PM",
@@ -1845,7 +1997,8 @@
     "playTypes": [
       "straight",
       "box"
-    ]
+    ],
+    "lotteryUsaUrl": "https://www.lotteryusa.com/west-virginia/daily-3/"
   },
   {
     "id": "US-P4-WV-DAILY-4-DAY",
@@ -1857,7 +2010,8 @@
     "playTypes": [
       "straight",
       "box"
-    ]
+    ],
+    "lotteryUsaUrl": "https://www.lotteryusa.com/west-virginia/daily-4/"
   },
   {
     "id": "US-P3-WI-PICK-3-1-30PM",
@@ -1869,7 +2023,8 @@
     "playTypes": [
       "straight",
       "box"
-    ]
+    ],
+    "lotteryUsaUrl": "https://www.lotteryusa.com/wisconsin/daily-pick-3/"
   },
   {
     "id": "US-P3-WI-PICK-3-9-00PM",
@@ -1881,7 +2036,8 @@
     "playTypes": [
       "straight",
       "box"
-    ]
+    ],
+    "lotteryUsaUrl": "https://www.lotteryusa.com/wisconsin/daily-pick-3-evening/"
   },
   {
     "id": "US-P4-WI-PICK-4-EVENING",
@@ -1893,7 +2049,8 @@
     "playTypes": [
       "straight",
       "box"
-    ]
+    ],
+    "lotteryUsaUrl": "https://www.lotteryusa.com/wisconsin/daily-pick-4-evening/"
   },
   {
     "id": "US-P4-WI-PICK-4-MIDDAY",
@@ -1905,6 +2062,7 @@
     "playTypes": [
       "straight",
       "box"
-    ]
+    ],
+    "lotteryUsaUrl": "https://www.lotteryusa.com/wisconsin/daily-pick-4/"
   }
 ]
