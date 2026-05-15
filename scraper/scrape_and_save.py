@@ -9,7 +9,18 @@ import httpx
 from bs4 import BeautifulSoup
 
 SUPABASE_URL = os.environ.get("SUPABASE_URL", "https://unhoulkujbtsypccpirc.supabase.co")
-SUPABASE_KEY = os.environ.get("SUPABASE_KEY", "")
+
+
+def get_supabase_key_from_env(source_env=None):
+    env = source_env or os.environ
+    for name in ("SUPABASE_KEY", "SUPABASE_SERVICE_ROLE_KEY", "SUPABASE_SERVICE_KEY", "SUPABASE_ANON_KEY"):
+        value = str(env.get(name) or "").strip()
+        if value:
+            return value
+    return ""
+
+
+SUPABASE_KEY = get_supabase_key_from_env()
 TRACKED_REMOTE_RESULT_IDS = {"23", "24", "27", "28"}
 US_PICK_NORMAL_CATALOG_STATE_CODES = set()
 US_PICK_URLS = {

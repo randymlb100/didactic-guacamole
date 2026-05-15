@@ -7,6 +7,20 @@ import scrape_and_save as scraper
 
 
 class ScraperContractsTest(unittest.TestCase):
+    def test_supabase_key_accepts_service_role_env_alias(self):
+        env = {"SUPABASE_SERVICE_ROLE_KEY": "service-role-key"}
+
+        self.assertEqual("service-role-key", scraper.get_supabase_key_from_env(env))
+
+    def test_supabase_key_prefers_explicit_key_over_aliases(self):
+        env = {
+            "SUPABASE_KEY": "explicit-key",
+            "SUPABASE_SERVICE_ROLE_KEY": "service-role-key",
+            "SUPABASE_ANON_KEY": "anon-key",
+        }
+
+        self.assertEqual("explicit-key", scraper.get_supabase_key_from_env(env))
+
     def test_authoritative_nj_ids_cover_pick_and_new_jersey(self):
         self.assertEqual({"19", "20", "21", "22", "25", "26"}, scraper.AUTHORITATIVE_NJ_IDS)
 
