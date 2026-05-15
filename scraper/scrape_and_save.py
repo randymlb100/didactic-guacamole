@@ -2257,6 +2257,23 @@ def merge_us_pick_results_by_id(existing, results, observed_at=None):
 def prune_stale_us_pick_rows_when_catalog_is_complete(existing, incoming, catalog_rows=None):
     incoming_ids = {str(row.get("id") or "").strip() for row in (incoming or [])}
     incoming_ids.discard("")
+    alias_replacements = {
+        "US-P3-WV-DAILY-3-DAY": {
+            "US-P3-WV-DAILY-3-01-30-PM",
+            "US-P3-WV-DAILY-3-09-00-PM",
+        },
+    }
+    stale_alias_ids = {
+        stale_id
+        for canonical_id, stale_ids in alias_replacements.items()
+        if canonical_id in incoming_ids
+        for stale_id in stale_ids
+    }
+    if stale_alias_ids:
+        existing = [
+            row for row in (existing or [])
+            if str(row.get("id") or "").strip() not in stale_alias_ids
+        ]
     catalog_ids = {
         str(row.get("id") or "").strip()
         for row in (catalog_rows if catalog_rows is not None else static_us_pick_catalog_rows())

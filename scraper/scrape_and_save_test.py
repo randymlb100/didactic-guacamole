@@ -68,6 +68,20 @@ class ScraperContractsTest(unittest.TestCase):
 
         self.assertEqual(existing, pruned)
 
+    def test_prune_stale_us_pick_rows_removes_known_west_virginia_aliases(self):
+        existing = [
+            {"id": "US-P3-WV-DAILY-3-09-00-PM", "number": "6-3-3"},
+            {"id": "US-P3-WV-DAILY-3-01-30-PM", "number": "6-3-3"},
+            {"id": "US-P4-WV-DAILY-4-DAY", "number": "0-7-9-2"},
+        ]
+        incoming = [
+            {"id": "US-P3-WV-DAILY-3-DAY", "number": "6-3-3"},
+        ]
+
+        pruned = scraper.prune_stale_us_pick_rows_when_catalog_is_complete(existing, incoming)
+
+        self.assertEqual(["US-P4-WV-DAILY-4-DAY"], [row["id"] for row in pruned])
+
     def test_authoritative_nj_ids_cover_pick_and_new_jersey(self):
         self.assertEqual({"19", "20", "21", "22", "25", "26"}, scraper.AUTHORITATIVE_NJ_IDS)
 
