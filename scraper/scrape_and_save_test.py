@@ -21,6 +21,20 @@ class ScraperContractsTest(unittest.TestCase):
 
         self.assertEqual("explicit-key", scraper.get_supabase_key_from_env(env))
 
+    def test_supabase_rest_headers_do_not_send_sb_secret_as_bearer_jwt(self):
+        headers = scraper.supabase_rest_headers("sb_secret_abc123")
+
+        self.assertEqual("sb_secret_abc123", headers["apikey"])
+        self.assertNotIn("Authorization", headers)
+
+    def test_supabase_rest_headers_keep_legacy_jwt_authorization(self):
+        legacy_key = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.test"
+
+        headers = scraper.supabase_rest_headers(legacy_key)
+
+        self.assertEqual(legacy_key, headers["apikey"])
+        self.assertEqual(f"Bearer {legacy_key}", headers["Authorization"])
+
     def test_authoritative_nj_ids_cover_pick_and_new_jersey(self):
         self.assertEqual({"19", "20", "21", "22", "25", "26"}, scraper.AUTHORITATIVE_NJ_IDS)
 

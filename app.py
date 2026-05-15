@@ -22,6 +22,7 @@ from scraper.scrape_and_save import (
     save_us_picks_to_supabase,
     scrape,
     scrape_us_picks,
+    supabase_rest_headers,
 )
 
 
@@ -148,10 +149,7 @@ def fetch_manual_overrides_from_supabase(date_key):
     params = urllib.parse.urlencode({"key": f"eq.{manual_results_override_cache_key(date_key)}", "select": "value"})
     req = urllib.request.Request(
         f"{SUPABASE_URL}/rest/v1/lotterynet_kv?{params}",
-        headers={
-            "apikey": SUPABASE_KEY,
-            "Authorization": f"Bearer {SUPABASE_KEY}",
-        },
+        headers=supabase_rest_headers(),
     )
 
 
@@ -161,11 +159,9 @@ def fetch_users_state_from_supabase():
     params = urllib.parse.urlencode({"scope": "eq.global", "select": "payload"})
     req = urllib.request.Request(
         f"{SUPABASE_URL}/rest/v1/lotterynet_users_state?{params}",
-        headers={
-            "apikey": SUPABASE_KEY,
-            "Authorization": f"Bearer {SUPABASE_KEY}",
+        headers=supabase_rest_headers(extra={
             "Accept": "application/json",
-        },
+        }),
     )
     resp = urllib.request.urlopen(req, timeout=8)
     rows = json.loads(resp.read().decode("utf-8"))
@@ -186,12 +182,10 @@ def save_users_state_to_supabase(payload):
     req = urllib.request.Request(
         f"{SUPABASE_URL}/rest/v1/lotterynet_users_state?on_conflict=scope",
         data=body,
-        headers={
+        headers=supabase_rest_headers(extra={
             "Content-Type": "application/json",
-            "apikey": SUPABASE_KEY,
-            "Authorization": f"Bearer {SUPABASE_KEY}",
             "Prefer": "resolution=merge-duplicates",
-        },
+        }),
         method="POST",
     )
     urllib.request.urlopen(req, timeout=15)
@@ -229,12 +223,10 @@ def save_manual_overrides_to_supabase(date_key, rows):
     req = urllib.request.Request(
         f"{SUPABASE_URL}/rest/v1/lotterynet_kv",
         data=payload,
-        headers={
+        headers=supabase_rest_headers(extra={
             "Content-Type": "application/json",
-            "apikey": SUPABASE_KEY,
-            "Authorization": f"Bearer {SUPABASE_KEY}",
             "Prefer": "resolution=merge-duplicates",
-        },
+        }),
         method="POST",
     )
     urllib.request.urlopen(req, timeout=15)
@@ -623,10 +615,7 @@ def fetch_pick_rows_from_supabase(date_key):
     params = urllib.parse.urlencode({"key": f"eq.{pick_results_cache_key(date_key)}", "select": "value"})
     req = urllib.request.Request(
         f"{SUPABASE_URL}/rest/v1/lotterynet_kv?{params}",
-        headers={
-            "apikey": SUPABASE_KEY,
-            "Authorization": f"Bearer {SUPABASE_KEY}",
-        },
+        headers=supabase_rest_headers(),
     )
     try:
         resp = urllib.request.urlopen(req, timeout=5)

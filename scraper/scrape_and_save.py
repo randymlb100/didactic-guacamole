@@ -20,6 +20,17 @@ def get_supabase_key_from_env(source_env=None):
     return ""
 
 
+def supabase_rest_headers(api_key=None, extra=None):
+    key = str(api_key if api_key is not None else SUPABASE_KEY).strip()
+    headers = dict(extra or {})
+    if not key:
+        return headers
+    headers["apikey"] = key
+    if not key.startswith("sb_"):
+        headers["Authorization"] = f"Bearer {key}"
+    return headers
+
+
 SUPABASE_KEY = get_supabase_key_from_env()
 TRACKED_REMOTE_RESULT_IDS = {"23", "24", "27", "28"}
 US_PICK_NORMAL_CATALOG_STATE_CODES = set()
@@ -2173,10 +2184,7 @@ async def _async_fetch_kv_list(key, client=None):
     if not SUPABASE_KEY.strip():
         return []
     try:
-        resp = await c.get(url, headers={
-            "apikey": SUPABASE_KEY,
-            "Authorization": f"Bearer {SUPABASE_KEY}",
-        })
+        resp = await c.get(url, headers=supabase_rest_headers())
         resp.raise_for_status()
         rows = resp.json()
         if rows and rows[0].get("value"):
@@ -2255,12 +2263,14 @@ async def _async_save_us_picks_to_supabase(date_str, rows, client=None):
     payload = json.dumps({"key": key, "value": value, "upd": utc_now_iso()}).encode("utf-8")
     url = f"{SUPABASE_URL}/rest/v1/lotterynet_kv"
     try:
-        resp = await c.post(url, content=payload, headers={
-            "Content-Type": "application/json",
-            "apikey": SUPABASE_KEY,
-            "Authorization": f"Bearer {SUPABASE_KEY}",
-            "Prefer": "resolution=merge-duplicates",
-        })
+        resp = await c.post(
+            url,
+            content=payload,
+            headers=supabase_rest_headers(extra={
+                "Content-Type": "application/json",
+                "Prefer": "resolution=merge-duplicates",
+            }),
+        )
         logger.info("Saved %d US pick results for %s -> HTTP %s", len(merged_rows), date_str, resp.status_code)
         resp.raise_for_status()
     except httpx.HTTPStatusError as e:
@@ -2328,12 +2338,14 @@ async def _async_save_native_results_table(date_str, merged_list, client=None):
     }], ensure_ascii=False).encode("utf-8")
     url = f"{SUPABASE_URL}/rest/v1/lotterynet_results_by_day"
     c = client or get_http_client()
-    resp = await c.post(url, content=payload, headers={
-        "Content-Type": "application/json",
-        "apikey": SUPABASE_KEY,
-        "Authorization": f"Bearer {SUPABASE_KEY}",
-        "Prefer": "resolution=merge-duplicates",
-    })
+    resp = await c.post(
+        url,
+        content=payload,
+        headers=supabase_rest_headers(extra={
+            "Content-Type": "application/json",
+            "Prefer": "resolution=merge-duplicates",
+        }),
+    )
     resp.raise_for_status()
     logger.info("Saved native results table for %s -> HTTP %s", date_str, resp.status_code)
 
@@ -2353,12 +2365,14 @@ async def _async_save_to_supabase(date_str, results, prune_missing_ids=None, cli
     url = f"{SUPABASE_URL}/rest/v1/lotterynet_kv"
 
     try:
-        resp = await c.post(url, content=payload, headers={
-            "Content-Type": "application/json",
-            "apikey": SUPABASE_KEY,
-            "Authorization": f"Bearer {SUPABASE_KEY}",
-            "Prefer": "resolution=merge-duplicates",
-        })
+        resp = await c.post(
+            url,
+            content=payload,
+            headers=supabase_rest_headers(extra={
+                "Content-Type": "application/json",
+                "Prefer": "resolution=merge-duplicates",
+            }),
+        )
         resp.raise_for_status()
         logger.info("Saved %d results (merged) for %s -> HTTP %s", len(merged_list), date_str, resp.status_code)
         try:
