@@ -35,6 +35,39 @@ class ScraperContractsTest(unittest.TestCase):
         self.assertEqual(legacy_key, headers["apikey"])
         self.assertEqual(f"Bearer {legacy_key}", headers["Authorization"])
 
+    def test_prune_stale_us_pick_rows_when_catalog_is_complete(self):
+        existing = [
+            {"id": "US-P3-FL-PICK-3-MIDDAY", "number": "1-2-3"},
+            {"id": "US-P3-OLD-STALE-ID", "number": "9-9-9"},
+        ]
+        incoming = [
+            {"id": "US-P3-FL-PICK-3-MIDDAY", "number": "4-5-6"},
+            {"id": "US-P3-FL-PICK-3-EVENING", "number": "7-8-9"},
+        ]
+        catalog = [
+            {"id": "US-P3-FL-PICK-3-MIDDAY"},
+            {"id": "US-P3-FL-PICK-3-EVENING"},
+        ]
+
+        pruned = scraper.prune_stale_us_pick_rows_when_catalog_is_complete(existing, incoming, catalog_rows=catalog)
+
+        self.assertEqual(["US-P3-FL-PICK-3-MIDDAY"], [row["id"] for row in pruned])
+
+    def test_prune_stale_us_pick_rows_keeps_existing_when_catalog_is_partial(self):
+        existing = [
+            {"id": "US-P3-FL-PICK-3-MIDDAY", "number": "1-2-3"},
+            {"id": "US-P3-OLD-STALE-ID", "number": "9-9-9"},
+        ]
+        incoming = [{"id": "US-P3-FL-PICK-3-MIDDAY", "number": "4-5-6"}]
+        catalog = [
+            {"id": "US-P3-FL-PICK-3-MIDDAY"},
+            {"id": "US-P3-FL-PICK-3-EVENING"},
+        ]
+
+        pruned = scraper.prune_stale_us_pick_rows_when_catalog_is_complete(existing, incoming, catalog_rows=catalog)
+
+        self.assertEqual(existing, pruned)
+
     def test_authoritative_nj_ids_cover_pick_and_new_jersey(self):
         self.assertEqual({"19", "20", "21", "22", "25", "26"}, scraper.AUTHORITATIVE_NJ_IDS)
 

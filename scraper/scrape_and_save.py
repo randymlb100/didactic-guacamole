@@ -2254,10 +2254,27 @@ def merge_us_pick_results_by_id(existing, results, observed_at=None):
     return sorted(merged.values(), key=lambda row: row.get("id", ""))
 
 
+def prune_stale_us_pick_rows_when_catalog_is_complete(existing, incoming, catalog_rows=None):
+    incoming_ids = {str(row.get("id") or "").strip() for row in (incoming or [])}
+    incoming_ids.discard("")
+    catalog_ids = {
+        str(row.get("id") or "").strip()
+        for row in (catalog_rows if catalog_rows is not None else static_us_pick_catalog_rows())
+    }
+    catalog_ids.discard("")
+    if catalog_ids and catalog_ids.issubset(incoming_ids):
+        return [
+            row for row in (existing or [])
+            if str(row.get("id") or "").strip() in incoming_ids
+        ]
+    return existing
+
+
 async def _async_save_us_picks_to_supabase(date_str, rows, client=None):
     key = pick_results_cache_key(date_str)
     c = client or get_http_client()
     existing = await _async_fetch_existing_pick_results_from_supabase(date_str, client=c)
+    existing = prune_stale_us_pick_rows_when_catalog_is_complete(existing, rows)
     merged_rows = merge_us_pick_results_by_id(existing, rows, observed_at=utc_now_iso())
     value = json.dumps(merged_rows, ensure_ascii=False)
     payload = json.dumps({"key": key, "value": value, "upd": utc_now_iso()}).encode("utf-8")
