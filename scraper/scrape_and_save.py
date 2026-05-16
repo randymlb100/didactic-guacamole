@@ -50,6 +50,9 @@ US_PICK_SOURCE_NAMES = {
     "pick3": "pick-3.com",
     "pick4": "pick-4.com",
 }
+US_PICK_LEGACY_RESULT_ID_ALIASES = {
+    "US-P3-AZ-PICK-3-DAY": "US-P3-AZ-PICK-3-DRAW",
+}
 US_PICK_SINGLE_DRAW_LABELS = {
     ("pick3", "LA"): "Day Draw",
     ("pick3", "MN"): "Day Draw",
@@ -1260,8 +1263,15 @@ async def _async_scrape_us_picks(date_str=None, games=None, existing_rows=None, 
             for row in overview_rows:
                 state_key = (row.get("stateCode"), row.get("gameName"))
                 if state_key not in history_keys:
-                    row["date"] = target_date
-                    game_rows_by_id[row["id"]] = row
+                    overview_date = str(row.get("date", "")).strip()
+                    if overview_date == target_date:
+                        game_rows_by_id[row["id"]] = row
+                    else:
+                        pending = dict(row)
+                        pending["date"] = target_date
+                        pending["number"] = ""
+                        pending["status"] = "pending"
+                        game_rows_by_id[pending["id"]] = pending
 
             # Extra states not listed in overview but with working subdomains
             extra_states = {"pick3": {"NH"}, "pick4": set()}
@@ -2234,6 +2244,13 @@ def merge_us_pick_results_by_id(existing, results, observed_at=None):
         key = str(r.get("id", "")).strip()
         if not key:
             continue
+        stale_aliases = [
+            alias_id
+            for alias_id, canonical_id in US_PICK_LEGACY_RESULT_ID_ALIASES.items()
+            if canonical_id == key
+        ]
+        for alias_id in stale_aliases:
+            merged.pop(alias_id, None)
         previous = merged.get(key) or {}
         candidate = dict(r)
         if previous and _pick_result_quality(previous) > _pick_result_quality(candidate):
