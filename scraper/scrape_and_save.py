@@ -399,6 +399,10 @@ def get_dr_date_str_for_offset(days_ago):
     return (get_dr_now() - datetime.timedelta(days=int(days_ago))).strftime("%d-%m-%Y")
 
 
+def default_scrape_dates():
+    return [get_dr_date_str_for_offset(offset) for offset in range(3)]
+
+
 def parse_miloteria_date(raw):
     text = str(raw or "").strip()
     if not text:
@@ -2458,7 +2462,7 @@ async def _async_main():
     if len(sys.argv) > 1:
         target_dates = sys.argv[1:]
     else:
-        target_dates = [get_dr_date_str()]
+        target_dates = default_scrape_dates()
 
     logger.info("Syncing dates: %s (UTC now=%s)", ", ".join(target_dates), datetime.datetime.utcnow().strftime("%H:%M"))
     client = get_http_client()

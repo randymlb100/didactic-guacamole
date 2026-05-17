@@ -21,6 +21,12 @@ class ScraperContractsTest(unittest.TestCase):
 
         self.assertEqual("explicit-key", scraper.get_supabase_key_from_env(env))
 
+    def test_default_scrape_dates_include_recent_backfill_days(self):
+        with patch.object(scraper, "get_dr_date_str_for_offset", side_effect=["17-05-2026", "16-05-2026", "15-05-2026"]):
+            dates = scraper.default_scrape_dates()
+
+        self.assertEqual(["17-05-2026", "16-05-2026", "15-05-2026"], dates)
+
     def test_supabase_rest_headers_do_not_send_sb_secret_as_bearer_jwt(self):
         headers = scraper.supabase_rest_headers("sb_secret_abc123")
 
