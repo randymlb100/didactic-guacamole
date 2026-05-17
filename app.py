@@ -521,10 +521,7 @@ def set_pick_scrape_cache(date_key, rows):
 
 def refresh_pick_cache_async(date_key):
     try:
-        existing_rows = fetch_pick_rows_from_supabase(date_key)
-        if not existing_rows:
-            existing_rows = fetch_recent_pick_catalog_from_supabase(date_key)
-        rows = unique_sorted_pick_results(scrape_us_picks(date_key, existing_rows=existing_rows))
+        rows = unique_sorted_pick_results(scrape_us_picks(date_key))
         set_pick_scrape_cache(date_key, rows)
         if rows and SUPABASE_KEY.strip():
             save_us_picks_to_supabase(date_key, rows)
@@ -563,7 +560,7 @@ def pick_scrape_cached(date_key, existing_rows=None):
     cached = _pick_scrape_cache.get(date_key)
     if cached and now - cached["stored_at"] < SCRAPE_CACHE_TTL_SECONDS:
         return cached["rows"]
-    rows = scrape_us_picks(date_key, existing_rows=existing_rows)
+    rows = scrape_us_picks(date_key)
     _pick_scrape_cache[date_key] = {"stored_at": time.time(), "rows": rows}
     return rows
 
@@ -576,7 +573,7 @@ def pick_scrape_cached_for_game(date_key, game_filter, existing_rows=None):
     cached = _pick_scrape_cache.get(cache_key)
     if cached and now - cached["stored_at"] < SCRAPE_CACHE_TTL_SECONDS:
         return cached["rows"]
-    rows = scrape_us_picks(date_key, games=(game_filter,), existing_rows=existing_rows)
+    rows = scrape_us_picks(date_key, games=(game_filter,))
     _pick_scrape_cache[cache_key] = {"stored_at": time.time(), "rows": rows}
     return rows
 
@@ -958,10 +955,7 @@ def run_system_scraper():
                 "results": lottery_rows,
             }
         if mode in ("pick", "both"):
-            existing_pick_rows = fetch_pick_rows_from_supabase(date_key)
-            if not existing_pick_rows:
-                existing_pick_rows = fetch_recent_pick_catalog_from_supabase(date_key)
-            pick_rows = unique_sorted_pick_results(pick_scrape_cached(date_key, existing_rows=existing_pick_rows))
+            pick_rows = unique_sorted_pick_results(pick_scrape_cached(date_key))
             save_us_picks_to_supabase(date_key, pick_rows)
             payload["picks"] = {
                 "count": len(pick_rows),
@@ -995,10 +989,7 @@ def run_pick_scraper():
             "results": unique_sorted_pick_results(snapshot_rows),
         }
         return json_utf8(payload, status=202 if payload["refreshing"] else 200)
-    existing_pick_rows = fetch_pick_rows_from_supabase(date_key)
-    if not existing_pick_rows:
-        existing_pick_rows = fetch_recent_pick_catalog_from_supabase(date_key)
-    pick_rows = unique_sorted_pick_results(pick_scrape_cached(date_key, existing_rows=existing_pick_rows))
+    pick_rows = unique_sorted_pick_results(pick_scrape_cached(date_key))
     if not SUPABASE_KEY.strip():
         return json_utf8({
             "date": date_key,

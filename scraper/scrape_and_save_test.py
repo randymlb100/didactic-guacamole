@@ -68,6 +68,30 @@ class ScraperContractsTest(unittest.TestCase):
 
         self.assertEqual(existing, pruned)
 
+    def test_prune_stale_us_pick_rows_removes_absent_pending_rows(self):
+        existing = [
+            {"id": "US-P3-FL-PICK-3-MIDDAY", "number": "1-2-3"},
+            {"id": "US-P3-OLD-PENDING-ID", "number": "", "status": "pending"},
+        ]
+        incoming = [{"id": "US-P3-FL-PICK-3-MIDDAY", "number": "4-5-6"}]
+
+        pruned = scraper.prune_stale_us_pick_rows_when_catalog_is_complete(existing, incoming, catalog_rows=[])
+
+        self.assertEqual(["US-P3-FL-PICK-3-MIDDAY"], [row["id"] for row in pruned])
+
+    def test_merge_us_pick_results_marks_numbered_pending_rows_published(self):
+        existing = [{
+            "id": "US-P4-AR-CASH-4-DAY",
+            "date": "14-05-2026",
+            "game": "pick4",
+            "number": "1-4-3-2",
+            "status": "pending",
+        }]
+
+        merged = scraper.merge_us_pick_results_by_id(existing, [], observed_at="2026-05-14T02:00:00Z")
+
+        self.assertEqual("published", merged[0]["status"])
+
     def test_prune_stale_us_pick_rows_removes_known_west_virginia_aliases(self):
         existing = [
             {"id": "US-P3-WV-DAILY-3-09-00-PM", "number": "6-3-3"},

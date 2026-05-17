@@ -258,7 +258,7 @@ class RenderApiContractsTest(unittest.TestCase):
         save_lottery.assert_not_called()
         save_picks.assert_called_once()
 
-    def test_run_system_scraper_pick_mode_passes_existing_pick_cache(self):
+    def test_run_system_scraper_pick_mode_ignores_existing_pick_cache_as_catalog(self):
         existing_pick_rows = [{
             "id": "US-P3-FL-PICK-3-EVENING",
             "date": "02-05-2026",
@@ -278,7 +278,7 @@ class RenderApiContractsTest(unittest.TestCase):
             response = self.client.post("/run-system-scraper?date=02-05-2026&mode=pick")
 
         self.assertEqual(200, response.status_code)
-        pick_scrape.assert_called_once_with("02-05-2026", existing_rows=existing_pick_rows)
+        pick_scrape.assert_called_once_with("02-05-2026")
         lottery_scrape.assert_not_called()
         save_lottery.assert_not_called()
         save_picks.assert_called_once()
@@ -347,10 +347,10 @@ class RenderApiContractsTest(unittest.TestCase):
         self.assertEqual(200, response.status_code)
         self.assertTrue(payload["saved"])
         self.assertEqual(1, payload["count"])
-        pick_scrape.assert_called_once_with("02-05-2026", existing_rows=existing_pick_rows)
+        pick_scrape.assert_called_once_with("02-05-2026")
         save_picks.assert_called_once()
 
-    def test_run_pick_scraper_sync_uses_recent_catalog_when_current_cache_empty(self):
+    def test_run_pick_scraper_sync_uses_static_catalog_when_current_cache_empty(self):
         recent_pick_rows = [{
             "id": "US-P4-FL-PICK-4-EVENING",
             "state": "Florida",
@@ -377,7 +377,7 @@ class RenderApiContractsTest(unittest.TestCase):
             response = self.client.get("/run-pick-scraper?date=02-05-2026&sync=1")
 
         self.assertEqual(200, response.status_code)
-        pick_scrape.assert_called_once_with("02-05-2026", existing_rows=recent_pick_rows)
+        pick_scrape.assert_called_once_with("02-05-2026")
 
     def test_system_results_live_pick_refresh_saves_updated_cache(self):
         existing_pick_rows = [{
@@ -399,7 +399,7 @@ class RenderApiContractsTest(unittest.TestCase):
         self.assertEqual(200, response.status_code)
         self.assertEqual("live-scraper", payload["source"])
         self.assertEqual(1, payload["picks"]["count"])
-        pick_scrape.assert_called_once_with("02-05-2026", existing_rows=existing_pick_rows)
+        pick_scrape.assert_called_once_with("02-05-2026")
         save_picks.assert_called_once()
         self.assertEqual("02-05-2026", save_picks.call_args.args[0])
         self.assertEqual("US-P3-FL-PICK-3-EVENING", save_picks.call_args.args[1][0]["id"])
@@ -455,7 +455,7 @@ class RenderApiContractsTest(unittest.TestCase):
         self.assertEqual(200, response.status_code)
         self.assertEqual(1, payload["picks"]["count"])
         background_refresh.assert_not_called()
-        pick_scrape.assert_called_once_with("02-05-2026", existing_rows=[])
+        pick_scrape.assert_called_once_with("02-05-2026")
         save_picks.assert_called_once()
 
     def test_today_live_pick_reuses_fresh_memory_snapshot_without_supabase_lookup(self):

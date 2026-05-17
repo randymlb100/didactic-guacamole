@@ -2237,6 +2237,13 @@ def _pick_result_quality(row):
     return (0, 0)
 
 
+def normalize_us_pick_status(row):
+    normalized = dict(row)
+    if str(normalized.get("number", "")).strip() and str(normalized.get("status", "")).strip().lower() == "pending":
+        normalized["status"] = "published"
+    return normalized
+
+
 def merge_us_pick_results_by_id(existing, results, observed_at=None):
     observed = observed_at or utc_now_iso()
     merged = {str(r["id"]): dict(r) for r in existing if str(r.get("id", "")).strip()}
@@ -2268,7 +2275,7 @@ def merge_us_pick_results_by_id(existing, results, observed_at=None):
             candidate["firstSeenAt"] = observed
         candidate["lastSeenAt"] = observed
         merged[key] = candidate
-    return sorted(merged.values(), key=lambda row: row.get("id", ""))
+    return sorted((normalize_us_pick_status(row) for row in merged.values()), key=lambda row: row.get("id", ""))
 
 
 def prune_stale_us_pick_rows_when_catalog_is_complete(existing, incoming, catalog_rows=None):
@@ -2291,6 +2298,13 @@ def prune_stale_us_pick_rows_when_catalog_is_complete(existing, incoming, catalo
             row for row in (existing or [])
             if str(row.get("id") or "").strip() not in stale_alias_ids
         ]
+    existing = [
+        row for row in (existing or [])
+        if (
+            str(row.get("id") or "").strip() in incoming_ids
+            or _pick_result_quality(row) > (1, 0)
+        )
+    ]
     catalog_ids = {
         str(row.get("id") or "").strip()
         for row in (catalog_rows if catalog_rows is not None else static_us_pick_catalog_rows())
