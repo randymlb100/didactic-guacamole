@@ -601,17 +601,28 @@ def normalize_request_date_key(raw_date=None):
     return converted or get_dr_date_str()
 
 
+def cache_rows_list(value):
+    if isinstance(value, list):
+        return value
+    if isinstance(value, dict):
+        nested = value.get("results") or value.get("rows") or []
+        if isinstance(nested, list):
+            return nested
+    return []
+
+
 def lottery_rows_for_request_date(date_key):
     if should_use_live_scrape():
-        cached_lottery_rows, _ = split_lottery_and_pick_rows(fetch_existing_from_supabase(date_key))
+        cached_lottery_rows, _ = split_lottery_and_pick_rows(cache_rows_list(fetch_existing_from_supabase(date_key)))
         cached_lottery_rows = unique_sorted_results(cached_lottery_rows)
-        if cached_lottery_rows and date_key == get_dr_date_str():
+        if cached_lottery_rows:
             set_live_served_from_flag("lottery", "supabase-snapshot")
-            schedule_background_lottery_refresh(date_key)
+            if date_key == get_dr_date_str():
+                schedule_background_lottery_refresh(date_key)
             return cached_lottery_rows
         set_live_served_from_flag("lottery", "inline-scrape")
         return unique_sorted_results(scrape_cached(date_key))
-    lottery_rows, _ = split_lottery_and_pick_rows(fetch_existing_from_supabase(date_key))
+    lottery_rows, _ = split_lottery_and_pick_rows(cache_rows_list(fetch_existing_from_supabase(date_key)))
     return apply_manual_overrides(date_key, unique_sorted_results(lottery_rows), include_pick=False)
 
 
@@ -632,6 +643,10 @@ def fetch_pick_rows_from_supabase(date_key):
                 value = json.loads(value)
             if isinstance(value, list):
                 return value
+            if isinstance(value, dict):
+                nested = value.get("results") or value.get("rows") or []
+                if isinstance(nested, list):
+                    return nested
     except Exception as error:
         print(f"Warning: could not fetch pick cache: {error}")
     return []
@@ -664,10 +679,11 @@ def pick_rows_for_request_date(date_key, game_filter=""):
                 set_live_served_from_flag("pick", "section-cache")
                 return unique_sorted_pick_results(fresh_cached_rows)
         existing_rows = fetch_pick_rows_from_supabase(date_key)
-        if existing_rows and date_key == get_dr_date_str():
+        if existing_rows:
             set_pick_scrape_cache(date_key, existing_rows)
             set_live_served_from_flag("pick", "supabase-snapshot")
-            schedule_background_pick_refresh(date_key)
+            if date_key == get_dr_date_str():
+                schedule_background_pick_refresh(date_key)
             rows = existing_rows
         else:
             set_live_served_from_flag("pick", "inline-scrape")
@@ -685,9 +701,9 @@ def pick_rows_for_request_date(date_key, game_filter=""):
                 rows = fresh_cached_rows
             elif date_key == get_dr_date_str():
                 schedule_background_pick_refresh(date_key)
-                _, rows = split_lottery_and_pick_rows(fetch_existing_from_supabase(date_key))
+                _, rows = split_lottery_and_pick_rows(cache_rows_list(fetch_existing_from_supabase(date_key)))
             else:
-                _, rows = split_lottery_and_pick_rows(fetch_existing_from_supabase(date_key))
+                _, rows = split_lottery_and_pick_rows(cache_rows_list(fetch_existing_from_supabase(date_key)))
     if game_filter in ("pick3", "pick4"):
         rows = [row for row in rows if row.get("game") == game_filter]
     return apply_manual_overrides(date_key, unique_sorted_pick_results(rows), include_pick=True)
@@ -1104,6 +1120,18 @@ def config_check():
         "supabaseUrlConfigured": bool(SUPABASE_URL.strip()),
         "supabaseKeyConfigured": bool(SUPABASE_KEY.strip()),
         "supabaseKeyPrefix": SUPABASE_KEY[:14] if SUPABASE_KEY else "",
+    })
+
+
+@app.route("/build-info", methods=["GET"])
+def build_info():
+    return jsonify({
+        "ok": True,
+        "service": "lotterynet-results",
+        "gitCommit": os.environ.get("RENDER_GIT_COMMIT") or os.environ.get("COMMIT_SHA") or "",
+        "gitBranch": os.environ.get("RENDER_GIT_BRANCH") or "",
+        "deployedAt": os.environ.get("RENDER_DEPLOY_CREATED_AT") or "",
+        "cachePolicy": "supabase-snapshot-first",
     })
 
 
