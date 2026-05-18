@@ -729,16 +729,8 @@ def unique_sorted_pick_results(rows):
 
 
 def live_results_sections_for_date(date_key, include_lottery=True, include_pick=True, game_filter=""):
-    tasks = {}
-    with ThreadPoolExecutor(max_workers=2) as executor:
-        if include_lottery:
-            lottery_fetch = copy_current_request_context(lambda: lottery_rows_for_request_date(date_key))
-            tasks["lottery"] = executor.submit(lottery_fetch)
-        if include_pick:
-            pick_fetch = copy_current_request_context(lambda: pick_rows_for_request_date(date_key, game_filter))
-            tasks["pick"] = executor.submit(pick_fetch)
-    lottery_rows = tasks["lottery"].result() if "lottery" in tasks else []
-    pick_rows = tasks["pick"].result() if "pick" in tasks else []
+    lottery_rows = lottery_rows_for_request_date(date_key) if include_lottery else []
+    pick_rows = pick_rows_for_request_date(date_key, game_filter) if include_pick else []
     return lottery_rows, pick_rows
 
 
