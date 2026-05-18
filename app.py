@@ -17,6 +17,7 @@ from scraper.scrape_and_save import (
     fetch_existing_from_supabase,
     split_lottery_and_pick_rows,
     get_dr_date_str,
+    iso_date_to_dr_date,
     pick_results_cache_key,
     save_to_supabase,
     save_us_picks_to_supabase,
@@ -592,6 +593,14 @@ def should_use_live_scrape():
     return request.args.get("live") == "1"
 
 
+def normalize_request_date_key(raw_date=None):
+    text = str(raw_date or "").strip()
+    if re.match(r"^\d{2}-\d{2}-\d{4}$", text):
+        return text
+    converted = iso_date_to_dr_date(text)
+    return converted or get_dr_date_str()
+
+
 def lottery_rows_for_request_date(date_key):
     if should_use_live_scrape():
         cached_lottery_rows, _ = split_lottery_and_pick_rows(fetch_existing_from_supabase(date_key))
@@ -718,7 +727,7 @@ def live_results_sections_for_date(date_key, include_lottery=True, include_pick=
 
 
 def results_for_request():
-    date_key = request.args.get("date") or get_dr_date_str()
+    date_key = normalize_request_date_key(request.args.get("date"))
     name_filter = (request.args.get("name") or request.args.get("lottery") or "").strip().lower()
     if should_use_live_scrape():
         lottery_rows, pick_rows = live_results_sections_for_date(date_key)
@@ -732,7 +741,7 @@ def results_for_request():
 
 
 def pick_results_for_request():
-    date_key = request.args.get("date") or get_dr_date_str()
+    date_key = normalize_request_date_key(request.args.get("date"))
     state_filter = (request.args.get("state") or "").strip().lower()
     game_filter = (request.args.get("game") or "").strip().lower().replace("-", "")
     rows = pick_rows_for_request_date(date_key, game_filter)
@@ -786,7 +795,7 @@ def system_results():
     mode = (request.args.get("mode") or "lottery").strip().lower()
     if mode not in ("lottery", "pick", "both"):
         mode = "lottery"
-    date_key = request.args.get("date") or get_dr_date_str()
+    date_key = normalize_request_date_key(request.args.get("date"))
     if should_use_live_scrape() and date_key == get_dr_date_str():
         cached_payload = get_composed_live_system_results_cache(date_key, mode)
         if cached_payload is not None:
@@ -895,7 +904,7 @@ def delete_manual_result_override():
 
 @app.route("/run-scraper", methods=["GET", "POST"])
 def run_scraper():
-    date_key = request.args.get("date") or get_dr_date_str()
+    date_key = normalize_request_date_key(request.args.get("date"))
     lottery_rows = unique_sorted_results(scrape_cached(date_key))
     pick_rows = unique_sorted_pick_results(pick_scrape_cached(date_key))
     rows = unique_sorted_results(lottery_rows + pick_rows)
@@ -931,7 +940,7 @@ def run_system_scraper():
     mode = (request.args.get("mode") or "lottery").strip().lower()
     if mode not in ("lottery", "pick", "both"):
         mode = "lottery"
-    date_key = request.args.get("date") or get_dr_date_str()
+    date_key = normalize_request_date_key(request.args.get("date"))
     if not SUPABASE_KEY.strip():
         return json_utf8({
             "date": date_key,
@@ -970,7 +979,7 @@ def run_system_scraper():
 
 @app.route("/run-pick-scraper", methods=["GET", "POST"])
 def run_pick_scraper():
-    date_key = request.args.get("date") or get_dr_date_str()
+    date_key = normalize_request_date_key(request.args.get("date"))
     sync_requested = request.args.get("sync") == "1" or request_json_body().get("sync") is True
     if not sync_requested:
         started = schedule_background_pick_refresh(date_key, force=True)
@@ -1175,7 +1184,7 @@ LEGACY_ROUTE_FILTERS = {
 @app.route("/loteria-pick3", methods=["GET"])
 @app.route("/loteria-pick4", methods=["GET"])
 def legacy_filtered_route():
-    date_key = request.args.get("date") or get_dr_date_str()
+    date_key = normalize_request_date_key(request.args.get("date"))
     route_filter = LEGACY_ROUTE_FILTERS.get(request.path, "")
     request_filter = request.args.get("name")
     query = (request_filter or route_filter or "").lower()

@@ -2207,6 +2207,10 @@ async def _async_fetch_kv_list(key, client=None):
                 existing = json.loads(existing)
             if isinstance(existing, list):
                 return existing
+            if isinstance(existing, dict):
+                nested = existing.get("results") or existing.get("rows") or []
+                if isinstance(nested, list):
+                    return nested
     except Exception as e:
         logger.warning("Could not fetch existing cache for %s: %s", key, e)
     return []
