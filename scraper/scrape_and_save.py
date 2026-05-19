@@ -1820,6 +1820,79 @@ async def _async_fetch_lotteryusa_pick_fallbacks(date_str=None, ids=None, client
     return [row for row in rows if row is not None]
 
 
+def us_pick_row_needs_refresh(row):
+    number = str((row or {}).get("number", "")).strip()
+    status = str((row or {}).get("status", "")).strip().lower()
+    return not number and status in ("", "pending")
+
+
+async def _async_refresh_missing_us_pick_results(date_str, existing_rows, client=None):
+    target_date = date_str or get_et_date_str()
+    c = client or get_http_client()
+    rows = [dict(row) for row in (existing_rows or []) if isinstance(row, dict)]
+    missing_templates = []
+    pending_ids = set()
+    for row in rows:
+        if not us_pick_row_needs_refresh(row):
+            continue
+        result_id = str(row.get("id") or "").strip()
+        if not result_id:
+            continue
+        canonical_id = US_PICK_LEGACY_RESULT_ID_ALIASES.get(result_id, result_id)
+        template = dict(row)
+        template["id"] = canonical_id
+        missing_templates.append(enrich_us_pick_result_row(template))
+        pending_ids.add(canonical_id)
+
+    if not pending_ids:
+        return unique_us_pick_results(rows)
+
+    refreshed_by_id = {}
+    for refreshed in await _async_fetch_lotteryusa_pick_catalog_rows(target_date, missing_templates, client=c):
+        refreshed_id = str(refreshed.get("id") or "").strip()
+        if refreshed_id and str(refreshed.get("number") or "").strip():
+            refreshed_by_id[refreshed_id] = enrich_us_pick_result_row(refreshed)
+
+    fallback_ids = sorted(pending_ids - set(refreshed_by_id))
+    if fallback_ids:
+        for refreshed in await _async_fetch_lotteryusa_pick_fallbacks(target_date, ids=fallback_ids, client=c):
+            refreshed_id = str(refreshed.get("id") or "").strip()
+            if refreshed_id and str(refreshed.get("number") or "").strip():
+                refreshed_by_id[refreshed_id] = enrich_us_pick_result_row(refreshed)
+
+    if not refreshed_by_id:
+        return unique_us_pick_results(rows)
+
+    replaced_ids = set()
+    merged_rows = []
+    for row in rows:
+        result_id = str(row.get("id") or "").strip()
+        canonical_id = US_PICK_LEGACY_RESULT_ID_ALIASES.get(result_id, result_id)
+        refreshed = refreshed_by_id.get(canonical_id)
+        if refreshed and us_pick_row_needs_refresh(row):
+            candidate = dict(row)
+            candidate.update(refreshed)
+            candidate["id"] = canonical_id
+            candidate["date"] = target_date
+            candidate["source"] = "lotteryusa.com"
+            replaced_ids.add(canonical_id)
+            merged_rows.append(enrich_us_pick_result_row(candidate))
+        else:
+            merged_rows.append(row)
+
+    for refreshed_id, refreshed in refreshed_by_id.items():
+        if refreshed_id not in replaced_ids and refreshed_id not in {
+            str(row.get("id") or "").strip() for row in merged_rows
+        }:
+            merged_rows.append(refreshed)
+
+    return unique_us_pick_results(merged_rows)
+
+
+def refresh_missing_us_pick_results(date_str, existing_rows):
+    return sync_run(_async_refresh_missing_us_pick_results(date_str, existing_rows))
+
+
 def catalog_row_game(row):
     game = normalize_us_pick_game(row.get("game"))
     if game:

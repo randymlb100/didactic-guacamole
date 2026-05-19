@@ -976,6 +976,68 @@ class ScraperContractsTest(unittest.TestCase):
         self.assertEqual(["US-P3-AZ-PICK-3-DRAW"], [row["id"] for row in merged])
         self.assertEqual("3-7-3", merged[0]["number"])
 
+    def test_refresh_missing_us_pick_results_targets_only_pending_rows(self):
+        existing = [
+            {
+                "id": "US-P3-LA-PICK-3-DAY",
+                "date": "18-05-2026",
+                "game": "pick3",
+                "gameName": "Pick 3",
+                "draw": "Day Draw",
+                "number": "",
+                "status": "pending",
+            },
+            {
+                "id": "US-P3-FL-PICK-3-MIDDAY",
+                "date": "18-05-2026",
+                "game": "pick3",
+                "number": "1-2-3",
+                "status": "published",
+            },
+        ]
+        refreshed = [{
+            "id": "US-P3-LA-PICK-3-DAY",
+            "date": "18-05-2026",
+            "number": "2-6-0",
+            "game": "pick3",
+            "gameName": "Pick 3",
+            "draw": "Day Draw",
+        }]
+
+        with patch.object(scraper, "_async_fetch_lotteryusa_pick_catalog_rows", AsyncMock(return_value=refreshed)), \
+                patch.object(scraper, "_async_fetch_lotteryusa_pick_fallbacks", AsyncMock(return_value=[])):
+            rows = scraper.sync_run(scraper._async_refresh_missing_us_pick_results("18-05-2026", existing))
+
+        by_id = {row["id"]: row for row in rows}
+        self.assertEqual("2-6-0", by_id["US-P3-LA-PICK-3-DAY"]["number"])
+        self.assertEqual("1-2-3", by_id["US-P3-FL-PICK-3-MIDDAY"]["number"])
+
+    def test_refresh_missing_us_pick_results_canonicalizes_legacy_arizona_alias(self):
+        existing = [{
+            "id": "US-P3-AZ-PICK-3-DAY",
+            "date": "18-05-2026",
+            "game": "pick3",
+            "gameName": "Pick 3",
+            "draw": "Day Draw",
+            "number": "",
+            "status": "pending",
+        }]
+        refreshed = [{
+            "id": "US-P3-AZ-PICK-3-DRAW",
+            "date": "18-05-2026",
+            "number": "4-7-2",
+            "game": "pick3",
+            "gameName": "Pick 3",
+            "draw": "Draw",
+        }]
+
+        with patch.object(scraper, "_async_fetch_lotteryusa_pick_catalog_rows", AsyncMock(return_value=refreshed)), \
+                patch.object(scraper, "_async_fetch_lotteryusa_pick_fallbacks", AsyncMock(return_value=[])):
+            rows = scraper.sync_run(scraper._async_refresh_missing_us_pick_results("18-05-2026", existing))
+
+        self.assertEqual(["US-P3-AZ-PICK-3-DRAW"], [row["id"] for row in rows])
+        self.assertEqual("4-7-2", rows[0]["number"])
+
     def test_async_scrape_us_picks_does_not_redate_stale_overview_number(self):
         overview_rows = [{
             "id": "US-P3-AZ-PICK-3-DRAW",

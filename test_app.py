@@ -134,6 +134,41 @@ class RenderApiContractsTest(unittest.TestCase):
         self.assertEqual("picks", pick_payload["section"])
         self.assertEqual("US-P3-FL-PICK-3-EVENING", pick_payload["results"][0]["id"])
 
+    def test_live_pick_snapshot_refreshes_pending_rows_before_response(self):
+        stale_rows = [{
+            "id": "US-P3-LA-PICK-3-DAY",
+            "name": "Louisiana Pick 3 Day Draw",
+            "date": "18-05-2026",
+            "game": "pick3",
+            "gameName": "Pick 3",
+            "draw": "Day Draw",
+            "number": "",
+            "status": "pending",
+        }]
+        refreshed_rows = [{
+            "id": "US-P3-LA-PICK-3-DAY",
+            "name": "Louisiana Pick 3 Day Draw",
+            "date": "18-05-2026",
+            "game": "pick3",
+            "gameName": "Pick 3",
+            "draw": "Day Draw",
+            "number": "2-6-0",
+            "source": "lotteryusa.com",
+        }]
+
+        with patch("app.fetch_pick_rows_from_supabase", return_value=stale_rows), \
+                patch("app.refresh_missing_us_pick_results", return_value=refreshed_rows) as refresh_missing, \
+                patch("app.SUPABASE_KEY", "test-key"), \
+                patch("app.save_us_picks_to_supabase") as save_picks:
+            response = self.client.get("/system-results?date=2026-05-18&mode=pick&live=1")
+
+        self.assertEqual(200, response.status_code)
+        payload = response.get_json()
+        rows = payload["picks"]["results"]
+        self.assertEqual("2-6-0", rows[0]["number"])
+        refresh_missing.assert_called_once()
+        save_picks.assert_called_once()
+
     def test_combined_results_endpoint_honors_mode_without_changing_default(self):
         pick_rows = [
             {

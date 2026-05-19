@@ -19,6 +19,7 @@ from scraper.scrape_and_save import (
     get_dr_date_str,
     iso_date_to_dr_date,
     pick_results_cache_key,
+    refresh_missing_us_pick_results,
     save_to_supabase,
     save_us_picks_to_supabase,
     scrape,
@@ -671,6 +672,31 @@ def fetch_recent_pick_catalog_from_supabase(date_key):
     return []
 
 
+def pick_rows_need_targeted_refresh(rows):
+    return any(
+        not str((row or {}).get("number", "")).strip()
+        and str((row or {}).get("status", "")).strip().lower() in ("", "pending")
+        for row in (rows or [])
+        if isinstance(row, dict)
+    )
+
+
+def pick_rows_refresh_improved(before_rows, after_rows):
+    before_missing = sum(
+        1 for row in (before_rows or [])
+        if isinstance(row, dict)
+        and not str(row.get("number", "")).strip()
+        and str(row.get("status", "")).strip().lower() in ("", "pending")
+    )
+    after_missing = sum(
+        1 for row in (after_rows or [])
+        if isinstance(row, dict)
+        and not str(row.get("number", "")).strip()
+        and str(row.get("status", "")).strip().lower() in ("", "pending")
+    )
+    return bool(after_rows) and after_missing < before_missing
+
+
 def pick_rows_for_request_date(date_key, game_filter=""):
     if should_use_live_scrape():
         if date_key == get_dr_date_str():
@@ -680,6 +706,16 @@ def pick_rows_for_request_date(date_key, game_filter=""):
                 return unique_sorted_pick_results(fresh_cached_rows)
         existing_rows = fetch_pick_rows_from_supabase(date_key)
         if existing_rows:
+            if pick_rows_need_targeted_refresh(existing_rows):
+                refreshed_rows = refresh_missing_us_pick_results(date_key, existing_rows)
+                if pick_rows_refresh_improved(existing_rows, refreshed_rows):
+                    existing_rows = unique_sorted_pick_results(refreshed_rows)
+                    set_pick_scrape_cache(date_key, existing_rows)
+                    if SUPABASE_KEY.strip():
+                        try:
+                            save_us_picks_to_supabase(date_key, existing_rows)
+                        except Exception as error:
+                            print(f"Warning: could not save targeted pick refresh: {error}")
             set_pick_scrape_cache(date_key, existing_rows)
             set_live_served_from_flag("pick", "supabase-snapshot")
             if date_key == get_dr_date_str():
