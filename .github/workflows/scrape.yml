@@ -31,19 +31,19 @@ jobs:
       - name: Check Supabase secrets
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          SUPABASE_KEY: ${{ secrets.SUPABASE_PUBLISHABLE_KEY || secrets.SUPABASE_ANON_KEY }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY || secrets.SUPABASE_SERVICE_KEY }}
         run: |
           test -n "$SUPABASE_URL" || (echo "SUPABASE_URL secret is missing" && exit 1)
-          test -n "$SUPABASE_KEY" || (echo "Supabase publishable/anon key secret is missing" && exit 1)
+          test -n "$SUPABASE_KEY" || (echo "Supabase service role key secret is missing" && exit 1)
           case "$SUPABASE_KEY" in
-            sb_secret_*) echo "Use SUPABASE_PUBLISHABLE_KEY or SUPABASE_ANON_KEY, not a Supabase secret key" && exit 1 ;;
+            sb_publishable_*|sb_anon_*) echo "Use SUPABASE_SERVICE_ROLE_KEY for scheduled writes, not a public client key" && exit 1 ;;
           esac
           echo "Supabase secrets are configured"
 
       - name: Run scraper
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          SUPABASE_KEY: ${{ secrets.SUPABASE_PUBLISHABLE_KEY || secrets.SUPABASE_ANON_KEY }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY || secrets.SUPABASE_SERVICE_KEY }}
           SCRAPE_DATES: ${{ inputs.dates }}
         run: |
           if [ -n "$SCRAPE_DATES" ]; then
