@@ -160,6 +160,52 @@ class RenderApiContractsTest(unittest.TestCase):
         refresh_missing.assert_not_called()
         save_picks.assert_not_called()
 
+    def test_today_live_pick_snapshot_adds_missing_catalog_rows_as_pending(self):
+        snapshot_rows = [{
+            "id": "US-P3-AZ-PICK-3-DRAW",
+            "state": "Arizona",
+            "stateCode": "AZ",
+            "game": "pick3",
+            "gameName": "Pick 3",
+            "draw": "Draw",
+            "date": "20-05-2026",
+            "number": "6-8-1",
+            "source": "lotteryusa.com",
+        }] + [
+            {
+                "id": f"US-P3-FAKE-{index:02d}",
+                "state": "Fake",
+                "stateCode": "FK",
+                "game": "pick3",
+                "gameName": "Pick 3",
+                "draw": f"Draw {index}",
+                "date": "20-05-2026",
+                "number": "1-2-3",
+                "source": "lotteryusa.com",
+            }
+            for index in range(24)
+        ]
+        catalog_rows = snapshot_rows + [{
+            "id": "US-P3-LA-PICK-3-DAY",
+            "state": "Louisiana",
+            "stateCode": "LA",
+            "game": "pick3",
+            "gameName": "Pick 3",
+            "draw": "Day Draw",
+            "playTypes": ["straight", "box"],
+        }]
+        with patch("app.fetch_pick_rows_from_supabase", return_value=snapshot_rows), \
+                patch("app.static_us_pick_catalog_rows", return_value=catalog_rows), \
+                patch("app.get_dr_date_str", return_value="20-05-2026"):
+            response = self.client.get("/system-results?date=2026-05-20&mode=pick&live=1")
+
+        self.assertEqual(200, response.status_code)
+        rows_by_id = {row["id"]: row for row in response.get_json()["picks"]["results"]}
+        self.assertEqual("6-8-1", rows_by_id["US-P3-AZ-PICK-3-DRAW"]["number"])
+        self.assertEqual("", rows_by_id["US-P3-LA-PICK-3-DAY"]["number"])
+        self.assertEqual("pending", rows_by_id["US-P3-LA-PICK-3-DAY"]["status"])
+        self.assertEqual("catalog-pending", rows_by_id["US-P3-LA-PICK-3-DAY"]["source"])
+
     def test_combined_results_endpoint_honors_mode_without_changing_default(self):
         pick_rows = [
             {

@@ -24,6 +24,7 @@ from scraper.scrape_and_save import (
     save_us_picks_to_supabase,
     scrape,
     scrape_us_picks,
+    static_us_pick_catalog_rows,
     supabase_rest_headers,
 )
 
@@ -34,6 +35,7 @@ port = int(os.environ.get("PORT", 5000))
 SCRAPE_CACHE_TTL_SECONDS = int(os.environ.get("SCRAPE_CACHE_TTL_SECONDS", "120"))
 LIVE_RESPONSE_CACHE_TTL_SECONDS = int(os.environ.get("LIVE_RESPONSE_CACHE_TTL_SECONDS", "5"))
 PICK_BACKGROUND_REFRESH_MIN_INTERVAL_SECONDS = int(os.environ.get("PICK_BACKGROUND_REFRESH_MIN_INTERVAL_SECONDS", "30"))
+MIN_PICK_SNAPSHOT_ROWS_FOR_PENDING_CATALOG = int(os.environ.get("MIN_PICK_SNAPSHOT_ROWS_FOR_PENDING_CATALOG", "25"))
 _scrape_cache = {}
 _pick_scrape_cache = {}
 _live_system_results_cache = {}
@@ -734,6 +736,8 @@ def pick_rows_for_request_date(date_key, game_filter=""):
                 _, rows = split_lottery_and_pick_rows(cache_rows_list(fetch_existing_from_supabase(date_key)))
     if game_filter in ("pick3", "pick4"):
         rows = [row for row in rows if row.get("game") == game_filter]
+    if len(rows) >= MIN_PICK_SNAPSHOT_ROWS_FOR_PENDING_CATALOG and date_key == get_dr_date_str():
+        rows = merge_pending_pick_catalog_rows(date_key, rows, game_filter)
     return apply_manual_overrides(date_key, unique_sorted_pick_results(rows), include_pick=True)
 
 
@@ -754,6 +758,25 @@ def unique_sorted_pick_results(rows):
         if normalized["id"]:
             by_id[normalized["id"]] = normalized
     return sorted(by_id.values(), key=lambda item: item["id"])
+
+
+def merge_pending_pick_catalog_rows(date_key, rows, game_filter=""):
+    normalized_filter = str(game_filter or "").strip().lower().replace("-", "")
+    catalog_games = [normalized_filter] if normalized_filter in ("pick3", "pick4") else None
+    current_rows = unique_sorted_pick_results(rows)
+    existing_ids = {str(row.get("id", "")).strip() for row in current_rows}
+    pending_rows = []
+    for template in static_us_pick_catalog_rows(games=catalog_games):
+        result_id = str(template.get("id", "")).strip()
+        if not result_id or result_id in existing_ids:
+            continue
+        row = dict(template)
+        row["date"] = date_key
+        row["number"] = ""
+        row["status"] = "pending"
+        row["source"] = "catalog-pending"
+        pending_rows.append(row)
+    return unique_sorted_pick_results(current_rows + pending_rows)
 
 
 def live_results_sections_for_date(date_key, include_lottery=True, include_pick=True, game_filter=""):
