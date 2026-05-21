@@ -474,6 +474,8 @@ class ScraperContractsTest(unittest.TestCase):
         self.assertEqual("Georgia Día", sources_by_id["44"]["name"])
         self.assertEqual("Georgia Tarde", sources_by_id["45"]["name"])
         self.assertEqual("Georgia Noche", sources_by_id["46"]["name"])
+        self.assertEqual("Florida Noche", sources_by_id["17"]["name"])
+        self.assertIn("resultados-florida-noche", sources_by_id["17"]["url"])
         self.assertEqual("Anguilla 10AM", sources_by_id["2"]["source_name"])
         self.assertEqual("Anguilla 1PM", sources_by_id["4"]["source_name"])
         self.assertEqual("Anguilla 6PM", sources_by_id["11"]["source_name"])

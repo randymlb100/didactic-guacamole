@@ -616,13 +616,22 @@ def lottery_rows_for_request_date(date_key):
     if should_use_live_scrape():
         cached_lottery_rows, _ = split_lottery_and_pick_rows(cache_rows_list(fetch_existing_from_supabase(date_key)))
         cached_lottery_rows = unique_sorted_results(cached_lottery_rows)
+        set_live_served_from_flag("lottery", "inline-scrape")
+        fresh_rows = unique_sorted_results(scrape_cached(date_key))
+        if fresh_rows:
+            rows = unique_sorted_results(cached_lottery_rows + fresh_rows)
+            if SUPABASE_KEY.strip():
+                try:
+                    save_to_supabase(date_key, fresh_rows)
+                except Exception as error:
+                    print(f"Warning: could not save live lottery refresh: {error}")
+            return rows
         if cached_lottery_rows:
             set_live_served_from_flag("lottery", "supabase-snapshot")
             if date_key == get_dr_date_str():
                 schedule_background_lottery_refresh(date_key)
             return cached_lottery_rows
-        set_live_served_from_flag("lottery", "inline-scrape")
-        return unique_sorted_results(scrape_cached(date_key))
+        return []
     lottery_rows, _ = split_lottery_and_pick_rows(cache_rows_list(fetch_existing_from_supabase(date_key)))
     return apply_manual_overrides(date_key, unique_sorted_results(lottery_rows), include_pick=False)
 
@@ -706,29 +715,12 @@ def pick_rows_for_request_date(date_key, game_filter=""):
                 return unique_sorted_pick_results(fresh_cached_rows)
         existing_rows = fetch_pick_rows_from_supabase(date_key)
         if existing_rows:
-            if pick_rows_need_targeted_refresh(existing_rows):
-                refreshed_rows = refresh_missing_us_pick_results(date_key, existing_rows)
-                if pick_rows_refresh_improved(existing_rows, refreshed_rows):
-                    existing_rows = unique_sorted_pick_results(refreshed_rows)
-                    set_pick_scrape_cache(date_key, existing_rows)
-                    if SUPABASE_KEY.strip():
-                        try:
-                            save_us_picks_to_supabase(date_key, existing_rows)
-                        except Exception as error:
-                            print(f"Warning: could not save targeted pick refresh: {error}")
             set_pick_scrape_cache(date_key, existing_rows)
             set_live_served_from_flag("pick", "supabase-snapshot")
-            if date_key == get_dr_date_str():
-                schedule_background_pick_refresh(date_key)
             rows = existing_rows
         else:
-            set_live_served_from_flag("pick", "inline-scrape")
-            rows = pick_scrape_cached_for_game(date_key, game_filter, existing_rows=existing_rows)
-            if rows and SUPABASE_KEY.strip():
-                try:
-                    save_us_picks_to_supabase(date_key, unique_sorted_pick_results(rows))
-                except Exception as error:
-                    print(f"Warning: could not save live pick refresh: {error}")
+            set_live_served_from_flag("pick", "cache-miss")
+            rows = []
     else:
         rows = fetch_pick_rows_from_supabase(date_key)
         if not rows:
@@ -765,6 +757,13 @@ def unique_sorted_pick_results(rows):
 
 
 def live_results_sections_for_date(date_key, include_lottery=True, include_pick=True, game_filter=""):
+    if include_lottery and include_pick:
+        lottery_task = copy_current_request_context(lambda: lottery_rows_for_request_date(date_key))
+        pick_task = copy_current_request_context(lambda: pick_rows_for_request_date(date_key, game_filter))
+        with ThreadPoolExecutor(max_workers=2) as executor:
+            lottery_future = executor.submit(lottery_task)
+            pick_future = executor.submit(pick_task)
+            return lottery_future.result(), pick_future.result()
     lottery_rows = lottery_rows_for_request_date(date_key) if include_lottery else []
     pick_rows = pick_rows_for_request_date(date_key, game_filter) if include_pick else []
     return lottery_rows, pick_rows

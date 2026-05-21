@@ -134,7 +134,7 @@ class RenderApiContractsTest(unittest.TestCase):
         self.assertEqual("picks", pick_payload["section"])
         self.assertEqual("US-P3-FL-PICK-3-EVENING", pick_payload["results"][0]["id"])
 
-    def test_live_pick_snapshot_refreshes_pending_rows_before_response(self):
+    def test_live_pick_snapshot_returns_pending_rows_without_blocking_refresh(self):
         stale_rows = [{
             "id": "US-P3-LA-PICK-3-DAY",
             "name": "Louisiana Pick 3 Day Draw",
@@ -145,19 +145,9 @@ class RenderApiContractsTest(unittest.TestCase):
             "number": "",
             "status": "pending",
         }]
-        refreshed_rows = [{
-            "id": "US-P3-LA-PICK-3-DAY",
-            "name": "Louisiana Pick 3 Day Draw",
-            "date": "18-05-2026",
-            "game": "pick3",
-            "gameName": "Pick 3",
-            "draw": "Day Draw",
-            "number": "2-6-0",
-            "source": "lotteryusa.com",
-        }]
-
         with patch("app.fetch_pick_rows_from_supabase", return_value=stale_rows), \
-                patch("app.refresh_missing_us_pick_results", return_value=refreshed_rows) as refresh_missing, \
+                patch("app.get_dr_date_str", return_value="18-05-2026"), \
+                patch("app.refresh_missing_us_pick_results") as refresh_missing, \
                 patch("app.SUPABASE_KEY", "test-key"), \
                 patch("app.save_us_picks_to_supabase") as save_picks:
             response = self.client.get("/system-results?date=2026-05-18&mode=pick&live=1")
@@ -165,9 +155,10 @@ class RenderApiContractsTest(unittest.TestCase):
         self.assertEqual(200, response.status_code)
         payload = response.get_json()
         rows = payload["picks"]["results"]
-        self.assertEqual("2-6-0", rows[0]["number"])
-        refresh_missing.assert_called_once()
-        save_picks.assert_called_once()
+        self.assertEqual("", rows[0]["number"])
+        self.assertEqual("supabase-snapshot", payload["servedFrom"])
+        refresh_missing.assert_not_called()
+        save_picks.assert_not_called()
 
     def test_combined_results_endpoint_honors_mode_without_changing_default(self):
         pick_rows = [
@@ -414,7 +405,7 @@ class RenderApiContractsTest(unittest.TestCase):
         self.assertEqual(200, response.status_code)
         pick_scrape.assert_called_once_with("02-05-2026")
 
-    def test_system_results_live_pick_refresh_saves_updated_cache(self):
+    def test_system_results_live_pick_uses_cached_snapshot_without_scrape(self):
         existing_pick_rows = [{
             "id": "US-P3-FL-PICK-3-EVENING",
             "date": "02-05-2026",
@@ -426,6 +417,7 @@ class RenderApiContractsTest(unittest.TestCase):
             "number": "9-2-0",
         }]
         with patch("app.fetch_pick_rows_from_supabase", return_value=existing_pick_rows), \
+            patch("app.get_dr_date_str", return_value="02-05-2026"), \
             patch("app.scrape_us_picks", return_value=refreshed_pick_rows) as pick_scrape, \
             patch("app.save_us_picks_to_supabase") as save_picks:
             response = self.client.get("/system-results?date=02-05-2026&mode=pick&live=1")
@@ -434,13 +426,11 @@ class RenderApiContractsTest(unittest.TestCase):
         self.assertEqual(200, response.status_code)
         self.assertEqual("live-scraper", payload["source"])
         self.assertEqual(1, payload["picks"]["count"])
-        pick_scrape.assert_called_once_with("02-05-2026")
-        save_picks.assert_called_once()
-        self.assertEqual("02-05-2026", save_picks.call_args.args[0])
-        self.assertEqual("US-P3-FL-PICK-3-EVENING", save_picks.call_args.args[1][0]["id"])
-        self.assertEqual("9-2-0", save_picks.call_args.args[1][0]["number"])
+        self.assertEqual("supabase-snapshot", payload["servedFrom"])
+        pick_scrape.assert_not_called()
+        save_picks.assert_not_called()
 
-    def test_today_live_pick_uses_cached_snapshot_and_triggers_background_refresh(self):
+    def test_today_live_pick_uses_cached_snapshot_without_background_refresh(self):
         existing_pick_rows = [{
             "id": "US-P3-FL-PICK-3-EVENING",
             "state": "Florida",
@@ -463,11 +453,11 @@ class RenderApiContractsTest(unittest.TestCase):
         self.assertEqual(200, response.status_code)
         self.assertEqual("live-scraper", payload["source"])
         self.assertEqual(1, payload["picks"]["count"])
-        background_refresh.assert_called_once_with("02-05-2026")
+        background_refresh.assert_not_called()
         pick_scrape.assert_not_called()
         save_picks.assert_not_called()
 
-    def test_today_live_pick_without_cached_snapshot_scrapes_inline(self):
+    def test_today_live_pick_without_cached_snapshot_returns_cache_miss(self):
         refreshed_pick_rows = [{
             "id": "US-P3-FL-PICK-3-EVENING",
             "state": "Florida",
@@ -488,10 +478,11 @@ class RenderApiContractsTest(unittest.TestCase):
 
         payload = json.loads(response.data.decode("utf-8"))
         self.assertEqual(200, response.status_code)
-        self.assertEqual(1, payload["picks"]["count"])
+        self.assertEqual(0, payload["picks"]["count"])
+        self.assertEqual("cache-miss", payload["servedFrom"])
         background_refresh.assert_not_called()
-        pick_scrape.assert_called_once_with("02-05-2026")
-        save_picks.assert_called_once()
+        pick_scrape.assert_not_called()
+        save_picks.assert_not_called()
 
     def test_today_live_pick_reuses_fresh_memory_snapshot_without_supabase_lookup(self):
         cached_pick_rows = [{
@@ -732,7 +723,7 @@ class RenderApiContractsTest(unittest.TestCase):
         payload = json.loads(response.data.decode("utf-8"))
         self.assertEqual("supabase-snapshot", payload["servedFrom"])
 
-    def test_today_live_pick_sets_served_from_inline_scrape(self):
+    def test_today_live_pick_sets_served_from_cache_miss(self):
         refreshed_pick_rows = [{
             "id": "US-P3-FL-PICK-3-EVENING",
             "state": "Florida",
@@ -752,7 +743,7 @@ class RenderApiContractsTest(unittest.TestCase):
             response = self.client.get("/system-results?date=02-05-2026&mode=pick&live=1")
 
         payload = json.loads(response.data.decode("utf-8"))
-        self.assertEqual("inline-scrape", payload["servedFrom"])
+        self.assertEqual("cache-miss", payload["servedFrom"])
 
     def test_today_live_pick_sets_served_from_response_cache(self):
         pick_rows = [{
@@ -858,19 +849,24 @@ class RenderApiContractsTest(unittest.TestCase):
         self.assertEqual(1, payload["picks"]["count"])
         self.assertLess(elapsed, 0.45, f"expected parallel live fetch, got {elapsed:.3f}s")
 
-    def test_today_live_lottery_uses_cached_snapshot_and_triggers_background_refresh(self):
+    def test_today_live_lottery_merges_cached_snapshot_with_inline_scrape(self):
+        live_rows = [{"id": "38", "name": "Anguilla 8PM", "date": "02-05-2026", "number": "08-15-45"}]
         with patch("app.fetch_existing_from_supabase", return_value=fake_results()), \
             patch("app.get_dr_date_str", return_value="02-05-2026"), \
             patch("app.schedule_background_lottery_refresh", return_value=True) as background_refresh, \
-            patch("app.scrape") as scrape_mock:
+            patch("app.SUPABASE_KEY", "test-key"), \
+            patch("app.save_to_supabase") as save_mock, \
+            patch("app.scrape", return_value=live_rows) as scrape_mock:
             response = self.client.get("/system-results?date=02-05-2026&mode=lottery&live=1")
 
         payload = json.loads(response.data.decode("utf-8"))
         self.assertEqual(200, response.status_code)
         self.assertEqual("live-scraper", payload["source"])
-        self.assertEqual(24, payload["lotteries"]["count"])
-        background_refresh.assert_called_once_with("02-05-2026")
-        scrape_mock.assert_not_called()
+        self.assertEqual(25, payload["lotteries"]["count"])
+        self.assertEqual("inline-scrape", payload["servedFrom"])
+        background_refresh.assert_not_called()
+        scrape_mock.assert_called_once_with("02-05-2026")
+        save_mock.assert_called_once_with("02-05-2026", live_rows)
 
     def test_today_live_lottery_without_cached_snapshot_scrapes_inline(self):
         live_rows = [{"id": "1", "name": "La Primera Día", "date": "02-05-2026", "number": "01-02-03"}]

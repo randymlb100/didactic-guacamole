@@ -199,6 +199,7 @@ ENLOTERIA_RESULT_SOURCES = [
     {"url": "https://enloteria.com/resultados-georgia-dia", "id": "44", "name": "Georgia Día"},
     {"url": "https://enloteria.com/resultados-georgia-tarde", "id": "45", "name": "Georgia Tarde"},
     {"url": "https://enloteria.com/resultados-georgia-noche", "id": "46", "name": "Georgia Noche"},
+    {"url": "https://enloteria.com/resultados-florida-noche", "id": "17", "name": "Florida Noche"},
     {"url": "https://enloteria.com/resultados-new-jersey-tarde", "id": "25", "name": "New Jersey Tarde"},
     {"url": "https://enloteria.com/resultados-new-jersey-noche", "id": "26", "name": "New Jersey Noche"},
 ]
