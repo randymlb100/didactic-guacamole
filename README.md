@@ -1,51 +1,31 @@
-# LotteryScraping-RD Lotería 
+# LotteryNet Results Service
 
-Este proyecto es una aplicación de web scraping que extrae información sobre las loterías dominicanas desde el sitio web [Loterías Dominicanas](https://loteriasdominicanas.com/). Proporciona una API para buscar y filtrar información sobre las loterías y sus resultados.
+Servicio Python/Flask usado por LotteryNet para publicar resultados de loterias normales y Pick en Render.
 
-para el funcionamiento de este cargamos un archivo **json** de la siguiente manera:
+## Archivos principales
 
-``` python
-	with open('lottery.json') as file:
-		json_data = file.read()
-		data = json.loads(json_data)
-```
-Aunque tambien lo pudemos hacer de manera dirrecta:
+- `app.py`: API HTTP que consume la app Android.
+- `scraper/scrape_and_save.py`: scraper y sincronizacion con Supabase.
+- `scraper/us_pick_catalog.json`: catalogo activo de juegos Pick.
+- `.github/workflows/scrape.yml`: tarea programada para actualizar resultados.
+- `render.yaml`: configuracion del servicio web en Render.
 
-``` python
-	json_data = json_data = '''
-	[
-		{
-			"id": 1,
-			"name": "La Primera Día"
-		},
-		{
-			"id": 2,
-			"name": "Anguila Mañana"
-		},
-		# ... otros elementos ...
-	]
-	'''
+## Ejecutar pruebas
 
-	data = json.loads(json_data)
+```powershell
+python -m unittest test_app
+Push-Location scraper
+python -m unittest scrape_and_save_test
+Pop-Location
 ```
 
-Dicho **Json** se utiliza para filtrar y seleccionar las distintas loterías de la página web, permitiendo devolver únicamente las loterías específicas que se deseen. Cada entrada en el JSON posee un identificador (ID) que es empleado para establecer un orden dentro de la estructura, y el nombre en el JSON debe coincidir con el nombre de la lotería según se presenta en la página [Loterías Dominicanas](https://loteriasdominicanas.com/)
+## Render
 
-## Características
+Render usa:
 
-- Obtención de datos de loterías en tiempo real.
-- Búsqueda y filtrado por nombre de lotería y fecha.
-- Filtar entre consorcio de loterias ej:Nacional, leisa, americana etc
-
-## Requisitos
-
-- Python 3.x
-- Bibliotecas: Flask, Flask-CORS, BeautifulSoup4
-
-## Instalación
-
-1. Clona el repositorio:
-
-```bash
-git clone https://github.com/CarlsRemy/LotteryScraping-RD.git
+```text
+Build Command: pip install -r requirements.txt
+Start Command: gunicorn app:app --config gunicorn.conf.py
 ```
+
+Las variables requeridas son `SUPABASE_URL` y `SUPABASE_KEY`.
