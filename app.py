@@ -618,6 +618,10 @@ def lottery_rows_for_request_date(date_key):
     if should_use_live_scrape():
         cached_lottery_rows, _ = split_lottery_and_pick_rows(cache_rows_list(fetch_existing_from_supabase(date_key)))
         cached_lottery_rows = unique_sorted_results(cached_lottery_rows)
+        if cached_lottery_rows and date_key == get_dr_date_str():
+            set_live_served_from_flag("lottery", "supabase-snapshot")
+            schedule_background_lottery_refresh(date_key)
+            return cached_lottery_rows
         set_live_served_from_flag("lottery", "inline-scrape")
         fresh_rows = unique_sorted_results(scrape_cached(date_key))
         if fresh_rows:

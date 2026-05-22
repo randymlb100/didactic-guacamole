@@ -895,7 +895,7 @@ class RenderApiContractsTest(unittest.TestCase):
         self.assertEqual(1, payload["picks"]["count"])
         self.assertLess(elapsed, 0.45, f"expected parallel live fetch, got {elapsed:.3f}s")
 
-    def test_today_live_lottery_merges_cached_snapshot_with_inline_scrape(self):
+    def test_today_live_lottery_uses_cached_snapshot_and_refreshes_in_background(self):
         live_rows = [{"id": "38", "name": "Anguilla 8PM", "date": "02-05-2026", "number": "08-15-45"}]
         with patch("app.fetch_existing_from_supabase", return_value=fake_results()), \
             patch("app.get_dr_date_str", return_value="02-05-2026"), \
@@ -908,11 +908,11 @@ class RenderApiContractsTest(unittest.TestCase):
         payload = json.loads(response.data.decode("utf-8"))
         self.assertEqual(200, response.status_code)
         self.assertEqual("live-scraper", payload["source"])
-        self.assertEqual(25, payload["lotteries"]["count"])
-        self.assertEqual("inline-scrape", payload["servedFrom"])
-        background_refresh.assert_not_called()
-        scrape_mock.assert_called_once_with("02-05-2026")
-        save_mock.assert_called_once_with("02-05-2026", live_rows)
+        self.assertEqual(24, payload["lotteries"]["count"])
+        self.assertEqual("supabase-snapshot", payload["servedFrom"])
+        background_refresh.assert_called_once_with("02-05-2026")
+        scrape_mock.assert_not_called()
+        save_mock.assert_not_called()
 
     def test_today_live_lottery_without_cached_snapshot_scrapes_inline(self):
         live_rows = [{"id": "1", "name": "La Primera Día", "date": "02-05-2026", "number": "01-02-03"}]
