@@ -134,6 +134,63 @@ class RenderApiContractsTest(unittest.TestCase):
         self.assertEqual("picks", pick_payload["section"])
         self.assertEqual("US-P3-FL-PICK-3-EVENING", pick_payload["results"][0]["id"])
 
+    def test_pick_results_deduplicate_legacy_and_catalog_draw_rows(self):
+        rows = [
+            {
+                "id": "19",
+                "name": "New Jersey Pick 3 Midday Draw",
+                "date": "21-05-2026",
+                "number": "9-9-2",
+                "pick3": "9-9-2",
+                "state": "New Jersey",
+                "stateCode": "NJ",
+                "game": "pick3",
+                "gameName": "Pick 3",
+                "draw": "Midday Draw",
+            },
+            {
+                "id": "US-P3-NJ-PICK-3-MIDDAY",
+                "name": "New Jersey Pick 3 Midday Draw",
+                "date": "21-05-2026",
+                "number": "9-9-2",
+                "pick3": "9-9-2",
+                "state": "New Jersey",
+                "stateCode": "NJ",
+                "game": "pick3",
+                "gameName": "Pick 3",
+                "draw": "Midday Draw",
+            },
+            {
+                "id": "US-P3-NY-NUMBERS-MIDDAY",
+                "name": "New York Numbers Midday Draw",
+                "date": "21-05-2026",
+                "number": "9-3-1",
+                "pick3": "9-3-1",
+                "state": "New York",
+                "stateCode": "NY",
+                "game": "pick3",
+                "gameName": "Numbers",
+                "draw": "Midday Draw",
+            },
+            {
+                "id": "US-P3-NY-PICK-3-MIDDAY",
+                "name": "New York Pick 3 Midday Draw",
+                "date": "21-05-2026",
+                "number": "9-3-1",
+                "pick3": "9-3-1",
+                "state": "New York",
+                "stateCode": "NY",
+                "game": "pick3",
+                "gameName": "Pick 3",
+                "draw": "Midday Draw",
+            },
+        ]
+
+        normalized = app.unique_sorted_pick_results(rows)
+
+        self.assertEqual(2, len(normalized))
+        self.assertEqual(["US-P3-NJ-PICK-3-MIDDAY", "US-P3-NY-PICK-3-MIDDAY"], [row["id"] for row in normalized])
+
     def test_live_pick_snapshot_returns_pending_rows_without_blocking_refresh(self):
         stale_rows = [{
             "id": "US-P3-LA-PICK-3-DAY",

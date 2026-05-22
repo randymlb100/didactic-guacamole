@@ -755,13 +755,50 @@ def unique_sorted_results(rows):
     return sorted(by_id.values(), key=lambda item: (0, int(item["id"])) if item["id"].isdigit() else (1, item["id"]))
 
 
+def pick_logical_key(row):
+    number = str(row.get("number", "")).strip()
+    state = str(row.get("stateCode") or row.get("state") or "").strip().lower()
+    game = str(row.get("game") or "").strip().lower().replace("-", "")
+    draw = str(row.get("draw") or "").strip().lower()
+    date = str(row.get("date") or "").strip()
+    if not all([number, state, game, draw, date]):
+        return ""
+    return "|".join([date, state, game, draw, number])
+
+
+def pick_row_rank(row):
+    result_id = str(row.get("id") or "")
+    game_name = str(row.get("gameName") or "").strip().lower()
+    rank = 0
+    if result_id.startswith("US-P"):
+        rank += 10
+    if game_name in ("pick 3", "pick 4"):
+        rank += 5
+    if result_id and not result_id.isdigit():
+        rank += 1
+    return rank
+
+
 def unique_sorted_pick_results(rows):
     by_id = {}
+    by_logical_key = {}
     for row in rows:
         normalized = normalize_pick_row(row)
-        if normalized["id"]:
-            by_id[normalized["id"]] = normalized
-    return sorted(by_id.values(), key=lambda item: item["id"])
+        result_id = normalized["id"]
+        if not result_id:
+            continue
+        existing = by_id.get(result_id)
+        if existing is None or pick_row_rank(normalized) >= pick_row_rank(existing):
+            by_id[result_id] = normalized
+    for normalized in by_id.values():
+        logical_key = pick_logical_key(normalized)
+        if not logical_key:
+            by_logical_key[normalized["id"]] = normalized
+            continue
+        existing = by_logical_key.get(logical_key)
+        if existing is None or pick_row_rank(normalized) >= pick_row_rank(existing):
+            by_logical_key[logical_key] = normalized
+    return sorted(by_logical_key.values(), key=lambda item: item["id"])
 
 
 def merge_pending_pick_catalog_rows(date_key, rows, game_filter=""):
