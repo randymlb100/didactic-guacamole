@@ -191,6 +191,62 @@ class RenderApiContractsTest(unittest.TestCase):
         self.assertEqual(2, len(normalized))
         self.assertEqual(["US-P3-NJ-PICK-3-MIDDAY", "US-P3-NY-PICK-3-MIDDAY"], [row["id"] for row in normalized])
 
+    def test_pick_cache_keeps_nj_authoritative_ids_and_new_york_numbers(self):
+        lottery_rows = [
+            {"id": "1", "name": "La Primera Día", "date": "22-05-2026", "number": "1-2-3"},
+            {"id": "19", "name": "NJ Pick 3 Día", "date": "22-05-2026", "number": "9-6-6"},
+            {"id": "20", "name": "NJ Pick 3 Noche", "date": "22-05-2026", "number": "1-1-3"},
+        ]
+        pick_rows = [
+            {
+                "id": "19",
+                "name": "NJ Pick 3 Día",
+                "state": "New Jersey",
+                "stateCode": "NJ",
+                "game": "pick3",
+                "gameName": "Pick 3",
+                "draw": "Midday Draw",
+                "date": "22-05-2026",
+                "number": "9-6-6",
+                "pick3": "9-6-6",
+            },
+            {
+                "id": "US-P3-NY-NUMBERS-EVENING",
+                "name": "New York Numbers Evening Draw",
+                "state": "New York",
+                "stateCode": "NY",
+                "game": "pick3",
+                "gameName": "Numbers",
+                "draw": "Evening Draw",
+                "date": "22-05-2026",
+                "number": "1-7-8",
+                "pick3": "1-7-8",
+            },
+            {
+                "id": "US-P3-NY-NUMBERS-MIDDAY",
+                "name": "New York Numbers Midday Draw",
+                "state": "New York",
+                "stateCode": "NY",
+                "game": "pick3",
+                "gameName": "Numbers",
+                "draw": "Midday Draw",
+                "date": "22-05-2026",
+                "number": "6-8-7",
+                "pick3": "6-8-7",
+            },
+        ]
+        with patch("app.fetch_existing_from_supabase", return_value=lottery_rows), \
+                patch("app.fetch_pick_rows_from_supabase", return_value=pick_rows):
+            response = self.client.get("/system-results?date=22-05-2026&mode=both")
+
+        payload = response.get_json()
+        pick_ids = {row["id"] for row in payload["picks"]["results"]}
+        lottery_ids = {row["id"] for row in payload["lotteries"]["results"]}
+        self.assertEqual({"1"}, lottery_ids)
+        self.assertIn("19", pick_ids)
+        self.assertIn("US-P3-NY-NUMBERS-EVENING", pick_ids)
+        self.assertIn("US-P3-NY-NUMBERS-MIDDAY", pick_ids)
+
     def test_live_pick_snapshot_returns_pending_rows_without_blocking_refresh(self):
         stale_rows = [{
             "id": "US-P3-LA-PICK-3-DAY",
