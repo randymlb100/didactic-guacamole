@@ -385,6 +385,28 @@ async def async_supabase_rest_patch(url, payload, headers, client=None, label="S
 async def async_supabase_kv_save(cache_key, value, client=None, label="Supabase KV save"):
     c = client or get_http_client()
     now = utc_now_iso()
+    rpc_url = f"{SUPABASE_URL}/rest/v1/rpc/ln_save_lotterynet_kv"
+    rpc_payload = json.dumps({
+        "p_key": cache_key,
+        "p_value": value,
+        "p_upd": now,
+    }).encode("utf-8")
+    try:
+        return await async_supabase_rest_post(
+            rpc_url,
+            payload=rpc_payload,
+            headers=supabase_rest_headers(extra={
+                "Content-Type": "application/json",
+                "Prefer": "return=minimal",
+            }),
+            client=c,
+            label=f"{label} rpc",
+        )
+    except httpx.HTTPStatusError as exc:
+        if exc.response.status_code >= 500:
+            raise
+        logger.warning("%s rpc unavailable, falling back to REST table write: %s", label, exc.response.text)
+
     update_url = f"{SUPABASE_URL}/rest/v1/lotterynet_kv?key=eq.{urllib.parse.quote(cache_key, safe='')}"
     update_payload = json.dumps({"value": value, "upd": now}).encode("utf-8")
     try:
