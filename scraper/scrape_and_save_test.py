@@ -218,6 +218,59 @@ class ScraperContractsTest(unittest.TestCase):
         self.assertEqual(["4-7-6-1", "9-3-0-8"], sorted(row["number"] for row in rows))
         self.assertEqual(["09-05-2026", "09-05-2026"], sorted(row["date"] for row in rows))
 
+    def test_sanitize_unreleased_nj_evening_keeps_today_pending_before_draw(self):
+        rows = [
+            {
+                "id": "US-P3-NJ-PICK-3-EVENING",
+                "state": "New Jersey",
+                "stateCode": "NJ",
+                "game": "pick3",
+                "gameName": "Pick 3",
+                "draw": "Evening Draw",
+                "date": "24-05-2026",
+                "number": "1-3-2",
+                "pick3": "1-3-2",
+            },
+            {
+                "id": "US-P3-NJ-PICK-3-MIDDAY",
+                "state": "New Jersey",
+                "stateCode": "NJ",
+                "game": "pick3",
+                "gameName": "Pick 3",
+                "draw": "Midday Draw",
+                "date": "24-05-2026",
+                "number": "8-1-4",
+                "pick3": "8-1-4",
+            },
+        ]
+        now_et = datetime.datetime(2026, 5, 24, 15, 45, tzinfo=scraper.ZoneInfo("America/New_York"))
+
+        sanitized = scraper.sanitize_unreleased_nj_pick_rows(rows, "24-05-2026", now_et=now_et)
+        by_id = {row["id"]: row for row in sanitized}
+
+        self.assertEqual("", by_id["US-P3-NJ-PICK-3-EVENING"]["number"])
+        self.assertEqual("", by_id["US-P3-NJ-PICK-3-EVENING"]["pick3"])
+        self.assertEqual("pending", by_id["US-P3-NJ-PICK-3-EVENING"]["status"])
+        self.assertEqual("8-1-4", by_id["US-P3-NJ-PICK-3-MIDDAY"]["number"])
+
+    def test_sanitize_unreleased_nj_evening_allows_after_draw_time(self):
+        rows = [{
+            "id": "US-P4-NJ-PICK-4-EVENING",
+            "state": "New Jersey",
+            "stateCode": "NJ",
+            "game": "pick4",
+            "gameName": "Pick 4",
+            "draw": "Evening Draw",
+            "date": "24-05-2026",
+            "number": "2-5-0-8",
+            "pick4": "2-5-0-8",
+        }]
+        now_et = datetime.datetime(2026, 5, 24, 23, 5, tzinfo=scraper.ZoneInfo("America/New_York"))
+
+        sanitized = scraper.sanitize_unreleased_nj_pick_rows(rows, "24-05-2026", now_et=now_et)
+
+        self.assertEqual("2-5-0-8", sanitized[0]["number"])
+
     def test_parse_new_jersey_pick_home_reads_marker_layout_date(self):
         html = """
         <main>

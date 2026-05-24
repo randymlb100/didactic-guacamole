@@ -511,9 +511,12 @@ def get_dr_now():
     """Current Dominican Republic time (AST / UTC-4)."""
     return datetime.datetime.utcnow() - datetime.timedelta(hours=4)
 
-def get_et_date_str():
+def get_et_now():
+    return datetime.datetime.now(ZoneInfo("America/New_York"))
+
+def get_et_date_str(now_et=None):
     """Today's date in US/Eastern timezone (proper DST handling)."""
-    return datetime.datetime.now(ZoneInfo("America/New_York")).strftime("%d-%m-%Y")
+    return (now_et or get_et_now()).strftime("%d-%m-%Y")
 
 def get_dr_date_str():
     """Today's date in Dominican Republic / Atlantic Standard Time (UTC-4)."""
@@ -1465,6 +1468,7 @@ async def _async_scrape_us_picks(date_str=None, games=None, existing_rows=None, 
     rows = list(rows_by_id.values())
     if target_date:
         rows = [row for row in rows if row.get("date") == target_date]
+        rows = sanitize_unreleased_nj_pick_rows(rows, target_date)
         append_us_pick_calendar_no_draw_rows(rows, target_date)
     return sorted(rows, key=lambda row: (row["state"], row["game"], row["draw"], row["gameName"]))
 
@@ -1916,6 +1920,11 @@ US_PICK_STATIC_RESULT_METADATA = {
     "22": {"state": "New Jersey", "stateCode": "NJ", "game": "pick4", "gameName": "Pick 4", "draw": "Evening Draw"},
 }
 
+NJ_PICK_DRAW_RELEASE_MINUTES = {
+    "MIDDAYDRAW": 12 * 60 + 59,
+    "EVENINGDRAW": 22 * 60 + 57,
+}
+
 
 def enrich_us_pick_result_row(row):
     result_id = str(row.get("id", "")).strip()
@@ -1930,6 +1939,44 @@ def enrich_us_pick_result_row(row):
     enriched.update(row)
     enriched.setdefault("playTypes", ["straight", "box"])
     return enriched
+
+
+def is_new_jersey_pick_row(row):
+    text = " ".join(
+        str((row or {}).get(field) or "")
+        for field in ("id", "state", "stateCode", "name", "gameName", "draw")
+    ).upper()
+    return "NJ" in text or "NEW JERSEY" in text
+
+
+def sanitize_unreleased_nj_pick_rows(rows, target_date, now_et=None):
+    now = now_et or get_et_now()
+    if str(target_date or "") != get_et_date_str(now):
+        return [dict(row) for row in (rows or [])]
+    now_minutes = now.hour * 60 + now.minute
+    sanitized = []
+    for row in rows or []:
+        candidate = dict(row)
+        if not is_new_jersey_pick_row(candidate):
+            sanitized.append(candidate)
+            continue
+        draw_key = normalize_draw_key(candidate.get("draw"))
+        release_minutes = NJ_PICK_DRAW_RELEASE_MINUTES.get(draw_key)
+        if release_minutes is None or now_minutes >= release_minutes:
+            sanitized.append(candidate)
+            continue
+        if str(candidate.get("number") or "").strip():
+            logger.warning(
+                "Ignoring early NJ %s result for %s before draw release time",
+                candidate.get("draw") or candidate.get("id"),
+                target_date,
+            )
+        candidate["number"] = ""
+        candidate["pick3"] = ""
+        candidate["pick4"] = ""
+        candidate["status"] = "pending"
+        sanitized.append(candidate)
+    return sanitized
 
 
 async def _async_fetch_lotteryusa_pick_fallbacks(date_str=None, ids=None, client=None):
@@ -2592,6 +2639,7 @@ async def _async_save_us_picks_to_supabase(date_str, rows, client=None):
     existing = await _async_fetch_existing_pick_results_from_supabase(date_str, client=c)
     existing = prune_stale_us_pick_rows_when_catalog_is_complete(existing, rows)
     merged_rows = merge_us_pick_results_by_id(existing, rows, observed_at=utc_now_iso())
+    merged_rows = sanitize_unreleased_nj_pick_rows(merged_rows, date_str)
     value = json.dumps(merged_rows, ensure_ascii=False)
     try:
         resp = await async_supabase_kv_save(
