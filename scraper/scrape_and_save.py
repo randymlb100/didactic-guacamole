@@ -314,6 +314,40 @@ async def async_http_post(url, data_bytes, content_type="application/x-www-form-
                 raise
 
 
+async def async_supabase_rest_post(url, payload, headers, client=None, label="Supabase write"):
+    c = client or get_http_client()
+    for attempt in range(1, _RETRY_MAX + 1):
+        try:
+            resp = await c.post(url, content=payload, headers=headers)
+            resp.raise_for_status()
+            return resp
+        except httpx.HTTPStatusError as exc:
+            status = exc.response.status_code
+            retryable = status >= 500
+            if not retryable or attempt >= _RETRY_MAX:
+                raise
+            logger.warning(
+                "%s failed with HTTP %d (attempt %d/%d): %s",
+                label,
+                status,
+                attempt,
+                _RETRY_MAX,
+                exc.response.text,
+            )
+            await asyncio.sleep(_RETRY_BASE_DELAY * (2 ** (attempt - 1)))
+        except (httpx.RequestError, httpx.TimeoutException) as exc:
+            if attempt >= _RETRY_MAX:
+                raise
+            logger.warning(
+                "%s request failed (attempt %d/%d): %s",
+                label,
+                attempt,
+                _RETRY_MAX,
+                exc,
+            )
+            await asyncio.sleep(_RETRY_BASE_DELAY * (2 ** (attempt - 1)))
+
+
 def is_pick_result_row(row):
     row_id = str(row.get("id", "")).upper()
     name = str(row.get("name", "")).lower()
@@ -2410,16 +2444,17 @@ async def _async_save_us_picks_to_supabase(date_str, rows, client=None):
     payload = json.dumps({"key": key, "value": value, "upd": utc_now_iso()}).encode("utf-8")
     url = f"{SUPABASE_URL}/rest/v1/lotterynet_kv"
     try:
-        resp = await c.post(
+        resp = await async_supabase_rest_post(
             url,
-            content=payload,
+            payload=payload,
             headers=supabase_rest_headers(extra={
                 "Content-Type": "application/json",
                 "Prefer": "resolution=merge-duplicates",
             }),
+            client=c,
+            label=f"Supabase pick cache save for {date_str}",
         )
         logger.info("Saved %d US pick results for %s -> HTTP %s", len(merged_rows), date_str, resp.status_code)
-        resp.raise_for_status()
     except httpx.HTTPStatusError as e:
         logger.error("Supabase pick error %s: %s", e.response.status_code, e.response.text)
         raise
@@ -2485,15 +2520,16 @@ async def _async_save_native_results_table(date_str, merged_list, client=None):
     }], ensure_ascii=False).encode("utf-8")
     url = f"{SUPABASE_URL}/rest/v1/lotterynet_results_by_day"
     c = client or get_http_client()
-    resp = await c.post(
+    resp = await async_supabase_rest_post(
         url,
-        content=payload,
+        payload=payload,
         headers=supabase_rest_headers(extra={
             "Content-Type": "application/json",
             "Prefer": "resolution=merge-duplicates",
         }),
+        client=c,
+        label=f"Supabase native results save for {date_str}",
     )
-    resp.raise_for_status()
     logger.info("Saved native results table for %s -> HTTP %s", date_str, resp.status_code)
 
 
@@ -2512,15 +2548,16 @@ async def _async_save_to_supabase(date_str, results, prune_missing_ids=None, cli
     url = f"{SUPABASE_URL}/rest/v1/lotterynet_kv"
 
     try:
-        resp = await c.post(
+        resp = await async_supabase_rest_post(
             url,
-            content=payload,
+            payload=payload,
             headers=supabase_rest_headers(extra={
                 "Content-Type": "application/json",
                 "Prefer": "resolution=merge-duplicates",
             }),
+            client=c,
+            label=f"Supabase RD cache save for {date_str}",
         )
-        resp.raise_for_status()
         logger.info("Saved %d results (merged) for %s -> HTTP %s", len(merged_list), date_str, resp.status_code)
         try:
             await _async_save_native_results_table(date_str, merged_list, client=c)

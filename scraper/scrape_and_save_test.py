@@ -1144,6 +1144,36 @@ class ScraperContractsTest(unittest.TestCase):
         self.assertEqual("7-6-4", rows[0]["number"])
         self.assertEqual("14-05-2026", rows[0]["date"])
 
+    def test_supabase_rest_post_retries_statement_timeout(self):
+        class FakeClient:
+            def __init__(self):
+                self.calls = 0
+
+            async def post(self, url, content=None, headers=None):
+                self.calls += 1
+                request = scraper.httpx.Request("POST", url)
+                if self.calls == 1:
+                    return scraper.httpx.Response(
+                        500,
+                        request=request,
+                        json={"code": "57014", "message": "canceling statement due to statement timeout"},
+                    )
+                return scraper.httpx.Response(201, request=request, json={})
+
+        client = FakeClient()
+        with patch.object(scraper.asyncio, "sleep", AsyncMock()) as sleep:
+            response = scraper.sync_run(scraper.async_supabase_rest_post(
+                "https://example.supabase.co/rest/v1/lotterynet_kv",
+                b"{}",
+                {"Content-Type": "application/json"},
+                client=client,
+                label="test save",
+            ))
+
+        self.assertEqual(201, response.status_code)
+        self.assertEqual(2, client.calls)
+        sleep.assert_awaited_once()
+
 
 if __name__ == "__main__":
     unittest.main()
