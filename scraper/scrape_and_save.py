@@ -438,6 +438,10 @@ def default_scrape_dates():
     return [get_dr_date_str_for_offset(offset) for offset in range(3)]
 
 
+def should_require_supabase_save(target_date, current_date, explicit_dates=False):
+    return bool(explicit_dates) or str(target_date) == str(current_date)
+
+
 def parse_miloteria_date(raw):
     text = str(raw or "").strip()
     if not text:
@@ -2574,6 +2578,7 @@ def save_to_supabase(date_str, results, prune_missing_ids=None):
 async def _async_main():
     import sys
 
+    explicit_dates = len(sys.argv) > 1
     if len(sys.argv) > 1:
         target_dates = sys.argv[1:]
     else:
@@ -2584,6 +2589,11 @@ async def _async_main():
 
     for idx, target_date in enumerate(target_dates):
         logger.info("Scraping %s...", target_date)
+        save_required = should_require_supabase_save(
+            target_date=target_date,
+            current_date=get_dr_date_str(),
+            explicit_dates=explicit_dates,
+        )
 
         results, pick_results = await asyncio.gather(
             _async_scrape(target_date, client=client),
@@ -2603,7 +2613,12 @@ async def _async_main():
 
         if results:
             prune_missing_ids = AUTHORITATIVE_NJ_IDS if idx == 0 and target_date == get_dr_date_str() else None
-            await _async_save_to_supabase(target_date, results, prune_missing_ids=prune_missing_ids, client=client)
+            try:
+                await _async_save_to_supabase(target_date, results, prune_missing_ids=prune_missing_ids, client=client)
+            except (httpx.HTTPError, httpx.TimeoutException) as e:
+                if save_required:
+                    raise
+                logger.warning("Skipping non-current RD save for %s after Supabase error: %s", target_date, e)
         else:
             logger.info("No results found for %s — skipping RD save", target_date)
 
@@ -2612,7 +2627,12 @@ async def _async_main():
             pick3_count = sum(1 for row in pick_results if row.get("game") == "pick3")
             pick4_count = sum(1 for row in pick_results if row.get("game") == "pick4")
             logger.info("  Pick 3: %d  Pick 4: %d", pick3_count, pick4_count)
-            await _async_save_us_picks_to_supabase(target_date, pick_results, client=client)
+            try:
+                await _async_save_us_picks_to_supabase(target_date, pick_results, client=client)
+            except (httpx.HTTPError, httpx.TimeoutException) as e:
+                if save_required:
+                    raise
+                logger.warning("Skipping non-current Pick save for %s after Supabase error: %s", target_date, e)
         else:
             logger.info("No US Pick results found for %s — skipping pick save", target_date)
 

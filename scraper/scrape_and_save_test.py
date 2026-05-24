@@ -1174,6 +1174,23 @@ class ScraperContractsTest(unittest.TestCase):
         self.assertEqual(2, client.calls)
         sleep.assert_awaited_once()
 
+    def test_default_backfill_only_requires_current_day_save(self):
+        self.assertTrue(scraper.should_require_supabase_save(
+            target_date="24-05-2026",
+            current_date="24-05-2026",
+            explicit_dates=False,
+        ))
+        self.assertFalse(scraper.should_require_supabase_save(
+            target_date="23-05-2026",
+            current_date="24-05-2026",
+            explicit_dates=False,
+        ))
+        self.assertTrue(scraper.should_require_supabase_save(
+            target_date="23-05-2026",
+            current_date="24-05-2026",
+            explicit_dates=True,
+        ))
+
 
 if __name__ == "__main__":
     unittest.main()
