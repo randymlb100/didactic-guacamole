@@ -1174,6 +1174,65 @@ class ScraperContractsTest(unittest.TestCase):
         self.assertEqual(2, client.calls)
         sleep.assert_awaited_once()
 
+    def test_supabase_kv_save_updates_existing_row_without_upsert(self):
+        class FakeClient:
+            def __init__(self):
+                self.patch_calls = 0
+                self.post_calls = 0
+                self.patch_urls = []
+
+            async def patch(self, url, content=None, headers=None):
+                self.patch_calls += 1
+                self.patch_urls.append(url)
+                return scraper.httpx.Response(204, request=scraper.httpx.Request("PATCH", url))
+
+            async def post(self, url, content=None, headers=None):
+                self.post_calls += 1
+                return scraper.httpx.Response(201, request=scraper.httpx.Request("POST", url), json={})
+
+        client = FakeClient()
+        response = scraper.sync_run(scraper.async_supabase_kv_save(
+            "lot_results_cache_by_day:24-05-2026",
+            "[]",
+            client=client,
+            label="test kv",
+        ))
+
+        self.assertEqual(204, response.status_code)
+        self.assertEqual(1, client.patch_calls)
+        self.assertEqual(0, client.post_calls)
+        self.assertIn("key=eq.lot_results_cache_by_day%3A24-05-2026", client.patch_urls[0])
+
+    def test_supabase_kv_save_falls_back_to_upsert_when_row_missing(self):
+        class FakeClient:
+            def __init__(self):
+                self.patch_calls = 0
+                self.post_calls = 0
+
+            async def patch(self, url, content=None, headers=None):
+                self.patch_calls += 1
+                return scraper.httpx.Response(
+                    404,
+                    request=scraper.httpx.Request("PATCH", url),
+                    json={"message": "not found"},
+                )
+
+            async def post(self, url, content=None, headers=None):
+                self.post_calls += 1
+                return scraper.httpx.Response(201, request=scraper.httpx.Request("POST", url), json={})
+
+        client = FakeClient()
+        response = scraper.sync_run(scraper.async_supabase_kv_save(
+            "lot_results_cache_by_day:24-05-2026",
+            "[]",
+            client=client,
+            label="test kv",
+        ))
+
+        self.assertEqual(201, response.status_code)
+        self.assertEqual(1, client.patch_calls)
+        self.assertEqual(1, client.post_calls)
+
     def test_default_backfill_only_requires_current_day_save(self):
         self.assertTrue(scraper.should_require_supabase_save(
             target_date="24-05-2026",

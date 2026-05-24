@@ -348,6 +348,74 @@ async def async_supabase_rest_post(url, payload, headers, client=None, label="Su
             await asyncio.sleep(_RETRY_BASE_DELAY * (2 ** (attempt - 1)))
 
 
+async def async_supabase_rest_patch(url, payload, headers, client=None, label="Supabase update"):
+    c = client or get_http_client()
+    for attempt in range(1, _RETRY_MAX + 1):
+        try:
+            resp = await c.patch(url, content=payload, headers=headers)
+            resp.raise_for_status()
+            return resp
+        except httpx.HTTPStatusError as exc:
+            status = exc.response.status_code
+            retryable = status >= 500
+            if not retryable or attempt >= _RETRY_MAX:
+                raise
+            logger.warning(
+                "%s failed with HTTP %d (attempt %d/%d): %s",
+                label,
+                status,
+                attempt,
+                _RETRY_MAX,
+                exc.response.text,
+            )
+            await asyncio.sleep(_RETRY_BASE_DELAY * (2 ** (attempt - 1)))
+        except (httpx.RequestError, httpx.TimeoutException) as exc:
+            if attempt >= _RETRY_MAX:
+                raise
+            logger.warning(
+                "%s request failed (attempt %d/%d): %s",
+                label,
+                attempt,
+                _RETRY_MAX,
+                exc,
+            )
+            await asyncio.sleep(_RETRY_BASE_DELAY * (2 ** (attempt - 1)))
+
+
+async def async_supabase_kv_save(cache_key, value, client=None, label="Supabase KV save"):
+    c = client or get_http_client()
+    now = utc_now_iso()
+    update_url = f"{SUPABASE_URL}/rest/v1/lotterynet_kv?key=eq.{urllib.parse.quote(cache_key, safe='')}"
+    update_payload = json.dumps({"value": value, "upd": now}).encode("utf-8")
+    try:
+        resp = await async_supabase_rest_patch(
+            update_url,
+            payload=update_payload,
+            headers=supabase_rest_headers(extra={
+                "Content-Type": "application/json",
+                "Prefer": "return=minimal",
+            }),
+            client=c,
+            label=f"{label} update",
+        )
+        if resp.status_code != 404:
+            return resp
+    except httpx.HTTPStatusError as exc:
+        if exc.response.status_code != 404:
+            raise
+
+    return await async_supabase_rest_post(
+        f"{SUPABASE_URL}/rest/v1/lotterynet_kv",
+        payload=json.dumps({"key": cache_key, "value": value, "upd": now}).encode("utf-8"),
+        headers=supabase_rest_headers(extra={
+            "Content-Type": "application/json",
+            "Prefer": "resolution=merge-duplicates,return=minimal",
+        }),
+        client=c,
+        label=f"{label} upsert",
+    )
+
+
 def is_pick_result_row(row):
     row_id = str(row.get("id", "")).upper()
     name = str(row.get("name", "")).lower()
@@ -2503,16 +2571,10 @@ async def _async_save_us_picks_to_supabase(date_str, rows, client=None):
     existing = prune_stale_us_pick_rows_when_catalog_is_complete(existing, rows)
     merged_rows = merge_us_pick_results_by_id(existing, rows, observed_at=utc_now_iso())
     value = json.dumps(merged_rows, ensure_ascii=False)
-    payload = json.dumps({"key": key, "value": value, "upd": utc_now_iso()}).encode("utf-8")
-    url = f"{SUPABASE_URL}/rest/v1/lotterynet_kv"
     try:
-        resp = await async_supabase_rest_post(
-            url,
-            payload=payload,
-            headers=supabase_rest_headers(extra={
-                "Content-Type": "application/json",
-                "Prefer": "resolution=merge-duplicates",
-            }),
+        resp = await async_supabase_kv_save(
+            key,
+            value,
             client=c,
             label=f"Supabase pick cache save for {date_str}",
         )
@@ -2629,17 +2691,11 @@ async def _async_save_to_supabase(date_str, results, prune_missing_ids=None, cli
         logger.warning("Missing tracked remote result ids for %s: %s", date_str, ", ".join(missing_tracked))
 
     value = json.dumps(merged_list, ensure_ascii=False)
-    payload = json.dumps({"key": key, "value": value, "upd": utc_now_iso()}).encode("utf-8")
-    url = f"{SUPABASE_URL}/rest/v1/lotterynet_kv"
 
     try:
-        resp = await async_supabase_rest_post(
-            url,
-            payload=payload,
-            headers=supabase_rest_headers(extra={
-                "Content-Type": "application/json",
-                "Prefer": "resolution=merge-duplicates",
-            }),
+        resp = await async_supabase_kv_save(
+            key,
+            value,
             client=c,
             label=f"Supabase RD cache save for {date_str}",
         )
