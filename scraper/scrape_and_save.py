@@ -2682,19 +2682,18 @@ def us_pick_rows_changed(existing_rows, refreshed_rows):
 
 
 async def _async_save_native_results_table(date_str, merged_list, client=None):
-    payload = json.dumps([{
-        "result_date": date_str,
-        "payload": merged_list,
-        "updated_at": utc_now_iso(),
-    }], ensure_ascii=False).encode("utf-8")
-    url = f"{SUPABASE_URL}/rest/v1/lotterynet_results_by_day"
     c = client or get_http_client()
+    updated_at = utc_now_iso()
     resp = await async_supabase_rest_post(
-        url,
-        payload=payload,
+        f"{SUPABASE_URL}/rest/v1/rpc/ln_save_lotterynet_results_by_day",
+        payload=json.dumps({
+            "p_result_date": date_str,
+            "p_payload": merged_list,
+            "p_updated_at": updated_at,
+        }, ensure_ascii=False).encode("utf-8"),
         headers=supabase_rest_headers(extra={
             "Content-Type": "application/json",
-            "Prefer": "resolution=merge-duplicates",
+            "Prefer": "return=minimal",
         }),
         client=c,
         label=f"Supabase native results save for {date_str}",
