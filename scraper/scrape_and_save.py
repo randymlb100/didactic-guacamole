@@ -442,6 +442,12 @@ def should_require_supabase_save(target_date, current_date, explicit_dates=False
     return bool(explicit_dates) or str(target_date) == str(current_date)
 
 
+def non_current_backfill_should_run(existing_rd_rows, existing_pick_rows):
+    return bool(missing_tracked_result_ids(existing_rd_rows)) or any(
+        us_pick_row_needs_refresh(row) for row in (existing_pick_rows or [])
+    )
+
+
 def parse_miloteria_date(raw):
     text = str(raw or "").strip()
     if not text:
@@ -2204,26 +2210,13 @@ async def _async_fetch_blocks(url, client):
         return []
 
 
-async def _async_scrape(date_str=None, client=None):
-    if not date_str:
-        date_str = get_dr_date_str()
-    c = client or get_http_client()
-
-    base = "https://loteriasdominicanas.com"
-    urls = [
-        f"{base}/?date={date_str}",
-        f"{base}/anguila?date={date_str}",
-        f"{base}/king-lottery?date={date_str}",
-    ]
-
-    block_results = await asyncio.gather(*[_async_fetch_blocks(u, c) for u in urls])
-    all_blocks = [b for blocks in block_results for b in blocks]
-
+def parse_loterias_dominicanas_blocks(blocks, date_str, wanted_ids=None):
     results = []
     seen_ids = set()
     expected_ddmm = date_str[:5]
+    wanted = {str(value) for value in (wanted_ids or [])}
 
-    for block in all_blocks:
+    for block in blocks:
         try:
             date_el = block.find("div", class_="session-date")
             if date_el:
@@ -2237,6 +2230,8 @@ async def _async_scrape(date_str=None, client=None):
             title = title_el.getText().strip().lower()
             match = LOTTERY_MAP.get(title)
             if not match or match["id"] in seen_ids:
+                continue
+            if wanted and match["id"] not in wanted:
                 continue
 
             scores = block.find_all("span", "score")
@@ -2254,6 +2249,69 @@ async def _async_scrape(date_str=None, client=None):
         except Exception as e:
             logger.warning("Parse error: %s", e)
             continue
+    return results
+
+
+async def _async_fetch_loterias_dominicanas_results(date_str, wanted_ids=None, client=None):
+    c = client or get_http_client()
+    base = "https://loteriasdominicanas.com"
+    urls = [
+        f"{base}/?date={date_str}",
+        f"{base}/anguila?date={date_str}",
+        f"{base}/king-lottery?date={date_str}",
+    ]
+    block_results = await asyncio.gather(*[_async_fetch_blocks(u, c) for u in urls])
+    all_blocks = [b for blocks in block_results for b in blocks]
+    return parse_loterias_dominicanas_blocks(all_blocks, date_str, wanted_ids=wanted_ids)
+
+
+async def _async_scrape_missing_rd_results(date_str, missing_ids, client=None):
+    wanted = {str(value) for value in (missing_ids or []) if str(value).strip()}
+    if not wanted:
+        return []
+    c = client or get_http_client()
+    results = []
+    seen_ids = set()
+
+    loterias_rows = await _async_fetch_loterias_dominicanas_results(date_str, wanted_ids=wanted, client=c)
+    for row in loterias_rows:
+        results.append(row)
+        seen_ids.add(row["id"])
+
+    still_missing = wanted - seen_ids
+    enloteria_sources = [
+        source for source in ENLOTERIA_RESULT_SOURCES
+        if str(source.get("id")) in still_missing
+    ]
+    if enloteria_sources:
+        enloteria_rows = await _async_fetch_enloteria_results(
+            date_str,
+            fallback_days=0,
+            sources=enloteria_sources,
+            client=c,
+        )
+        for row in enloteria_rows:
+            if row["id"] not in seen_ids:
+                results.append(row)
+                seen_ids.add(row["id"])
+
+    still_missing = wanted - seen_ids
+    for row in build_king_no_draw_rows(date_str, seen_ids):
+        if row["id"] in still_missing:
+            results.append(row)
+            seen_ids.add(row["id"])
+            logger.info("King [%s] %s: no_draw for %s", row['id'], row['name'], date_str)
+
+    return sorted(results, key=result_sort_key)
+
+
+async def _async_scrape(date_str=None, client=None):
+    if not date_str:
+        date_str = get_dr_date_str()
+    c = client or get_http_client()
+
+    results = await _async_fetch_loterias_dominicanas_results(date_str, client=c)
+    seen_ids = {row["id"] for row in results}
 
     for row in build_king_no_draw_rows(date_str, seen_ids):
         results.append(row)
@@ -2516,6 +2574,29 @@ def missing_tracked_result_ids(results):
     return sorted(TRACKED_REMOTE_RESULT_IDS - available, key=int)
 
 
+def us_pick_rows_changed(existing_rows, refreshed_rows):
+    existing_by_id = {
+        str(row.get("id") or "").strip(): row
+        for row in (existing_rows or [])
+        if str(row.get("id") or "").strip()
+    }
+    for row in refreshed_rows or []:
+        result_id = str(row.get("id") or "").strip()
+        if not result_id:
+            continue
+        previous = existing_by_id.get(result_id)
+        if previous is None:
+            return True
+        if _pick_result_quality(row) > _pick_result_quality(previous):
+            return True
+        if (
+            str(row.get("number", "")) != str(previous.get("number", "")) or
+            str(row.get("status", "")) != str(previous.get("status", ""))
+        ):
+            return True
+    return False
+
+
 async def _async_save_native_results_table(date_str, merged_list, client=None):
     payload = json.dumps([{
         "result_date": date_str,
@@ -2589,16 +2670,41 @@ async def _async_main():
 
     for idx, target_date in enumerate(target_dates):
         logger.info("Scraping %s...", target_date)
+        current_date = get_dr_date_str()
         save_required = should_require_supabase_save(
             target_date=target_date,
-            current_date=get_dr_date_str(),
+            current_date=current_date,
             explicit_dates=explicit_dates,
         )
 
-        results, pick_results = await asyncio.gather(
-            _async_scrape(target_date, client=client),
-            _async_scrape_us_picks(target_date, client=client),
-        )
+        existing_results = []
+        existing_pick_results = []
+        if not save_required:
+            existing_results, existing_pick_results = await asyncio.gather(
+                _async_fetch_existing_from_supabase(target_date, client=client),
+                _async_fetch_existing_pick_results_from_supabase(target_date, client=client),
+            )
+            if not non_current_backfill_should_run(existing_results, existing_pick_results):
+                logger.info("Backfill %s already complete — skipping scrape and save", target_date)
+                continue
+            logger.info(
+                "Backfill %s needs RD ids [%s] and %d pending Pick rows",
+                target_date,
+                ", ".join(missing_tracked_result_ids(existing_results)) or "none",
+                sum(1 for row in existing_pick_results if us_pick_row_needs_refresh(row)),
+            )
+
+        if save_required:
+            results, pick_results = await asyncio.gather(
+                _async_scrape(target_date, client=client),
+                _async_scrape_us_picks(target_date, client=client),
+            )
+        else:
+            missing_rd_ids = missing_tracked_result_ids(existing_results)
+            results, pick_results = await asyncio.gather(
+                _async_scrape_missing_rd_results(target_date, missing_rd_ids, client=client),
+                _async_refresh_missing_us_pick_results(target_date, existing_pick_results, client=client),
+            )
 
         logger.info("Found %d lotteries and %d US Pick results", len(results), len(pick_results))
         for r in results:
@@ -2612,7 +2718,7 @@ async def _async_main():
             continue
 
         if results:
-            prune_missing_ids = AUTHORITATIVE_NJ_IDS if idx == 0 and target_date == get_dr_date_str() else None
+            prune_missing_ids = AUTHORITATIVE_NJ_IDS if idx == 0 and target_date == current_date else None
             try:
                 await _async_save_to_supabase(target_date, results, prune_missing_ids=prune_missing_ids, client=client)
             except (httpx.HTTPError, httpx.TimeoutException) as e:
@@ -2627,6 +2733,9 @@ async def _async_main():
             pick3_count = sum(1 for row in pick_results if row.get("game") == "pick3")
             pick4_count = sum(1 for row in pick_results if row.get("game") == "pick4")
             logger.info("  Pick 3: %d  Pick 4: %d", pick3_count, pick4_count)
+            if not save_required and not us_pick_rows_changed(existing_pick_results, pick_results):
+                logger.info("Backfill %s Pick rows unchanged — skipping save", target_date)
+                continue
             try:
                 await _async_save_us_picks_to_supabase(target_date, pick_results, client=client)
             except (httpx.HTTPError, httpx.TimeoutException) as e:

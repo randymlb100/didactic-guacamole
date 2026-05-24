@@ -1191,6 +1191,49 @@ class ScraperContractsTest(unittest.TestCase):
             explicit_dates=True,
         ))
 
+    def test_non_current_backfill_skips_complete_cached_day(self):
+        rd_rows = [
+            {"id": "23", "number": "01-02-03"},
+            {"id": "24", "number": "04-05-06"},
+            {"id": "27", "number": "07-08-09"},
+            {"id": "28", "number": "10-11-12"},
+        ]
+        pick_rows = [
+            {"id": "US-P3-NJ-PICK-3-MIDDAY", "number": "1-2-3", "pick3": "1-2-3"},
+            {"id": "US-P4-NJ-PICK-4-MIDDAY", "number": "1-2-3-4", "pick4": "1-2-3-4"},
+        ]
+
+        self.assertFalse(scraper.non_current_backfill_should_run(rd_rows, pick_rows))
+
+    def test_non_current_backfill_runs_for_missing_tracked_rd_id(self):
+        rd_rows = [
+            {"id": "23", "number": "01-02-03"},
+            {"id": "27", "number": "07-08-09"},
+            {"id": "28", "number": "10-11-12"},
+        ]
+
+        self.assertTrue(scraper.non_current_backfill_should_run(rd_rows, []))
+
+    def test_non_current_backfill_runs_for_pending_pick_row(self):
+        rd_rows = [
+            {"id": "23", "number": "01-02-03"},
+            {"id": "24", "number": "04-05-06"},
+            {"id": "27", "number": "07-08-09"},
+            {"id": "28", "number": "10-11-12"},
+        ]
+        pick_rows = [
+            {"id": "US-P3-NJ-PICK-3-MIDDAY", "number": "", "pick3": "", "status": "pending"},
+        ]
+
+        self.assertTrue(scraper.non_current_backfill_should_run(rd_rows, pick_rows))
+
+    def test_us_pick_rows_changed_detects_quality_improvement(self):
+        existing = [{"id": "US-P3-NJ-PICK-3-MIDDAY", "number": "", "pick3": "", "status": "pending"}]
+        refreshed = [{"id": "US-P3-NJ-PICK-3-MIDDAY", "number": "1-2-3", "pick3": "1-2-3"}]
+
+        self.assertTrue(scraper.us_pick_rows_changed(existing, refreshed))
+        self.assertFalse(scraper.us_pick_rows_changed(refreshed, refreshed))
+
 
 if __name__ == "__main__":
     unittest.main()
