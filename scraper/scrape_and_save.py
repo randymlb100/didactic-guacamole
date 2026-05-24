@@ -1920,9 +1920,148 @@ US_PICK_STATIC_RESULT_METADATA = {
     "22": {"state": "New Jersey", "stateCode": "NJ", "game": "pick4", "gameName": "Pick 4", "draw": "Evening Draw"},
 }
 
-NJ_PICK_DRAW_RELEASE_MINUTES = {
-    "MIDDAYDRAW": 12 * 60 + 59,
-    "EVENINGDRAW": 22 * 60 + 57,
+US_PICK_TIME_ZONES_BY_STATE = {
+    "AR": "America/Chicago",
+    "AZ": "America/Phoenix",
+    "CA": "America/Los_Angeles",
+    "CO": "America/Denver",
+    "CT": "America/New_York",
+    "DC": "America/New_York",
+    "DE": "America/New_York",
+    "FL": "America/New_York",
+    "GA": "America/New_York",
+    "IA": "America/Chicago",
+    "ID": "America/Boise",
+    "IL": "America/Chicago",
+    "IN": "America/New_York",
+    "KS": "America/Chicago",
+    "KY": "America/New_York",
+    "LA": "America/Chicago",
+    "MA": "America/New_York",
+    "MD": "America/New_York",
+    "ME": "America/New_York",
+    "MI": "America/New_York",
+    "MN": "America/Chicago",
+    "MO": "America/Chicago",
+    "MS": "America/Chicago",
+    "NC": "America/New_York",
+    "NE": "America/Chicago",
+    "NH": "America/New_York",
+    "NJ": "America/New_York",
+    "NM": "America/Denver",
+    "NY": "America/New_York",
+    "OH": "America/New_York",
+    "OK": "America/Chicago",
+    "OR": "America/Los_Angeles",
+    "PA": "America/New_York",
+    "RI": "America/New_York",
+    "SC": "America/New_York",
+    "TN": "America/Chicago",
+    "TX": "America/Chicago",
+    "VA": "America/New_York",
+    "VT": "America/New_York",
+    "WA": "America/Los_Angeles",
+    "WI": "America/Chicago",
+    "WV": "America/New_York",
+}
+
+US_PICK_DRAW_RELEASE_MINUTES_BY_STATE_PERIOD = {
+    ("AR", "MIDDAY"): 12 * 60 + 59,
+    ("AR", "EVENING"): 18 * 60 + 59,
+    ("AZ", "DRAW"): 19 * 60,
+    ("CA", "DAY"): 13 * 60,
+    ("CA", "MIDDAY"): 13 * 60,
+    ("CA", "EVENING"): 18 * 60 + 30,
+    ("CO", "MIDDAY"): 13 * 60 + 30,
+    ("CO", "EVENING"): 19 * 60 + 30,
+    ("CT", "DAY"): 13 * 60 + 57,
+    ("CT", "MIDDAY"): 13 * 60 + 57,
+    ("CT", "NIGHT"): 22 * 60 + 29,
+    ("CT", "EVENING"): 22 * 60 + 29,
+    ("DC", "MIDDAY"): 13 * 60 + 50,
+    ("DC", "EVENING"): 19 * 60 + 50,
+    ("DC", "NIGHT"): 23 * 60 + 30,
+    ("DE", "DAY"): 13 * 60 + 58,
+    ("DE", "MIDDAY"): 13 * 60 + 58,
+    ("DE", "NIGHT"): 19 * 60 + 57,
+    ("DE", "EVENING"): 19 * 60 + 57,
+    ("FL", "MIDDAY"): 13 * 60 + 30,
+    ("FL", "EVENING"): 21 * 60 + 45,
+    ("GA", "MIDDAY"): 12 * 60 + 29,
+    ("GA", "EVENING"): 18 * 60 + 59,
+    ("GA", "NIGHT"): 23 * 60 + 34,
+    ("IA", "MIDDAY"): 12 * 60 + 20,
+    ("IA", "EVENING"): 22 * 60,
+    ("ID", "DAY"): 13 * 60 + 59,
+    ("ID", "MIDDAY"): 13 * 60 + 59,
+    ("ID", "NIGHT"): 19 * 60 + 59,
+    ("IL", "MIDDAY"): 12 * 60 + 40,
+    ("IL", "MORNING"): 12 * 60 + 40,
+    ("IL", "EVENING"): 21 * 60 + 22,
+    ("IN", "MIDDAY"): 13 * 60 + 20,
+    ("IN", "EVENING"): 23 * 60,
+    ("KS", "MIDDAY"): 13 * 60 + 10,
+    ("KS", "EVENING"): 21 * 60 + 10,
+    ("KY", "MIDDAY"): 13 * 60 + 20,
+    ("KY", "EVENING"): 23 * 60,
+    ("LA", "DAY"): 21 * 60 + 59,
+    ("MA", "MIDDAY"): 14 * 60,
+    ("MA", "EVENING"): 21 * 60,
+    ("MD", "MIDDAY"): 12 * 60 + 27,
+    ("MD", "EVENING"): 19 * 60 + 56,
+    ("ME", "DAY"): 13 * 60 + 10,
+    ("ME", "MIDDAY"): 13 * 60 + 10,
+    ("ME", "EVENING"): 18 * 60 + 50,
+    ("MI", "MIDDAY"): 12 * 60 + 59,
+    ("MI", "EVENING"): 19 * 60 + 29,
+    ("MN", "DAY"): 18 * 60 + 17,
+    ("MO", "DAY"): 12 * 60 + 45,
+    ("MO", "MIDDAY"): 12 * 60 + 45,
+    ("MO", "EVENING"): 20 * 60 + 59,
+    ("MS", "MIDDAY"): 14 * 60 + 30,
+    ("MS", "EVENING"): 21 * 60 + 30,
+    ("NC", "MIDDAY"): 15 * 60,
+    ("NC", "EVENING"): 23 * 60 + 22,
+    ("NE", "DAY"): 22 * 60,
+    ("NH", "DAY"): 13 * 60 + 10,
+    ("NH", "MIDDAY"): 13 * 60 + 10,
+    ("NH", "EVENING"): 18 * 60 + 55,
+    ("NJ", "MIDDAY"): 12 * 60 + 59,
+    ("NJ", "EVENING"): 22 * 60 + 57,
+    ("NM", "MIDDAY"): 13 * 60,
+    ("NM", "EVENING"): 21 * 60 + 30,
+    ("NY", "MIDDAY"): 14 * 60 + 30,
+    ("NY", "EVENING"): 22 * 60 + 30,
+    ("OH", "MIDDAY"): 12 * 60 + 29,
+    ("OH", "EVENING"): 19 * 60 + 29,
+    ("OK", "DAY"): 21 * 60,
+    ("OR", "EVENING"): 19 * 60,
+    ("PA", "DAY"): 13 * 60 + 35,
+    ("PA", "MIDDAY"): 13 * 60 + 35,
+    ("PA", "EVENING"): 18 * 60 + 59,
+    ("RI", "MIDDAY"): 13 * 60 + 20,
+    ("RI", "EVENING"): 18 * 60 + 59,
+    ("SC", "MIDDAY"): 12 * 60 + 59,
+    ("SC", "EVENING"): 18 * 60 + 59,
+    ("TN", "MORNING"): 9 * 60 + 28,
+    ("TN", "DAY"): 12 * 60 + 28,
+    ("TN", "MIDDAY"): 12 * 60 + 28,
+    ("TN", "EVENING"): 18 * 60 + 28,
+    ("TX", "MORNING"): 10 * 60,
+    ("TX", "DAY"): 12 * 60 + 27,
+    ("TX", "EVENING"): 18 * 60,
+    ("TX", "NIGHT"): 22 * 60 + 12,
+    ("VA", "DAY"): 13 * 60 + 59,
+    ("VA", "MIDDAY"): 13 * 60 + 59,
+    ("VA", "NIGHT"): 23 * 60,
+    ("VA", "EVENING"): 23 * 60,
+    ("VT", "MIDDAY"): 13 * 60 + 10,
+    ("VT", "EVENING"): 18 * 60 + 59,
+    ("WA", "DAY"): 20 * 60,
+    ("WI", "MIDDAY"): 13 * 60 + 30,
+    ("WI", "EVENING"): 21 * 60,
+    ("WV", "DAY"): 18 * 60 + 59,
+    ("WV", "EVENING"): 21 * 60,
 }
 
 
@@ -1941,33 +2080,105 @@ def enrich_us_pick_result_row(row):
     return enriched
 
 
-def is_new_jersey_pick_row(row):
+def us_pick_state_code(row):
+    state_code = str((row or {}).get("stateCode") or "").strip().upper()
+    if state_code:
+        return state_code
+    result_id = str((row or {}).get("id") or "").upper()
+    parts = result_id.split("-")
+    if len(parts) >= 3 and len(parts[2]) == 2:
+        return parts[2]
+    return US_STATE_CODES.get(str((row or {}).get("state") or "").strip(), "")
+
+
+def parse_us_pick_clock_minutes_from_text(text):
+    raw = str(text or "").upper()
+    match = re.search(r"(\d{1,2})(?::|-)(\d{2})\s*-?\s*(AM|PM)", raw)
+    if not match:
+        match = re.search(r"(\d{1,2})(\d{2})(AM|PM)", raw)
+    if not match:
+        return None
+    hour = int(match.group(1))
+    minute = int(match.group(2))
+    meridiem = match.group(3)
+    if hour < 1 or hour > 12 or minute > 59:
+        return None
+    if meridiem == "AM":
+        hour = 0 if hour == 12 else hour
+    elif hour != 12:
+        hour += 12
+    return hour * 60 + minute
+
+
+def resolve_us_pick_period(row):
     text = " ".join(
         str((row or {}).get(field) or "")
-        for field in ("id", "state", "stateCode", "name", "gameName", "draw")
+        for field in ("id", "name", "gameName", "draw")
     ).upper()
-    return "NJ" in text or "NEW JERSEY" in text
+    clock_minutes = parse_us_pick_clock_minutes_from_text(text)
+    if clock_minutes is not None:
+        return f"{clock_minutes // 60}:{str(clock_minutes % 60).zfill(2)}"
+    draw_key = normalize_draw_key((row or {}).get("draw"))
+    if "MORNING" in draw_key:
+        return "MORNING"
+    if "MIDDAY" in draw_key:
+        return "MIDDAY"
+    if "EVENING" in draw_key:
+        return "EVENING"
+    if "NIGHT" in draw_key:
+        return "NIGHT"
+    if "DAY" in draw_key:
+        return "DAY"
+    if "DRAW" in draw_key:
+        return "DRAW"
+    return ""
 
 
-def sanitize_unreleased_nj_pick_rows(rows, target_date, now_et=None):
-    now = now_et or get_et_now()
-    if str(target_date or "") != get_et_date_str(now):
+def us_pick_draw_release_minutes(row):
+    state_code = us_pick_state_code(row)
+    period = resolve_us_pick_period(row)
+    release_minutes = US_PICK_DRAW_RELEASE_MINUTES_BY_STATE_PERIOD.get((state_code, period))
+    if release_minutes is not None:
+        return release_minutes
+    if ":" in period:
+        hour_text, minute_text = period.split(":", 1)
+        try:
+            return int(hour_text) * 60 + int(minute_text)
+        except ValueError:
+            return None
+    return None
+
+
+def sanitize_unreleased_us_pick_rows(rows, target_date, now=None):
+    try:
+        target_day = datetime.datetime.strptime(str(target_date or ""), "%d-%m-%Y").date()
+    except ValueError:
         return [dict(row) for row in (rows or [])]
-    now_minutes = now.hour * 60 + now.minute
+    current = now or datetime.datetime.now(datetime.timezone.utc)
+    if current.tzinfo is None:
+        current = current.replace(tzinfo=ZoneInfo("America/New_York"))
     sanitized = []
     for row in rows or []:
         candidate = dict(row)
-        if not is_new_jersey_pick_row(candidate):
+        state_code = us_pick_state_code(candidate)
+        release_minutes = us_pick_draw_release_minutes(candidate)
+        if not state_code or release_minutes is None:
             sanitized.append(candidate)
             continue
-        draw_key = normalize_draw_key(candidate.get("draw"))
-        release_minutes = NJ_PICK_DRAW_RELEASE_MINUTES.get(draw_key)
-        if release_minutes is None or now_minutes >= release_minutes:
+        zone = ZoneInfo(US_PICK_TIME_ZONES_BY_STATE.get(state_code, "America/New_York"))
+        local_now = current.astimezone(zone)
+        if local_now.date() > target_day:
             sanitized.append(candidate)
             continue
+        if local_now.date() == target_day:
+            now_minutes = local_now.hour * 60 + local_now.minute
+            if now_minutes >= release_minutes:
+                sanitized.append(candidate)
+                continue
         if str(candidate.get("number") or "").strip():
             logger.warning(
-                "Ignoring early NJ %s result for %s before draw release time",
+                "Ignoring early %s %s result for %s before draw release time",
+                state_code,
                 candidate.get("draw") or candidate.get("id"),
                 target_date,
             )
@@ -1975,8 +2186,13 @@ def sanitize_unreleased_nj_pick_rows(rows, target_date, now_et=None):
         candidate["pick3"] = ""
         candidate["pick4"] = ""
         candidate["status"] = "pending"
+        candidate["source"] = "pending_before_draw"
         sanitized.append(candidate)
     return sanitized
+
+
+def sanitize_unreleased_nj_pick_rows(rows, target_date, now_et=None):
+    return sanitize_unreleased_us_pick_rows(rows, target_date, now=now_et)
 
 
 async def _async_fetch_lotteryusa_pick_fallbacks(date_str=None, ids=None, client=None):
