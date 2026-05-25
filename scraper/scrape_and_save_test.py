@@ -85,6 +85,191 @@ class ScraperContractsTest(unittest.TestCase):
 
         self.assertEqual(["US-P3-FL-PICK-3-MIDDAY"], [row["id"] for row in pruned])
 
+    def test_suppress_early_us_pick_result_before_official_draw_time(self):
+        rows = [{
+            "id": "US-P3-NJ-PICK-3-MIDDAY",
+            "state": "New Jersey",
+            "stateCode": "NJ",
+            "game": "pick3",
+            "gameName": "Pick 3",
+            "draw": "Midday Draw",
+            "date": "10-05-2026",
+            "number": "8-1-4",
+            "pick3": "8-1-4",
+            "source": "lotteryusa.com",
+        }]
+
+        filtered = scraper.suppress_early_us_pick_results(
+            "10-05-2026",
+            rows,
+            now_utc=datetime.datetime(2026, 5, 10, 16, 58, tzinfo=datetime.UTC),
+        )
+
+        self.assertEqual("", filtered[0]["number"])
+        self.assertEqual("", filtered[0]["pick3"])
+        self.assertEqual("pending", filtered[0]["status"])
+        self.assertEqual("early-result-suppressed", filtered[0]["source"])
+
+    def test_keep_us_pick_result_at_official_draw_time(self):
+        rows = [{
+            "id": "US-P3-NJ-PICK-3-MIDDAY",
+            "state": "New Jersey",
+            "stateCode": "NJ",
+            "game": "pick3",
+            "gameName": "Pick 3",
+            "draw": "Midday Draw",
+            "date": "10-05-2026",
+            "number": "8-1-4",
+            "pick3": "8-1-4",
+            "source": "lotteryusa.com",
+        }]
+
+        filtered = scraper.suppress_early_us_pick_results(
+            "10-05-2026",
+            rows,
+            now_utc=datetime.datetime(2026, 5, 10, 16, 59, tzinfo=datetime.UTC),
+        )
+
+        self.assertEqual("8-1-4", filtered[0]["number"])
+        self.assertEqual("8-1-4", filtered[0]["pick3"])
+        self.assertNotEqual("early-result-suppressed", filtered[0].get("source"))
+
+    def test_suppress_early_us_pick_result_for_day_alias_using_midday_time(self):
+        rows = [{
+            "id": "US-P3-ME-PICK-3-DAY",
+            "state": "Maine",
+            "stateCode": "ME",
+            "game": "pick3",
+            "gameName": "Pick 3",
+            "draw": "Day Draw",
+            "date": "10-05-2026",
+            "number": "1-2-3",
+            "pick3": "1-2-3",
+            "source": "lotteryusa.com",
+        }]
+
+        filtered = scraper.suppress_early_us_pick_results(
+            "10-05-2026",
+            rows,
+            now_utc=datetime.datetime(2026, 5, 10, 17, 9, tzinfo=datetime.UTC),
+        )
+
+        self.assertEqual("", filtered[0]["number"])
+        self.assertEqual("pending", filtered[0]["status"])
+
+    def test_keep_us_pick_day_alias_result_at_official_midday_time(self):
+        rows = [{
+            "id": "US-P3-ME-PICK-3-DAY",
+            "state": "Maine",
+            "stateCode": "ME",
+            "game": "pick3",
+            "gameName": "Pick 3",
+            "draw": "Day Draw",
+            "date": "10-05-2026",
+            "number": "1-2-3",
+            "pick3": "1-2-3",
+            "source": "lotteryusa.com",
+        }]
+
+        filtered = scraper.suppress_early_us_pick_results(
+            "10-05-2026",
+            rows,
+            now_utc=datetime.datetime(2026, 5, 10, 17, 10, tzinfo=datetime.UTC),
+        )
+
+        self.assertEqual("1-2-3", filtered[0]["number"])
+        self.assertNotEqual("early-result-suppressed", filtered[0].get("source"))
+
+    def test_suppress_nj_evening_before_official_draw_time_and_publish_at_draw_time(self):
+        rows = [{
+            "id": "US-P3-NJ-PICK-3-EVENING",
+            "state": "New Jersey",
+            "stateCode": "NJ",
+            "game": "pick3",
+            "gameName": "Pick 3",
+            "draw": "Evening Draw",
+            "date": "10-05-2026",
+            "number": "5-1-4",
+            "pick3": "5-1-4",
+            "source": "lotteryusa.com",
+        }]
+
+        before = scraper.suppress_early_us_pick_results(
+            "10-05-2026",
+            rows,
+            now_utc=datetime.datetime(2026, 5, 11, 2, 56, tzinfo=datetime.UTC),
+        )
+        at_draw = scraper.suppress_early_us_pick_results(
+            "10-05-2026",
+            rows,
+            now_utc=datetime.datetime(2026, 5, 11, 2, 57, tzinfo=datetime.UTC),
+        )
+
+        self.assertEqual("", before[0]["number"])
+        self.assertEqual("pending", before[0]["status"])
+        self.assertEqual("5-1-4", at_draw[0]["number"])
+
+    def test_us_pick_draw_time_uses_dst_aware_state_timezone(self):
+        row = {
+            "id": "US-P3-NJ-PICK-3-MIDDAY",
+            "stateCode": "NJ",
+            "draw": "Midday Draw",
+            "date": "10-05-2026",
+            "number": "8-1-4",
+        }
+        winter_row = dict(row, date="10-01-2026")
+
+        self.assertEqual(
+            datetime.datetime(2026, 5, 10, 16, 59, tzinfo=datetime.UTC),
+            scraper.us_pick_official_draw_utc(row, "10-05-2026"),
+        )
+        self.assertEqual(
+            datetime.datetime(2026, 1, 10, 17, 59, tzinfo=datetime.UTC),
+            scraper.us_pick_official_draw_utc(winter_row, "10-01-2026"),
+        )
+
+    def test_backend_pick_schedule_stays_aligned_with_android_critical_rows(self):
+        android_file = os.path.abspath(os.path.join(
+            os.path.dirname(__file__),
+            "..",
+            "..",
+            "lotterynet_android",
+            "app",
+            "src",
+            "main",
+            "java",
+            "com",
+            "lotterynet",
+            "pro",
+            "core",
+            "catalog",
+            "UsPickScheduleResolver.kt",
+        ))
+        self.assertTrue(os.path.exists(android_file), f"Missing Android schedule file: {android_file}")
+        with open(android_file, "r", encoding="utf-8") as schedule_file:
+            android_text = schedule_file.read()
+
+        expected_times = {
+            '("NJ" to "MIDDAY") to "12:59 PM"',
+            '("NJ" to "EVENING") to "10:57 PM"',
+            '("ME" to "MIDDAY") to "1:10 PM"',
+            '("NY" to "MIDDAY") to "2:30 PM"',
+            '("FL" to "EVENING") to "9:45 PM"',
+            '("TX" to "NIGHT") to "10:12 PM"',
+            '("CA" to "EVENING") to "6:30 PM"',
+        }
+        expected_zones = {
+            '"NJ" to "America/New_York"',
+            '"ME" to "America/New_York"',
+            '"NY" to "America/New_York"',
+            '"FL" to "America/New_York"',
+            '"TX" to "America/Chicago"',
+            '"CA" to "America/Los_Angeles"',
+        }
+
+        for snippet in expected_times | expected_zones:
+            self.assertIn(snippet, android_text)
+
     def test_merge_us_pick_results_marks_numbered_pending_rows_published(self):
         existing = [{
             "id": "US-P4-AR-CASH-4-DAY",

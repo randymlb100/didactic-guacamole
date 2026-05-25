@@ -130,6 +130,96 @@ US_STATE_CODES = {
     "Wyoming": "WY",
 }
 
+US_PICK_TIME_ZONES_BY_STATE = {
+    "AR": "America/Chicago",
+    "AZ": "America/Phoenix",
+    "CA": "America/Los_Angeles",
+    "CO": "America/Denver",
+    "CT": "America/New_York",
+    "DC": "America/New_York",
+    "DE": "America/New_York",
+    "FL": "America/New_York",
+    "GA": "America/New_York",
+    "IA": "America/Chicago",
+    "ID": "America/Boise",
+    "IL": "America/Chicago",
+    "IN": "America/New_York",
+    "KS": "America/Chicago",
+    "KY": "America/New_York",
+    "LA": "America/Chicago",
+    "MA": "America/New_York",
+    "MD": "America/New_York",
+    "ME": "America/New_York",
+    "MI": "America/New_York",
+    "MN": "America/Chicago",
+    "MO": "America/Chicago",
+    "MS": "America/Chicago",
+    "NC": "America/New_York",
+    "NE": "America/Chicago",
+    "NH": "America/New_York",
+    "NJ": "America/New_York",
+    "NM": "America/Denver",
+    "NY": "America/New_York",
+    "OH": "America/New_York",
+    "OK": "America/Chicago",
+    "OR": "America/Los_Angeles",
+    "PA": "America/New_York",
+    "RI": "America/New_York",
+    "SC": "America/New_York",
+    "TN": "America/Chicago",
+    "TX": "America/Chicago",
+    "VA": "America/New_York",
+    "VT": "America/New_York",
+    "WA": "America/Los_Angeles",
+    "WI": "America/Chicago",
+    "WV": "America/New_York",
+}
+
+US_PICK_DRAW_TIMES_BY_STATE_PERIOD = {
+    ("AR", "MIDDAY"): "12:59 PM", ("AR", "EVENING"): "6:59 PM",
+    ("AZ", "DRAW"): "7:00 PM",
+    ("CA", "DAY"): "1:00 PM", ("CA", "MIDDAY"): "1:00 PM", ("CA", "EVENING"): "6:30 PM",
+    ("CO", "MIDDAY"): "1:30 PM", ("CO", "EVENING"): "7:30 PM",
+    ("CT", "DAY"): "1:57 PM", ("CT", "MIDDAY"): "1:57 PM", ("CT", "NIGHT"): "10:29 PM", ("CT", "EVENING"): "10:29 PM",
+    ("DC", "MIDDAY"): "1:50 PM", ("DC", "EVENING"): "7:50 PM", ("DC", "NIGHT"): "11:30 PM",
+    ("DE", "DAY"): "1:58 PM", ("DE", "MIDDAY"): "1:58 PM", ("DE", "NIGHT"): "7:57 PM", ("DE", "EVENING"): "7:57 PM",
+    ("FL", "MIDDAY"): "1:30 PM", ("FL", "EVENING"): "9:45 PM",
+    ("GA", "MIDDAY"): "12:29 PM", ("GA", "EVENING"): "6:59 PM", ("GA", "NIGHT"): "11:34 PM",
+    ("IA", "MIDDAY"): "12:20 PM", ("IA", "EVENING"): "10:00 PM",
+    ("ID", "DAY"): "1:59 PM", ("ID", "MIDDAY"): "1:59 PM", ("ID", "NIGHT"): "7:59 PM",
+    ("IL", "MIDDAY"): "12:40 PM", ("IL", "MORNING"): "12:40 PM", ("IL", "EVENING"): "9:22 PM",
+    ("IN", "MIDDAY"): "1:20 PM", ("IN", "EVENING"): "11:00 PM",
+    ("KS", "MIDDAY"): "1:10 PM", ("KS", "EVENING"): "9:10 PM",
+    ("KY", "MIDDAY"): "1:20 PM", ("KY", "EVENING"): "11:00 PM",
+    ("LA", "DAY"): "9:59 PM",
+    ("MA", "MIDDAY"): "2:00 PM", ("MA", "EVENING"): "9:00 PM",
+    ("MD", "MIDDAY"): "12:27 PM", ("MD", "EVENING"): "7:56 PM",
+    ("ME", "MIDDAY"): "1:10 PM", ("ME", "EVENING"): "6:50 PM",
+    ("MI", "MIDDAY"): "12:59 PM", ("MI", "EVENING"): "7:29 PM",
+    ("MN", "DAY"): "6:17 PM",
+    ("MO", "DAY"): "12:45 PM", ("MO", "MIDDAY"): "12:45 PM", ("MO", "EVENING"): "8:59 PM",
+    ("MS", "MIDDAY"): "2:30 PM", ("MS", "EVENING"): "9:30 PM",
+    ("NC", "MIDDAY"): "3:00 PM", ("NC", "EVENING"): "11:22 PM",
+    ("NE", "DAY"): "10:00 PM",
+    ("NH", "MIDDAY"): "1:10 PM", ("NH", "EVENING"): "6:55 PM",
+    ("NJ", "MIDDAY"): "12:59 PM", ("NJ", "EVENING"): "10:57 PM",
+    ("NM", "MIDDAY"): "1:00 PM", ("NM", "EVENING"): "9:30 PM",
+    ("NY", "MIDDAY"): "2:30 PM", ("NY", "EVENING"): "10:30 PM",
+    ("OH", "MIDDAY"): "12:29 PM", ("OH", "EVENING"): "7:29 PM",
+    ("OK", "DAY"): "9:00 PM",
+    ("OR", "EVENING"): "7:00 PM",
+    ("PA", "DAY"): "1:35 PM", ("PA", "MIDDAY"): "1:35 PM", ("PA", "EVENING"): "6:59 PM",
+    ("RI", "MIDDAY"): "1:20 PM", ("RI", "EVENING"): "6:59 PM",
+    ("SC", "MIDDAY"): "12:59 PM", ("SC", "EVENING"): "6:59 PM",
+    ("TN", "MORNING"): "9:28 AM", ("TN", "DAY"): "12:28 PM", ("TN", "MIDDAY"): "12:28 PM", ("TN", "EVENING"): "6:28 PM", ("TN", "6:28 PM"): "6:28 PM",
+    ("TX", "MORNING"): "10:00 AM", ("TX", "DAY"): "12:27 PM", ("TX", "EVENING"): "6:00 PM", ("TX", "NIGHT"): "10:12 PM",
+    ("VA", "DAY"): "1:59 PM", ("VA", "MIDDAY"): "1:59 PM", ("VA", "NIGHT"): "11:00 PM", ("VA", "EVENING"): "11:00 PM",
+    ("VT", "MIDDAY"): "1:10 PM", ("VT", "EVENING"): "6:59 PM",
+    ("WA", "DAY"): "8:00 PM",
+    ("WI", "MIDDAY"): "1:30 PM", ("WI", "1:30 PM"): "1:30 PM", ("WI", "EVENING"): "9:00 PM", ("WI", "9:00 PM"): "9:00 PM",
+    ("WV", "DAY"): "6:59 PM", ("WV", "EVENING"): "9:00 PM", ("WV", "9:00 PM"): "9:00 PM",
+}
+
 # Mapa: nombre en loteriasdominicanas.com → id de lotería en la app
 LOTTERY_MAP = {
     "la primera día":        {"id": "1",  "name": "La Primera Día"},
@@ -2756,6 +2846,96 @@ async def _async_fetch_existing_pick_results_from_supabase(date_str, client=None
     return await _async_fetch_kv_list(pick_results_cache_key(date_str), client=client)
 
 
+def us_pick_period_from_row(row):
+    text = " ".join(str(row.get(key, "") or "") for key in ("id", "name", "draw")).upper()
+    match = re.search(r"\b([01]?\d):([0-5]\d)\s*(AM|PM)\b", text)
+    if match:
+        return f"{int(match.group(1))}:{match.group(2)} {match.group(3)}"
+    match = re.search(r"\b([01]?\d)-([0-5]\d)-(AM|PM)\b", text)
+    if match:
+        return f"{int(match.group(1))}:{match.group(2)} {match.group(3)}"
+    if re.search(r"\b(MORNING|MANANA|MAÑANA)\b", text):
+        return "MORNING"
+    if re.search(r"\b(MIDDAY|DIA|DÍA)\b", text):
+        return "MIDDAY"
+    if re.search(r"\b(EVENING|TARDE)\b", text):
+        return "EVENING"
+    if re.search(r"\b(NIGHT|NOCHE)\b", text):
+        return "NIGHT"
+    if re.search(r"\bDAY\b", text):
+        return "DAY"
+    if re.search(r"\bDRAW\b", text):
+        return "DRAW"
+    return ""
+
+
+def parse_us_pick_result_date(date_str):
+    text = str(date_str or "").strip()
+    for fmt in ("%d-%m-%Y", "%Y-%m-%d"):
+        try:
+            return datetime.datetime.strptime(text, fmt).date()
+        except ValueError:
+            continue
+    return None
+
+
+def us_pick_official_draw_utc(row, date_str):
+    state_code = str(row.get("stateCode") or "").strip().upper()
+    if not state_code:
+        result_id_parts = str(row.get("id") or "").upper().split("-")
+        if len(result_id_parts) >= 3:
+            state_code = result_id_parts[2]
+    period = us_pick_period_from_row(row)
+    if not state_code or not period:
+        return None
+    draw_time = US_PICK_DRAW_TIMES_BY_STATE_PERIOD.get((state_code, period))
+    if not draw_time and period == "DAY":
+        draw_time = US_PICK_DRAW_TIMES_BY_STATE_PERIOD.get((state_code, "MIDDAY"))
+    if not draw_time:
+        return None
+    draw_date = parse_us_pick_result_date(row.get("date") or date_str)
+    if not draw_date:
+        return None
+    zone = ZoneInfo(US_PICK_TIME_ZONES_BY_STATE.get(state_code, "America/New_York"))
+    for fmt in ("%I:%M %p", "%H:%M"):
+        try:
+            draw_clock = datetime.datetime.strptime(draw_time, fmt).time()
+            draw_local = datetime.datetime.combine(draw_date, draw_clock, tzinfo=zone)
+            return draw_local.astimezone(datetime.UTC)
+        except ValueError:
+            continue
+    return None
+
+
+def suppress_early_us_pick_results(date_str, rows, now_utc=None):
+    now = now_utc or datetime.datetime.now(datetime.UTC)
+    if now.tzinfo is None:
+        now = now.replace(tzinfo=datetime.UTC)
+    now = now.astimezone(datetime.UTC)
+    filtered = []
+    for row in rows or []:
+        candidate = dict(row)
+        if not str(candidate.get("number", "")).strip():
+            filtered.append(candidate)
+            continue
+        draw_utc = us_pick_official_draw_utc(candidate, date_str)
+        if draw_utc is None or now >= draw_utc:
+            filtered.append(candidate)
+            continue
+        candidate["number"] = ""
+        candidate["status"] = "pending"
+        candidate["source"] = "early-result-suppressed"
+        candidate["suppressedUntil"] = draw_utc.isoformat().replace("+00:00", "Z")
+        if catalog_row_game(candidate) == "pick3" or str(candidate.get("pick3", "")).strip():
+            candidate["pick3"] = ""
+            candidate.pop("pick4", None)
+        elif catalog_row_game(candidate) == "pick4" or str(candidate.get("pick4", "")).strip():
+            candidate["pick4"] = ""
+            candidate.pop("pick3", None)
+        filtered.append(candidate)
+    return filtered
+
+
 def _pick_result_quality(row):
     number = str(row.get("number", "")).strip()
     status = str(row.get("status", "")).strip().lower()
@@ -2791,6 +2971,11 @@ def merge_us_pick_results_by_id(existing, results, observed_at=None):
             merged.pop(alias_id, None)
         previous = merged.get(key) or {}
         candidate = dict(r)
+        if str(candidate.get("source", "")).strip() == "early-result-suppressed":
+            candidate["firstSeenAt"] = previous.get("firstSeenAt") or observed
+            candidate["lastSeenAt"] = observed
+            merged[key] = candidate
+            continue
         if previous and _pick_result_quality(previous) > _pick_result_quality(candidate):
             preserved = dict(previous)
             preserved["lastSeenAt"] = observed
@@ -2852,6 +3037,7 @@ def prune_stale_us_pick_rows_when_catalog_is_complete(existing, incoming, catalo
 async def _async_save_us_picks_to_supabase(date_str, rows, client=None):
     key = pick_results_cache_key(date_str)
     c = client or get_http_client()
+    rows = suppress_early_us_pick_results(date_str, rows)
     existing = await _async_fetch_existing_pick_results_from_supabase(date_str, client=c)
     existing = prune_stale_us_pick_rows_when_catalog_is_complete(existing, rows)
     merged_rows = merge_us_pick_results_by_id(existing, rows, observed_at=utc_now_iso())

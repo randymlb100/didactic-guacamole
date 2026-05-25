@@ -25,6 +25,7 @@ from scraper.scrape_and_save import (
     scrape,
     scrape_us_picks,
     static_us_pick_catalog_rows,
+    suppress_early_us_pick_results,
     supabase_rest_headers,
 )
 
@@ -742,7 +743,8 @@ def pick_rows_for_request_date(date_key, game_filter=""):
         rows = [row for row in rows if row.get("game") == game_filter]
     if len(rows) >= MIN_PICK_SNAPSHOT_ROWS_FOR_PENDING_CATALOG and date_key == get_dr_date_str():
         rows = merge_pending_pick_catalog_rows(date_key, rows, game_filter)
-    return apply_manual_overrides(date_key, unique_sorted_pick_results(rows), include_pick=True)
+    rows = apply_manual_overrides(date_key, unique_sorted_pick_results(rows), include_pick=True)
+    return suppress_early_us_pick_results(date_key, rows)
 
 
 def unique_sorted_results(rows):
