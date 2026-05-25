@@ -31,6 +31,7 @@ class RenderApiContractsTest(unittest.TestCase):
         app._scrape_cache.clear()
         app._pick_scrape_cache.clear()
         app._lottery_refresh_inflight.clear()
+        app._lottery_refresh_last_started.clear()
         app._pick_refresh_inflight.clear()
         app._pick_refresh_last_started.clear()
         app._pick_refresh_last_completed.clear()
@@ -702,6 +703,17 @@ class RenderApiContractsTest(unittest.TestCase):
         thread_ctor.assert_called_once()
         thread_ctor.return_value.start.assert_called_once()
 
+    def test_schedule_background_lottery_refresh_rate_limits_same_date(self):
+        with patch("app.threading.Thread") as thread_ctor, \
+            patch("app.time.time", side_effect=[1000.0, 1010.0]):
+            first = app.schedule_background_lottery_refresh("02-05-2026")
+            app._lottery_refresh_inflight.clear()
+            second = app.schedule_background_lottery_refresh("02-05-2026")
+
+        self.assertTrue(first)
+        self.assertFalse(second)
+        thread_ctor.assert_called_once()
+
     def test_schedule_background_pick_refresh_rate_limits_same_date(self):
         with patch("app.threading.Thread") as thread_ctor, \
             patch("app.time.time", side_effect=[1000.0, 1010.0]):
@@ -1027,19 +1039,36 @@ class RenderApiContractsTest(unittest.TestCase):
         scrape_mock.assert_not_called()
         save_mock.assert_not_called()
 
-    def test_today_live_lottery_without_cached_snapshot_scrapes_inline(self):
+    def test_today_live_lottery_without_cached_snapshot_schedules_background_without_inline_scrape(self):
         live_rows = [{"id": "1", "name": "La Primera Día", "date": "02-05-2026", "number": "01-02-03"}]
         with patch("app.fetch_existing_from_supabase", return_value=[]), \
             patch("app.get_dr_date_str", return_value="02-05-2026"), \
-            patch("app.schedule_background_lottery_refresh", return_value=False) as background_refresh, \
+            patch("app.schedule_background_lottery_refresh", return_value=True) as background_refresh, \
             patch("app.scrape", return_value=live_rows) as scrape_mock:
             response = self.client.get("/system-results?date=02-05-2026&mode=lottery&live=1")
 
         payload = json.loads(response.data.decode("utf-8"))
         self.assertEqual(200, response.status_code)
-        self.assertEqual(1, payload["lotteries"]["count"])
-        background_refresh.assert_not_called()
-        scrape_mock.assert_called_once_with("02-05-2026")
+        self.assertEqual(0, payload["lotteries"]["count"])
+        self.assertEqual("cache-miss", payload["servedFrom"])
+        background_refresh.assert_called_once_with("02-05-2026")
+        scrape_mock.assert_not_called()
+
+    def test_legacy_results_live_today_without_cached_snapshot_does_not_scrape_inline(self):
+        live_rows = [{"id": "1", "name": "La Primera Día", "date": "02-05-2026", "number": "01-02-03"}]
+        with patch("app.fetch_existing_from_supabase", return_value=[]), \
+            patch("app.fetch_pick_rows_from_supabase", return_value=[]), \
+            patch("app.get_dr_date_str", return_value="02-05-2026"), \
+            patch("app.schedule_background_lottery_refresh", return_value=True) as background_refresh, \
+            patch("app.scrape", return_value=live_rows) as scrape_mock:
+            response = self.client.get("/results?date=02-05-2026&live=1")
+
+        payload = json.loads(response.data.decode("utf-8"))
+        self.assertEqual(200, response.status_code)
+        self.assertEqual(0, payload["count"])
+        self.assertEqual("live-scraper", payload["source"])
+        background_refresh.assert_called_once_with("02-05-2026")
+        scrape_mock.assert_not_called()
 
     def test_run_scraper_uses_configured_fallback_key_when_render_env_is_missing(self):
         lottery_rows = [

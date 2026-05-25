@@ -35,6 +35,7 @@ CORS(app)
 port = int(os.environ.get("PORT", 5000))
 SCRAPE_CACHE_TTL_SECONDS = int(os.environ.get("SCRAPE_CACHE_TTL_SECONDS", "120"))
 LIVE_RESPONSE_CACHE_TTL_SECONDS = int(os.environ.get("LIVE_RESPONSE_CACHE_TTL_SECONDS", "5"))
+LOTTERY_BACKGROUND_REFRESH_MIN_INTERVAL_SECONDS = int(os.environ.get("LOTTERY_BACKGROUND_REFRESH_MIN_INTERVAL_SECONDS", "120"))
 PICK_BACKGROUND_REFRESH_MIN_INTERVAL_SECONDS = int(os.environ.get("PICK_BACKGROUND_REFRESH_MIN_INTERVAL_SECONDS", "30"))
 MIN_PICK_SNAPSHOT_ROWS_FOR_PENDING_CATALOG = int(os.environ.get("MIN_PICK_SNAPSHOT_ROWS_FOR_PENDING_CATALOG", "25"))
 _scrape_cache = {}
@@ -43,6 +44,7 @@ _live_system_results_cache = {}
 _manual_override_cache = {}
 _lottery_refresh_lock = threading.Lock()
 _lottery_refresh_inflight = set()
+_lottery_refresh_last_started = {}
 _pick_refresh_lock = threading.Lock()
 _pick_refresh_inflight = set()
 _pick_refresh_last_started = {}
@@ -398,9 +400,14 @@ def refresh_lottery_cache_async(date_key):
 
 def schedule_background_lottery_refresh(date_key):
     with _lottery_refresh_lock:
+        now = time.time()
         if date_key in _lottery_refresh_inflight:
             return False
+        last_started = _lottery_refresh_last_started.get(date_key, 0)
+        if now - last_started < LOTTERY_BACKGROUND_REFRESH_MIN_INTERVAL_SECONDS:
+            return False
         _lottery_refresh_inflight.add(date_key)
+        _lottery_refresh_last_started[date_key] = now
     thread = threading.Thread(
         target=refresh_lottery_cache_async,
         args=(date_key,),
@@ -623,6 +630,10 @@ def lottery_rows_for_request_date(date_key):
             set_live_served_from_flag("lottery", "supabase-snapshot")
             schedule_background_lottery_refresh(date_key)
             return cached_lottery_rows
+        if date_key == get_dr_date_str():
+            schedule_background_lottery_refresh(date_key)
+            set_live_served_from_flag("lottery", "cache-miss")
+            return []
         set_live_served_from_flag("lottery", "inline-scrape")
         fresh_rows = unique_sorted_results(scrape_cached(date_key))
         if fresh_rows:
