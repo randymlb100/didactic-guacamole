@@ -502,18 +502,24 @@ def get_composed_live_system_results_cache(date_key, mode):
 
 def live_served_from(date_key, mode, lottery_rows, pick_rows):
     if mode == "lottery":
-        return get_live_served_from_flag("lottery") or "inline-scrape"
+        return get_live_served_from_flag("lottery") or ("supabase-snapshot" if lottery_rows else "cache-miss")
     if mode == "pick":
-        return get_live_served_from_flag("pick") or "inline-scrape"
+        return get_live_served_from_flag("pick") or ("supabase-snapshot" if pick_rows else "cache-miss")
     if mode == "both":
-        lottery_served_from = get_live_served_from_flag("lottery") or "inline-scrape"
-        pick_served_from = get_live_served_from_flag("pick") or "inline-scrape"
+        lottery_served_from = get_live_served_from_flag("lottery") or ("supabase-snapshot" if lottery_rows else "cache-miss")
+        pick_served_from = get_live_served_from_flag("pick") or ("supabase-snapshot" if pick_rows else "cache-miss")
         if lottery_served_from == "supabase-snapshot" and pick_served_from == "supabase-snapshot":
             return "supabase-snapshot"
         if "section-cache" in (lottery_served_from, pick_served_from):
             return "section-cache"
+        if "inline-scrape" in (lottery_served_from, pick_served_from):
+            return "inline-scrape"
+        if lottery_served_from == "cache-miss" and pick_served_from == "cache-miss":
+            return "cache-miss"
+        if "cache-miss" in (lottery_served_from, pick_served_from):
+            return "cache-miss"
         return "inline-scrape"
-    return "inline-scrape"
+    return "cache-miss"
 
 
 def log_live_request(date_key, mode, served_from, started_at):
