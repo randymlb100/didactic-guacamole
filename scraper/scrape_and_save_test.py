@@ -229,11 +229,15 @@ class ScraperContractsTest(unittest.TestCase):
         )
 
     def test_backend_pick_schedule_stays_aligned_with_android_critical_rows(self):
-        android_file = os.path.abspath(os.path.join(
+        default_android_root = os.path.abspath(os.path.join(
             os.path.dirname(__file__),
             "..",
             "..",
             "lotterynet_android",
+        ))
+        android_root = os.environ.get("LOTTERYNET_ANDROID_ROOT", default_android_root)
+        android_file = os.path.abspath(os.path.join(
+            android_root,
             "app",
             "src",
             "main",
@@ -245,7 +249,8 @@ class ScraperContractsTest(unittest.TestCase):
             "catalog",
             "UsPickScheduleResolver.kt",
         ))
-        self.assertTrue(os.path.exists(android_file), f"Missing Android schedule file: {android_file}")
+        if not os.path.exists(android_file):
+            self.skipTest(f"Android schedule file is not available in this checkout: {android_file}")
         with open(android_file, "r", encoding="utf-8") as schedule_file:
             android_text = schedule_file.read()
 
