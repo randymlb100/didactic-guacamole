@@ -32,7 +32,13 @@ def supabase_rest_headers(api_key=None, extra=None):
 
 
 SUPABASE_KEY = get_supabase_key_from_env()
-TRACKED_REMOTE_RESULT_IDS = {"23", "24", "27", "28"}
+TRACKED_REMOTE_RESULT_IDS = {
+    "18",  # New York Noche often completes after the first daily cache write.
+    "23", "24",  # King Lottery
+    "25", "26",  # New Jersey normal draws
+    "27", "28", "29", "30", "31", "32", "33", "34", "35", "36",
+    "37", "38", "39", "40", "41", "42", "43", "44", "45", "46",
+}
 US_PICK_NORMAL_CATALOG_STATE_CODES = set()
 US_PICK_URLS = {
     "pick3": "https://pick-3.com/winning-numbers",

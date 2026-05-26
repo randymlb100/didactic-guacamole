@@ -306,7 +306,14 @@ class ScraperContractsTest(unittest.TestCase):
         self.assertEqual({"19", "20", "21", "22", "25", "26"}, scraper.AUTHORITATIVE_NJ_IDS)
 
     def test_tracked_remote_ids_include_king_and_haiti_bolet(self):
-        self.assertEqual({"23", "24", "27", "28"}, scraper.TRACKED_REMOTE_RESULT_IDS)
+        self.assertEqual(
+            {
+                "18", "23", "24", "25", "26", "27", "28", "29", "30",
+                "31", "32", "33", "34", "35", "36", "37", "38", "39",
+                "40", "41", "42", "43", "44", "45", "46",
+            },
+            scraper.TRACKED_REMOTE_RESULT_IDS,
+        )
 
     def test_miloteria_maps_new_jersey_pm(self):
         self.assertEqual("26", scraper.MILOTERIA_NJ_MAP["new jersey pm"]["id"])
@@ -859,12 +866,13 @@ class ScraperContractsTest(unittest.TestCase):
         self.assertEqual(["1", "26", "27", "28"], [row["id"] for row in merged])
         self.assertEqual("2026-05-03T05:40:00Z", merged[-1]["firstSeenAt"])
         self.assertEqual("2026-05-03T05:40:00Z", merged[-1]["lastSeenAt"])
-        self.assertEqual([], scraper.missing_tracked_result_ids([
-            {"id": "23"},
-            {"id": "24"},
-            {"id": "27"},
-            {"id": "28"},
-        ]))
+        self.assertEqual(
+            [],
+            scraper.missing_tracked_result_ids([
+                {"id": result_id}
+                for result_id in scraper.TRACKED_REMOTE_RESULT_IDS
+            ]),
+        )
 
     def test_merge_results_by_id_preserves_first_seen_for_same_result(self):
         existing = [
@@ -885,10 +893,13 @@ class ScraperContractsTest(unittest.TestCase):
         self.assertEqual("2026-05-03T05:40:00Z", merged[0]["lastSeenAt"])
 
     def test_missing_tracked_result_ids_detects_haiti_gap(self):
-        self.assertEqual(["27", "28"], scraper.missing_tracked_result_ids([
-            {"id": "23"},
-            {"id": "24"},
-        ]))
+        complete_except_haiti = [
+            {"id": result_id}
+            for result_id in scraper.TRACKED_REMOTE_RESULT_IDS
+            if result_id not in {"27", "28"}
+        ]
+
+        self.assertEqual(["27", "28"], scraper.missing_tracked_result_ids(complete_except_haiti))
 
     def test_merge_results_by_id_sorts_mixed_numeric_and_pick_ids(self):
         merged = scraper.merge_results_by_id(
@@ -1553,10 +1564,8 @@ class ScraperContractsTest(unittest.TestCase):
 
     def test_non_current_backfill_skips_complete_cached_day(self):
         rd_rows = [
-            {"id": "23", "number": "01-02-03"},
-            {"id": "24", "number": "04-05-06"},
-            {"id": "27", "number": "07-08-09"},
-            {"id": "28", "number": "10-11-12"},
+            {"id": result_id, "number": "01-02-03"}
+            for result_id in scraper.TRACKED_REMOTE_RESULT_IDS
         ]
         pick_rows = [
             {"id": "US-P3-NJ-PICK-3-MIDDAY", "number": "1-2-3", "pick3": "1-2-3"},
@@ -1568,6 +1577,16 @@ class ScraperContractsTest(unittest.TestCase):
     def test_non_current_backfill_runs_for_missing_tracked_rd_id(self):
         rd_rows = [
             {"id": "23", "number": "01-02-03"},
+            {"id": "27", "number": "07-08-09"},
+            {"id": "28", "number": "10-11-12"},
+        ]
+
+        self.assertTrue(scraper.non_current_backfill_should_run(rd_rows, []))
+
+    def test_non_current_backfill_runs_for_missing_late_normal_result(self):
+        rd_rows = [
+            {"id": "23", "number": "01-02-03"},
+            {"id": "24", "number": "04-05-06"},
             {"id": "27", "number": "07-08-09"},
             {"id": "28", "number": "10-11-12"},
         ]
