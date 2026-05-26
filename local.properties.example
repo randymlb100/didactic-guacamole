@@ -1,0 +1,12 @@
+## Copy to local.properties and fill values only on the local machine.
+sdk.dir=C:/Users/YOUR_USER/AppData/Local/Android/Sdk
+
+release.storeFile=C:/Users/YOUR_USER/Documents/LotteryNet-Secrets/release-signing.jks
+release.storePassword=
+release.keyAlias=
+release.keyPassword=
+
+sentry.dsn=
+sentry.environment=production
+sentry.traces.sample-rate=0.2
+sentry.logs.enabled=true

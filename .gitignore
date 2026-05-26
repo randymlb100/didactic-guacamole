@@ -1,0 +1,73 @@
+local.properties
+sentry.properties
+sentry-wizard.exe
+
+# Secrets / credentials
+KEY RECARGA RAPIDA.txt
+contraseña de prueba.txt
+/*recarga*key*.txt
+/*credential*
+/*credentials*
+/*secret*
+*.jks
+*.keystore
+*.p12
+*.pem
+
+# Local IDE / build output
+.gradle/
+.idea/
+.kotlin/
+.vscode/
+build/
+app/build/
+node_modules/
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+/.superpowers/
+/backups/
+/test-results/
+
+# Generated logs and crash dumps
+*.log
+hs_err_pid*.log
+replay_pid*.log
+
+# Local Codex / investigation artifacts
+.tmp*/
+/.tmp*
+*.codex.tmp.*
+codex-*.png
+real-bugs-*.png
+tmp-*.png
+ui-current.xml
+ui-real.xml
+brace_out.txt
+brace_trace_output.txt
+build_*.txt
+build_out*.txt
+resultados_*.txt
+jackpocket_*.html
+jackpocket_*.json
+rapidapi_*.html
+tmp_*.html
+*.class
+/BraceCheck.java
+/BraceTrace.java
+/FindSyntaxErrors.java
+/fix_*.py
+/fix_*.ps1
+/scan_issues.py
+/scan_issues.ps1
+/check_hist.py
+/check_syntax.py
+/temp_check.kts
+
+# Generated QA reports
+tools/qa/*summary*.json
+tools/qa/*summary*.md
+tools/qa/*state.json
+tools/qa/*.png
+/ticket_preview.html

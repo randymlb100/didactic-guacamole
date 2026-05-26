@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 80" width="400" height="80">
+  <defs>
+    <linearGradient id="hdrGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0f2459;stop-opacity:1"/>
+      <stop offset="50%" style="stop-color:#1a3a7a;stop-opacity:1"/>
+      <stop offset="100%" style="stop-color:#0f3d1e;stop-opacity:1"/>
+    </linearGradient>
+    <linearGradient id="goldLine" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:transparent"/>
+      <stop offset="20%" style="stop-color:#f5d47a"/>
+      <stop offset="50%" style="stop-color:#c8a84b"/>
+      <stop offset="80%" style="stop-color:#f5d47a"/>
+      <stop offset="100%" style="stop-color:transparent"/>
+    </linearGradient>
+    <linearGradient id="totGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#0f2459"/>
+      <stop offset="100%" style="stop-color:#1a3a7a"/>
+    </linearGradient>
+    <pattern id="securityDots" x="0" y="0" width="12" height="12" patternUnits="userSpaceOnUse">
+      <circle cx="2" cy="2" r="1" fill="rgba(200,168,75,0.08)"/>
+    </pattern>
+    <pattern id="microtext" x="0" y="0" width="60" height="8" patternUnits="userSpaceOnUse">
+      <text x="0" y="7" font-size="5" fill="rgba(200,168,75,0.12)" font-family="Arial" font-weight="bold">BANCA DE LOTERIA · TICKET OFICIAL · </text>
+    </pattern>
+  </defs>
+  <!-- Ticket frame outer border gold -->
+  <rect x="0" y="0" width="400" height="80" rx="0" fill="url(#hdrGrad)"/>
+  <!-- Security microtext pattern -->
+  <rect x="0" y="0" width="400" height="80" fill="url(#microtext)"/>
+  <!-- Gold border top -->
+  <rect x="0" y="0" width="400" height="3" fill="url(#goldLine)"/>
+  <!-- Gold border bottom -->
+  <rect x="0" y="77" width="400" height="3" fill="url(#goldLine)"/>
+  <!-- Side gold accents -->
+  <rect x="0" y="0" width="3" height="80" fill="#c8a84b" opacity="0.6"/>
+  <rect x="397" y="0" width="3" height="80" fill="#c8a84b" opacity="0.6"/>
+</svg>

@@ -1,0 +1,33 @@
+{
+  "name": "lotterynet-android-tools",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Checks and local tooling for LotteryNet Android assets",
+  "type": "module",
+  "scripts": {
+    "check": "node tools/check-project.mjs",
+    "check:verbose": "node tools/check-project.mjs --verbose",
+    "release:check": "node tools/pre-release.mjs"
+  },
+  "engines": {
+    "node": ">=24"
+  },
+  "main": "index.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/randymlb100/lotterynet-scraper.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/randymlb100/lotterynet-scraper/issues"
+  },
+  "homepage": "https://github.com/randymlb100/lotterynet-scraper#readme",
+  "devDependencies": {
+    "supabase": "^2.98.2"
+  }
+}

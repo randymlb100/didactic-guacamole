@@ -1,0 +1,67 @@
+project_id = "unhoulkujbtsypccpirc"
+
+[functions.ota-check-update]
+verify_jwt = false
+
+[functions.ota-log-event]
+verify_jwt = false
+
+[functions.admin-users-state]
+verify_jwt = false
+
+[functions.lotterynet-users-state]
+verify_jwt = false
+
+[functions.admin-master-state]
+verify_jwt = false
+
+[functions.admin-cashier-limits]
+verify_jwt = false
+
+[functions.admin-manual-results-override]
+verify_jwt = false
+
+[functions.results-server-refresh]
+verify_jwt = false
+
+[functions.get-master-config]
+verify_jwt = false
+
+[functions.create-ticket-v2]
+verify_jwt = true
+
+[functions.void-ticket]
+verify_jwt = true
+
+[functions.pay-ticket]
+verify_jwt = true
+
+[functions.get-ticket-list]
+verify_jwt = false
+
+[functions.get-ticket-delta]
+verify_jwt = true
+
+[functions.get-ticket-summary]
+verify_jwt = true
+
+[functions.get-results-status]
+verify_jwt = true
+
+[functions.client-health-batch]
+verify_jwt = true
+
+[functions.get-admin-report]
+verify_jwt = true
+
+[functions.get-cashier-report]
+verify_jwt = true
+
+[functions.get-supervisor-report]
+verify_jwt = true
+
+[functions.change-user-password]
+verify_jwt = false
+
+[functions.update-master-config]
+verify_jwt = false

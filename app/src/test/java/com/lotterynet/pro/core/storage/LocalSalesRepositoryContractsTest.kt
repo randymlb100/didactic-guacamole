@@ -1,0 +1,118 @@
+package com.lotterynet.pro.core.storage
+
+import com.lotterynet.pro.core.model.TicketRecord
+import com.lotterynet.pro.core.model.UserRole
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
+import org.junit.Test
+
+class LocalSalesRepositoryContractsTest {
+
+    @Test
+    fun `admin delegated cashier ticket belongs to selected cashier not admin actor`() {
+        val delegatedTicket = TicketRecord(
+            id = "delegated-sale",
+            sellerId = "CAJ-1",
+            sellerUser = "cajero01",
+            adminId = "ADM-1",
+            adminUser = "admin01",
+            role = UserRole.CASHIER,
+            total = 500.0,
+        )
+
+        assertTrue(matchesSalesActorTicket(delegatedTicket, "CAJ-1"))
+        assertTrue(matchesSalesActorTicket(delegatedTicket, "cajero01"))
+        assertFalse(matchesSalesActorTicket(delegatedTicket, "ADM-1"))
+        assertFalse(matchesSalesActorTicket(delegatedTicket, "admin01"))
+    }
+
+    @Test
+    fun `admin ticket still belongs to admin actor`() {
+        val adminTicket = TicketRecord(
+            id = "admin-sale",
+            sellerId = "ADM-1",
+            sellerUser = "admin01",
+            adminId = "ADM-1",
+            adminUser = "admin01",
+            role = UserRole.ADMIN,
+            total = 300.0,
+        )
+
+        assertTrue(matchesSalesActorTicket(adminTicket, "ADM-1"))
+        assertTrue(matchesSalesActorTicket(adminTicket, "admin01"))
+    }
+
+    @Test
+    fun `server snapshot removes local cashier ticket deleted by admin`() {
+        val deletedFromServer = TicketRecord(
+            id = "cashier-sale-deleted",
+            sellerId = "CAJ-1",
+            sellerUser = "cajero01",
+            adminId = "ADM-1",
+            adminUser = "admin01",
+            role = UserRole.CASHIER,
+            total = 400.0,
+        )
+        val stillOnServer = TicketRecord(
+            id = "cashier-sale-active",
+            sellerId = "CAJ-1",
+            sellerUser = "cajero01",
+            adminId = "ADM-1",
+            adminUser = "admin01",
+            role = UserRole.CASHIER,
+            total = 60.0,
+        )
+        val otherAdminTicket = TicketRecord(
+            id = "other-admin-sale",
+            sellerId = "CAJ-9",
+            sellerUser = "otro",
+            adminId = "ADM-9",
+            adminUser = "admin09",
+            role = UserRole.CASHIER,
+            total = 20.0,
+        )
+
+        val reconciled = reconcileScopedImportedTickets(
+            existing = listOf(deletedFromServer, stillOnServer, otherAdminTicket),
+            ownerKey = "ADM-1",
+            imported = listOf(stillOnServer.copy(total = 65.0)),
+            deletedIds = emptySet(),
+        )
+
+        assertFalse(reconciled.any { it.id == "cashier-sale-deleted" })
+        assertTrue(reconciled.any { it.id == "cashier-sale-active" && it.total == 65.0 })
+        assertTrue(reconciled.any { it.id == "other-admin-sale" })
+    }
+
+    @Test
+    fun `empty server snapshot clears scoped cashier tickets but preserves other admins`() {
+        val scopedTicket = TicketRecord(
+            id = "cashier-sale-deleted",
+            sellerId = "CAJ-1",
+            sellerUser = "cajero01",
+            adminId = "ADM-1",
+            adminUser = "admin01",
+            role = UserRole.CASHIER,
+            total = 400.0,
+        )
+        val otherAdminTicket = TicketRecord(
+            id = "other-admin-sale",
+            sellerId = "CAJ-9",
+            sellerUser = "otro",
+            adminId = "ADM-9",
+            adminUser = "admin09",
+            role = UserRole.CASHIER,
+            total = 20.0,
+        )
+
+        val reconciled = reconcileScopedImportedTickets(
+            existing = listOf(scopedTicket, otherAdminTicket),
+            ownerKey = "ADM-1",
+            imported = emptyList(),
+            deletedIds = emptySet(),
+        )
+
+        assertEquals(listOf("other-admin-sale"), reconciled.map { it.id })
+    }
+}

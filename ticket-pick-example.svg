@@ -1,0 +1,110 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="1080" viewBox="0 0 900 1080">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#eef4fb"/>
+      <stop offset="100%" stop-color="#dfe8f3"/>
+    </linearGradient>
+    <linearGradient id="topA" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="100%" stop-color="#fff3df"/>
+    </linearGradient>
+    <linearGradient id="topB" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="100%" stop-color="#eaf7ee"/>
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="18" stdDeviation="18" flood-color="#0f172a" flood-opacity="0.14"/>
+    </filter>
+  </defs>
+
+  <rect width="900" height="1080" fill="url(#bg)"/>
+  <text x="450" y="70" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="30" font-weight="800" fill="#0f172a">Ejemplo real de ticket Pick 3 / Pick 4</text>
+  <text x="450" y="104" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="16" font-weight="600" fill="#475569">Así debe verse la etiqueta del modo de juego dentro del ticket oficial</text>
+
+  <g filter="url(#shadow)">
+    <rect x="88" y="150" width="320" height="770" rx="28" fill="#ffffff" stroke="#d9e2ec"/>
+    <rect x="492" y="150" width="320" height="770" rx="28" fill="#ffffff" stroke="#d9e2ec"/>
+  </g>
+
+  <g>
+    <rect x="88" y="150" width="320" height="140" rx="28" fill="url(#topA)"/>
+    <text x="248" y="184" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="900" fill="#1d4ed8">BANCA DE LOTERIA</text>
+    <text x="248" y="222" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="32" font-weight="900" fill="#0f3d8f">BANCA LA FORTUNA</text>
+    <text x="248" y="250" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="15" font-weight="800" fill="#ea580c">ORIGINAL</text>
+    <text x="248" y="273" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="700" fill="#475569">Santiago | 809-555-1234</text>
+
+    <rect x="112" y="314" width="272" height="82" rx="18" fill="#f8fafc" stroke="#e2e8f0"/>
+    <text x="132" y="342" font-family="JetBrains Mono, Consolas, monospace" font-size="13" font-weight="900" fill="#0f172a">TICKET: T-8A21F4</text>
+    <text x="132" y="367" font-family="JetBrains Mono, Consolas, monospace" font-size="13" font-weight="900" fill="#0f172a">FECHA: 11/04/2026</text>
+    <text x="132" y="389" font-family="JetBrains Mono, Consolas, monospace" font-size="13" font-weight="900" fill="#0f172a">HORA: 12:41 PM</text>
+
+    <rect x="112" y="418" width="272" height="250" rx="18" fill="#fbfdff" stroke="#e7edf4"/>
+    <text x="248" y="455" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="23" font-weight="900" fill="#0f172a">NJ Pick 3 Dia</text>
+    <text x="248" y="478" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="900" fill="#0f172a">Juega 12:59 PM</text>
+
+    <text x="136" y="520" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="900" fill="#0f172a">JUGADA</text>
+    <text x="346" y="520" text-anchor="end" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="900" fill="#0f172a">MONTO</text>
+    <line x1="132" y1="532" x2="364" y2="532" stroke="#dbe4ee"/>
+
+    <circle cx="168" cy="578" r="22" fill="#0284c7"/>
+    <circle cx="220" cy="578" r="22" fill="#0284c7"/>
+    <circle cx="272" cy="578" r="22" fill="#0284c7"/>
+    <text x="168" y="585" text-anchor="middle" font-family="JetBrains Mono, Consolas, monospace" font-size="18" font-weight="900" fill="#ffffff">1</text>
+    <text x="220" y="585" text-anchor="middle" font-family="JetBrains Mono, Consolas, monospace" font-size="18" font-weight="900" fill="#ffffff">2</text>
+    <text x="272" y="585" text-anchor="middle" font-family="JetBrains Mono, Consolas, monospace" font-size="18" font-weight="900" fill="#ffffff">3</text>
+    <text x="132" y="625" font-family="Segoe UI, Arial, sans-serif" font-size="13" font-weight="900" fill="#0f172a">Pick 3 Straight</text>
+    <text x="346" y="610" text-anchor="end" font-family="JetBrains Mono, Consolas, monospace" font-size="24" font-weight="900" fill="#065f46">$10</text>
+
+    <rect x="88" y="708" width="320" height="72" rx="0" fill="#0f172a"/>
+    <text x="118" y="748" font-family="Segoe UI, Arial, sans-serif" font-size="13" font-weight="800" fill="#cbd5e1">TOTAL</text>
+    <text x="378" y="748" text-anchor="end" font-family="JetBrains Mono, Consolas, monospace" font-size="30" font-weight="900" fill="#ffffff">$10.00</text>
+
+    <rect x="112" y="800" width="272" height="84" rx="16" fill="#f8fafc" stroke="#e2e8f0"/>
+    <text x="248" y="830" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="900" fill="#0f172a">CODIGO DE SEGURIDAD</text>
+    <text x="248" y="862" text-anchor="middle" font-family="JetBrains Mono, Consolas, monospace" font-size="20" font-weight="900" fill="#020617">A9F4K2</text>
+  </g>
+
+  <g>
+    <rect x="492" y="150" width="320" height="140" rx="28" fill="url(#topB)"/>
+    <text x="652" y="184" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="900" fill="#15803d">BANCA DE LOTERIA</text>
+    <text x="652" y="222" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="32" font-weight="900" fill="#0f3d8f">BANCA LA FORTUNA</text>
+    <text x="652" y="250" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="15" font-weight="800" fill="#16a34a">ORIGINAL</text>
+    <text x="652" y="273" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="700" fill="#475569">Santiago | 809-555-1234</text>
+
+    <rect x="516" y="314" width="272" height="82" rx="18" fill="#f8fafc" stroke="#e2e8f0"/>
+    <text x="536" y="342" font-family="JetBrains Mono, Consolas, monospace" font-size="13" font-weight="900" fill="#0f172a">TICKET: T-8A21F5</text>
+    <text x="536" y="367" font-family="JetBrains Mono, Consolas, monospace" font-size="13" font-weight="900" fill="#0f172a">FECHA: 11/04/2026</text>
+    <text x="536" y="389" font-family="JetBrains Mono, Consolas, monospace" font-size="13" font-weight="900" fill="#0f172a">HORA: 12:43 PM</text>
+
+    <rect x="516" y="418" width="272" height="250" rx="18" fill="#fbfdff" stroke="#e7edf4"/>
+    <text x="652" y="455" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="23" font-weight="900" fill="#0f172a">NJ Pick 4 Noche</text>
+    <text x="652" y="478" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="900" fill="#0f172a">Juega 10:57 PM</text>
+
+    <text x="540" y="520" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="900" fill="#0f172a">JUGADA</text>
+    <text x="750" y="520" text-anchor="end" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="900" fill="#0f172a">MONTO</text>
+    <line x1="536" y1="532" x2="768" y2="532" stroke="#dbe4ee"/>
+
+    <circle cx="566" cy="578" r="20" fill="#15803d"/>
+    <circle cx="612" cy="578" r="20" fill="#15803d"/>
+    <circle cx="658" cy="578" r="20" fill="#15803d"/>
+    <circle cx="704" cy="578" r="20" fill="#15803d"/>
+    <text x="566" y="584" text-anchor="middle" font-family="JetBrains Mono, Consolas, monospace" font-size="17" font-weight="900" fill="#ffffff">1</text>
+    <text x="612" y="584" text-anchor="middle" font-family="JetBrains Mono, Consolas, monospace" font-size="17" font-weight="900" fill="#ffffff">1</text>
+    <text x="658" y="584" text-anchor="middle" font-family="JetBrains Mono, Consolas, monospace" font-size="17" font-weight="900" fill="#ffffff">1</text>
+    <text x="704" y="584" text-anchor="middle" font-family="JetBrains Mono, Consolas, monospace" font-size="17" font-weight="900" fill="#ffffff">2</text>
+    <text x="536" y="625" font-family="Segoe UI, Arial, sans-serif" font-size="13" font-weight="900" fill="#0f172a">Pick 4 Box 4-Way</text>
+    <text x="750" y="610" text-anchor="end" font-family="JetBrains Mono, Consolas, monospace" font-size="24" font-weight="900" fill="#065f46">$10</text>
+
+    <rect x="492" y="708" width="320" height="72" rx="0" fill="#0f172a"/>
+    <text x="522" y="748" font-family="Segoe UI, Arial, sans-serif" font-size="13" font-weight="800" fill="#cbd5e1">TOTAL</text>
+    <text x="782" y="748" text-anchor="end" font-family="JetBrains Mono, Consolas, monospace" font-size="30" font-weight="900" fill="#ffffff">$10.00</text>
+
+    <rect x="516" y="800" width="272" height="84" rx="16" fill="#f8fafc" stroke="#e2e8f0"/>
+    <text x="652" y="830" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="900" fill="#0f172a">CODIGO DE SEGURIDAD</text>
+    <text x="652" y="862" text-anchor="middle" font-family="JetBrains Mono, Consolas, monospace" font-size="20" font-weight="900" fill="#020617">B3Q7N8</text>
+  </g>
+
+  <text x="450" y="980" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="19" font-weight="900" fill="#0f172a">Lo importante es esta línea dentro de cada jugada:</text>
+  <text x="450" y="1018" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="21" font-weight="900" fill="#1d4ed8">Pick 3 Straight</text>
+  <text x="450" y="1048" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="21" font-weight="900" fill="#15803d">Pick 4 Box 4-Way</text>
+</svg>

@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 80" width="80" height="80">
+  <rect width="80" height="80" rx="12" fill="#E31837"/>
+  <circle cx="40" cy="31" r="13" fill="white" opacity="0.15"/>
+  <text x="40" y="36" text-anchor="middle" font-family="Arial,sans-serif" font-size="11" font-weight="900" fill="white" letter-spacing="0.3">digicel</text>
+  <text x="40" y="55" text-anchor="middle" font-family="Arial,sans-serif" font-size="9" font-weight="700" fill="white" opacity="0.85" letter-spacing="1">HAITÍ / RD</text>
+</svg>

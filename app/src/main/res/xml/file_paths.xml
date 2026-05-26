@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<paths>
+    <cache-path
+        name="shared_images"
+        path="shared_images/" />
+    <cache-path
+        name="shared_exports"
+        path="shared_exports/" />
+    <cache-path
+        name="render_cache"
+        path="render_cache/" />
+    <external-files-path
+        name="ota_apks"
+        path="Download/ota_apks/" />
+</paths>

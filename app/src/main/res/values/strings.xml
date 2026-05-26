@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">LotteryNet Pro</string>
+    <string name="loading_opening_panel">Abriendo panel&#8230;</string>
+    <string name="native_login_title">Acceso</string>
+    <string name="native_login_subtitle">Ingresa para continuar la operación.</string>
+    <string name="native_login_supporting">Usa tu usuario y contraseña para abrir ventas, resultados y gestión diaria.</string>
+    <string name="native_login_user">Usuario</string>
+    <string name="native_login_password">Contrasena</string>
+    <string name="native_login_remember">Recordar usuario y contraseña en este equipo</string>
+    <string name="native_login_enter">Entrar</string>
+    <string name="native_login_error_required">Escribe usuario y contrasena.</string>
+    <string name="native_login_error_invalid">Usuario o contrasena invalidos.</string>
+    <string name="native_login_bootstrap_loading">Preparando acceso…</string>
+    <string name="native_login_bootstrap_ready">Acceso listo.</string>
+    <string name="native_login_bootstrap_error">No se pudo preparar el acceso.</string>
+    <string name="native_login_handoff">Entrando al sistema…</string>
+    <string name="native_login_footer">Acceso para banca, administración y caja.</string>
+</resources>

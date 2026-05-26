@@ -1,0 +1,4 @@
+defaults.url=https://sentry.io/
+defaults.org=rlm-system-up
+defaults.project=android
+auth.token=__SET_SENTRY_AUTH_TOKEN__

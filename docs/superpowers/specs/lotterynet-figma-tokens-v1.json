@@ -1,0 +1,92 @@
+{
+  "meta": {
+    "name": "LotteryNet Figma Tokens v1",
+    "source": "Kotlin codebase",
+    "modes": ["mobile-standard", "pos-tight"],
+    "status": "ready-for-figma-import"
+  },
+  "color": {
+    "primitive": {
+      "canvas-sand": "#EDF5FF",
+      "paper": "#FFFFFF",
+      "ink": "#07111F",
+      "ink-soft": "#324763",
+      "line": "#BFD1E4",
+      "coal": "#0F8F78",
+      "coal-soft": "#4F46E5",
+      "clay": "#B91C1C",
+      "clay-surface": "#FEF2F2",
+      "mint-surface": "#E1F8F1",
+      "sky-surface": "#F3F8FF",
+      "gold-strong": "#C69214",
+      "gold-soft": "#F4D768",
+      "navy-ticket": "#0A2A66",
+      "green-ball": "#1DAA51"
+    },
+    "semantic": {
+      "bg-app": "{color.primitive.canvas-sand}",
+      "bg-panel": "{color.primitive.paper}",
+      "bg-panel-alt": "{color.primitive.sky-surface}",
+      "bg-positive-soft": "{color.primitive.mint-surface}",
+      "bg-negative-soft": "{color.primitive.clay-surface}",
+      "bg-info-soft": "{color.primitive.sky-surface}",
+      "text-primary": "{color.primitive.ink}",
+      "text-secondary": "{color.primitive.ink-soft}",
+      "text-inverse": "{color.primitive.paper}",
+      "text-positive": "{color.primitive.coal}",
+      "text-negative": "{color.primitive.clay}",
+      "border-default": "{color.primitive.line}",
+      "border-strong": "{color.primitive.ink-soft}",
+      "action-primary": "{color.primitive.coal-soft}",
+      "action-success": "{color.primitive.coal}",
+      "action-danger": "{color.primitive.clay}",
+      "action-secondary": "{color.primitive.ink}",
+      "ticket-header": "{color.primitive.navy-ticket}",
+      "ticket-gold": "{color.primitive.gold-strong}",
+      "ticket-ball": "{color.primitive.green-ball}"
+    }
+  },
+  "space": {
+    "4": 4,
+    "8": 8,
+    "12": 12,
+    "16": 16,
+    "24": 24
+  },
+  "radius": {
+    "pos": 8,
+    "mobile": 10,
+    "full": 999
+  },
+  "size": {
+    "action-height": {
+      "mobile-standard": 36,
+      "pos-tight": 28
+    },
+    "bottom-nav-height": {
+      "mobile-standard": 64,
+      "pos-tight": 42
+    },
+    "screen-padding-h": {
+      "mobile-standard": 16,
+      "pos-tight": 7
+    },
+    "panel-radius": {
+      "mobile-standard": 10,
+      "pos-tight": 8
+    }
+  },
+  "typography": {
+    "headline-large": { "fontSize": 19, "lineHeight": 24, "weight": "ExtraBold" },
+    "headline-medium": { "fontSize": 17, "lineHeight": 22, "weight": "Bold" },
+    "title-large": { "fontSize": 16, "lineHeight": 21, "weight": "ExtraBold" },
+    "title-medium": { "fontSize": 16, "lineHeight": 20, "weight": "Bold" },
+    "title-small": { "fontSize": 14, "lineHeight": 18, "weight": "Bold" },
+    "body-large": { "fontSize": 13, "lineHeight": 18, "weight": "SemiBold" },
+    "body-medium": { "fontSize": 13, "lineHeight": 18, "weight": "Regular" },
+    "body-small": { "fontSize": 11, "lineHeight": 15, "weight": "Regular" },
+    "label-large": { "fontSize": 12, "lineHeight": 16, "weight": "Bold" },
+    "label-medium": { "fontSize": 11, "lineHeight": 14, "weight": "Bold" },
+    "label-small": { "fontSize": 10, "lineHeight": 13, "weight": "Bold" }
+  }
+}

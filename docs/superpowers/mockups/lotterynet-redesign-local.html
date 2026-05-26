@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LotteryNet Redesign Local</title>
+  <link rel="stylesheet" href="./lotterynet-redesign-local.css" />
+</head>
+<body>
+  <div class="workspace-shell">
+    <header class="workspace-bar">
+      <div>
+        <div class="workspace-kicker">LotteryNet Android</div>
+        <h1>Rediseño local navegable</h1>
+      </div>
+      <div class="workspace-meta">
+        <span class="meta-pill">mobile-standard</span>
+        <span class="meta-pill">pos-tight</span>
+        <span class="meta-pill meta-pill--gold">ticket premium</span>
+      </div>
+    </header>
+
+    <section class="ledger">
+      <article class="ledger-card">
+        <span class="ledger-label">Base</span>
+        <strong>UI clara, compacta y operativa</strong>
+        <p>Sin cards infladas, sin dashboard SaaS, sin copy decorativo.</p>
+      </article>
+      <article class="ledger-card">
+        <span class="ledger-label">Venta</span>
+        <strong>Teclado rápido y total firme</strong>
+        <p>Diseñada para Samsung A15 y POS 5.5 sin perder ritmo de cajero.</p>
+      </article>
+      <article class="ledger-card">
+        <span class="ledger-label">Ticket</span>
+        <strong>Entrega e impresión unificadas</strong>
+        <p>WhatsApp, térmica y operación desde el mismo lenguaje visual.</p>
+      </article>
+    </section>
+
+    <section class="system-grid">
+      <article class="system-panel">
+        <div class="panel-head">
+          <h2>Tokens</h2>
+          <span>v1</span>
+        </div>
+        <div class="token-swatches">
+          <div class="swatch">
+            <span class="swatch-chip" style="background:#EDF5FF"></span>
+            <div><strong>CanvasSand</strong><small>#EDF5FF</small></div>
+          </div>
+          <div class="swatch">
+            <span class="swatch-chip" style="background:#07111F"></span>
+            <div><strong>Ink</strong><small>#07111F</small></div>
+          </div>
+          <div class="swatch">
+            <span class="swatch-chip" style="background:#4F46E5"></span>
+            <div><strong>CoalSoft</strong><small>#4F46E5</small></div>
+          </div>
+          <div class="swatch">
+            <span class="swatch-chip" style="background:#0F8F78"></span>
+            <div><strong>Coal</strong><small>#0F8F78</small></div>
+          </div>
+          <div class="swatch">
+            <span class="swatch-chip" style="background:#C69214"></span>
+            <div><strong>GoldStrong</strong><small>#C69214</small></div>
+          </div>
+          <div class="swatch">
+            <span class="swatch-chip" style="background:#1DAA51"></span>
+            <div><strong>GreenBall</strong><small>#1DAA51</small></div>
+          </div>
+        </div>
+      </article>
+
+      <article class="system-panel">
+        <div class="panel-head">
+          <h2>Componentes</h2>
+          <span>core</span>
+        </div>
+        <div class="component-strip">
+          <div class="mini-topbar">
+            <strong>Venta</strong>
+            <small>09:42 PM</small>
+          </div>
+          <div class="mini-actions">
+            <button class="btn btn-primary">OK</button>
+            <button class="btn btn-success">WhatsApp</button>
+            <button class="btn btn-secondary">Guardar</button>
+            <button class="badge badge-info">Abierta</button>
+          </div>
+          <div class="mini-total">
+            <span>Total jugada</span>
+            <strong>$ 265</strong>
+          </div>
+        </div>
+      </article>
+    </section>
+
+    <section class="screen-stack">
+      <div class="section-head">
+        <h2>Pantallas Core</h2>
+        <span>Samsung A15 + POS 5.5</span>
+      </div>
+
+      <div class="screens-grid">
+        <article class="device-card">
+          <div class="device-head">
+            <strong>Login</strong>
+            <span>Samsung A15</span>
+          </div>
+          <div class="phone-frame">
+            <div class="mock-screen mock-login">
+              <div class="mock-statusbar"></div>
+              <div class="mock-brand">LotteryNet</div>
+              <div class="mock-form">
+                <label>Usuario</label>
+                <div class="field">cajero01</div>
+                <label>Clave</label>
+                <div class="field">••••••••</div>
+                <div class="row-line">
+                  <span class="check on"></span>
+                  <small>Recordar usuario</small>
+                </div>
+                <button class="btn btn-primary btn-block">Entrar</button>
+                <small class="muted-link">Abrir versión web</small>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <article class="device-card">
+          <div class="device-head">
+            <strong>Menú</strong>
+            <span>Samsung A15</span>
+          </div>
+          <div class="phone-frame">
+            <div class="mock-screen mock-menu">
+              <div class="mock-topbar">
+                <strong>Panel</strong>
+                <small>Banca Central</small>
+              </div>
+              <div class="menu-metrics">
+                <div class="metric-box">
+                  <span>Ventas</span>
+                  <strong>$48,380</strong>
+                </div>
+                <div class="metric-box">
+                  <span>Caja</span>
+                  <strong>$12,400</strong>
+                </div>
+              </div>
+              <div class="menu-list">
+                <div class="menu-row"><strong>Venta</strong><small>Punto principal</small></div>
+                <div class="menu-row"><strong>Tickets</strong><small>Buscar, cobrar, duplicar</small></div>
+                <div class="menu-row"><strong>Resultados</strong><small>Compartir y guardar</small></div>
+                <div class="menu-row"><strong>Impresora</strong><small>Prueba y configuración</small></div>
+              </div>
+              <div class="bottom-nav">
+                <span class="nav-item active">Venta</span>
+                <span class="nav-item">Tickets</span>
+                <span class="nav-item">Panel</span>
+                <span class="nav-item">Resultados</span>
+                <span class="nav-item">Menú</span>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <article class="device-card device-card--wide">
+          <div class="device-head">
+            <strong>Venta</strong>
+            <span>POS 5.5</span>
+          </div>
+          <div class="pos-frame">
+            <div class="mock-screen mock-sale">
+              <div class="sale-stage">
+                <div class="stage-head">
+                  <span>Lotería</span>
+                  <span>Tipo</span>
+                  <span>Jugada</span>
+                  <span>Monto</span>
+                </div>
+                <div class="stage-empty">
+                  <strong>Sin jugadas</strong>
+                  <small>Número -&gt; ENT -&gt; monto -&gt; ENTER</small>
+                </div>
+              </div>
+
+              <div class="sale-composer">
+                <div class="lottery-block">
+                  <div>
+                    <strong>King Lottery Noche</strong>
+                    <small>King Lottery Noche · Quiniela</small>
+                  </div>
+                  <span class="badge badge-success">Abierta</span>
+                </div>
+
+                <div class="sale-inputs">
+                  <div class="sale-input active">
+                    <label>Jugada</label>
+                    <div class="value">25</div>
+                  </div>
+                  <div class="sale-input">
+                    <label>Límite</label>
+                    <div class="value muted">Q restante</div>
+                  </div>
+                  <div class="sale-input">
+                    <label>Monto</label>
+                    <div class="value">65</div>
+                  </div>
+                </div>
+
+                <div class="mode-tabs">
+                  <button class="tab active">Loterías</button>
+                  <button class="tab">Ligar</button>
+                  <button class="tab tab-dark">Super Pale</button>
+                </div>
+
+                <div class="selection-note">King Lottery Noche seleccionada</div>
+
+                <div class="total-bar">
+                  <span>Total jugada</span>
+                  <strong>0.00</strong>
+                </div>
+
+                <div class="sale-stats">
+                  <span class="pill">4 hoy</span>
+                  <span class="pill pill-money">$4838.00</span>
+                </div>
+
+                <div class="keypad">
+                  <button>7</button><button>8</button><button>9</button><button class="key-soft">⌫</button>
+                  <button>4</button><button>5</button><button>6</button><button class="key-action">ENT<br>NUM</button>
+                  <button>1</button><button>2</button><button>3</button><button class="key-warn">CLR</button>
+                  <button>0</button><button>00</button><button class="key-print">PRINT</button><button class="key-ok">OK<br>ENTER</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <article class="device-card">
+          <div class="device-head">
+            <strong>Print Menu</strong>
+            <span>Samsung A15</span>
+          </div>
+          <div class="phone-frame">
+            <div class="mock-screen mock-print">
+              <div class="print-actions-top">
+                <button class="seg">Rápido</button>
+                <button class="seg">Con QR</button>
+                <button class="seg">Imagen final</button>
+              </div>
+              <div class="ticket-sheet">
+                <div class="ticket-header">
+                  <small>Banca de Lotería</small>
+                  <strong>Banca Central</strong>
+                  <span>Ticket oficial</span>
+                </div>
+                <div class="ticket-body">
+                  <div class="ticket-line"><span>Serial</span><strong>T-YTTCXUF</strong></div>
+                  <div class="ticket-game"><span>Anguila Mañana</span><small>Quiniela</small></div>
+                  <div class="ticket-balls">
+                    <span class="ball">65</span>
+                    <strong>$ 65</strong>
+                  </div>
+                  <div class="ticket-total"><span>Total jugado</span><strong>$ 65</strong></div>
+                </div>
+              </div>
+              <div class="action-card thermal">
+                <strong>Impresora térmica</strong>
+                <small>Envio rápido a la impresora Bluetooth ESC/POS</small>
+              </div>
+              <div class="action-card whatsapp">
+                <strong>WhatsApp</strong>
+                <small>Abre WhatsApp con la imagen del ticket</small>
+              </div>
+              <div class="action-card png">
+                <strong>Imagen PNG</strong>
+                <small>Comparte el ticket en cualquier aplicación</small>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <article class="device-card">
+          <div class="device-head">
+            <strong>Ticket Oficial</strong>
+            <span>Samsung A15</span>
+          </div>
+          <div class="phone-frame">
+            <div class="mock-screen mock-ticket">
+              <div class="mock-topbar">
+                <strong>Ticket oficial</strong>
+                <small>Banca Central</small>
+              </div>
+              <div class="ticket-sheet compact">
+                <div class="ticket-header">
+                  <small>Banca de Lotería</small>
+                  <strong>Banca Central</strong>
+                  <span>Original</span>
+                </div>
+                <div class="ticket-body">
+                  <div class="ticket-line"><span>Serial</span><strong>T-YTTCXUF</strong></div>
+                  <div class="ticket-line"><span>Fecha</span><strong>21/04/2026</strong></div>
+                  <div class="ticket-game"><span>King Lottery Noche</span><small>Quiniela</small></div>
+                  <div class="ticket-balls">
+                    <span class="ball">25</span>
+                    <strong>$ 65</strong>
+                  </div>
+                  <div class="ticket-total"><span>Total jugado</span><strong>$ 65</strong></div>
+                </div>
+              </div>
+              <div class="group">
+                <div class="group-head"><strong>Impresión y envío</strong><small>Ticket</small></div>
+                <div class="group-grid">
+                  <button class="btn btn-primary">Térmica</button>
+                  <button class="btn btn-success">WhatsApp</button>
+                  <button class="btn btn-secondary">Compartir</button>
+                </div>
+              </div>
+              <div class="group">
+                <div class="group-head"><strong>Operación</strong><small>Caja</small></div>
+                <div class="group-grid">
+                  <button class="btn btn-success">Cobrar</button>
+                  <button class="btn btn-secondary">Duplicar</button>
+                  <button class="btn btn-danger">Anular</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <article class="device-card">
+          <div class="device-head">
+            <strong>Resultados</strong>
+            <span>Samsung A15</span>
+          </div>
+          <div class="phone-frame">
+            <div class="mock-screen mock-results">
+              <div class="mock-topbar">
+                <strong>Resultados</strong>
+                <small>Servidor</small>
+              </div>
+              <div class="results-actions">
+                <button class="btn btn-success">WhatsApp</button>
+                <button class="btn btn-primary">Compartir</button>
+                <button class="btn btn-secondary">Guardar</button>
+              </div>
+              <div class="result-card">
+                <div class="result-head">
+                  <strong>Anguila Mañana</strong>
+                  <span class="badge badge-info">Publicado</span>
+                </div>
+                <div class="balls-row">
+                  <span class="ball">14</span>
+                  <span class="ball">22</span>
+                  <span class="ball">08</span>
+                </div>
+              </div>
+              <div class="result-card">
+                <div class="result-head">
+                  <strong>King Lottery Noche</strong>
+                  <span class="badge badge-muted">Pendiente</span>
+                </div>
+                <div class="balls-row muted-balls">
+                  <span class="ball">-</span>
+                  <span class="ball">-</span>
+                  <span class="ball">-</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <article class="device-card">
+          <div class="device-head">
+            <strong>Usuarios</strong>
+            <span>Samsung A15</span>
+          </div>
+          <div class="phone-frame">
+            <div class="mock-screen mock-users">
+              <div class="mock-topbar">
+                <strong>Usuarios</strong>
+                <small>Configuración</small>
+              </div>
+              <div class="settings-card">
+                <label>Comisión</label>
+                <div class="field">10</div>
+                <label>Tope por recarga</label>
+                <div class="field">5000</div>
+                <button class="btn btn-primary btn-block">Guardar configuración</button>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <article class="device-card">
+          <div class="device-head">
+            <strong>Impresora</strong>
+            <span>Samsung A15</span>
+          </div>
+          <div class="phone-frame">
+            <div class="mock-screen mock-printer">
+              <div class="mock-topbar">
+                <strong>Impresora térmica</strong>
+                <small>Bluetooth ESC/POS</small>
+              </div>
+              <div class="printer-block">
+                <div class="printer-row"><span>Perfil activo</span><strong>Clásico</strong></div>
+                <div class="printer-row"><span>Tamaño</span><strong>Mediano</strong></div>
+                <div class="printer-row"><span>Separación</span><strong>Compacta</strong></div>
+                <div class="printer-row"><span>Conexión</span><strong>Lista</strong></div>
+              </div>
+              <div class="group-grid">
+                <button class="btn btn-secondary">Aplicar preset</button>
+                <button class="btn btn-primary">Probar impresión</button>
+                <button class="btn btn-success">Guardar</button>
+              </div>
+            </div>
+          </div>
+        </article>
+      </div>
+    </section>
+  </div>
+</body>
+</html>

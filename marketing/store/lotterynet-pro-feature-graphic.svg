@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="500" viewBox="0 0 1024 500" role="img" aria-labelledby="title desc">
+  <title id="title">LotteryNet Pro feature graphic</title>
+  <desc id="desc">App store feature graphic for LotteryNet Pro with professional operator interface styling.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1024" y2="500" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#0F2019"/>
+      <stop offset="0.52" stop-color="#17345C"/>
+      <stop offset="1" stop-color="#118263"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="260" y1="84" x2="470" y2="314" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#F8C15A"/>
+      <stop offset="1" stop-color="#E86F2E"/>
+    </linearGradient>
+    <linearGradient id="screen" x1="638" y1="84" x2="830" y2="420" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FFF8E8"/>
+      <stop offset="1" stop-color="#E4F7F0"/>
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="24" stdDeviation="24" flood-color="#06120E" flood-opacity="0.32"/>
+    </filter>
+  </defs>
+  <rect width="1024" height="500" fill="url(#bg)"/>
+  <path d="M0 421c139-36 241-43 370-8 160 43 286 33 402-30 104-57 176-69 252-54v171H0v-79Z" fill="#FFF8E8" opacity="0.08"/>
+  <g transform="translate(68 88)">
+    <rect width="116" height="116" rx="28" fill="url(#accent)" filter="url(#shadow)"/>
+    <path d="M28 28h19v56h31v17H28V28Z" fill="#FFF8E8"/>
+    <path d="M63 28h18l31 42V28h18v73h-16L81 57v44H63V28Z" fill="#0F2019"/>
+  </g>
+  <text x="68" y="250" fill="#FFF8E8" font-family="Montserrat, Arial, sans-serif" font-size="62" font-weight="900">LotteryNet Pro</text>
+  <text x="72" y="300" fill="#D6E6DC" font-family="Montserrat, Arial, sans-serif" font-size="26" font-weight="600">Ventas, resultados y recargas</text>
+  <text x="72" y="336" fill="#B7CABE" font-family="Montserrat, Arial, sans-serif" font-size="22" font-weight="500">Control diario para bancas y cajas.</text>
+  <g transform="translate(640 70)" filter="url(#shadow)">
+    <rect x="0" y="0" width="260" height="360" rx="28" fill="#112820"/>
+    <rect x="18" y="22" width="224" height="316" rx="18" fill="url(#screen)"/>
+    <rect x="38" y="48" width="86" height="14" rx="7" fill="#17345C"/>
+    <rect x="150" y="48" width="52" height="14" rx="7" fill="#F8C15A"/>
+    <rect x="38" y="84" width="164" height="34" rx="8" fill="#FFFFFF"/>
+    <rect x="38" y="134" width="74" height="52" rx="10" fill="#FFFFFF"/>
+    <rect x="128" y="134" width="74" height="52" rx="10" fill="#FFFFFF"/>
+    <rect x="38" y="202" width="74" height="52" rx="10" fill="#FFFFFF"/>
+    <rect x="128" y="202" width="74" height="52" rx="10" fill="#F8C15A"/>
+    <rect x="38" y="276" width="164" height="30" rx="9" fill="#118263"/>
+  </g>
+  <g transform="translate(870 116)">
+    <rect width="84" height="140" rx="10" fill="#FFF8E8" opacity="0.9"/>
+    <path d="M16 28h52M16 48h38M16 76h52M16 96h34" stroke="#17345C" stroke-width="8" stroke-linecap="round"/>
+    <circle cx="42" cy="118" r="11" fill="#E86F2E"/>
+  </g>
+</svg>
