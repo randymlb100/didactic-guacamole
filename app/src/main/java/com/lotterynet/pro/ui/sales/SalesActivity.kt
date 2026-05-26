@@ -1178,10 +1178,34 @@ internal fun resolvePickAssistedLotterySelection(
     assistedEntry: PickAssistedEntry?,
 ): List<String> {
     assistedEntry ?: return currentSelection
-    val compatibleIds = filterPickAssistedLotteries(lotteries, assistedEntry).map { it.id }
-    if (compatibleIds.isEmpty()) return emptyList()
+    val compatibleLotteries = filterPickAssistedLotteries(lotteries, assistedEntry)
+    if (compatibleLotteries.isEmpty()) return emptyList()
+    val compatibleIds = compatibleLotteries.map { it.id }
     val retained = currentSelection.filter { it in compatibleIds }.distinct()
-    return retained.ifEmpty { listOf(compatibleIds.first()) }
+    if (retained.isNotEmpty()) return retained
+    resolveEquivalentPickLotterySelection(currentSelection, lotteries, compatibleLotteries)?.let { equivalent ->
+        return listOf(equivalent.id)
+    }
+    return listOf(compatibleIds.first())
+}
+
+private fun resolveEquivalentPickLotterySelection(
+    currentSelection: List<String>,
+    lotteries: List<LotteryCatalogItem>,
+    compatibleLotteries: List<LotteryCatalogItem>,
+): LotteryCatalogItem? {
+    val byId = lotteries.associateBy { it.id }
+    val currentIdentities = currentSelection
+        .mapNotNull { selectedId -> byId[selectedId] }
+        .mapNotNull(PickResultIdentityResolver::resolveLottery)
+    if (currentIdentities.isEmpty()) return null
+    return currentIdentities.firstNotNullOfOrNull { currentIdentity ->
+        compatibleLotteries.firstOrNull { candidate ->
+            val candidateIdentity = PickResultIdentityResolver.resolveLottery(candidate) ?: return@firstOrNull false
+            candidateIdentity.stateCode == currentIdentity.stateCode &&
+                candidateIdentity.canonicalKey.substringAfterLast("|") == currentIdentity.canonicalKey.substringAfterLast("|")
+        }
+    }
 }
 
 internal fun filterSaleLotteriesForSystemMode(

@@ -255,6 +255,31 @@ class SalesUiContractsTest {
     }
 
     @Test
+    fun `pick assisted entry switches to equivalent state and draw when pick size changes`() {
+        val lotteries = listOf(
+            lottery(id = "19", name = "NJ Pick 3 Dia", closeTime = "12:50 PM").copy(type = "Pick3", baseDrawTime = "12:59 PM"),
+            lottery(id = "20", name = "NJ Pick 3 Noche", closeTime = "10:50 PM").copy(type = "Pick3", baseDrawTime = "10:57 PM"),
+            lottery(id = "21", name = "NJ Pick 4 Dia", closeTime = "12:50 PM").copy(type = "Pick4", baseDrawTime = "12:59 PM"),
+            lottery(id = "22", name = "NJ Pick 4 Noche", closeTime = "10:50 PM").copy(type = "Pick4", baseDrawTime = "10:57 PM"),
+            lottery(id = "p4-fl", name = "Florida Pick 4 Midday Draw", closeTime = "13:25").copy(type = "Pick4", baseDrawTime = "1:30 PM"),
+        )
+
+        val daySelected = resolvePickAssistedLotterySelection(
+            currentSelection = listOf("19"),
+            lotteries = lotteries,
+            assistedEntry = resolvePickAssistedEntry("2546+"),
+        )
+        val nightSelected = resolvePickAssistedLotterySelection(
+            currentSelection = listOf("20"),
+            lotteries = lotteries,
+            assistedEntry = resolvePickAssistedEntry("2546-"),
+        )
+
+        assertEquals(listOf("21"), daySelected)
+        assertEquals(listOf("22"), nightSelected)
+    }
+
+    @Test
     fun `future sale controls are disabled after removal`() {
         assertFalse(canUseFutureSale(UserRole.ADMIN))
         assertFalse(canUseFutureSale(UserRole.MASTER))
