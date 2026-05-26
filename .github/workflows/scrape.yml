@@ -59,7 +59,7 @@ jobs:
           import sys
           import urllib.request
 
-          base_url = os.environ.get("RESULTS_RENDER_URL", "https://didactic-guacamole.onrender.com").rstrip("/")
+          base_url = (os.environ.get("RESULTS_RENDER_URL") or "https://didactic-guacamole.onrender.com").rstrip("/")
           url = f"{base_url}/system-results?mode=both"
           with urllib.request.urlopen(url, timeout=20) as response:
               payload = json.loads(response.read().decode("utf-8"))
