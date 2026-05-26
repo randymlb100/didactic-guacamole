@@ -607,7 +607,24 @@ def get_fresh_pick_cache(date_key, game_filter=""):
 
 
 def should_use_live_scrape():
-    return request.args.get("live") == "1"
+    if request.args.get("live") != "1":
+        return False
+    inline_setting = str(os.environ.get("ALLOW_INLINE_LIVE_SCRAPE", "1")).strip().lower()
+    return inline_setting not in ("0", "false", "no", "off")
+
+
+def results_admin_secret():
+    return str(os.environ.get("RESULTS_ADMIN_SECRET", "")).strip()
+
+
+def require_results_admin_secret():
+    expected = results_admin_secret()
+    if not expected:
+        return None
+    provided = str(request.headers.get("X-Results-Admin-Secret") or request.args.get("secret") or "").strip()
+    if provided == expected:
+        return None
+    return json_utf8({"authorized": False, "error": "Results admin secret required"}, status=401)
 
 
 def normalize_request_date_key(raw_date=None):
@@ -1030,6 +1047,9 @@ def delete_manual_result_override():
 
 @app.route("/run-scraper", methods=["GET", "POST"])
 def run_scraper():
+    auth_error = require_results_admin_secret()
+    if auth_error is not None:
+        return auth_error
     date_key = normalize_request_date_key(request.args.get("date"))
     lottery_rows = unique_sorted_results(scrape_cached(date_key))
     pick_rows = unique_sorted_pick_results(pick_scrape_cached(date_key))
@@ -1063,6 +1083,9 @@ def run_scraper():
 
 @app.route("/run-system-scraper", methods=["GET", "POST"])
 def run_system_scraper():
+    auth_error = require_results_admin_secret()
+    if auth_error is not None:
+        return auth_error
     mode = (request.args.get("mode") or "lottery").strip().lower()
     if mode not in ("lottery", "pick", "both"):
         mode = "lottery"
@@ -1105,6 +1128,9 @@ def run_system_scraper():
 
 @app.route("/run-pick-scraper", methods=["GET", "POST"])
 def run_pick_scraper():
+    auth_error = require_results_admin_secret()
+    if auth_error is not None:
+        return auth_error
     date_key = normalize_request_date_key(request.args.get("date"))
     sync_requested = request.args.get("sync") == "1" or request_json_body().get("sync") is True
     if not sync_requested:

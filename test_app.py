@@ -1115,6 +1115,58 @@ class RenderApiContractsTest(unittest.TestCase):
         save_lottery.assert_called_once()
         save_picks.assert_called_once()
 
+    def test_system_results_live_request_uses_cache_when_inline_scrape_disabled(self):
+        with patch.dict(app.os.environ, {"ALLOW_INLINE_LIVE_SCRAPE": "0"}), \
+            patch("app.get_dr_date_str", return_value="26-05-2026"), \
+            patch("app.fetch_existing_from_supabase", return_value=fake_results()), \
+            patch("app.fetch_pick_rows_from_supabase", return_value=[]), \
+            patch("app.scrape") as scrape_mock, \
+            patch("app.scrape_us_picks") as pick_scrape_mock:
+            response = self.client.get("/system-results?date=26-05-2026&mode=both&live=1")
+
+        scrape_mock.assert_not_called()
+        self.assertEqual(200, response.status_code)
+        payload = json.loads(response.data.decode("utf-8"))
+        self.assertEqual("supabase-cache", payload["source"])
+        self.assertGreater(payload["lotteries"]["count"], 0)
+
+    def test_system_results_allows_inline_scrape_only_when_enabled(self):
+        with patch.dict(app.os.environ, {"ALLOW_INLINE_LIVE_SCRAPE": "1"}), \
+            patch("app.get_dr_date_str", return_value="26-05-2026"), \
+            patch("app.scrape", return_value=fake_results()) as scrape_mock, \
+            patch("app.scrape_us_picks", return_value=[]) as pick_scrape_mock:
+            response = self.client.get("/system-results?date=26-05-2026&mode=both&live=1")
+
+        scrape_mock.assert_called()
+        pick_scrape_mock.assert_not_called()
+        self.assertEqual(200, response.status_code)
+        payload = json.loads(response.data.decode("utf-8"))
+        self.assertEqual("live-scraper", payload["source"])
+
+    def test_run_system_scraper_requires_admin_secret(self):
+        with patch.dict(app.os.environ, {"RESULTS_ADMIN_SECRET": "local-secret"}):
+            response = self.client.post("/run-system-scraper?date=26-05-2026&mode=both")
+
+        self.assertEqual(401, response.status_code)
+        payload = json.loads(response.data.decode("utf-8"))
+        self.assertFalse(payload["authorized"])
+
+    def test_run_system_scraper_accepts_admin_secret_header(self):
+        with patch.dict(app.os.environ, {"RESULTS_ADMIN_SECRET": "local-secret"}), \
+            patch("app.SUPABASE_KEY", "test-key"), \
+            patch("app.scrape_cached", return_value=[]), \
+            patch("app.pick_scrape_cached", return_value=[]), \
+            patch("app.save_to_supabase") as save_lottery_mock, \
+            patch("app.save_us_picks_to_supabase") as save_pick_mock:
+            response = self.client.post(
+                "/run-system-scraper?date=26-05-2026&mode=both",
+                headers={"X-Results-Admin-Secret": "local-secret"},
+            )
+
+        self.assertEqual(200, response.status_code)
+        save_lottery_mock.assert_called()
+        save_pick_mock.assert_called()
+
     def test_users_state_reads_payload_from_supabase_kv(self):
         payload = {"admins": [{"id": "a1"}], "cajeros": [{"id": "c1"}], "supervisores": []}
         with patch("app.fetch_users_state_from_supabase", return_value=payload):
