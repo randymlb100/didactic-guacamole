@@ -48,3 +48,34 @@ jobs:
           else
             python scraper/scrape_and_save.py
           fi
+
+      - name: Check Render results API health
+        env:
+          RESULTS_RENDER_URL: ${{ secrets.RESULTS_RENDER_URL }}
+        run: |
+          python - <<'PY'
+          import json
+          import os
+          import sys
+          import urllib.request
+
+          base_url = os.environ.get("RESULTS_RENDER_URL", "https://didactic-guacamole.onrender.com").rstrip("/")
+          url = f"{base_url}/system-results?mode=both"
+          with urllib.request.urlopen(url, timeout=20) as response:
+              payload = json.loads(response.read().decode("utf-8"))
+          lotteries = int(payload.get("lotteries", {}).get("count", 0))
+          picks = int(payload.get("picks", {}).get("count", 0))
+          source = payload.get("source")
+          print(json.dumps({
+              "url": url,
+              "source": source,
+              "lotteries": lotteries,
+              "picks": picks,
+          }, indent=2))
+          if source == "live-scraper":
+              print("Render API should be cache-first for scheduled health checks", file=sys.stderr)
+              sys.exit(1)
+          if lotteries <= 0 and picks <= 0:
+              print("Render API returned no results after scraper run", file=sys.stderr)
+              sys.exit(1)
+          PY
