@@ -29,6 +29,7 @@ __pycache__/
 /.superpowers/
 /backups/
 /test-results/
+supabase/.temp/
 
 # Generated logs and crash dumps
 *.log
