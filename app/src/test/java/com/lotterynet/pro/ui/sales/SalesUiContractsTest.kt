@@ -280,6 +280,39 @@ class SalesUiContractsTest {
     }
 
     @Test
+    fun `pick digits without suffix switch equivalent lottery and can advance to amount`() {
+        val lotteries = listOf(
+            lottery(id = "19", name = "NJ Pick 3 Dia", closeTime = "12:50 PM").copy(type = "Pick3", baseDrawTime = "12:59 PM"),
+            lottery(id = "21", name = "NJ Pick 4 Dia", closeTime = "12:50 PM").copy(type = "Pick4", baseDrawTime = "12:59 PM"),
+        )
+        val assistedEntry = resolvePickAssistedEntry(
+            raw = "854",
+            selectedLotteries = listOf(lotteries[1]),
+            pickMode = PickPlayMode.STRAIGHT,
+        )
+        val selected = resolvePickAssistedLotterySelection(
+            currentSelection = listOf("21"),
+            lotteries = lotteries,
+            assistedEntry = assistedEntry,
+        )
+        val pick3 = lotteries.first { it.id == selected.single() }
+        val draft = com.lotterynet.pro.core.model.SaleDraft(
+            selectedLotteryIds = selected,
+            numberInput = assistedEntry?.digits.orEmpty(),
+            amountInput = "",
+            pickMode = assistedEntry?.pickMode ?: PickPlayMode.STRAIGHT,
+        )
+        val validator = com.lotterynet.pro.core.sales.SaleValidator()
+        val detected = validator.detectPlay(draft, listOf(pick3))
+        val hint = validator.getPartialHint(draft, listOf(pick3))
+
+        assertEquals("Pick3", assistedEntry?.lotteryType)
+        assertEquals(listOf("19"), selected)
+        assertEquals("P3", detected?.playType)
+        assertTrue(resolveNumberAdvanceState("854", detected != null, hint != null).canAdvanceToAmount)
+    }
+
+    @Test
     fun `future sale controls are disabled after removal`() {
         assertFalse(canUseFutureSale(UserRole.ADMIN))
         assertFalse(canUseFutureSale(UserRole.MASTER))

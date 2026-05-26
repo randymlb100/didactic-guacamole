@@ -1054,6 +1054,26 @@ internal fun resolvePickAssistedEntry(raw: String): PickAssistedEntry? {
     )
 }
 
+internal fun resolvePickAssistedEntry(
+    raw: String,
+    selectedLotteries: List<LotteryCatalogItem>,
+    pickMode: PickPlayMode,
+): PickAssistedEntry? {
+    resolvePickAssistedEntry(raw)?.let { return it }
+    if (selectedLotteries.none(::supportsPickModes)) return null
+    val digits = raw.trim().filter(Char::isDigit)
+    val lotteryType = when (digits.length) {
+        3 -> "Pick3"
+        4 -> "Pick4"
+        else -> return null
+    }
+    return PickAssistedEntry(
+        digits = digits,
+        lotteryType = lotteryType,
+        pickMode = pickMode,
+    )
+}
+
 private fun normalizePickModeSuffix(suffix: Char): PickPlayMode? {
     return when (suffix.uppercaseChar()) {
         'B', '+' -> PickPlayMode.BOX
@@ -1753,8 +1773,12 @@ private fun SalesRoute(
         }
     }
     val selectedLottery = selectedLotteries.firstOrNull()
-    val pickAssistedEntry = remember(number) {
-        resolvePickAssistedEntry(number)
+    val pickAssistedEntry = remember(number, selectedLotteries, pickMode) {
+        resolvePickAssistedEntry(
+            raw = number,
+            selectedLotteries = selectedLotteries,
+            pickMode = pickMode,
+        )
     }
     val pickStraightBoxShortcut = remember(number) {
         resolvePickStraightBoxShortcut(number)
