@@ -842,8 +842,15 @@ def unique_sorted_pick_results(rows):
 def merge_pending_pick_catalog_rows(date_key, rows, game_filter=""):
     normalized_filter = str(game_filter or "").strip().lower().replace("-", "")
     catalog_games = [normalized_filter] if normalized_filter in ("pick3", "pick4") else None
+    source_ids = set()
+    for row in rows:
+        if not isinstance(row, dict):
+            continue
+        result_id = normalize_pick_row(row)["id"]
+        if result_id:
+            source_ids.add(result_id)
     current_rows = unique_sorted_pick_results(rows)
-    existing_ids = {str(row.get("id", "")).strip() for row in current_rows}
+    existing_ids = source_ids | {str(row.get("id", "")).strip() for row in current_rows}
     pending_rows = []
     for template in static_us_pick_catalog_rows(games=catalog_games):
         result_id = str(template.get("id", "")).strip()

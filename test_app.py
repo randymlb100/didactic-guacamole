@@ -329,6 +329,75 @@ class RenderApiContractsTest(unittest.TestCase):
         self.assertEqual("pending", rows_by_id["US-P3-LA-PICK-3-DAY"]["status"])
         self.assertEqual("catalog-pending", rows_by_id["US-P3-LA-PICK-3-DAY"]["source"])
 
+    def test_today_pick_snapshot_does_not_readd_legacy_nj_alias_as_pending(self):
+        snapshot_rows = [
+            {
+                "id": "19",
+                "state": "New Jersey",
+                "stateCode": "NJ",
+                "game": "pick3",
+                "gameName": "Pick 3",
+                "draw": "Midday Draw",
+                "date": "27-05-2026",
+                "number": "5-8-5",
+                "pick3": "5-8-5",
+                "source": "miloteria",
+            },
+            {
+                "id": "US-P3-NJ-PICK-3-MIDDAY",
+                "state": "New Jersey",
+                "stateCode": "NJ",
+                "game": "pick3",
+                "gameName": "Pick 3",
+                "draw": "Midday Draw",
+                "date": "27-05-2026",
+                "number": "5-8-5",
+                "pick3": "5-8-5",
+                "source": "lotteryusa.com",
+            },
+        ] + [
+            {
+                "id": f"US-P3-FAKE-{index:02d}",
+                "state": "Fake",
+                "stateCode": "FK",
+                "game": "pick3",
+                "gameName": "Pick 3",
+                "draw": f"Draw {index}",
+                "date": "27-05-2026",
+                "number": "1-2-3",
+                "pick3": "1-2-3",
+                "source": "lotteryusa.com",
+            }
+            for index in range(24)
+        ]
+        catalog_rows = [
+            {
+                "id": "19",
+                "state": "New Jersey",
+                "stateCode": "NJ",
+                "game": "pick3",
+                "gameName": "Pick 3",
+                "draw": "Midday Draw",
+            },
+            {
+                "id": "US-P3-NJ-PICK-3-MIDDAY",
+                "state": "New Jersey",
+                "stateCode": "NJ",
+                "game": "pick3",
+                "gameName": "Pick 3",
+                "draw": "Midday Draw",
+            },
+        ]
+        with patch("app.fetch_pick_rows_from_supabase", return_value=snapshot_rows), \
+                patch("app.static_us_pick_catalog_rows", return_value=catalog_rows), \
+                patch("app.get_dr_date_str", return_value="27-05-2026"):
+            response = self.client.get("/system-results?date=2026-05-27&mode=pick&live=1")
+
+        self.assertEqual(200, response.status_code)
+        rows_by_id = {row["id"]: row for row in response.get_json()["picks"]["results"]}
+        self.assertNotIn("19", rows_by_id)
+        self.assertEqual("5-8-5", rows_by_id["US-P3-NJ-PICK-3-MIDDAY"]["number"])
+
     def test_combined_results_endpoint_honors_mode_without_changing_default(self):
         pick_rows = [
             {
