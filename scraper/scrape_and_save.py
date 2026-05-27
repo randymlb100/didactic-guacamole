@@ -499,9 +499,7 @@ async def async_supabase_kv_save(cache_key, value, client=None, label="Supabase 
             label=f"{label} rpc",
         )
     except httpx.HTTPStatusError as exc:
-        if exc.response.status_code >= 500:
-            raise
-        logger.warning("%s rpc unavailable, falling back to REST table write: %s", label, exc.response.text)
+        logger.warning("%s rpc failed, falling back to REST table write: %s", label, exc.response.text)
 
     update_url = f"{SUPABASE_URL}/rest/v1/lotterynet_kv?key=eq.{urllib.parse.quote(cache_key, safe='')}"
     update_payload = json.dumps({"value": value, "upd": now}).encode("utf-8")
