@@ -382,6 +382,17 @@ class AdminUiContractsTest {
     }
 
     @Test
+    fun `cashier cards open quick action menu with scoped tickets and reports`() {
+        val contract = resolveCashierCardActionContract(LotteryNetWindowMode.POS_TIGHT)
+
+        assertTrue(contract.cardTapOpensMenu)
+        assertEquals(listOf("Detalle", "Tickets", "Reporte", "Cuadre", "Cobros"), contract.actions)
+        assertTrue(contract.filterTicketsByCashier)
+        assertTrue(contract.filterReportsByCashier)
+        assertTrue(contract.maxVisibleRowActions <= 1)
+    }
+
+    @Test
     fun `admin monitor cashier dropdown uses natural numeric order`() {
         val labels = sortMonitorCashierLabelsNatural(
             listOf(
