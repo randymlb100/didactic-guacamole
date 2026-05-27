@@ -629,6 +629,10 @@ def should_require_supabase_save(target_date, current_date, explicit_dates=False
     return bool(explicit_dates) or str(target_date) == str(current_date)
 
 
+def should_continue_after_supabase_save_error(save_required, explicit_dates=False):
+    return (not explicit_dates) or (not save_required)
+
+
 def non_current_backfill_should_run(existing_rd_rows, existing_pick_rows):
     return bool(missing_tracked_result_ids(existing_rd_rows)) or any(
         us_pick_row_needs_refresh(row) for row in (existing_pick_rows or [])
@@ -3264,9 +3268,9 @@ async def _async_main():
             try:
                 await _async_save_to_supabase(target_date, results, prune_missing_ids=prune_missing_ids, client=client)
             except (httpx.HTTPError, httpx.TimeoutException) as e:
-                if save_required:
+                if not should_continue_after_supabase_save_error(save_required, explicit_dates):
                     raise
-                logger.warning("Skipping non-current RD save for %s after Supabase error: %s", target_date, e)
+                logger.warning("Continuing after RD Supabase save error for %s; health check will verify cache: %s", target_date, e)
         else:
             logger.info("No results found for %s — skipping RD save", target_date)
 
@@ -3281,9 +3285,9 @@ async def _async_main():
             try:
                 await _async_save_us_picks_to_supabase(target_date, pick_results, client=client)
             except (httpx.HTTPError, httpx.TimeoutException) as e:
-                if save_required:
+                if not should_continue_after_supabase_save_error(save_required, explicit_dates):
                     raise
-                logger.warning("Skipping non-current Pick save for %s after Supabase error: %s", target_date, e)
+                logger.warning("Continuing after Pick Supabase save error for %s; health check will verify cache: %s", target_date, e)
         else:
             logger.info("No US Pick results found for %s — skipping pick save", target_date)
 

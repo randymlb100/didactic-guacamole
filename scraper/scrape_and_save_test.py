@@ -1615,6 +1615,20 @@ class ScraperContractsTest(unittest.TestCase):
             explicit_dates=True,
         ))
 
+    def test_scheduled_current_save_timeout_continues_to_health_check(self):
+        self.assertTrue(scraper.should_continue_after_supabase_save_error(
+            save_required=True,
+            explicit_dates=False,
+        ))
+        self.assertFalse(scraper.should_continue_after_supabase_save_error(
+            save_required=True,
+            explicit_dates=True,
+        ))
+        self.assertTrue(scraper.should_continue_after_supabase_save_error(
+            save_required=False,
+            explicit_dates=False,
+        ))
+
     def test_non_current_backfill_skips_complete_cached_day(self):
         rd_rows = [
             {"id": result_id, "number": "01-02-03"}
