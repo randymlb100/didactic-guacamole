@@ -609,8 +609,8 @@ def get_fresh_pick_cache(date_key, game_filter=""):
 def should_use_live_scrape():
     if request.args.get("live") != "1":
         return False
-    inline_setting = str(os.environ.get("ALLOW_INLINE_LIVE_SCRAPE", "1")).strip().lower()
-    return inline_setting not in ("0", "false", "no", "off")
+    inline_setting = str(os.environ.get("ALLOW_INLINE_LIVE_SCRAPE", "")).strip().lower()
+    return inline_setting in ("1", "true", "yes", "on")
 
 
 def results_admin_secret():
@@ -768,6 +768,8 @@ def pick_rows_for_request_date(date_key, game_filter=""):
             fresh_cached_rows = get_fresh_pick_cache(date_key, game_filter)
             if fresh_cached_rows:
                 rows = fresh_cached_rows
+            elif request.args.get("live") == "1":
+                _, rows = split_lottery_and_pick_rows(cache_rows_list(fetch_existing_from_supabase(date_key)))
             elif date_key == get_dr_date_str():
                 schedule_background_pick_refresh(date_key)
                 _, rows = split_lottery_and_pick_rows(cache_rows_list(fetch_existing_from_supabase(date_key)))

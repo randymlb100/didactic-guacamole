@@ -27,6 +27,15 @@ def fake_results():
 
 class RenderApiContractsTest(unittest.TestCase):
     def setUp(self):
+        self.env_patcher = patch.dict(app.os.environ, {
+            "ALLOW_INLINE_LIVE_SCRAPE": "1",
+            "SUPABASE_KEY": "test-key",
+        }, clear=False)
+        self.env_patcher.start()
+        self.addCleanup(self.env_patcher.stop)
+        self.supabase_key_patcher = patch.object(app, "SUPABASE_KEY", "test-key")
+        self.supabase_key_patcher.start()
+        self.addCleanup(self.supabase_key_patcher.stop)
         self.client = app.app.test_client()
         app._scrape_cache.clear()
         app._pick_scrape_cache.clear()
@@ -1129,6 +1138,21 @@ class RenderApiContractsTest(unittest.TestCase):
         payload = json.loads(response.data.decode("utf-8"))
         self.assertEqual("supabase-cache", payload["source"])
         self.assertGreater(payload["lotteries"]["count"], 0)
+
+    def test_system_results_live_request_uses_cache_by_default(self):
+        with patch.dict(app.os.environ, {}, clear=True), \
+            patch("app.get_dr_date_str", return_value="26-05-2026"), \
+            patch("app.fetch_existing_from_supabase", return_value=fake_results()), \
+            patch("app.fetch_pick_rows_from_supabase", return_value=[]), \
+            patch("app.scrape") as scrape_mock, \
+            patch("app.scrape_us_picks") as pick_scrape_mock:
+            response = self.client.get("/system-results?date=26-05-2026&mode=both&live=1")
+
+        scrape_mock.assert_not_called()
+        pick_scrape_mock.assert_not_called()
+        self.assertEqual(200, response.status_code)
+        payload = json.loads(response.data.decode("utf-8"))
+        self.assertEqual("supabase-cache", payload["source"])
 
     def test_system_results_allows_inline_scrape_only_when_enabled(self):
         with patch.dict(app.os.environ, {"ALLOW_INLINE_LIVE_SCRAPE": "1"}), \
