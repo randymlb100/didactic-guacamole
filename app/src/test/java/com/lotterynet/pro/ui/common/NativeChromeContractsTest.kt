@@ -361,6 +361,40 @@ class NativeChromeContractsTest {
     }
 
     @Test
+    fun `visual grammar assigns controls to the right component type`() {
+        val grammar = resolveVisualGrammarContract()
+
+        assertEquals(1, grammar.maxPrimaryActionsPerPanel)
+        assertTrue(grammar.badgesOnlyForStatusOrCounts)
+        assertTrue(grammar.dropdownsForLongOptionLists)
+        assertTrue(grammar.bottomSheetsForSecondaryActionGroups)
+        assertTrue(grammar.minTouchTargetDp >= 44)
+        assertTrue(grammar.controlSpacingDp >= 8)
+        assertTrue(grammar.motionDurationMs in 120..220)
+    }
+
+    @Test
+    fun `adaptive action row moves extra commands into sheet on small screens`() {
+        val contract = resolveAdaptiveActionGroupContract(
+            windowMode = LotteryNetWindowMode.POS_TIGHT,
+            commandCount = 5,
+        )
+
+        assertEquals(1, contract.visiblePrimaryCount)
+        assertTrue(contract.overflowCount >= 3)
+        assertTrue(contract.useBottomSheet)
+    }
+
+    @Test
+    fun `filter controls wrap instead of truncating on small screens`() {
+        val contract = resolveFilterBandContract(LotteryNetWindowMode.POS_TIGHT)
+
+        assertTrue(contract.useFlowRow)
+        assertTrue(contract.stackLongDropdowns)
+        assertTrue(contract.maxLabelLines >= 2)
+    }
+
+    @Test
     fun `action feedback messages confirm server and save work`() {
         assertEquals("Guardado terminado.", resolveActionFeedbackMessage(ActionFeedbackKind.SAVE, success = true))
         assertEquals("Servidor actualizado.", resolveActionFeedbackMessage(ActionFeedbackKind.SERVER_REFRESH, success = true))

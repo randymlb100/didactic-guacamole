@@ -490,6 +490,29 @@ internal data class PosLiteViewportContract(
     val compactDropdownPaddingVerticalDp: Int,
 )
 
+internal data class VisualGrammarContract(
+    val maxPrimaryActionsPerPanel: Int,
+    val badgesOnlyForStatusOrCounts: Boolean,
+    val dropdownsForLongOptionLists: Boolean,
+    val bottomSheetsForSecondaryActionGroups: Boolean,
+    val minTouchTargetDp: Int,
+    val controlSpacingDp: Int,
+    val motionDurationMs: Int,
+)
+
+internal data class AdaptiveActionGroupContract(
+    val visiblePrimaryCount: Int,
+    val visibleSecondaryCount: Int,
+    val overflowCount: Int,
+    val useBottomSheet: Boolean,
+)
+
+internal data class FilterBandContract(
+    val useFlowRow: Boolean,
+    val stackLongDropdowns: Boolean,
+    val maxLabelLines: Int,
+)
+
 internal fun resolveNonSalesVisualRedesignContract(): NonSalesVisualRedesignContract {
     return NonSalesVisualRedesignContract(
         excludeSales = true,
@@ -500,6 +523,47 @@ internal fun resolveNonSalesVisualRedesignContract(): NonSalesVisualRedesignCont
         actionSpacingDp = 8,
         animationDurationMs = 160,
         useHeroCards = false,
+    )
+}
+
+internal fun resolveVisualGrammarContract(): VisualGrammarContract {
+    return VisualGrammarContract(
+        maxPrimaryActionsPerPanel = 1,
+        badgesOnlyForStatusOrCounts = true,
+        dropdownsForLongOptionLists = true,
+        bottomSheetsForSecondaryActionGroups = true,
+        minTouchTargetDp = 44,
+        controlSpacingDp = 8,
+        motionDurationMs = 160,
+    )
+}
+
+internal fun resolveAdaptiveActionGroupContract(
+    windowMode: LotteryNetWindowMode,
+    commandCount: Int,
+): AdaptiveActionGroupContract {
+    val compact = windowMode == LotteryNetWindowMode.POS_TIGHT || windowMode == LotteryNetWindowMode.POS
+    val visiblePrimary = if (commandCount > 0) 1 else 0
+    val visibleSecondary = if (compact) {
+        1.coerceAtMost(commandCount - visiblePrimary)
+    } else {
+        2.coerceAtMost(commandCount - visiblePrimary)
+    }
+    val overflow = (commandCount - visiblePrimary - visibleSecondary).coerceAtLeast(0)
+    return AdaptiveActionGroupContract(
+        visiblePrimaryCount = visiblePrimary,
+        visibleSecondaryCount = visibleSecondary,
+        overflowCount = overflow,
+        useBottomSheet = compact && overflow > 0,
+    )
+}
+
+internal fun resolveFilterBandContract(windowMode: LotteryNetWindowMode): FilterBandContract {
+    val compact = windowMode == LotteryNetWindowMode.POS_TIGHT || windowMode == LotteryNetWindowMode.POS
+    return FilterBandContract(
+        useFlowRow = true,
+        stackLongDropdowns = compact,
+        maxLabelLines = if (compact) 2 else 1,
     )
 }
 
