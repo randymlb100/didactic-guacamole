@@ -91,6 +91,7 @@ class AdminLimitsActivity : AppCompatActivity() {
                     initialAdminLimits = adminLimitRepository.getLimits(),
                     initialRechargeLimits = rechargeLimitRepository.getSettings(),
                     initialSalesLimits = cashierSalesLimitRepository.getDefaultLimits(ownerId),
+                    initialAdminSelfLimits = cashierSalesLimitRepository.getAdminSelfLimits(ownerId),
                     initialPosModeEnabled = posModeRepository.isEnabled(),
                     onBack = { finish() },
                     onSavePosMode = { enabled ->
@@ -101,7 +102,7 @@ class AdminLimitsActivity : AppCompatActivity() {
                             Toast.LENGTH_SHORT,
                         ).show()
                     },
-                    onSave = { adminLimits, rechargeLimits, salesLimits ->
+                    onSave = { adminLimits, rechargeLimits, salesLimits, adminSelfLimits ->
                         Thread {
                             val ok = runCatching {
                                 serviceStore.upsertJsonValue(
@@ -129,6 +130,7 @@ class AdminLimitsActivity : AppCompatActivity() {
                                         resolveDefaultSalesLimitsForServer(salesLimits, adminLimits),
                                     ),
                                 )
+                                check(cashierLimitCloudSync.pushAdminSelfLimitsServiceFirst(ownerId, adminSelfLimits))
                                 adminLimitRepository.saveLimits(adminLimits)
                                 rechargeLimitRepository.saveSettings(rechargeLimits)
                                 true
@@ -153,11 +155,13 @@ private fun AdminLimitsRoute(
     initialAdminLimits: AdminOperationalLimits,
     initialRechargeLimits: com.lotterynet.pro.core.storage.RechargeLimitSettings,
     initialSalesLimits: CashierSalesLimitInputs,
+    initialAdminSelfLimits: CashierSalesLimitInputs?,
     initialPosModeEnabled: Boolean,
     onBack: () -> Unit,
     onSavePosMode: (Boolean) -> Unit,
-    onSave: (AdminOperationalLimits, com.lotterynet.pro.core.storage.RechargeLimitSettings, CashierSalesLimitInputs) -> Unit,
+    onSave: (AdminOperationalLimits, com.lotterynet.pro.core.storage.RechargeLimitSettings, CashierSalesLimitInputs, CashierSalesLimitInputs) -> Unit,
 ) {
+    val adminSelfInitial = initialAdminSelfLimits ?: emptyCashierSalesLimitInputs()
     var daySaleLimit by rememberSaveable { mutableStateOf(formatLimit(initialSalesLimits.daySale)) }
     var payoutSalesLimit by rememberSaveable { mutableStateOf(formatLimit(initialSalesLimits.payout)) }
     var quinielaLimit by rememberSaveable { mutableStateOf(formatLimit(initialSalesLimits.quiniela)) }
@@ -168,6 +172,16 @@ private fun AdminLimitsRoute(
     var pick3BoxLimit by rememberSaveable { mutableStateOf(formatLimit(initialSalesLimits.pick3Box)) }
     var pick4StraightLimit by rememberSaveable { mutableStateOf(formatLimit(initialSalesLimits.pick4Straight)) }
     var pick4BoxLimit by rememberSaveable { mutableStateOf(formatLimit(initialSalesLimits.pick4Box)) }
+    var adminDaySaleLimit by rememberSaveable { mutableStateOf(formatLimit(adminSelfInitial.daySale)) }
+    var adminPayoutSalesLimit by rememberSaveable { mutableStateOf(formatLimit(adminSelfInitial.payout)) }
+    var adminQuinielaLimit by rememberSaveable { mutableStateOf(formatLimit(adminSelfInitial.quiniela)) }
+    var adminPaleLimit by rememberSaveable { mutableStateOf(formatLimit(adminSelfInitial.pale)) }
+    var adminSuperPaleLimit by rememberSaveable { mutableStateOf(formatLimit(adminSelfInitial.superPale)) }
+    var adminTripletaLimit by rememberSaveable { mutableStateOf(formatLimit(adminSelfInitial.tripleta)) }
+    var adminPick3StraightLimit by rememberSaveable { mutableStateOf(formatLimit(adminSelfInitial.pick3Straight)) }
+    var adminPick3BoxLimit by rememberSaveable { mutableStateOf(formatLimit(adminSelfInitial.pick3Box)) }
+    var adminPick4StraightLimit by rememberSaveable { mutableStateOf(formatLimit(adminSelfInitial.pick4Straight)) }
+    var adminPick4BoxLimit by rememberSaveable { mutableStateOf(formatLimit(adminSelfInitial.pick4Box)) }
     var payoutLimit by rememberSaveable { mutableStateOf(formatLimit(initialAdminLimits.cashierPayoutLimit)) }
     var globalRecharge by rememberSaveable { mutableStateOf(formatLimit(initialRechargeLimits.globalPerTx)) }
     var masterRecharge by rememberSaveable { mutableStateOf(formatLimit(initialRechargeLimits.masterPerTx)) }
@@ -175,9 +189,14 @@ private fun AdminLimitsRoute(
     var showPosModePassword by rememberSaveable { mutableStateOf(false) }
     var posModePassword by rememberSaveable { mutableStateOf("") }
     var posModePasswordError by rememberSaveable { mutableStateOf(false) }
-    var selectedSection by rememberSaveable { mutableStateOf("sales") }
+    var selectedSection by rememberSaveable { mutableStateOf("adminSelf") }
     val visual = rememberLotteryNetVisualSpec()
     val salesLimitCopy = resolveCashierSalesLimitVisibilityContract(initialSalesLimits)
+    val adminSelfContract = resolveAdminLimitScopeContract(
+        selectedScope = AdminLimitScope.ADMIN_SELF,
+        adminHasSelfLimits = initialAdminSelfLimits != null,
+        cashierDefaultsEnabled = initialSalesLimits.daySale > 0.0,
+    )
     Scaffold(
         modifier = Modifier.fillMaxSize(),
         containerColor = visual.colors.background,
@@ -204,17 +223,127 @@ private fun AdminLimitsRoute(
                 options = adminLimitsSectionOptions(),
                 selectedId = selectedSection,
                 onSelected = { selectedSection = it },
-                columns = 4,
+                columns = 3,
             )
             CompactPanel {
                 OperationalListHeader(title = "Resumen", meta = "Topes activos")
                 MetricStrip(
                     items = listOf(
-                        MetricStripItem("Venta diaria", if (initialSalesLimits.daySale > 0.0) moneyLimit(initialSalesLimits.daySale) else "Sin tope", MaterialTheme.colorScheme.primary),
+                        MetricStripItem("Mi venta", initialAdminSelfLimits?.daySale?.takeIf { it > 0.0 }?.let(::moneyLimit) ?: "Sin tope", MaterialTheme.colorScheme.primary),
+                        MetricStripItem("Cajeros", if (initialSalesLimits.daySale > 0.0) moneyLimit(initialSalesLimits.daySale) else "Sin tope", MaterialTheme.colorScheme.primary),
                         MetricStripItem("Pago cajero", if (initialAdminLimits.cashierPayoutLimit > 0.0) moneyLimit(initialAdminLimits.cashierPayoutLimit) else "Sin tope", MaterialTheme.colorScheme.primary),
-                        MetricStripItem("Global recarga", if (initialRechargeLimits.globalPerTx > 0.0) moneyLimit(initialRechargeLimits.globalPerTx) else "Sin tope", MaterialTheme.colorScheme.primary),
                     ),
                 )
+            }
+            if (selectedSection == "adminSelf") {
+            CompactPanel(alt = true) {
+                OperationalListHeader(title = adminSelfContract.title, meta = adminSelfContract.emptyStateCopy)
+                CompactKeyValueRow(
+                    label = "Estado",
+                    value = if (initialAdminSelfLimits == null) "Sin tope" else "Con tope propio",
+                    tone = if (initialAdminSelfLimits == null) MaterialTheme.colorScheme.primary else null,
+                )
+                OutlinedTextField(
+                    value = adminDaySaleLimit,
+                    onValueChange = { adminDaySaleLimit = sanitizeLimit(it) },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    label = { Text("Mi venta diaria") },
+                    leadingIcon = { Icon(Icons.Rounded.Casino, contentDescription = null) },
+                    supportingText = { Text("0 o vacío deja al admin sin tope diario.") },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                )
+                SectionHeader(title = "Mis jugadas", meta = "Admin")
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    OutlinedTextField(
+                        value = adminQuinielaLimit,
+                        onValueChange = { adminQuinielaLimit = sanitizeLimit(it) },
+                        modifier = Modifier.weight(1f),
+                        singleLine = true,
+                        label = { Text("Quiniela") },
+                        leadingIcon = { Icon(Icons.Rounded.Casino, contentDescription = null) },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                    )
+                    OutlinedTextField(
+                        value = adminPaleLimit,
+                        onValueChange = { adminPaleLimit = sanitizeLimit(it) },
+                        modifier = Modifier.weight(1f),
+                        singleLine = true,
+                        label = { Text("Pale") },
+                        leadingIcon = { Icon(Icons.Rounded.Casino, contentDescription = null) },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                    )
+                }
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    OutlinedTextField(
+                        value = adminSuperPaleLimit,
+                        onValueChange = { adminSuperPaleLimit = sanitizeLimit(it) },
+                        modifier = Modifier.weight(1f),
+                        singleLine = true,
+                        label = { Text("Super Pale") },
+                        leadingIcon = { Icon(Icons.Rounded.Casino, contentDescription = null) },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                    )
+                    OutlinedTextField(
+                        value = adminTripletaLimit,
+                        onValueChange = { adminTripletaLimit = sanitizeLimit(it) },
+                        modifier = Modifier.weight(1f),
+                        singleLine = true,
+                        label = { Text("Tripleta") },
+                        leadingIcon = { Icon(Icons.Rounded.Casino, contentDescription = null) },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                    )
+                }
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    OutlinedTextField(
+                        value = adminPick3StraightLimit,
+                        onValueChange = { adminPick3StraightLimit = sanitizeLimit(it) },
+                        modifier = Modifier.weight(1f),
+                        singleLine = true,
+                        label = { Text("Pick 3 Straight") },
+                        leadingIcon = { Icon(Icons.Rounded.Casino, contentDescription = null) },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                    )
+                    OutlinedTextField(
+                        value = adminPick3BoxLimit,
+                        onValueChange = { adminPick3BoxLimit = sanitizeLimit(it) },
+                        modifier = Modifier.weight(1f),
+                        singleLine = true,
+                        label = { Text("Pick 3 Box") },
+                        leadingIcon = { Icon(Icons.Rounded.Casino, contentDescription = null) },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                    )
+                }
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    OutlinedTextField(
+                        value = adminPick4StraightLimit,
+                        onValueChange = { adminPick4StraightLimit = sanitizeLimit(it) },
+                        modifier = Modifier.weight(1f),
+                        singleLine = true,
+                        label = { Text("Pick 4 Straight") },
+                        leadingIcon = { Icon(Icons.Rounded.Casino, contentDescription = null) },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                    )
+                    OutlinedTextField(
+                        value = adminPick4BoxLimit,
+                        onValueChange = { adminPick4BoxLimit = sanitizeLimit(it) },
+                        modifier = Modifier.weight(1f),
+                        singleLine = true,
+                        label = { Text("Pick 4 Box") },
+                        leadingIcon = { Icon(Icons.Rounded.Casino, contentDescription = null) },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                    )
+                }
+                OutlinedTextField(
+                    value = adminPayoutSalesLimit,
+                    onValueChange = { adminPayoutSalesLimit = sanitizeLimit(it) },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    label = { Text("Mi tope de cobro") },
+                    leadingIcon = { Icon(Icons.Rounded.Payments, contentDescription = null) },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                )
+            }
             }
             if (selectedSection == "sales") {
             CompactPanel(alt = true) {
@@ -450,6 +579,18 @@ private fun AdminLimitsRoute(
                                 pick4Straight = pick4StraightLimit.toDoubleOrNull()?.coerceAtLeast(0.0) ?: 0.0,
                                 pick4Box = pick4BoxLimit.toDoubleOrNull()?.coerceAtLeast(0.0) ?: 0.0,
                             ),
+                            CashierSalesLimitInputs(
+                                daySale = adminDaySaleLimit.toDoubleOrNull()?.coerceAtLeast(0.0) ?: 0.0,
+                                payout = adminPayoutSalesLimit.toDoubleOrNull()?.coerceAtLeast(0.0) ?: 0.0,
+                                quiniela = adminQuinielaLimit.toDoubleOrNull()?.coerceAtLeast(0.0) ?: 0.0,
+                                pale = adminPaleLimit.toDoubleOrNull()?.coerceAtLeast(0.0) ?: 0.0,
+                                superPale = adminSuperPaleLimit.toDoubleOrNull()?.coerceAtLeast(0.0) ?: 0.0,
+                                tripleta = adminTripletaLimit.toDoubleOrNull()?.coerceAtLeast(0.0) ?: 0.0,
+                                pick3Straight = adminPick3StraightLimit.toDoubleOrNull()?.coerceAtLeast(0.0) ?: 0.0,
+                                pick3Box = adminPick3BoxLimit.toDoubleOrNull()?.coerceAtLeast(0.0) ?: 0.0,
+                                pick4Straight = adminPick4StraightLimit.toDoubleOrNull()?.coerceAtLeast(0.0) ?: 0.0,
+                                pick4Box = adminPick4BoxLimit.toDoubleOrNull()?.coerceAtLeast(0.0) ?: 0.0,
+                            ),
                         )
                     },
                     modifier = Modifier.fillMaxWidth(),
@@ -553,10 +694,24 @@ private fun AdminLimitsCompactHeader(onBack: () -> Unit) {
 }
 
 internal fun adminLimitsSectionOptions(): List<QuickFilterChip> = listOf(
-    QuickFilterChip("sales", "Venta"),
+    QuickFilterChip("adminSelf", "Admin"),
+    QuickFilterChip("sales", "Cajeros"),
     QuickFilterChip("payments", "Pagos"),
     QuickFilterChip("recharges", "Recargas"),
-    QuickFilterChip("system", "Sistema"),
+    QuickFilterChip("system", "POS"),
+)
+
+private fun emptyCashierSalesLimitInputs(): CashierSalesLimitInputs = CashierSalesLimitInputs(
+    daySale = 0.0,
+    payout = 0.0,
+    quiniela = 0.0,
+    pale = 0.0,
+    superPale = 0.0,
+    tripleta = 0.0,
+    pick3Straight = 0.0,
+    pick3Box = 0.0,
+    pick4Straight = 0.0,
+    pick4Box = 0.0,
 )
 
 private fun formatLimit(value: Double): String {

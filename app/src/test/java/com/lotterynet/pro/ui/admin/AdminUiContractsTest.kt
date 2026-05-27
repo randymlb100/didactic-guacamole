@@ -417,7 +417,7 @@ class AdminUiContractsTest {
     @Test
     fun `admin limits are grouped by operational risk`() {
         assertEquals(
-            listOf("Límite de venta de cajeros", "Pagos", "Recargas", "Sistema"),
+            listOf("Mis límites de venta", "Límite de venta de cajeros", "Pagos", "Recargas", "Sistema"),
             adminLimitSections().map { it.label },
         )
     }

@@ -41,6 +41,22 @@ class AdminLimitsContractsTest {
     }
 
     @Test
+    fun `admin self limits are separate from cashier defaults`() {
+        val contract = resolveAdminLimitScopeContract(
+            selectedScope = AdminLimitScope.ADMIN_SELF,
+            adminHasSelfLimits = false,
+            cashierDefaultsEnabled = true,
+        )
+
+        assertEquals(AdminLimitScope.ADMIN_SELF, contract.selectedScope)
+        assertEquals("Mis límites", contract.title)
+        assertEquals("Admin vende sin tope si está vacío", contract.emptyStateCopy)
+        assertEquals(true, contract.adminSalesUnlimitedWhenEmpty)
+        assertEquals(false, contract.cashierDefaultsAffectAdmin)
+        assertEquals(listOf("Mis límites", "Todos los cajeros", "Por cajero"), contract.scopeLabels)
+    }
+
+    @Test
     fun `pos mode accepts only the protected password`() {
         assertEquals(true, verifyPosModePassword("123"))
         assertEquals(false, verifyPosModePassword(""))

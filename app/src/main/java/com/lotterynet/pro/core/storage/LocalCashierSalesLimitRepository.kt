@@ -98,6 +98,26 @@ fun buildCashierLimitPayloadWithUser(
     return current.toString()
 }
 
+fun buildCashierLimitPayloadWithAdminSelf(
+    currentPayload: String?,
+    limits: CashierSalesLimitInputs,
+): String {
+    val current = currentPayload
+        ?.let { runCatching { JSONObject(it) }.getOrNull() }
+        ?: JSONObject().apply { put("defaults", CashierSalesLimitInputs().toJson()) }
+    current.put("adminSelf", limits.toJson())
+    return current.toString()
+}
+
+fun resolveAdminSelfLimitsAreEmpty(payload: String?): Boolean {
+    val adminSelf = payload
+        ?.let { runCatching { JSONObject(it) }.getOrNull() }
+        ?.optJSONObject("adminSelf")
+        ?: return true
+    return listOf("daySale", "payout", "q", "pale", "sp", "t", "p3", "p3box", "p4", "p4box")
+        .all { key -> adminSelf.optDouble(key, 0.0) <= 0.0 }
+}
+
 private fun CashierSalesLimitInputs.toJson(): JSONObject {
     return JSONObject().apply {
         put("daySale", daySale.coerceAtLeast(0.0))
@@ -169,6 +189,14 @@ class LocalCashierSalesLimitRepository(
         )
     }
 
+    fun buildPayloadWithAdminSelfLimits(ownerId: String?, limits: CashierSalesLimitInputs): String {
+        val key = ownerId?.takeIf { it.isNotBlank() } ?: return encodeCashierSalesLimitInputs(CashierSalesLimitInputs())
+        return buildCashierLimitPayloadWithAdminSelf(
+            currentPayload = prefs.getString(SalesStorageKeys.CASHIER_LIMITS_PREFIX + key, null),
+            limits = limits,
+        )
+    }
+
     fun cachePayload(ownerId: String?, payload: String) {
         val key = ownerId?.takeIf { it.isNotBlank() } ?: return
         if (payload.isBlank()) return
@@ -193,11 +221,25 @@ class LocalCashierSalesLimitRepository(
         )
     }
 
+    fun getAdminSelfLimits(ownerId: String?): CashierSalesLimitInputs? {
+        val ownerKey = ownerId?.takeIf { it.isNotBlank() } ?: return null
+        val payload = prefs.getString(SalesStorageKeys.CASHIER_LIMITS_PREFIX + ownerKey, null)
+        if (resolveAdminSelfLimitsAreEmpty(payload)) return null
+        val root = payload?.let { runCatching { JSONObject(it) }.getOrNull() } ?: return null
+        return decodeCashierSalesLimitInputs(root.optJSONObject("adminSelf"))
+    }
+
     fun saveUserLimits(ownerId: String?, username: String?, limits: CashierSalesLimitInputs) {
         val ownerKey = ownerId?.takeIf { it.isNotBlank() } ?: return
         val storageKey = SalesStorageKeys.CASHIER_LIMITS_PREFIX + ownerKey
         val payload = buildPayloadWithUserLimits(ownerKey, username, limits)
         if (payload.isBlank()) return
         prefs.edit { putString(storageKey, payload) }
+    }
+
+    fun saveAdminSelfLimits(ownerId: String?, limits: CashierSalesLimitInputs) {
+        val ownerKey = ownerId?.takeIf { it.isNotBlank() } ?: return
+        val storageKey = SalesStorageKeys.CASHIER_LIMITS_PREFIX + ownerKey
+        prefs.edit { putString(storageKey, buildPayloadWithAdminSelfLimits(ownerKey, limits)) }
     }
 }

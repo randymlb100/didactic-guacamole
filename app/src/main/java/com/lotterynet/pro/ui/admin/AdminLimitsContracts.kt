@@ -17,7 +17,23 @@ internal data class CashierSalesLimitVisibilityContract(
     val daySaleHelp: String,
 )
 
+internal enum class AdminLimitScope {
+    ADMIN_SELF,
+    CASHIER_DEFAULTS,
+    CASHIER_SPECIFIC,
+}
+
+internal data class AdminLimitScopeContract(
+    val selectedScope: AdminLimitScope,
+    val title: String,
+    val emptyStateCopy: String,
+    val adminSalesUnlimitedWhenEmpty: Boolean,
+    val cashierDefaultsAffectAdmin: Boolean,
+    val scopeLabels: List<String>,
+)
+
 internal fun adminLimitSections(): List<AdminLimitSection> = listOf(
+    AdminLimitSection("Mis límites de venta", "Topes propios del admin"),
     AdminLimitSection("Límite de venta de cajeros", "Dinero diario y topes por jugada"),
     AdminLimitSection("Pagos", "Control de cobro por cajero"),
     AdminLimitSection("Recargas", "Topes globales y master"),
@@ -36,6 +52,30 @@ internal fun adminSalesLimitFieldLabels(): List<String> = listOf(
 )
 
 internal fun recommendedCashierSalesLimits(): CashierSalesLimitInputs = CashierSalesLimitInputs()
+
+internal fun resolveAdminLimitScopeContract(
+    selectedScope: AdminLimitScope,
+    adminHasSelfLimits: Boolean,
+    cashierDefaultsEnabled: Boolean,
+): AdminLimitScopeContract {
+    val title = when (selectedScope) {
+        AdminLimitScope.ADMIN_SELF -> "Mis límites"
+        AdminLimitScope.CASHIER_DEFAULTS -> "Todos los cajeros"
+        AdminLimitScope.CASHIER_SPECIFIC -> "Por cajero"
+    }
+    return AdminLimitScopeContract(
+        selectedScope = selectedScope,
+        title = title,
+        emptyStateCopy = if (!adminHasSelfLimits && selectedScope == AdminLimitScope.ADMIN_SELF) {
+            "Admin vende sin tope si está vacío"
+        } else {
+            "Límites activos"
+        },
+        adminSalesUnlimitedWhenEmpty = !adminHasSelfLimits,
+        cashierDefaultsAffectAdmin = false,
+        scopeLabels = listOf("Mis límites", "Todos los cajeros", "Por cajero"),
+    )
+}
 
 internal fun resolveCashierSalesLimitVisibilityContract(
     salesLimits: CashierSalesLimitInputs,
