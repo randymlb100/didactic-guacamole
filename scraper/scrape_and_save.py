@@ -3167,6 +3167,13 @@ async def _async_save_to_supabase(date_str, results, prune_missing_ids=None, cli
 
     value = json.dumps(merged_list, ensure_ascii=False)
 
+    native_saved = False
+    try:
+        await _async_save_native_results_table(date_str, merged_list, client=c)
+        native_saved = True
+    except Exception as e:
+        logger.warning("Native results table save failed for %s: %s", date_str, e)
+
     try:
         resp = await async_supabase_kv_save(
             key,
@@ -3175,11 +3182,15 @@ async def _async_save_to_supabase(date_str, results, prune_missing_ids=None, cli
             label=f"Supabase RD cache save for {date_str}",
         )
         logger.info("Saved %d results (merged) for %s -> HTTP %s", len(merged_list), date_str, resp.status_code)
-        try:
-            await _async_save_native_results_table(date_str, merged_list, client=c)
-        except Exception as e:
-            logger.warning("Native results table save failed for %s: %s", date_str, e)
     except httpx.HTTPStatusError as e:
+        if native_saved:
+            logger.warning(
+                "Legacy RD cache save failed for %s after native results save succeeded: HTTP %s %s",
+                date_str,
+                e.response.status_code,
+                e.response.text,
+            )
+            return
         logger.error("Supabase error %s: %s", e.response.status_code, e.response.text)
         raise
 
