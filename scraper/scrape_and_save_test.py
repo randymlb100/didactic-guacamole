@@ -1576,6 +1576,28 @@ class ScraperContractsTest(unittest.TestCase):
         self.assertEqual(1, client.patch_calls)
         self.assertEqual(3, client.post_calls)
 
+    def test_save_to_supabase_continues_when_legacy_kv_times_out_after_native_save(self):
+        request = scraper.httpx.Request(
+            "PATCH",
+            "https://example.supabase.co/rest/v1/lotterynet_kv?key=eq.lot_results_cache_by_day%3A26-05-2026",
+        )
+        response = scraper.httpx.Response(
+            500,
+            request=request,
+            json={"code": "57014", "message": "canceling statement due to statement timeout"},
+        )
+        error = scraper.httpx.HTTPStatusError("statement timeout", request=request, response=response)
+
+        with patch.object(scraper, "_async_fetch_existing_from_supabase", AsyncMock(return_value=[])), \
+                patch.object(scraper, "_async_save_native_results_table", AsyncMock()) as native_save, \
+                patch.object(scraper, "async_supabase_kv_save", AsyncMock(side_effect=error)):
+            scraper.sync_run(scraper._async_save_to_supabase(
+                "26-05-2026",
+                [{"id": "1", "name": "La Primera Día", "date": "26-05-2026", "number": "01-02-03"}],
+            ))
+
+        native_save.assert_awaited_once()
+
     def test_default_backfill_only_requires_current_day_save(self):
         self.assertTrue(scraper.should_require_supabase_save(
             target_date="24-05-2026",
