@@ -377,7 +377,7 @@ private fun FinanceReportsRoute(
                                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
                                     row.forEach { option ->
                                         CompactActionButton(
-                                            label = option.label,
+                                            label = financePeriodButtonLabel(option, visual.windowMode),
                                             onClick = {
                                                 refreshReport(option.preset)
                                                 statusMessage = "Preset ${option.label.lowercase()} aplicado."

@@ -1309,7 +1309,7 @@ private fun FinancePeriodSegmentedControl(
             Row(horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.fillMaxWidth()) {
                 row.forEach { option ->
                     CompactActionButton(
-                        label = option.label,
+                        label = financePeriodButtonLabel(option, visual.windowMode),
                         onClick = { onSelect(option) },
                         modifier = Modifier.weight(1f),
                         active = option.preset == selected.preset,

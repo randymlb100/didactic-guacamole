@@ -496,6 +496,10 @@ class TicketCollectionContractsTest {
             listOf("today", "yesterday", "week", "quinza", "month", "all"),
             TicketSummaryPeriod.entries.map { it.id },
         )
+        assertEquals(
+            listOf("Hoy", "Ayer", "Semana", "Quincena", "Mes", "Todo"),
+            TicketSummaryPeriod.entries.map { it.label },
+        )
         assertEquals(12, buildTicketMonthOptions().size)
         assertEquals("Enero", buildTicketMonthOptions().first().label)
     }

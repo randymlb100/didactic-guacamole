@@ -93,6 +93,22 @@ internal fun financePeriodOptionRows(windowMode: LotteryNetWindowMode): List<Lis
     }.filter { it.isNotEmpty() }
 }
 
+internal fun financePeriodButtonLabel(
+    option: FinancePeriodUiOption,
+    windowMode: LotteryNetWindowMode,
+): String {
+    return when (windowMode) {
+        LotteryNetWindowMode.POS,
+        LotteryNetWindowMode.POS_TIGHT -> when (option.preset) {
+            FinancePeriodPreset.QUINCENA -> "15 días"
+            FinancePeriodPreset.CALENDAR -> "Rango"
+            else -> option.label
+        }
+        LotteryNetWindowMode.TABLET,
+        LotteryNetWindowMode.WIDE -> option.label
+    }
+}
+
 internal fun financeDateQuickOptions(todayDayKey: String): List<FinanceDateQuickOption> {
     val today = runCatching { LocalDate.parse(todayDayKey) }.getOrElse { LocalDate.now() }
     return listOf(

@@ -88,6 +88,16 @@ class FinanceUiContractsTest {
     }
 
     @Test
+    fun `finance period buttons use short labels on small screens`() {
+        val compactLabels = financePeriodOptions().map { financePeriodButtonLabel(it, LotteryNetWindowMode.POS_TIGHT) }
+        val wideLabels = financePeriodOptions().map { financePeriodButtonLabel(it, LotteryNetWindowMode.WIDE) }
+
+        assertEquals(listOf("Día", "Semana", "15 días", "Mes", "Rango"), compactLabels)
+        assertEquals(listOf("Día", "Semana", "Quincena", "Mes", "Calendario"), wideLabels)
+        assertTrue(compactLabels.all { it.length <= 7 })
+    }
+
+    @Test
     fun `finance quick date options expose today and yesterday`() {
         val options = financeDateQuickOptions("2026-04-27")
 
