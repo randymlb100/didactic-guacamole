@@ -179,6 +179,7 @@ import com.lotterynet.pro.core.storage.LocalSaleDraftRepository
 import com.lotterynet.pro.core.storage.LocalSalesRepository
 import com.lotterynet.pro.core.storage.LocalAdminLotteryConfigRepository
 import com.lotterynet.pro.core.storage.LocalBrandingRepository
+import com.lotterynet.pro.core.storage.LocalPosModeRepository
 import com.lotterynet.pro.core.storage.LocalResultsRepository
 import com.lotterynet.pro.core.storage.LocalSessionRepository
 import com.lotterynet.pro.core.sync.LocalSyncFreshnessRepository
@@ -751,6 +752,16 @@ internal data class VentaPosLiteContract(
     val useTightSellingLayout: Boolean,
 )
 
+internal data class VentaPosLiteControlContract(
+    val visible: Boolean,
+    val enabled: Boolean,
+    val label: String,
+    val togglesPersistedMode: Boolean,
+    val reserveBottomSafePadding: Boolean,
+    val hideStatsBadges: Boolean,
+    val maxKeypadHeightDp: Int,
+)
+
 internal enum class SaleLimitBadgeTone {
     GREEN,
     RED,
@@ -766,6 +777,24 @@ internal fun resolveVentaPosLiteContract(
         includeSales = true,
         windowMode = if (tight) LotteryNetWindowMode.POS_TIGHT else windowMode,
         useTightSellingLayout = tight,
+    )
+}
+
+internal fun resolveVentaPosLiteControlContract(
+    role: UserRole,
+    viewportWidthDp: Int,
+    viewportHeightDp: Int,
+    posLiteEnabled: Boolean,
+): VentaPosLiteControlContract {
+    val compact = viewportWidthDp <= 380 || viewportHeightDp <= 680 || posLiteEnabled
+    return VentaPosLiteControlContract(
+        visible = role == UserRole.CASHIER || role == UserRole.ADMIN,
+        enabled = true,
+        label = "POS Lite",
+        togglesPersistedMode = true,
+        reserveBottomSafePadding = true,
+        hideStatsBadges = compact,
+        maxKeypadHeightDp = if (compact) 300 else 360,
     )
 }
 
@@ -1491,6 +1520,8 @@ private fun SalesRoute(
         mutableStateOf(cashierSalesLimitRepository.getUserLimits(limitOwnerId, session?.username))
     }
     val localContext = LocalContext.current
+    val posModeRepository = remember(localContext) { LocalPosModeRepository(localContext) }
+    var manualPosLiteEnabled by remember(localContext) { mutableStateOf(posModeRepository.isEnabled()) }
     val realtimeClient = remember { LotterynetRealtimeClient() }
     val realtimeEnabled = remember { realtimeClient.isConfigured() }
     var showQrLookupChoices by remember { mutableStateOf(false) }
@@ -3003,10 +3034,19 @@ private fun SalesRoute(
                 )
             }
             val compact = maxWidth < 760.dp
-            val saleModeContract = remember(visual.windowMode, initialSystemModeConfig.posLiteEnabled) {
+            val posLiteEnabledForSale = initialSystemModeConfig.posLiteEnabled || manualPosLiteEnabled
+            val posLiteControl = remember(role, maxWidth, maxHeight, posLiteEnabledForSale) {
+                resolveVentaPosLiteControlContract(
+                    role = role,
+                    viewportWidthDp = maxWidth.value.toInt(),
+                    viewportHeightDp = maxHeight.value.toInt(),
+                    posLiteEnabled = posLiteEnabledForSale,
+                )
+            }
+            val saleModeContract = remember(visual.windowMode, posLiteEnabledForSale) {
                 resolveVentaPosLiteContract(
                     windowMode = visual.windowMode,
-                    posLiteEnabled = initialSystemModeConfig.posLiteEnabled,
+                    posLiteEnabled = posLiteEnabledForSale,
                 )
             }
             val saleWindowMode = saleModeContract.windowMode
@@ -3168,6 +3208,19 @@ private fun SalesRoute(
                     onApplyKey = onApplyKey,
                     total = stagedRows.sumOf { it.amount },
                     windowMode = saleWindowMode,
+                    posLiteControl = posLiteControl,
+                    posLiteEnabled = posLiteEnabledForSale,
+                    onTogglePosLite = {
+                        val next = !manualPosLiteEnabled
+                        posModeRepository.setEnabled(next)
+                        manualPosLiteEnabled = next
+                        Toast.makeText(
+                            localContext,
+                            if (next) "POS Lite activo" else "POS Lite desactivado",
+                            Toast.LENGTH_SHORT,
+                        ).show()
+                        (localContext as? android.app.Activity)?.recreate()
+                    },
                 )
             }
             if (showAdminSellerPicker) {
@@ -3544,12 +3597,17 @@ private fun VentaFixedComposer(
     onApplyKey: (String) -> Unit,
     total: Double,
     windowMode: LotteryNetWindowMode,
+    posLiteControl: VentaPosLiteControlContract,
+    posLiteEnabled: Boolean,
+    onTogglePosLite: () -> Unit,
 ) {
     val visual = rememberLotteryNetVisualSpec()
     val keypadLayout = resolveVentaKeypadLayout(windowMode)
     val entryLayout = resolveVentaEntryStripLayout(windowMode)
     Surface(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .then(if (posLiteControl.reserveBottomSafePadding) Modifier.navigationBarsPadding() else Modifier),
         color = Color.White,
         shadowElevation = 0.dp,
     ) {
@@ -3572,6 +3630,30 @@ private fun VentaFixedComposer(
                 validation = validation,
                 secondaryState = secondaryState,
             )
+            if (posLiteControl.visible) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 3.dp, vertical = 1.dp),
+                    horizontalArrangement = Arrangement.spacedBy(2.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    CompactActionButton(
+                        label = posLiteControl.label,
+                        onClick = onTogglePosLite,
+                        modifier = Modifier.weight(1f),
+                        enabled = posLiteControl.enabled,
+                        active = posLiteEnabled,
+                        tone = if (posLiteEnabled) ActionTone.Success else ActionTone.Secondary,
+                    )
+                    if (posLiteEnabled) {
+                        CompactStatusBadge(
+                            label = "Compacto",
+                            tone = visual.colors.gain,
+                        )
+                    }
+                }
+            }
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
