@@ -180,6 +180,13 @@ internal data class CashierCardActionContract(
     val maxVisibleRowActions: Int,
 )
 
+internal data class AdminMonitorExportMenuContract(
+    val visibleButtonLabel: String,
+    val visibleButtonCount: Int,
+    val menuLabels: List<String>,
+    val usesOverflowMenu: Boolean,
+)
+
 internal fun resolveCashierMonitorCardVisualContract(): CashierMonitorCardVisualContract {
     return CashierMonitorCardVisualContract(
         singleLineIdentity = true,
@@ -199,6 +206,21 @@ internal fun resolveCashierCardActionContract(windowMode: LotteryNetWindowMode):
         filterTicketsByCashier = true,
         filterReportsByCashier = true,
         maxVisibleRowActions = if (compact) 1 else 2,
+    )
+}
+
+internal fun resolveAdminMonitorExportMenuContract(windowMode: LotteryNetWindowMode): AdminMonitorExportMenuContract {
+    val usesOverflowMenu = when (windowMode) {
+        LotteryNetWindowMode.POS_TIGHT,
+        LotteryNetWindowMode.POS,
+        LotteryNetWindowMode.TABLET,
+        LotteryNetWindowMode.WIDE -> true
+    }
+    return AdminMonitorExportMenuContract(
+        visibleButtonLabel = "Exportar",
+        visibleButtonCount = 1,
+        menuLabels = listOf("WhatsApp", "Compartir", "Guardar", "Imprimir"),
+        usesOverflowMenu = usesOverflowMenu,
     )
 }
 
@@ -770,6 +792,8 @@ private fun AdminMonitorRoute(
             resolveTicketSaveSyncUiContract(stage = TicketSaveSyncStage.SYNCED)
         }
     }
+    val exportMenu = remember(visual.windowMode) { resolveAdminMonitorExportMenuContract(visual.windowMode) }
+    var exportMenuExpanded by rememberSaveable { mutableStateOf(false) }
     if (session.role == UserRole.SUPERVISOR) {
         SupervisorPanelRoute(
             rows = rows,
@@ -845,31 +869,62 @@ private fun AdminMonitorRoute(
                 item {
                     CompactPanel(contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 10.dp, vertical = layout.summaryPaddingVerticalDp.dp)) {
                         SectionHeader(title = "Acciones", meta = "Exportar")
-                        CompactActionButton(
-                            "Actualizar servidor",
-                            onClick = {
-                                Toast.makeText(context, "Actualizando monitor...", Toast.LENGTH_SHORT).show()
-                                onRefresh()
-                            },
-                            icon = Icons.Rounded.Sync,
-                            modifier = Modifier.fillMaxWidth(),
-                            tone = ActionTone.Secondary,
-                        )
-                        if (layout.splitActions) {
-                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
-                                CompactActionButton("WhatsApp", onClick = { onShare(filteredRows, true) }, icon = Icons.Rounded.Whatsapp, modifier = Modifier.weight(1f), tone = ActionTone.Success)
-                                CompactActionButton("Compartir", onClick = { onShare(filteredRows, false) }, icon = Icons.Rounded.Share, modifier = Modifier.weight(1f), tone = ActionTone.Primary)
-                            }
-                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
-                                CompactActionButton("Guardar", onClick = { onSave(filteredRows) }, icon = Icons.Rounded.Download, modifier = Modifier.weight(1f), tone = ActionTone.Secondary)
-                                CompactActionButton("Impr.", onClick = { onPrint(filteredRows) }, icon = Icons.Rounded.Print, modifier = Modifier.weight(1f), tone = ActionTone.Secondary)
-                            }
-                        } else {
-                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
-                                CompactActionButton("Impr.", onClick = { onPrint(filteredRows) }, icon = Icons.Rounded.Print, modifier = Modifier.weight(1f), tone = ActionTone.Secondary)
-                                CompactActionButton("WhatsApp", onClick = { onShare(filteredRows, true) }, icon = Icons.Rounded.Whatsapp, modifier = Modifier.weight(1f), tone = ActionTone.Success)
-                                CompactActionButton("Compartir", onClick = { onShare(filteredRows, false) }, icon = Icons.Rounded.Share, modifier = Modifier.weight(1f), tone = ActionTone.Primary)
-                                CompactActionButton("Guardar", onClick = { onSave(filteredRows) }, icon = Icons.Rounded.Download, modifier = Modifier.weight(1f), tone = ActionTone.Secondary)
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+                            CompactActionButton(
+                                "Actualizar",
+                                onClick = {
+                                    Toast.makeText(context, "Actualizando monitor...", Toast.LENGTH_SHORT).show()
+                                    onRefresh()
+                                },
+                                icon = Icons.Rounded.Sync,
+                                modifier = Modifier.weight(1f),
+                                tone = ActionTone.Secondary,
+                            )
+                            Box(modifier = Modifier.weight(1f)) {
+                                CompactActionButton(
+                                    exportMenu.visibleButtonLabel,
+                                    onClick = { exportMenuExpanded = true },
+                                    icon = Icons.Rounded.Download,
+                                    modifier = Modifier.fillMaxWidth(),
+                                    tone = ActionTone.Primary,
+                                )
+                                DropdownMenu(
+                                    expanded = exportMenuExpanded && exportMenu.usesOverflowMenu,
+                                    onDismissRequest = { exportMenuExpanded = false },
+                                ) {
+                                    DropdownMenuItem(
+                                        text = { Text("WhatsApp") },
+                                        leadingIcon = { Icon(Icons.Rounded.Whatsapp, contentDescription = null) },
+                                        onClick = {
+                                            exportMenuExpanded = false
+                                            onShare(filteredRows, true)
+                                        },
+                                    )
+                                    DropdownMenuItem(
+                                        text = { Text("Compartir") },
+                                        leadingIcon = { Icon(Icons.Rounded.Share, contentDescription = null) },
+                                        onClick = {
+                                            exportMenuExpanded = false
+                                            onShare(filteredRows, false)
+                                        },
+                                    )
+                                    DropdownMenuItem(
+                                        text = { Text("Guardar") },
+                                        leadingIcon = { Icon(Icons.Rounded.Download, contentDescription = null) },
+                                        onClick = {
+                                            exportMenuExpanded = false
+                                            onSave(filteredRows)
+                                        },
+                                    )
+                                    DropdownMenuItem(
+                                        text = { Text("Imprimir") },
+                                        leadingIcon = { Icon(Icons.Rounded.Print, contentDescription = null) },
+                                        onClick = {
+                                            exportMenuExpanded = false
+                                            onPrint(filteredRows)
+                                        },
+                                    )
+                                }
                             }
                         }
                     }

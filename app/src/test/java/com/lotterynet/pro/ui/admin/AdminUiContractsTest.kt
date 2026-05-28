@@ -393,6 +393,16 @@ class AdminUiContractsTest {
     }
 
     @Test
+    fun `admin monitor export actions collapse behind one menu`() {
+        val contract = resolveAdminMonitorExportMenuContract(LotteryNetWindowMode.POS_TIGHT)
+
+        assertEquals("Exportar", contract.visibleButtonLabel)
+        assertEquals(1, contract.visibleButtonCount)
+        assertEquals(listOf("WhatsApp", "Compartir", "Guardar", "Imprimir"), contract.menuLabels)
+        assertTrue(contract.usesOverflowMenu)
+    }
+
+    @Test
     fun `admin monitor cashier dropdown uses natural numeric order`() {
         val labels = sortMonitorCashierLabelsNatural(
             listOf(
