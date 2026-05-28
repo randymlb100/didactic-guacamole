@@ -32,11 +32,11 @@ class ScraperContractsTest(unittest.TestCase):
 
         self.assertEqual(["17-05-2026", "16-05-2026", "15-05-2026"], dates)
 
-    def test_supabase_rest_headers_do_not_send_sb_secret_as_bearer_jwt(self):
+    def test_supabase_rest_headers_send_sb_secret_as_bearer_key(self):
         headers = scraper.supabase_rest_headers("sb_secret_abc123")
 
         self.assertEqual("sb_secret_abc123", headers["apikey"])
-        self.assertNotIn("Authorization", headers)
+        self.assertEqual("Bearer sb_secret_abc123", headers["Authorization"])
 
     def test_supabase_rest_headers_keep_legacy_jwt_authorization(self):
         legacy_key = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.test"

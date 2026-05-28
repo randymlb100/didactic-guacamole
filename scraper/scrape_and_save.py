@@ -33,8 +33,7 @@ def supabase_rest_headers(api_key=None, extra=None):
     if not key:
         return headers
     headers["apikey"] = key
-    if not key.startswith("sb_"):
-        headers["Authorization"] = f"Bearer {key}"
+    headers["Authorization"] = f"Bearer {key}"
     return headers
 
 
