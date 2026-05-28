@@ -613,6 +613,16 @@ def should_use_live_scrape():
     return inline_setting in ("1", "true", "yes", "on")
 
 
+def public_pick_background_refresh_enabled():
+    setting = str(os.environ.get("ENABLE_PUBLIC_PICK_BACKGROUND_REFRESH", "")).strip().lower()
+    return setting in ("1", "true", "yes", "on")
+
+
+def run_system_scraper_sync_pick_enabled():
+    setting = str(os.environ.get("RUN_SYSTEM_SCRAPER_SYNC_PICK", "")).strip().lower()
+    return setting in ("1", "true", "yes", "on")
+
+
 def results_admin_secret():
     return str(os.environ.get("RESULTS_ADMIN_SECRET", "")).strip()
 
@@ -771,7 +781,8 @@ def pick_rows_for_request_date(date_key, game_filter=""):
             elif request.args.get("live") == "1":
                 _, rows = split_lottery_and_pick_rows(cache_rows_list(fetch_existing_from_supabase(date_key)))
             elif date_key == get_dr_date_str():
-                schedule_background_pick_refresh(date_key)
+                if public_pick_background_refresh_enabled():
+                    schedule_background_pick_refresh(date_key)
                 _, rows = split_lottery_and_pick_rows(cache_rows_list(fetch_existing_from_supabase(date_key)))
             else:
                 _, rows = split_lottery_and_pick_rows(cache_rows_list(fetch_existing_from_supabase(date_key)))
@@ -1122,10 +1133,17 @@ def run_system_scraper():
                 "results": lottery_rows,
             }
         if mode in ("pick", "both"):
-            pick_rows = unique_sorted_pick_results(pick_scrape_cached(date_key))
-            save_us_picks_to_supabase(date_key, pick_rows)
+            sync_pick = mode == "pick" or request.args.get("syncPick") == "1" or run_system_scraper_sync_pick_enabled()
+            if sync_pick:
+                pick_rows = unique_sorted_pick_results(pick_scrape_cached(date_key))
+                save_us_picks_to_supabase(date_key, pick_rows)
+                pick_refreshing = False
+            else:
+                pick_rows = unique_sorted_pick_results(fetch_pick_rows_from_supabase(date_key) or get_fresh_pick_cache(date_key))
+                pick_refreshing = schedule_background_pick_refresh(date_key, force=True)
             payload["picks"] = {
                 "count": len(pick_rows),
+                "refreshing": pick_refreshing,
                 "results": pick_rows,
             }
     except Exception as error:
@@ -1368,7 +1386,11 @@ def legacy_filtered_route():
         pick_rows = pick_rows_for_request_date(date_key)
         rows = unique_sorted_results(lottery_rows + pick_rows)
     if query:
-        rows = [row for row in rows if query in row["name"].lower()]
+        normalized_query = query.replace("anguilla", "anguila")
+        rows = [
+            row for row in rows
+            if normalized_query in str(row.get("name") or row.get("lotteryName") or "").lower().replace("anguilla", "anguila")
+        ]
     return json_utf8(rows)
 
 

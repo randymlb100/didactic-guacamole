@@ -803,6 +803,40 @@ class RenderApiContractsTest(unittest.TestCase):
         self.assertFalse(second)
         thread_ctor.assert_called_once()
 
+    def test_today_pick_request_without_snapshot_does_not_start_heavy_refresh_by_default(self):
+        with patch.dict(app.os.environ, {}, clear=True), \
+            patch("app.get_dr_date_str", return_value="02-05-2026"), \
+            patch("app.fetch_pick_rows_from_supabase", return_value=[]), \
+            patch("app.fetch_existing_from_supabase", return_value=[]), \
+            patch("app.schedule_background_pick_refresh") as background_refresh:
+            response = self.client.get("/pick-results?date=02-05-2026")
+
+        payload = json.loads(response.data.decode("utf-8"))
+        self.assertEqual(200, response.status_code)
+        self.assertEqual(0, payload["count"])
+        background_refresh.assert_not_called()
+
+    def test_run_system_scraper_both_schedules_pick_without_blocking_by_default(self):
+        lottery_rows = [{"id": "1", "name": "La Primera Día", "date": "02-05-2026", "number": "01-02-03"}]
+        pick_rows = [{"id": "US-P3-TN-CASH-3-MORNING", "stateCode": "TN", "game": "pick3", "draw": "Morning Draw", "date": "02-05-2026", "number": "1-7-0"}]
+        with patch("app.scrape_cached", return_value=lottery_rows), \
+            patch("app.save_to_supabase") as save_lottery, \
+            patch("app.fetch_pick_rows_from_supabase", return_value=pick_rows), \
+            patch("app.schedule_background_pick_refresh", return_value=True) as background_refresh, \
+            patch("app.pick_scrape_cached") as pick_scrape, \
+            patch("app.save_us_picks_to_supabase") as save_picks:
+            response = self.client.post("/run-system-scraper?date=02-05-2026&mode=both")
+
+        payload = json.loads(response.data.decode("utf-8"))
+        self.assertEqual(200, response.status_code)
+        self.assertEqual(1, payload["lotteries"]["count"])
+        self.assertEqual(1, payload["picks"]["count"])
+        self.assertTrue(payload["picks"]["refreshing"])
+        save_lottery.assert_called_once()
+        background_refresh.assert_called_once_with("02-05-2026", force=True)
+        pick_scrape.assert_not_called()
+        save_picks.assert_not_called()
+
     def test_today_live_both_reuses_fresh_section_caches(self):
         lottery_payload = {
             "date": "02-05-2026",
@@ -1164,6 +1198,17 @@ class RenderApiContractsTest(unittest.TestCase):
         background_refresh.assert_called_once_with("02-05-2026")
         scrape_mock.assert_not_called()
 
+    def test_legacy_anguila_route_matches_anguilla_spelling(self):
+        rows = [{"id": "29", "name": "Anguilla 8AM", "date": "02-05-2026", "number": "72-38-49"}]
+        with patch("app.fetch_existing_from_supabase", return_value=rows), \
+            patch("app.fetch_pick_rows_from_supabase", return_value=[]):
+            response = self.client.get("/loteria-anguila?date=02-05-2026")
+
+        payload = json.loads(response.data.decode("utf-8"))
+        self.assertEqual(200, response.status_code)
+        self.assertEqual(1, len(payload))
+        self.assertEqual("29", payload[0]["id"])
+
     def test_run_scraper_uses_configured_fallback_key_when_render_env_is_missing(self):
         lottery_rows = [
             {"id": "1", "name": "La Primera Día", "date": "02-05-2026", "number": "01-02-03"},
@@ -1248,7 +1293,9 @@ class RenderApiContractsTest(unittest.TestCase):
         with patch.dict(app.os.environ, {"RESULTS_ADMIN_SECRET": "local-secret"}), \
             patch("app.SUPABASE_KEY", "test-key"), \
             patch("app.scrape_cached", return_value=[]), \
-            patch("app.pick_scrape_cached", return_value=[]), \
+            patch("app.fetch_pick_rows_from_supabase", return_value=[]), \
+            patch("app.schedule_background_pick_refresh", return_value=True) as schedule_pick_mock, \
+            patch("app.pick_scrape_cached") as pick_scrape_mock, \
             patch("app.save_to_supabase") as save_lottery_mock, \
             patch("app.save_us_picks_to_supabase") as save_pick_mock:
             response = self.client.post(
@@ -1258,7 +1305,9 @@ class RenderApiContractsTest(unittest.TestCase):
 
         self.assertEqual(200, response.status_code)
         save_lottery_mock.assert_called()
-        save_pick_mock.assert_called()
+        schedule_pick_mock.assert_called_once_with("26-05-2026", force=True)
+        pick_scrape_mock.assert_not_called()
+        save_pick_mock.assert_not_called()
 
     def test_users_state_reads_payload_from_supabase_kv(self):
         payload = {"admins": [{"id": "a1"}], "cajeros": [{"id": "c1"}], "supervisores": []}
