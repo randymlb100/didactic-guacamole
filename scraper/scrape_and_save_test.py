@@ -12,12 +12,17 @@ class ScraperContractsTest(unittest.TestCase):
 
         self.assertEqual("service-role-key", scraper.get_supabase_key_from_env(env))
 
-    def test_supabase_key_prefers_explicit_key_over_aliases(self):
+    def test_supabase_key_prefers_service_role_over_publishable_key(self):
         env = {
-            "SUPABASE_KEY": "explicit-key",
+            "SUPABASE_KEY": "sb_publishable_public",
             "SUPABASE_SERVICE_ROLE_KEY": "service-role-key",
             "SUPABASE_ANON_KEY": "anon-key",
         }
+
+        self.assertEqual("service-role-key", scraper.get_supabase_key_from_env(env))
+
+    def test_supabase_key_falls_back_to_explicit_key(self):
+        env = {"SUPABASE_KEY": "explicit-key"}
 
         self.assertEqual("explicit-key", scraper.get_supabase_key_from_env(env))
 

@@ -13,7 +13,14 @@ SUPABASE_URL = os.environ.get("SUPABASE_URL", "https://unhoulkujbtsypccpirc.supa
 
 def get_supabase_key_from_env(source_env=None):
     env = source_env or os.environ
-    for name in ("SUPABASE_KEY", "SUPABASE_SERVICE_ROLE_KEY", "SUPABASE_SERVICE_KEY", "SUPABASE_ANON_KEY"):
+    for name in (
+        "SUPABASE_SERVICE_ROLE_KEY",
+        "SUPABASE_SECRET_KEY",
+        "SUPABASE_SERVICE_KEY",
+        "SUPABASE_KEY",
+        "SUPABASE_PUBLISHABLE_KEY",
+        "SUPABASE_ANON_KEY",
+    ):
         value = str(env.get(name) or "").strip()
         if value:
             return value
