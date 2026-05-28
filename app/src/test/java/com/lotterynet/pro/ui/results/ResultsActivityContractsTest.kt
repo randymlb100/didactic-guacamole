@@ -144,6 +144,16 @@ class ResultsActivityContractsTest {
     }
 
     @Test
+    fun `results refresh action is a visible real server command`() {
+        val contract = resolveResultsRefreshActionContract(isRefreshing = false, hasNetwork = true)
+
+        assertTrue(contract.visible)
+        assertTrue(contract.enabled)
+        assertEquals("Refrescar", contract.label)
+        assertTrue(contract.triggersServerRefresh)
+    }
+
+    @Test
     fun `results source labels hide technical provider names`() {
         assertEquals("Servidor", presentResultsSourceLabel("supabase"))
         assertEquals("Local", presentResultsSourceLabel("local"))

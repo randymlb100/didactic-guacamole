@@ -134,9 +134,13 @@ import com.lotterynet.pro.ui.common.resolveTicketSaveSyncUiContract
 import com.lotterynet.pro.ui.common.warningColor
 import com.lotterynet.pro.ui.navigation.NativeDestination
 import com.lotterynet.pro.ui.navigation.redirectIfNativeDestinationBlocked
+import com.lotterynet.pro.ui.navigation.safeNativeDestinationIntent
 import com.lotterynet.pro.ui.navigation.startSafeNativeDestination
 import com.lotterynet.pro.ui.sales.resolveSalesStartupSystemModeConfig
 import com.lotterynet.pro.ui.theme.LotteryNetComposeTheme
+import com.lotterynet.pro.ui.tickets.TicketLookupActivity
+import com.lotterynet.pro.ui.tickets.TicketOwnerScope
+import com.lotterynet.pro.ui.tickets.TicketSummaryActivity
 import java.text.SimpleDateFormat
 import java.time.Instant
 import java.time.LocalDate
@@ -168,6 +172,21 @@ internal data class CashierMonitorCardVisualContract(
     val rowPaddingVerticalDp: Int,
 )
 
+internal data class CashierCardActionContract(
+    val cardTapOpensMenu: Boolean,
+    val actions: List<String>,
+    val filterTicketsByCashier: Boolean,
+    val filterReportsByCashier: Boolean,
+    val maxVisibleRowActions: Int,
+)
+
+internal data class AdminMonitorExportMenuContract(
+    val visibleButtonLabel: String,
+    val visibleButtonCount: Int,
+    val menuLabels: List<String>,
+    val usesOverflowMenu: Boolean,
+)
+
 internal fun resolveCashierMonitorCardVisualContract(): CashierMonitorCardVisualContract {
     return CashierMonitorCardVisualContract(
         singleLineIdentity = true,
@@ -176,6 +195,32 @@ internal fun resolveCashierMonitorCardVisualContract(): CashierMonitorCardVisual
         stackedMetricCards = false,
         minTouchTargetDp = 44,
         rowPaddingVerticalDp = 6,
+    )
+}
+
+internal fun resolveCashierCardActionContract(windowMode: LotteryNetWindowMode): CashierCardActionContract {
+    val compact = windowMode == LotteryNetWindowMode.POS_TIGHT || windowMode == LotteryNetWindowMode.POS
+    return CashierCardActionContract(
+        cardTapOpensMenu = true,
+        actions = listOf("Detalle", "Tickets", "Reporte", "Cuadre", "Cobros"),
+        filterTicketsByCashier = true,
+        filterReportsByCashier = true,
+        maxVisibleRowActions = if (compact) 1 else 2,
+    )
+}
+
+internal fun resolveAdminMonitorExportMenuContract(windowMode: LotteryNetWindowMode): AdminMonitorExportMenuContract {
+    val usesOverflowMenu = when (windowMode) {
+        LotteryNetWindowMode.POS_TIGHT,
+        LotteryNetWindowMode.POS,
+        LotteryNetWindowMode.TABLET,
+        LotteryNetWindowMode.WIDE -> true
+    }
+    return AdminMonitorExportMenuContract(
+        visibleButtonLabel = "Exportar",
+        visibleButtonCount = 1,
+        menuLabels = listOf("WhatsApp", "Compartir", "Guardar", "Imprimir"),
+        usesOverflowMenu = usesOverflowMenu,
     )
 }
 
@@ -747,6 +792,8 @@ private fun AdminMonitorRoute(
             resolveTicketSaveSyncUiContract(stage = TicketSaveSyncStage.SYNCED)
         }
     }
+    val exportMenu = remember(visual.windowMode) { resolveAdminMonitorExportMenuContract(visual.windowMode) }
+    var exportMenuExpanded by rememberSaveable { mutableStateOf(false) }
     if (session.role == UserRole.SUPERVISOR) {
         SupervisorPanelRoute(
             rows = rows,
@@ -822,31 +869,62 @@ private fun AdminMonitorRoute(
                 item {
                     CompactPanel(contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 10.dp, vertical = layout.summaryPaddingVerticalDp.dp)) {
                         SectionHeader(title = "Acciones", meta = "Exportar")
-                        CompactActionButton(
-                            "Actualizar servidor",
-                            onClick = {
-                                Toast.makeText(context, "Actualizando monitor...", Toast.LENGTH_SHORT).show()
-                                onRefresh()
-                            },
-                            icon = Icons.Rounded.Sync,
-                            modifier = Modifier.fillMaxWidth(),
-                            tone = ActionTone.Secondary,
-                        )
-                        if (layout.splitActions) {
-                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
-                                CompactActionButton("WhatsApp", onClick = { onShare(filteredRows, true) }, icon = Icons.Rounded.Whatsapp, modifier = Modifier.weight(1f), tone = ActionTone.Success)
-                                CompactActionButton("Compartir", onClick = { onShare(filteredRows, false) }, icon = Icons.Rounded.Share, modifier = Modifier.weight(1f), tone = ActionTone.Primary)
-                            }
-                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
-                                CompactActionButton("Guardar", onClick = { onSave(filteredRows) }, icon = Icons.Rounded.Download, modifier = Modifier.weight(1f), tone = ActionTone.Secondary)
-                                CompactActionButton("Impr.", onClick = { onPrint(filteredRows) }, icon = Icons.Rounded.Print, modifier = Modifier.weight(1f), tone = ActionTone.Secondary)
-                            }
-                        } else {
-                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
-                                CompactActionButton("Impr.", onClick = { onPrint(filteredRows) }, icon = Icons.Rounded.Print, modifier = Modifier.weight(1f), tone = ActionTone.Secondary)
-                                CompactActionButton("WhatsApp", onClick = { onShare(filteredRows, true) }, icon = Icons.Rounded.Whatsapp, modifier = Modifier.weight(1f), tone = ActionTone.Success)
-                                CompactActionButton("Compartir", onClick = { onShare(filteredRows, false) }, icon = Icons.Rounded.Share, modifier = Modifier.weight(1f), tone = ActionTone.Primary)
-                                CompactActionButton("Guardar", onClick = { onSave(filteredRows) }, icon = Icons.Rounded.Download, modifier = Modifier.weight(1f), tone = ActionTone.Secondary)
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+                            CompactActionButton(
+                                "Actualizar",
+                                onClick = {
+                                    Toast.makeText(context, "Actualizando monitor...", Toast.LENGTH_SHORT).show()
+                                    onRefresh()
+                                },
+                                icon = Icons.Rounded.Sync,
+                                modifier = Modifier.weight(1f),
+                                tone = ActionTone.Secondary,
+                            )
+                            Box(modifier = Modifier.weight(1f)) {
+                                CompactActionButton(
+                                    exportMenu.visibleButtonLabel,
+                                    onClick = { exportMenuExpanded = true },
+                                    icon = Icons.Rounded.Download,
+                                    modifier = Modifier.fillMaxWidth(),
+                                    tone = ActionTone.Primary,
+                                )
+                                DropdownMenu(
+                                    expanded = exportMenuExpanded && exportMenu.usesOverflowMenu,
+                                    onDismissRequest = { exportMenuExpanded = false },
+                                ) {
+                                    DropdownMenuItem(
+                                        text = { Text("WhatsApp") },
+                                        leadingIcon = { Icon(Icons.Rounded.Whatsapp, contentDescription = null) },
+                                        onClick = {
+                                            exportMenuExpanded = false
+                                            onShare(filteredRows, true)
+                                        },
+                                    )
+                                    DropdownMenuItem(
+                                        text = { Text("Compartir") },
+                                        leadingIcon = { Icon(Icons.Rounded.Share, contentDescription = null) },
+                                        onClick = {
+                                            exportMenuExpanded = false
+                                            onShare(filteredRows, false)
+                                        },
+                                    )
+                                    DropdownMenuItem(
+                                        text = { Text("Guardar") },
+                                        leadingIcon = { Icon(Icons.Rounded.Download, contentDescription = null) },
+                                        onClick = {
+                                            exportMenuExpanded = false
+                                            onSave(filteredRows)
+                                        },
+                                    )
+                                    DropdownMenuItem(
+                                        text = { Text("Imprimir") },
+                                        leadingIcon = { Icon(Icons.Rounded.Print, contentDescription = null) },
+                                        onClick = {
+                                            exportMenuExpanded = false
+                                            onPrint(filteredRows)
+                                        },
+                                    )
+                                }
                             }
                         }
                     }
@@ -961,6 +1039,7 @@ private fun SupervisorPanelRoute(
     var query by rememberSaveable { mutableStateOf("") }
     var filter by rememberSaveable { mutableStateOf("active") }
     var selectedIds by rememberSaveable { mutableStateOf(emptyList<String>()) }
+    var quickActionRow by remember { mutableStateOf<MonitorRow?>(null) }
     var selectedLotteryId by rememberSaveable { mutableStateOf(ALL_MONITOR_LOTTERIES_ID) }
     var selectedCashierRowId by rememberSaveable { mutableStateOf(ALL_MONITOR_CASHIERS_ID) }
     var selectedPlayViewName by rememberSaveable { mutableStateOf(LotteryMonitorPlayView.QUINIELA.name) }
@@ -1046,6 +1125,17 @@ private fun SupervisorPanelRoute(
             )
         },
     ) { innerPadding ->
+        quickActionRow?.let { row ->
+            CashierQuickActionMenu(
+                row = row,
+                role = UserRole.SUPERVISOR,
+                onDismiss = { quickActionRow = null },
+                onOpenDetail = {
+                    quickActionRow = null
+                    onOpenCashier(row)
+                },
+            )
+        }
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
@@ -1158,7 +1248,7 @@ private fun SupervisorPanelRoute(
                                 selectedIds.filterNot { it == row.userId }
                             }
                         },
-                        onOpen = { onOpenCashier(row) },
+                        onOpen = { quickActionRow = row },
                     )
                 }
             }
@@ -1197,6 +1287,7 @@ private fun AdminCashierPanelRoute(
     var query by rememberSaveable { mutableStateOf("") }
     var filter by rememberSaveable { mutableStateOf("all") }
     var selectedIds by rememberSaveable { mutableStateOf(emptyList<String>()) }
+    var quickActionRow by remember { mutableStateOf<MonitorRow?>(null) }
     var selectedLotteryId by rememberSaveable { mutableStateOf(ALL_MONITOR_LOTTERIES_ID) }
     var selectedCashierRowId by rememberSaveable { mutableStateOf(ALL_MONITOR_CASHIERS_ID) }
     var selectedPlayViewName by rememberSaveable { mutableStateOf(LotteryMonitorPlayView.QUINIELA.name) }
@@ -1283,6 +1374,17 @@ private fun AdminCashierPanelRoute(
             )
         },
     ) { innerPadding ->
+        quickActionRow?.let { row ->
+            CashierQuickActionMenu(
+                row = row,
+                role = UserRole.ADMIN,
+                onDismiss = { quickActionRow = null },
+                onOpenDetail = {
+                    quickActionRow = null
+                    onOpenCashier(row)
+                },
+            )
+        }
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
@@ -1388,7 +1490,7 @@ private fun AdminCashierPanelRoute(
                         onSelectedChange = { checked ->
                             selectedIds = if (checked) (selectedIds + row.userId).distinct() else selectedIds.filterNot { it == row.userId }
                         },
-                        onOpen = { onOpenCashier(row) },
+                        onOpen = { quickActionRow = row },
                         onActiveChange = { active -> onSetCashierActive(listOf(row.userId), active) },
                     )
                 }
@@ -1419,6 +1521,123 @@ private fun AdminCashierTopTabs(
         CompactActionButton("Tickets", onClick = { startSafeNativeDestination(context, UserRole.ADMIN, NativeDestination.TICKET_SUMMARY) }, icon = Icons.Rounded.Download, modifier = Modifier.weight(1f), tone = ActionTone.Secondary)
         CompactActionButton("Reporte", onClick = { startSafeNativeDestination(context, UserRole.ADMIN, NativeDestination.OPERATIONAL_REPORT) }, icon = Icons.Rounded.QueryStats, modifier = Modifier.weight(1f), tone = ActionTone.Secondary)
     }
+}
+
+@Composable
+private fun CashierQuickActionMenu(
+    row: MonitorRow,
+    role: UserRole,
+    onDismiss: () -> Unit,
+    onOpenDetail: () -> Unit,
+) {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val visual = rememberLotteryNetVisualSpec()
+    val contract = resolveCashierCardActionContract(visual.windowMode)
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text(
+                text = row.displayName,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(
+                    text = "${row.username} · ${row.tickets} tickets · ${formatMonitorMoney(row.ventas)}",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = visual.colors.muted,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                contract.actions.forEach { action ->
+                    val onClick = when (action) {
+                        "Detalle" -> onOpenDetail
+                        "Tickets" -> {
+                            {
+                                onDismiss()
+                                openCashierScopedTickets(context, role, row)
+                            }
+                        }
+                        "Reporte" -> {
+                            {
+                                onDismiss()
+                                openCashierScopedDestination(context, role, NativeDestination.OPERATIONAL_REPORT, row)
+                            }
+                        }
+                        "Cuadre" -> {
+                            {
+                                onDismiss()
+                                openCashierScopedDestination(context, role, NativeDestination.FINANCE, row)
+                            }
+                        }
+                        else -> {
+                            {
+                                onDismiss()
+                                openCashierScopedLookup(context, role, row)
+                            }
+                        }
+                    }
+                    CompactActionButton(
+                        label = action,
+                        onClick = onClick,
+                        modifier = Modifier.fillMaxWidth(),
+                        tone = when (action) {
+                            "Detalle" -> ActionTone.IntenseBlue
+                            "Cobros" -> ActionTone.Success
+                            else -> ActionTone.Secondary
+                        },
+                    )
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cerrar")
+            }
+        },
+    )
+}
+
+private fun cashierScopedKey(row: MonitorRow): String {
+    return row.userId.ifBlank { row.username }
+}
+
+private fun openCashierScopedTickets(
+    context: android.content.Context,
+    role: UserRole,
+    row: MonitorRow,
+) {
+    val intent = safeNativeDestinationIntent(context, role, NativeDestination.TICKET_SUMMARY).apply {
+        putExtra(TicketSummaryActivity.EXTRA_OWNER_SCOPE, TicketOwnerScope.CASHIER.name)
+        putExtra(TicketSummaryActivity.EXTRA_CASHIER_KEY, cashierScopedKey(row))
+    }
+    context.startActivity(intent)
+}
+
+private fun openCashierScopedDestination(
+    context: android.content.Context,
+    role: UserRole,
+    destination: NativeDestination,
+    row: MonitorRow,
+) {
+    val intent = safeNativeDestinationIntent(context, role, destination).apply {
+        putExtra(TicketSummaryActivity.EXTRA_OWNER_SCOPE, TicketOwnerScope.CASHIER.name)
+        putExtra(TicketSummaryActivity.EXTRA_CASHIER_KEY, cashierScopedKey(row))
+    }
+    context.startActivity(intent)
+}
+
+private fun openCashierScopedLookup(
+    context: android.content.Context,
+    role: UserRole,
+    row: MonitorRow,
+) {
+    val intent = safeNativeDestinationIntent(context, role, NativeDestination.TICKET_LOOKUP, "pagar").apply {
+        putExtra(TicketLookupActivity.EXTRA_INITIAL_QUERY, row.username.ifBlank { row.displayName })
+    }
+    context.startActivity(intent)
 }
 
 @Composable

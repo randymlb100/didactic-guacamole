@@ -85,7 +85,7 @@ internal enum class TicketSummaryPeriod(val id: String, val label: String) {
     YESTERDAY("yesterday", "Ayer"),
     WEEK("week", "Semana"),
     QUINZA("quinza", "Quincena"),
-    MONTH("month", "Mensual"),
+    MONTH("month", "Mes"),
     ALL("all", "Todo"),
 }
 

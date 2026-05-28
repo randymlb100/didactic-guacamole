@@ -382,6 +382,27 @@ class AdminUiContractsTest {
     }
 
     @Test
+    fun `cashier cards open quick action menu with scoped tickets and reports`() {
+        val contract = resolveCashierCardActionContract(LotteryNetWindowMode.POS_TIGHT)
+
+        assertTrue(contract.cardTapOpensMenu)
+        assertEquals(listOf("Detalle", "Tickets", "Reporte", "Cuadre", "Cobros"), contract.actions)
+        assertTrue(contract.filterTicketsByCashier)
+        assertTrue(contract.filterReportsByCashier)
+        assertTrue(contract.maxVisibleRowActions <= 1)
+    }
+
+    @Test
+    fun `admin monitor export actions collapse behind one menu`() {
+        val contract = resolveAdminMonitorExportMenuContract(LotteryNetWindowMode.POS_TIGHT)
+
+        assertEquals("Exportar", contract.visibleButtonLabel)
+        assertEquals(1, contract.visibleButtonCount)
+        assertEquals(listOf("WhatsApp", "Compartir", "Guardar", "Imprimir"), contract.menuLabels)
+        assertTrue(contract.usesOverflowMenu)
+    }
+
+    @Test
     fun `admin monitor cashier dropdown uses natural numeric order`() {
         val labels = sortMonitorCashierLabelsNatural(
             listOf(
@@ -406,7 +427,7 @@ class AdminUiContractsTest {
     @Test
     fun `admin limits are grouped by operational risk`() {
         assertEquals(
-            listOf("Límite de venta de cajeros", "Pagos", "Recargas", "Sistema"),
+            listOf("Mis límites de venta", "Límite de venta de cajeros", "Pagos", "Recargas", "Sistema"),
             adminLimitSections().map { it.label },
         )
     }

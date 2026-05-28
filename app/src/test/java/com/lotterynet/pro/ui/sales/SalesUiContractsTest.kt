@@ -70,6 +70,24 @@ class SalesUiContractsTest {
     }
 
     @Test
+    fun `pos lite toggle is a real cashier sale command and keeps sale within small viewport`() {
+        val contract = resolveVentaPosLiteControlContract(
+            role = UserRole.CASHIER,
+            viewportWidthDp = 360,
+            viewportHeightDp = 640,
+            posLiteEnabled = false,
+        )
+
+        assertTrue(contract.visible)
+        assertTrue(contract.enabled)
+        assertEquals("POS Lite", contract.label)
+        assertTrue(contract.togglesPersistedMode)
+        assertTrue(contract.reserveBottomSafePadding)
+        assertTrue(contract.hideStatsBadges)
+        assertTrue(contract.maxKeypadHeightDp <= 300)
+    }
+
+    @Test
     fun `sales background refresh ignores compose cancellation`() {
         assertFalse(
             shouldReportSalesBackgroundRefreshFailure(

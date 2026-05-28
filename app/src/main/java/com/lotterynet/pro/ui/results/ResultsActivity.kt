@@ -464,6 +464,25 @@ internal data class ResultsRefreshActionUi(
     val message: String?,
 )
 
+internal data class ResultsRefreshActionContract(
+    val visible: Boolean,
+    val enabled: Boolean,
+    val label: String,
+    val triggersServerRefresh: Boolean,
+)
+
+internal fun resolveResultsRefreshActionContract(
+    isRefreshing: Boolean,
+    hasNetwork: Boolean,
+): ResultsRefreshActionContract {
+    return ResultsRefreshActionContract(
+        visible = true,
+        enabled = hasNetwork && !isRefreshing,
+        label = "Refrescar",
+        triggersServerRefresh = true,
+    )
+}
+
 internal fun resolveResultsRefreshActionUi(
     isRefreshing: Boolean,
     lastManualRefreshSucceeded: Boolean?,
@@ -814,6 +833,9 @@ private fun ResultsRoute(
     val refreshActionUi = remember(isRefreshing, lastManualRefreshSucceeded) {
         resolveResultsRefreshActionUi(isRefreshing, lastManualRefreshSucceeded)
     }
+    val refreshActionContract = remember(isRefreshing) {
+        resolveResultsRefreshActionContract(isRefreshing = isRefreshing, hasNetwork = true)
+    }
     Scaffold(
         modifier = Modifier.fillMaxSize(),
         containerColor = visual.colors.background,
@@ -844,7 +866,7 @@ private fun ResultsRoute(
                         activeBottomTab = NativeBottomTab.RESULTS,
                         rightAction = ScreenChromeAction(
                             icon = Icons.Rounded.Refresh,
-                            contentDescription = "Sync",
+                            contentDescription = refreshActionContract.label,
                             onClick = {
                                 scope.launch {
                                     val manualRefreshDate = selectedDate
@@ -892,7 +914,8 @@ private fun ResultsRoute(
                                     }
                                 }
                             },
-                            enabled = refreshActionUi.enabled,
+                            enabled = refreshActionUi.enabled && refreshActionContract.enabled,
+                            label = refreshActionContract.label,
                             spinning = refreshActionUi.spinning,
                         ),
                     ),
