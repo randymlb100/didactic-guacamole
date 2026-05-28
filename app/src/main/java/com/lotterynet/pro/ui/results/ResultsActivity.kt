@@ -991,7 +991,6 @@ private fun ResultsRoute(
                 if (boardSections.isEmpty()) {
                     EmptyResultsCard(selectedDate = selectedDate, syncMessage = syncMessage)
                 } else {
-                    val isStaff = role == UserRole.ADMIN || role == UserRole.MASTER
                     LazyColumn(
                         modifier = Modifier.weight(1f, fill = true),
                         verticalArrangement = Arrangement.spacedBy(layout.listSpacingDp.dp),
@@ -1007,82 +1006,21 @@ private fun ResultsRoute(
                                     )
                                 }
                             }
-
-                            if (isStaff && !section.pickSection) {
-                                // Para Administradores y Supervisores:
-                                // Agrupar sorteos por hora frecuentes como Anguila en 2 columnas de forma súper ligera
-                                val anguilaRows = section.rows.filter { it.lottery.name.lowercase(Locale.getDefault()).contains("anguila") }
-                                val otherRows = section.rows.filterNot { it.lottery.name.lowercase(Locale.getDefault()).contains("anguila") }
-
-                                // 1. Renderizar otros sorteos en 1 columna
-                                items(otherRows, key = { "${section.title}:${it.lottery.id}:${selectedDate}" }) { row ->
-                                    ResultCard(
-                                        row = row,
-                                        pickKind = section.pickKind,
-                                        layout = layout,
-                                        onShare = {
-                                            val singlePayload = ResultsSharePayload(
-                                                bancaName = bancaName,
-                                                dateLabel = selectedDate,
-                                                rows = exportRepository.buildResultsShareRows(listOf(row.toShareRow())),
-                                                bancaLogoUri = bancaLogoUri,
-                                            )
-                                            actionMessage = onShare(singlePayload, false).message
-                                        },
-                                    )
-                                }
-
-                                // 2. Renderizar Anguila en parejas de 2 columnas de forma ultra-ligera (chunked de a 2)
-                                val chunkedAnguila = anguilaRows.chunked(2)
-                                items(chunkedAnguila.size, key = { "${section.title}:anguila-row:${it}:${selectedDate}" }) { rowIndex ->
-                                    val pair = chunkedAnguila[rowIndex]
-                                    Row(
-                                        modifier = Modifier.fillMaxWidth(),
-                                        horizontalArrangement = Arrangement.spacedBy(layout.listSpacingDp.dp)
-                                    ) {
-                                        pair.forEach { row ->
-                                            Box(modifier = Modifier.weight(1f)) {
-                                                ResultCard(
-                                                    row = row,
-                                                    pickKind = section.pickKind,
-                                                    layout = layout,
-                                                    onShare = {
-                                                        val singlePayload = ResultsSharePayload(
-                                                            bancaName = bancaName,
-                                                            dateLabel = selectedDate,
-                                                            rows = exportRepository.buildResultsShareRows(listOf(row.toShareRow())),
-                                                            bancaLogoUri = bancaLogoUri,
-                                                        )
-                                                        actionMessage = onShare(singlePayload, false).message
-                                                    },
-                                                )
-                                            }
-                                        }
-                                        // Si es impar, rellenamos con un Box vacío para mantener alineada la cuadrícula de 2 columnas
-                                        if (pair.size < 2) {
-                                            Spacer(modifier = Modifier.weight(1f))
-                                        }
-                                    }
-                                }
-                            } else {
-                                // Perfil Cajero (POS) o Sección Pick:
-                                // Lista plana ultra-optimizada y directa de 1 columna para máximo rendimiento de CPU
-                                items(section.rows, key = { "${section.title}:${it.lottery.id}:${selectedDate}" }) { row ->
-                                    ResultCard(
-                                        row = row,
-                                        pickKind = section.pickKind,
-                                        layout = layout,
-                                        onShare = {
-                                            val singlePayload = ResultsSharePayload(
-                                                bancaName = bancaName,
-                                                dateLabel = selectedDate,
-                                                rows = exportRepository.buildResultsShareRows(listOf(row.toShareRow())),
-                                                bancaLogoUri = bancaLogoUri,
-                                            )
-                                            actionMessage = onShare(singlePayload, false).message
-                                        },
-                                    )
-                                }
+                            items(section.rows, key = { "${section.title}:${it.lottery.id}:${selectedDate}" }) { row ->
+                                ResultCard(
+                                    row = row,
+                                    pickKind = section.pickKind,
+                                    layout = layout,
+                                    onShare = {
+                                        val singlePayload = ResultsSharePayload(
+                                            bancaName = bancaName,
+                                            dateLabel = selectedDate,
+                                            rows = exportRepository.buildResultsShareRows(listOf(row.toShareRow())),
+                                            bancaLogoUri = bancaLogoUri,
+                                        )
+                                        actionMessage = onShare(singlePayload, false).message
+                                    },
+                                )
                             }
                         }
                     }

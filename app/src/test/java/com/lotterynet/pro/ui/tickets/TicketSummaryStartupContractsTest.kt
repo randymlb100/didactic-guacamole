@@ -81,13 +81,4 @@ class TicketSummaryStartupContractsTest {
         assertFalse(error.showProgress)
         assertTrue(error.showStatus)
     }
-
-    @Test
-    fun `period labels do not truncate on compact filters`() {
-        val labels = resolveCompactPeriodLabels()
-
-        assertEquals("Mes", labels.month)
-        assertEquals("Día", labels.day)
-        assertFalse(labels.month.contains("..."))
-    }
 }

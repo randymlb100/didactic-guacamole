@@ -170,18 +170,6 @@ internal fun resolveTicketSummaryRefreshUi(
     )
 }
 
-internal data class CompactPeriodLabels(
-    val month: String,
-    val day: String,
-)
-
-internal fun resolveCompactPeriodLabels(): CompactPeriodLabels {
-    return CompactPeriodLabels(
-        month = "Mes",
-        day = "Día",
-    )
-}
-
 class TicketSummaryActivity : AppCompatActivity() {
     private val syncHandler = Handler(Looper.getMainLooper())
     private val realtimeClient = LotterynetRealtimeClient()
