@@ -5,7 +5,7 @@ type ResultRow = Record<string, unknown>;
 
 const RENDER_BASE_URL = Deno.env.get("LOTTERYNET_RENDER_RESULTS_URL") ?? "https://didactic-guacamole.onrender.com";
 const ENV_CRON_SECRET = Deno.env.get("LOTTERYNET_RESULTS_CRON_SECRET") ?? Deno.env.get("LOTTERYNET_ADMIN_SHARED_SECRET") ?? "";
-const RENDER_LIVE_TIMEOUT_MS = 8_000;
+const RENDER_LIVE_TIMEOUT_MS = 25_000;
 
 function normalizeDateKey(value: unknown): string {
   const raw = clean(value);
@@ -100,6 +100,16 @@ function mergeProtectedNoDrawRows(currentRows: ResultRow[], nextRows: ResultRow[
     return id !== "" && isProtectedNoDrawRow(row) && !nextPublishedIds.has(id) && !nextIds.has(id);
   });
   return protectedRows.length === 0 ? nextRows : [...nextRows, ...protectedRows];
+}
+
+function mergeMissingCurrentRows(currentRows: ResultRow[], nextRows: ResultRow[]): ResultRow[] {
+  if (currentRows.length === 0 || nextRows.length === 0) return nextRows;
+  const nextIds = new Set(nextRows.map(rowIdentity).filter(Boolean));
+  const missingRows = currentRows.filter((row) => {
+    const id = rowIdentity(row);
+    return id !== "" && !nextIds.has(id);
+  });
+  return missingRows.length === 0 ? nextRows : [...nextRows, ...missingRows];
 }
 
 function mergeHolidayNoDrawRows(nextRows: ResultRow[], holidayRows: ResultRow[]): ResultRow[] {
@@ -251,7 +261,7 @@ async function upsertIfChanged(key: string, date: string, rows: ResultRow[]): Pr
   if (rows.length === 0) return false;
   const current = await fetchKvValue(key);
   const currentRows = rowsFrom(current);
-  const effectiveRows = mergeProtectedNoDrawRows(currentRows, rows);
+  const effectiveRows = mergeMissingCurrentRows(currentRows, mergeProtectedNoDrawRows(currentRows, rows));
   const nextValue = {
     date,
     refreshedAt: new Date().toISOString(),
