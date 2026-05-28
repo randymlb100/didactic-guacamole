@@ -6,3 +6,13 @@ services:
     buildCommand: pip install -r requirements.txt
     startCommand: gunicorn app:app --bind 0.0.0.0:$PORT --workers 1 --threads 4 --timeout 120
     autoDeploy: true
+
+  - type: cron
+    name: lotterynet-scraper-cron
+    env: python
+    plan: free
+    schedule: "*/10 8-22 * * *"
+    buildCommand: pip install -r requirements.txt
+    startCommand: python scraper/scrape_and_save.py
+    autoDeploy: true
+
