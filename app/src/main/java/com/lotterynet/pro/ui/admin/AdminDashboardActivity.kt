@@ -8,6 +8,10 @@ import androidx.activity.compose.setContent
 import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -454,37 +458,67 @@ private fun DashboardShortcut(
     onClick: () -> Unit,
 ) {
     val visual = rememberLotteryNetVisualSpec()
-    Row(
+    Surface(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(onClick = onClick)
-            .background(visual.colors.panelAlt, RoundedCornerShape(10.dp))
-            .padding(horizontal = 10.dp, vertical = layout.shortcutPaddingVerticalDp.dp),
-        horizontalArrangement = Arrangement.spacedBy(10.dp),
-        verticalAlignment = Alignment.CenterVertically,
+            .clickable(onClick = onClick),
+        shape = RoundedCornerShape(12.dp),
+        color = visual.colors.panelAlt,
+        border = BorderStroke(1.dp, tone.copy(alpha = 0.08f)),
+        shadowElevation = 1.dp,
     ) {
-        Box(
+        Row(
             modifier = Modifier
-                .background(tone.copy(alpha = 0.12f), RoundedCornerShape(8.dp))
-                .padding(7.dp),
-            contentAlignment = Alignment.Center,
+                .fillMaxWidth()
+                .padding(horizontal = 14.dp, vertical = (layout.shortcutPaddingVerticalDp + 2).dp),
+            horizontalArrangement = Arrangement.spacedBy(14.dp),
+            verticalAlignment = Alignment.CenterVertically,
         ) {
-            Icon(icon, contentDescription = null, tint = tone)
-        }
-        Column(modifier = Modifier.weight(1f)) {
-            Text(title, style = MaterialTheme.typography.titleSmall, color = visual.colors.ink)
-            if (!subtitle.isNullOrBlank()) {
-                Spacer(modifier = Modifier.height(2.dp))
+            Box(
+                modifier = Modifier
+                    .background(tone.copy(alpha = 0.09f), RoundedCornerShape(10.dp))
+                    .padding(8.dp),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    tint = tone,
+                    modifier = Modifier.size(22.dp)
+                )
+            }
+            Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    subtitle,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = visual.colors.muted,
-                    maxLines = if (visual.windowMode == LotteryNetWindowMode.POS_TIGHT) 2 else 1,
-                    overflow = TextOverflow.Ellipsis,
+                    text = title,
+                    style = MaterialTheme.typography.titleMedium,
+                    color = visual.colors.ink,
+                    fontWeight = FontWeight.Bold
+                )
+                if (!subtitle.isNullOrBlank()) {
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text(
+                        text = subtitle,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = visual.colors.muted,
+                        maxLines = if (visual.windowMode == LotteryNetWindowMode.POS_TIGHT) 2 else 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+            }
+            Box(
+                modifier = Modifier
+                    .background(tone.copy(alpha = 0.05f), CircleShape)
+                    .padding(6.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Rounded.ArrowForward,
+                    contentDescription = null,
+                    tint = tone.copy(alpha = 0.85f),
+                    modifier = Modifier.size(16.dp)
                 )
             }
         }
-        Icon(Icons.AutoMirrored.Rounded.ArrowForward, contentDescription = null, tint = tone.copy(alpha = 0.9f))
     }
 }
 
