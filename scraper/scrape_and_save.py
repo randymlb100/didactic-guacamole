@@ -970,9 +970,18 @@ async def _async_scrape_us_picks(date_str=None, games=None, existing_rows=None, 
                 if row.get("id"):
                     overview_rows_by_id[row["id"]] = row
 
-            # Fetch all state history pages in parallel
+            # Fetch state history pages in parallel with smart time-filtering to avoid timeouts
+            current_hour = datetime.datetime.now(ZoneInfo("America/New_York")).hour
             history_tasks = []
             for row in state_rows.values():
+                draw_type = str(row.get("draw", "")).lower()
+                # 1. Early morning: No US states have draw results before 12:00 PM ET for today
+                if current_hour < 12 and target_date == get_et_date_str():
+                    continue
+                # 2. Daytime: Ignore evening and night draws if running before 7:00 PM ET
+                if current_hour < 19 and target_date == get_et_date_str():
+                    if "evening" in draw_type or "night" in draw_type or "09:00" in draw_type:
+                        continue
                 history_tasks.append(
                     _async_fetch_us_pick_state_history(
                         game,
@@ -985,8 +994,16 @@ async def _async_scrape_us_picks(date_str=None, games=None, existing_rows=None, 
                 )
             nj_home_task = _async_fetch_new_jersey_pick_home(game, client=c)
             nj_lotteryusa_task = _async_fetch_nj_picks_lotteryusa(target_date, client=c)
+            
+            if history_tasks:
+                history_gather = asyncio.gather(*history_tasks)
+            else:
+                async def empty_gather():
+                    return []
+                history_gather = empty_gather()
+                
             state_history_results, nj_rows, nj_lotteryusa_rows = await asyncio.gather(
-                asyncio.gather(*history_tasks),
+                history_gather,
                 nj_home_task,
                 nj_lotteryusa_task,
             )
