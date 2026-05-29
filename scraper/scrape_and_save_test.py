@@ -1559,6 +1559,7 @@ class ScraperContractsTest(unittest.TestCase):
 
         self.assertEqual(201, response.status_code)
         self.assertEqual("sb_secret_456", client.headers[0]["apikey"])
+        self.assertEqual("LotteryNet-Render/1.0", client.headers[0]["User-Agent"])
         self.assertNotIn("Authorization", client.headers[0])
 
     def test_supabase_kv_save_falls_back_to_patch_when_rpc_unavailable(self):

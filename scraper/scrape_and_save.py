@@ -59,6 +59,7 @@ def supabase_write_headers(extra=None):
     publishable_key = str(SUPABASE_KEY or "").strip()
     write_key = supabase_write_key()
     headers = dict(extra or {})
+    headers.setdefault("User-Agent", "LotteryNet-Render/1.0")
     if write_key.startswith("sb_secret_"):
         headers["apikey"] = write_key
         return headers
