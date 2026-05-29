@@ -15,11 +15,11 @@ def get_supabase_key_from_env(source_env=None):
     env = source_env or os.environ
     for name in (
         "SUPABASE_SERVICE_ROLE_KEY",
-        "SUPABASE_SECRET_KEY",
         "SUPABASE_SERVICE_KEY",
         "SUPABASE_KEY",
         "SUPABASE_PUBLISHABLE_KEY",
         "SUPABASE_ANON_KEY",
+        "SUPABASE_SECRET_KEY",
     ):
         value = str(env.get(name) or "").strip()
         if value:
