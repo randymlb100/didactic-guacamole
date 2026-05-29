@@ -251,6 +251,61 @@ class ScraperContractsTest(unittest.TestCase):
             scraper.us_pick_official_draw_utc(winter_row, "10-01-2026"),
         )
 
+    def test_recently_closed_pick_rows_prioritize_due_draws(self):
+        catalog = [
+            {
+                "id": "US-P3-TN-CASH-3-MORNING",
+                "stateCode": "TN",
+                "game": "pick3",
+                "draw": "Morning Draw",
+            },
+            {
+                "id": "US-P3-NJ-PICK-3-EVENING",
+                "stateCode": "NJ",
+                "game": "pick3",
+                "draw": "Evening Draw",
+            },
+        ]
+
+        rows = scraper.recently_closed_us_pick_catalog_rows(
+            "29-05-2026",
+            catalog_rows=catalog,
+            now_utc=datetime.datetime(2026, 5, 29, 14, 35, tzinfo=datetime.UTC),
+            lookback_minutes=20,
+        )
+
+        self.assertEqual(["US-P3-TN-CASH-3-MORNING"], [row["id"] for row in rows])
+
+    def test_recently_closed_pick_rows_keep_pending_due_rows_after_short_window(self):
+        catalog = [
+            {
+                "id": "US-P3-NJ-PICK-3-MIDDAY",
+                "stateCode": "NJ",
+                "game": "pick3",
+                "draw": "Midday Draw",
+            },
+        ]
+        existing = [
+            {
+                "id": "US-P3-NJ-PICK-3-MIDDAY",
+                "stateCode": "NJ",
+                "game": "pick3",
+                "draw": "Midday Draw",
+                "number": "",
+                "status": "pending",
+            }
+        ]
+
+        rows = scraper.recently_closed_us_pick_catalog_rows(
+            "29-05-2026",
+            catalog_rows=catalog,
+            existing_rows=existing,
+            now_utc=datetime.datetime(2026, 5, 29, 20, 0, tzinfo=datetime.UTC),
+            lookback_minutes=20,
+        )
+
+        self.assertEqual(["US-P3-NJ-PICK-3-MIDDAY"], [row["id"] for row in rows])
+
     def test_backend_pick_schedule_stays_aligned_with_android_critical_rows(self):
         default_android_root = os.path.abspath(os.path.join(
             os.path.dirname(__file__),

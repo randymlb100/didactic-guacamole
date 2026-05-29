@@ -2981,6 +2981,46 @@ def us_pick_official_draw_utc(row, date_str):
     return None
 
 
+def recently_closed_us_pick_catalog_rows(
+    date_str,
+    catalog_rows=None,
+    existing_rows=None,
+    now_utc=None,
+    lookback_minutes=90,
+):
+    now = now_utc or datetime.datetime.now(datetime.UTC)
+    if now.tzinfo is None:
+        now = now.replace(tzinfo=datetime.UTC)
+    now = now.astimezone(datetime.UTC)
+    lookback = now - datetime.timedelta(minutes=int(lookback_minutes))
+    existing_by_id = {
+        str(row.get("id") or "").strip(): row
+        for row in (existing_rows or [])
+        if str(row.get("id") or "").strip()
+    }
+    candidates = []
+    for source_row in (catalog_rows if catalog_rows is not None else static_us_pick_catalog_rows()):
+        row = enrich_us_pick_result_row(dict(source_row))
+        if not str(row.get("date") or "").strip():
+            row["date"] = date_str
+        draw_utc = us_pick_official_draw_utc(row, date_str)
+        if draw_utc is None or draw_utc > now:
+            continue
+        existing = existing_by_id.get(str(row.get("id") or "").strip()) or {}
+        is_pending = us_pick_row_needs_refresh(existing) if existing else False
+        if draw_utc >= lookback or is_pending:
+            candidates.append((draw_utc, str(row.get("id") or ""), row))
+    return [row for _, _, row in sorted(candidates, key=lambda item: (item[0], item[1]))]
+
+
+def should_run_full_us_pick_sweep(now_utc=None, interval_minutes=60):
+    now = now_utc or datetime.datetime.now(datetime.UTC)
+    if now.tzinfo is None:
+        now = now.replace(tzinfo=datetime.UTC)
+    now = now.astimezone(datetime.UTC)
+    return now.minute % int(interval_minutes) < 5
+
+
 def suppress_early_us_pick_results(date_str, rows, now_utc=None):
     now = now_utc or datetime.datetime.now(datetime.UTC)
     if now.tzinfo is None:
@@ -3264,9 +3304,34 @@ async def _async_main():
             )
 
         if save_required:
+            pick_source_rows = None
+            should_scrape_picks = True
+            if target_date == current_date and not explicit_dates:
+                existing_pick_results = await _async_fetch_existing_pick_results_from_supabase(target_date, client=client)
+                if should_run_full_us_pick_sweep():
+                    logger.info("Running hourly full US Pick sweep for %s", target_date)
+                else:
+                    pick_source_rows = recently_closed_us_pick_catalog_rows(
+                        target_date,
+                        existing_rows=existing_pick_results,
+                    )
+                    should_scrape_picks = bool(pick_source_rows)
+                    if should_scrape_picks:
+                        logger.info(
+                            "Prioritizing %d recently closed/pending US Pick draws for %s",
+                            len(pick_source_rows),
+                            target_date,
+                        )
+                    else:
+                        logger.info("No US Pick draw is due yet for %s — skipping pick scrape this run", target_date)
+            pick_task = (
+                _async_scrape_us_picks(target_date, existing_rows=pick_source_rows, client=client)
+                if should_scrape_picks
+                else asyncio.sleep(0, result=[])
+            )
             results, pick_results = await asyncio.gather(
                 _async_scrape(target_date, client=client),
-                _async_scrape_us_picks(target_date, client=client),
+                pick_task,
             )
         else:
             missing_rd_ids = missing_tracked_result_ids(existing_results)
