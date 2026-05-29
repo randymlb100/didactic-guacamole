@@ -1522,7 +1522,8 @@ class ScraperContractsTest(unittest.TestCase):
                 return scraper.httpx.Response(201, request=scraper.httpx.Request("POST", url), json={})
 
         client = FakeClient()
-        with patch.object(scraper, "SUPABASE_SECRET_KEY", "service-role-key"):
+        with patch.object(scraper, "SUPABASE_KEY", "publishable-key"), \
+                patch.object(scraper, "SUPABASE_SECRET_KEY", "service-role-key"):
             response = scraper.sync_run(scraper.async_save_result_draws_payload(
                 "24-05-2026",
                 [{"id": "1", "name": "La Primera Día", "number": "01-02-03"}],
@@ -1533,6 +1534,7 @@ class ScraperContractsTest(unittest.TestCase):
         self.assertEqual(201, response.status_code)
         self.assertEqual(1, client.post_calls)
         self.assertIn("/rest/v1/rpc/lotterynet_upsert_result_draws_from_payload", client.post_urls[0])
+        self.assertEqual("publishable-key", client.headers[0]["apikey"])
         self.assertEqual("Bearer service-role-key", client.headers[0]["Authorization"])
         self.assertEqual("lottery", client.payloads[0]["p_source"])
 

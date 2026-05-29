@@ -56,7 +56,14 @@ def supabase_write_key():
 
 
 def supabase_write_headers(extra=None):
-    return supabase_rest_headers(api_key=supabase_write_key(), extra=extra)
+    publishable_key = str(SUPABASE_KEY or "").strip()
+    write_key = supabase_write_key()
+    headers = dict(extra or {})
+    if publishable_key:
+        headers["apikey"] = publishable_key
+    if write_key:
+        headers["Authorization"] = f"Bearer {write_key}"
+    return headers
 
 
 SUPABASE_KEY = get_supabase_key_from_env()
