@@ -59,6 +59,9 @@ def supabase_write_headers(extra=None):
     publishable_key = str(SUPABASE_KEY or "").strip()
     write_key = supabase_write_key()
     headers = dict(extra or {})
+    if write_key.startswith("sb_secret_"):
+        headers["apikey"] = write_key
+        return headers
     if publishable_key:
         headers["apikey"] = publishable_key
     if write_key:

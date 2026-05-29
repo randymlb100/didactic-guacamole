@@ -1538,6 +1538,29 @@ class ScraperContractsTest(unittest.TestCase):
         self.assertEqual("Bearer service-role-key", client.headers[0]["Authorization"])
         self.assertEqual("lottery", client.payloads[0]["p_source"])
 
+    def test_result_draws_save_uses_modern_secret_key_as_apikey_only(self):
+        class FakeClient:
+            def __init__(self):
+                self.headers = []
+
+            async def post(self, url, content=None, headers=None):
+                self.headers.append(headers or {})
+                return scraper.httpx.Response(201, request=scraper.httpx.Request("POST", url), json={})
+
+        client = FakeClient()
+        with patch.object(scraper, "SUPABASE_KEY", "sb_publishable_123"), \
+                patch.object(scraper, "SUPABASE_SECRET_KEY", "sb_secret_456"):
+            response = scraper.sync_run(scraper.async_save_result_draws_payload(
+                "24-05-2026",
+                [{"id": "1", "name": "La Primera Día", "number": "01-02-03"}],
+                "lottery",
+                client=client,
+            ))
+
+        self.assertEqual(201, response.status_code)
+        self.assertEqual("sb_secret_456", client.headers[0]["apikey"])
+        self.assertNotIn("Authorization", client.headers[0])
+
     def test_supabase_kv_save_falls_back_to_patch_when_rpc_unavailable(self):
         class FakeClient:
             def __init__(self):
