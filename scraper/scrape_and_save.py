@@ -51,6 +51,14 @@ def supabase_rest_headers(api_key=None, extra=None):
     return headers
 
 
+def supabase_write_key():
+    return str(SUPABASE_SECRET_KEY or SUPABASE_KEY or "").strip()
+
+
+def supabase_write_headers(extra=None):
+    return supabase_rest_headers(api_key=supabase_write_key(), extra=extra)
+
+
 SUPABASE_KEY = get_supabase_key_from_env()
 SUPABASE_SECRET_KEY = get_supabase_secret_key_from_env()
 TRACKED_REMOTE_RESULT_IDS = {
@@ -658,6 +666,32 @@ def non_current_backfill_should_run(existing_rd_rows, existing_pick_rows):
     return bool(missing_tracked_result_ids(existing_rd_rows)) or any(
         us_pick_row_needs_refresh(row) for row in (existing_pick_rows or [])
     )
+
+
+async def async_save_result_draws_payload(date_str, rows, source, client=None):
+    c = client or get_http_client()
+    resp = await async_supabase_rest_post(
+        f"{SUPABASE_URL}/rest/v1/rpc/lotterynet_upsert_result_draws_from_payload",
+        payload=json.dumps({
+            "p_result_day_key": date_str,
+            "p_payload": rows or [],
+            "p_source": source,
+        }, ensure_ascii=False).encode("utf-8"),
+        headers=supabase_write_headers(extra={
+            "Content-Type": "application/json",
+            "Prefer": "return=minimal",
+        }),
+        client=c,
+        label=f"Supabase result_draws save for {date_str} ({source})",
+    )
+    logger.info(
+        "Saved %d %s result_draws rows for %s -> HTTP %s",
+        len(rows or []),
+        source,
+        date_str,
+        resp.status_code,
+    )
+    return resp
 
 
 def parse_miloteria_date(raw):
@@ -3064,22 +3098,19 @@ def prune_stale_us_pick_rows_when_catalog_is_complete(existing, incoming, catalo
 
 
 async def _async_save_us_picks_to_supabase(date_str, rows, client=None):
-    key = pick_results_cache_key(date_str)
     c = client or get_http_client()
     rows = suppress_early_us_pick_results(date_str, rows)
     existing = await _async_fetch_existing_pick_results_from_supabase(date_str, client=c)
     existing = prune_stale_us_pick_rows_when_catalog_is_complete(existing, rows)
     merged_rows = merge_us_pick_results_by_id(existing, rows, observed_at=utc_now_iso())
     merged_rows = sanitize_unreleased_nj_pick_rows(merged_rows, date_str)
-    value = json.dumps(merged_rows, ensure_ascii=False)
     try:
-        resp = await async_supabase_kv_save(
-            key,
-            value,
+        await async_save_result_draws_payload(
+            date_str,
+            merged_rows,
+            "pick",
             client=c,
-            label=f"Supabase pick cache save for {date_str}",
         )
-        logger.info("Saved %d US pick results for %s -> HTTP %s", len(merged_rows), date_str, resp.status_code)
     except httpx.HTTPStatusError as e:
         logger.error("Supabase pick error %s: %s", e.response.status_code, e.response.text)
         raise
@@ -3161,27 +3192,10 @@ def us_pick_rows_changed(existing_rows, refreshed_rows):
 
 
 async def _async_save_native_results_table(date_str, merged_list, client=None):
-    c = client or get_http_client()
-    updated_at = utc_now_iso()
-    resp = await async_supabase_rest_post(
-        f"{SUPABASE_URL}/rest/v1/rpc/ln_save_lotterynet_results_by_day",
-        payload=json.dumps({
-            "p_result_date": date_str,
-            "p_payload": merged_list,
-            "p_updated_at": updated_at,
-        }, ensure_ascii=False).encode("utf-8"),
-        headers=supabase_rest_headers(extra={
-            "Content-Type": "application/json",
-            "Prefer": "return=minimal",
-        }),
-        client=c,
-        label=f"Supabase native results save for {date_str}",
-    )
-    logger.info("Saved native results table for %s -> HTTP %s", date_str, resp.status_code)
+    return await async_save_result_draws_payload(date_str, merged_list, "lottery", client=client)
 
 
 async def _async_save_to_supabase(date_str, results, prune_missing_ids=None, client=None):
-    key = f"lot_results_cache_by_day:{date_str}"
     c = client or get_http_client()
 
     existing = await _async_fetch_existing_from_supabase(date_str, client=c)
@@ -3190,32 +3204,9 @@ async def _async_save_to_supabase(date_str, results, prune_missing_ids=None, cli
     if missing_tracked:
         logger.warning("Missing tracked remote result ids for %s: %s", date_str, ", ".join(missing_tracked))
 
-    value = json.dumps(merged_list, ensure_ascii=False)
-
-    native_saved = False
     try:
         await _async_save_native_results_table(date_str, merged_list, client=c)
-        native_saved = True
-    except Exception as e:
-        logger.warning("Native results table save failed for %s: %s", date_str, e)
-
-    try:
-        resp = await async_supabase_kv_save(
-            key,
-            value,
-            client=c,
-            label=f"Supabase RD cache save for {date_str}",
-        )
-        logger.info("Saved %d results (merged) for %s -> HTTP %s", len(merged_list), date_str, resp.status_code)
     except httpx.HTTPStatusError as e:
-        if native_saved:
-            logger.warning(
-                "Legacy RD cache save failed for %s after native results save succeeded: HTTP %s %s",
-                date_str,
-                e.response.status_code,
-                e.response.text,
-            )
-            return
         logger.error("Supabase error %s: %s", e.response.status_code, e.response.text)
         raise
 

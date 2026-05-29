@@ -1,4 +1,5 @@
 import os
+import json
 import unittest
 import datetime
 from unittest.mock import AsyncMock, patch
@@ -1505,34 +1506,35 @@ class ScraperContractsTest(unittest.TestCase):
         self.assertEqual(2, client.calls)
         sleep.assert_awaited_once()
 
-    def test_supabase_kv_save_uses_fast_rpc_first(self):
+    def test_result_draws_save_uses_service_key_rpc(self):
         class FakeClient:
             def __init__(self):
-                self.patch_calls = 0
                 self.post_calls = 0
                 self.post_urls = []
-
-            async def patch(self, url, content=None, headers=None):
-                self.patch_calls += 1
-                return scraper.httpx.Response(204, request=scraper.httpx.Request("PATCH", url))
+                self.headers = []
+                self.payloads = []
 
             async def post(self, url, content=None, headers=None):
                 self.post_calls += 1
                 self.post_urls.append(url)
+                self.headers.append(headers or {})
+                self.payloads.append(json.loads(content.decode("utf-8")))
                 return scraper.httpx.Response(201, request=scraper.httpx.Request("POST", url), json={})
 
         client = FakeClient()
-        response = scraper.sync_run(scraper.async_supabase_kv_save(
-            "lot_results_cache_by_day:24-05-2026",
-            "[]",
-            client=client,
-            label="test kv",
-        ))
+        with patch.object(scraper, "SUPABASE_SECRET_KEY", "service-role-key"):
+            response = scraper.sync_run(scraper.async_save_result_draws_payload(
+                "24-05-2026",
+                [{"id": "1", "name": "La Primera Día", "number": "01-02-03"}],
+                "lottery",
+                client=client,
+            ))
 
         self.assertEqual(201, response.status_code)
-        self.assertEqual(0, client.patch_calls)
         self.assertEqual(1, client.post_calls)
-        self.assertIn("/rest/v1/rpc/ln_save_lotterynet_kv", client.post_urls[0])
+        self.assertIn("/rest/v1/rpc/lotterynet_upsert_result_draws_from_payload", client.post_urls[0])
+        self.assertEqual("Bearer service-role-key", client.headers[0]["Authorization"])
+        self.assertEqual("lottery", client.payloads[0]["p_source"])
 
     def test_supabase_kv_save_falls_back_to_patch_when_rpc_unavailable(self):
         class FakeClient:
@@ -1598,27 +1600,17 @@ class ScraperContractsTest(unittest.TestCase):
         self.assertEqual(1, client.patch_calls)
         self.assertEqual(3, client.post_calls)
 
-    def test_save_to_supabase_continues_when_legacy_kv_times_out_after_native_save(self):
-        request = scraper.httpx.Request(
-            "PATCH",
-            "https://example.supabase.co/rest/v1/lotterynet_kv?key=eq.lot_results_cache_by_day%3A26-05-2026",
-        )
-        response = scraper.httpx.Response(
-            500,
-            request=request,
-            json={"code": "57014", "message": "canceling statement due to statement timeout"},
-        )
-        error = scraper.httpx.HTTPStatusError("statement timeout", request=request, response=response)
-
+    def test_save_to_supabase_writes_only_result_draws(self):
         with patch.object(scraper, "_async_fetch_existing_from_supabase", AsyncMock(return_value=[])), \
                 patch.object(scraper, "_async_save_native_results_table", AsyncMock()) as native_save, \
-                patch.object(scraper, "async_supabase_kv_save", AsyncMock(side_effect=error)):
+                patch.object(scraper, "async_supabase_kv_save", AsyncMock()) as legacy_kv_save:
             scraper.sync_run(scraper._async_save_to_supabase(
                 "26-05-2026",
                 [{"id": "1", "name": "La Primera Día", "date": "26-05-2026", "number": "01-02-03"}],
             ))
 
         native_save.assert_awaited_once()
+        legacy_kv_save.assert_not_awaited()
 
     def test_default_backfill_only_requires_current_day_save(self):
         self.assertTrue(scraper.should_require_supabase_save(
