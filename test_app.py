@@ -29,6 +29,7 @@ class RenderApiContractsTest(unittest.TestCase):
     def setUp(self):
         self.env_patcher = patch.dict(app.os.environ, {
             "ALLOW_INLINE_LIVE_SCRAPE": "1",
+            "ENABLE_PUBLIC_PICK_BACKGROUND_REFRESH": "1",
             "SUPABASE_KEY": "test-key",
         }, clear=False)
         self.env_patcher.start()

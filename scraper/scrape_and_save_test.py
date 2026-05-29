@@ -7,19 +7,19 @@ import scrape_and_save as scraper
 
 
 class ScraperContractsTest(unittest.TestCase):
-    def test_supabase_key_accepts_service_role_env_alias(self):
+    def test_supabase_secret_key_accepts_service_role_env_alias(self):
         env = {"SUPABASE_SERVICE_ROLE_KEY": "service-role-key"}
 
-        self.assertEqual("service-role-key", scraper.get_supabase_key_from_env(env))
+        self.assertEqual("service-role-key", scraper.get_supabase_secret_key_from_env(env))
 
-    def test_supabase_key_prefers_service_role_over_publishable_key(self):
+    def test_supabase_key_prefers_publishable_for_results_flow(self):
         env = {
             "SUPABASE_KEY": "sb_publishable_public",
             "SUPABASE_SERVICE_ROLE_KEY": "service-role-key",
             "SUPABASE_ANON_KEY": "anon-key",
         }
 
-        self.assertEqual("service-role-key", scraper.get_supabase_key_from_env(env))
+        self.assertEqual("sb_publishable_public", scraper.get_supabase_key_from_env(env))
 
     def test_supabase_key_falls_back_to_explicit_key(self):
         env = {"SUPABASE_KEY": "explicit-key"}
@@ -33,6 +33,15 @@ class ScraperContractsTest(unittest.TestCase):
         }
 
         self.assertEqual("sb_publishable_public", scraper.get_supabase_key_from_env(env))
+
+    def test_supabase_secret_key_stays_separate_from_publishable_key(self):
+        env = {
+            "SUPABASE_PUBLISHABLE_KEY": "sb_publishable_public",
+            "SUPABASE_SECRET_KEY": "sb_secret_server",
+        }
+
+        self.assertEqual("sb_publishable_public", scraper.get_supabase_key_from_env(env))
+        self.assertEqual("sb_secret_server", scraper.get_supabase_secret_key_from_env(env))
 
     def test_default_scrape_dates_include_recent_backfill_days(self):
         with patch.object(scraper, "get_dr_date_str_for_offset", side_effect=["17-05-2026", "16-05-2026", "15-05-2026"]):

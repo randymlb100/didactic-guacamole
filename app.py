@@ -13,6 +13,7 @@ from flask_cors import CORS
 
 from scraper.scrape_and_save import (
     SUPABASE_KEY,
+    SUPABASE_SECRET_KEY,
     SUPABASE_URL,
     fetch_existing_from_supabase,
     split_lottery_and_pick_rows,
@@ -1282,7 +1283,10 @@ def config_check():
         "service": "lotterynet-results",
         "supabaseUrlConfigured": bool(SUPABASE_URL.strip()),
         "supabaseKeyConfigured": bool(SUPABASE_KEY.strip()),
+        "supabasePublishableConfigured": bool(SUPABASE_KEY.strip()),
+        "supabaseSecretConfigured": bool(SUPABASE_SECRET_KEY.strip()),
         "supabaseKeyPrefix": SUPABASE_KEY[:14] if SUPABASE_KEY else "",
+        "supabaseKeyMode": "publishable",
     })
 
 

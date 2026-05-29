@@ -11,20 +11,34 @@ from bs4 import BeautifulSoup
 SUPABASE_URL = os.environ.get("SUPABASE_URL", "https://unhoulkujbtsypccpirc.supabase.co")
 
 
-def get_supabase_key_from_env(source_env=None):
+def get_supabase_publishable_key_from_env(source_env=None):
     env = source_env or os.environ
     for name in (
-        "SUPABASE_SERVICE_ROLE_KEY",
-        "SUPABASE_SERVICE_KEY",
-        "SUPABASE_KEY",
         "SUPABASE_PUBLISHABLE_KEY",
+        "SUPABASE_KEY",
         "SUPABASE_ANON_KEY",
-        "SUPABASE_SECRET_KEY",
     ):
         value = str(env.get(name) or "").strip()
         if value:
             return value
     return ""
+
+
+def get_supabase_secret_key_from_env(source_env=None):
+    env = source_env or os.environ
+    for name in (
+        "SUPABASE_SECRET_KEY",
+        "SUPABASE_SERVICE_ROLE_KEY",
+        "SUPABASE_SERVICE_KEY",
+    ):
+        value = str(env.get(name) or "").strip()
+        if value:
+            return value
+    return ""
+
+
+def get_supabase_key_from_env(source_env=None):
+    return get_supabase_publishable_key_from_env(source_env)
 
 
 def supabase_rest_headers(api_key=None, extra=None):
@@ -38,6 +52,7 @@ def supabase_rest_headers(api_key=None, extra=None):
 
 
 SUPABASE_KEY = get_supabase_key_from_env()
+SUPABASE_SECRET_KEY = get_supabase_secret_key_from_env()
 TRACKED_REMOTE_RESULT_IDS = {
     "18",  # New York Noche often completes after the first daily cache write.
     "23", "24",  # King Lottery
