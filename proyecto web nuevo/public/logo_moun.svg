@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 96" role="img" aria-label="Moun">
+  <rect width="240" height="96" rx="18" fill="#ffffff"/>
+  <rect x="10" y="10" width="220" height="76" rx="14" fill="#00897b"/>
+  <path d="M42 67V29h11l12 20 12-20h11v38H76V48L66 64h-3L53 48v19H42Z" fill="#ffffff"/>
+  <path d="M101 49c0-12 9-21 22-21s22 9 22 21-9 21-22 21-22-9-22-21Zm12 0c0 6 4 10 10 10s10-4 10-10-4-10-10-10-10 4-10 10Z" fill="#ffffff"/>
+  <path d="M157 52V29h12v22c0 5 3 8 8 8s8-3 8-8V29h12v23c0 11-8 18-20 18s-20-7-20-18Z" fill="#ffffff"/>
+  <path d="M203 67V29h11l15 19V29h12v38h-10l-16-20v20h-12Z" fill="#ffffff" transform="translate(-14 0)"/>
+</svg>
