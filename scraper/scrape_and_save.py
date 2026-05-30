@@ -673,9 +673,28 @@ def should_continue_after_supabase_save_error(save_required, explicit_dates=Fals
     return (not explicit_dates) or (not save_required)
 
 
+def missing_us_pick_catalog_ids(existing_pick_rows, catalog_rows=None):
+    expected_ids = {
+        str(row.get("id") or "").strip()
+        for row in (catalog_rows if catalog_rows is not None else static_us_pick_catalog_rows())
+        if catalog_row_game(row) in {"pick3", "pick4"} and str(row.get("id") or "").strip()
+    }
+    if not expected_ids:
+        return []
+    available_ids = {
+        str(row.get("id") or "").strip()
+        for row in (existing_pick_rows or [])
+        if str(row.get("id") or "").strip()
+    }
+    return sorted(expected_ids - available_ids)
+
+
 def non_current_backfill_should_run(existing_rd_rows, existing_pick_rows):
-    return bool(missing_tracked_result_ids(existing_rd_rows)) or any(
-        us_pick_row_needs_refresh(row) for row in (existing_pick_rows or [])
+    missing_pick_ids = missing_us_pick_catalog_ids(existing_pick_rows)
+    return (
+        bool(missing_tracked_result_ids(existing_rd_rows))
+        or bool(missing_pick_ids)
+        or any(us_pick_row_needs_refresh(row) for row in (existing_pick_rows or []))
     )
 
 

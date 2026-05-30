@@ -50,6 +50,37 @@ class ScraperContractsTest(unittest.TestCase):
 
         self.assertEqual(["17-05-2026", "16-05-2026", "15-05-2026"], dates)
 
+    def test_non_current_backfill_runs_when_pick_catalog_row_is_absent(self):
+        existing_picks = [
+            {"id": "US-P3-FL-PICK-3-MIDDAY", "number": "1-2-3", "status": "published"},
+        ]
+        catalog = [
+            {"id": "US-P3-FL-PICK-3-MIDDAY", "game": "pick3"},
+            {"id": "US-P3-LA-PICK-3-DAY", "game": "pick3"},
+        ]
+
+        with patch.object(scraper, "static_us_pick_catalog_rows", return_value=catalog):
+            should_run = scraper.non_current_backfill_should_run([], existing_picks)
+
+        self.assertTrue(should_run)
+
+    def test_missing_us_pick_catalog_ids_detects_louisiana_gap(self):
+        existing_picks = [
+            {"id": "US-P3-FL-PICK-3-MIDDAY", "number": "1-2-3"},
+            {"id": "US-P4-FL-PICK-4-MIDDAY", "number": "1-2-3-4"},
+        ]
+        catalog = [
+            {"id": "US-P3-FL-PICK-3-MIDDAY", "game": "pick3"},
+            {"id": "US-P4-FL-PICK-4-MIDDAY", "game": "pick4"},
+            {"id": "US-P3-LA-PICK-3-DAY", "game": "pick3"},
+            {"id": "US-P4-LA-PICK-4-DAY", "game": "pick4"},
+        ]
+
+        self.assertEqual(
+            ["US-P3-LA-PICK-3-DAY", "US-P4-LA-PICK-4-DAY"],
+            scraper.missing_us_pick_catalog_ids(existing_picks, catalog),
+        )
+
     def test_supabase_rest_headers_send_sb_secret_as_bearer_key(self):
         headers = scraper.supabase_rest_headers("sb_secret_abc123")
 
@@ -1734,7 +1765,11 @@ class ScraperContractsTest(unittest.TestCase):
             {"id": "US-P4-NJ-PICK-4-MIDDAY", "number": "1-2-3-4", "pick4": "1-2-3-4"},
         ]
 
-        self.assertFalse(scraper.non_current_backfill_should_run(rd_rows, pick_rows))
+        with patch.object(scraper, "static_us_pick_catalog_rows", return_value=[
+            {"id": "US-P3-NJ-PICK-3-MIDDAY", "game": "pick3"},
+            {"id": "US-P4-NJ-PICK-4-MIDDAY", "game": "pick4"},
+        ]):
+            self.assertFalse(scraper.non_current_backfill_should_run(rd_rows, pick_rows))
 
     def test_non_current_backfill_runs_for_missing_tracked_rd_id(self):
         rd_rows = [
