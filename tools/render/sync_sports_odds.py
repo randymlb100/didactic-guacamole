@@ -3,6 +3,7 @@ import os
 import sys
 import urllib.error
 import urllib.request
+from datetime import datetime, timezone
 
 
 def require_env(name: str) -> str:
@@ -12,12 +13,58 @@ def require_env(name: str) -> str:
     return value
 
 
+def env_flag(name: str, default: bool = False) -> bool:
+    value = os.environ.get(name, "").strip().lower()
+    if not value:
+        return default
+    return value in {"1", "true", "yes", "on", "enabled"}
+
+
+def current_utc_hour() -> int:
+    return datetime.now(timezone.utc).hour
+
+
+def should_sync_now() -> tuple[bool, str]:
+    if not env_flag("SPORTS_ODDS_SYNC_ENABLED", False):
+        return False, "sports odds sync disabled"
+
+    mode = os.environ.get("SPORTS_ODDS_SYNC_MODE", "smart").strip().lower()
+    if mode in {"manual", "test-paused", "paused"}:
+        return False, f"sports odds sync mode={mode}"
+    if mode == "always":
+        return True, "sports odds sync mode=always"
+
+    allowed_hours = os.environ.get("SPORTS_ODDS_SYNC_UTC_HOURS", "15,18,21,23").strip()
+    hours = {
+        int(item)
+        for item in allowed_hours.split(",")
+        if item.strip().isdigit() and 0 <= int(item.strip()) <= 23
+    }
+    hour = current_utc_hour()
+    if hour not in hours:
+        return False, f"sports odds smart window skipped utc_hour={hour}"
+    return True, f"sports odds smart window accepted utc_hour={hour}"
+
+
 def main() -> int:
+    should_sync, reason = should_sync_now()
+    if not should_sync:
+        print(reason)
+        return 0
+
     supabase_url = require_env("SUPABASE_URL").rstrip("/")
     supabase_key = require_env("SUPABASE_KEY")
     admin_secret = require_env("LOTTERYNET_ADMIN_SHARED_SECRET")
 
-    payload = json.dumps({"limit": int(os.environ.get("SPORTS_ODDS_SYNC_LIMIT", "25"))}).encode("utf-8")
+    sports = [
+        item.strip()
+        for item in os.environ.get("SPORTS_ODDS_SYNC_SPORTS", "baseball,basketball").split(",")
+        if item.strip()
+    ]
+    payload = json.dumps({
+        "sports": sports,
+        "limit": int(os.environ.get("SPORTS_ODDS_SYNC_LIMIT", "3")),
+    }).encode("utf-8")
     request = urllib.request.Request(
         f"{supabase_url}/functions/v1/sports-sync-odds",
         data=payload,
