@@ -137,3 +137,9 @@ export interface DrawResult {
   dateKey: string;
   numbers: string;
 }
+
+export interface BlockedSalePlay {
+  playType: string;
+  number: string;
+}
+

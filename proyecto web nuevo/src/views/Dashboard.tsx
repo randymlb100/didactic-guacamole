@@ -17,9 +17,13 @@ import {
   fetchDrawResults,
   createDrawResult,
   STATIC_LOTTERIES,
-  supabase
+  supabase,
+  getAdminSystemModeConfig,
+  saveAdminSystemModeConfig,
+  getManualDisabledLotteries,
+  saveManualDisabledLotteries
 } from '../utils/supabase';
-import type { UserAccount, TicketRecord, LotteryCatalogItem, AuditLog, DrawResult } from '../types';
+import type { UserAccount, TicketRecord, LotteryCatalogItem, AuditLog, DrawResult, BlockedSalePlay } from '../types';
 import { 
   Users, Layers, TrendingUp, DollarSign, Activity, 
   Plus, Search, RefreshCw, CheckCircle, AlertTriangle, 
@@ -191,6 +195,50 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeTab }) => {
   const [selectedSupervisor, setSelectedSupervisor] = useState<UserAccount | null>(null);
   const [assignedCashiersSet, setAssignedCashiersSet] = useState<Set<string>>(new Set());
   const [editingCashier, setEditingCashier] = useState<UserAccount | null>(null);
+
+  // Manual disabled lotteries & blocked sale plays states
+  const [manualDisabledLotteryIds, setManualDisabledLotteryIds] = useState<string[]>([]);
+  const [blockedSalePlays, setBlockedSalePlays] = useState<BlockedSalePlay[]>([]);
+  const [blockedPlayForm, setBlockedPlayForm] = useState({
+    playType: 'Q',
+    number: ''
+  });
+
+  // DR time helpers
+  const parseTimeToMinutes = (timeStr: string): number => {
+    if (!timeStr) return 0;
+    const clean = timeStr.trim().toUpperCase();
+    const is12Hour = clean.includes('AM') || clean.includes('PM');
+    if (is12Hour) {
+      const isPM = clean.includes('PM');
+      const timeOnly = clean.replace(/[AMP\s]/g, '');
+      const [hStr, mStr] = timeOnly.split(':');
+      let hours = parseInt(hStr, 10) || 0;
+      const minutes = parseInt(mStr, 10) || 0;
+      if (isPM && hours !== 12) {
+        hours += 12;
+      } else if (!isPM && hours === 12) {
+        hours = 0;
+      }
+      return hours * 60 + minutes;
+    } else {
+      const [hStr, mStr] = clean.split(':');
+      const hours = parseInt(hStr, 10) || 0;
+      const minutes = parseInt(mStr, 10) || 0;
+      return hours * 60 + minutes;
+    }
+  };
+
+  const getCurrentDRMinutesSinceMidnight = (): number => {
+    const now = new Date();
+    const utcHours = now.getUTCHours();
+    const utcMinutes = now.getUTCMinutes();
+    let drHours = utcHours - 4;
+    if (drHours < 0) {
+      drHours += 24;
+    }
+    return drHours * 60 + utcMinutes;
+  };
 
   const [resultsList, setResultsList] = useState<DrawResult[]>([]);
   const [resultForm, setResultForm] = useState({
@@ -644,6 +692,146 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeTab }) => {
     }
   };
 
+  const handleToggleManualDisabledLottery = async (lotteryId: string) => {
+    if (!user) return;
+    const savedUser = localStorage.getItem('lotterynet_session_user');
+    const parsedUser = savedUser ? JSON.parse(savedUser) : null;
+    const allowedId = parsedUser?.id || user?.id;
+    const allowedAdminId = parsedUser?.adminId || user?.adminId;
+    const allowedRole = parsedUser?.role || user?.role;
+    
+    const targetAdminId = allowedRole === 'ADMIN' ? allowedId : (allowedRole === 'SUPERVISOR' ? allowedAdminId : null);
+    if (!targetAdminId) return;
+
+    try {
+      const isCurrentlyDisabled = manualDisabledLotteryIds.includes(lotteryId);
+      let updatedIds: string[];
+      if (isCurrentlyDisabled) {
+        updatedIds = manualDisabledLotteryIds.filter(id => id !== lotteryId);
+      } else {
+        updatedIds = [...manualDisabledLotteryIds, lotteryId];
+      }
+
+      const todayStr = new Intl.DateTimeFormat('fr-CA', { timeZone: 'America/Santo_Domingo' }).format(new Date()); // yyyy-mm-dd
+      await saveManualDisabledLotteries(targetAdminId, {
+        ids: updatedIds,
+        date: todayStr,
+        permanent: true, // Permanent close until manually toggled back
+        updatedAt: Date.now()
+      });
+
+      setManualDisabledLotteryIds(updatedIds);
+      
+      const targetLot = lotteries.find(lot => lot.id === lotteryId);
+      await addAuditLog(
+        { id: user.id, user: user.user, role: user.role },
+        isCurrentlyDisabled ? 'UNBLOCK_LOTTERY' : 'BLOCK_LOTTERY',
+        `Lotería "${targetLot?.name || lotteryId}" ha sido ${isCurrentlyDisabled ? 'habilitada' : 'bloqueada manualmente'}`,
+        'success'
+      );
+    } catch (e) {
+      console.error(e);
+      alert('Error al cambiar el estado de la lotería.');
+    }
+  };
+
+  const handleAddBlockedPlay = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user) return;
+    const savedUser = localStorage.getItem('lotterynet_session_user');
+    const parsedUser = savedUser ? JSON.parse(savedUser) : null;
+    const allowedId = parsedUser?.id || user?.id;
+    const allowedAdminId = parsedUser?.adminId || user?.adminId;
+    const allowedRole = parsedUser?.role || user?.role;
+    
+    const targetAdminId = allowedRole === 'ADMIN' ? allowedId : (allowedRole === 'SUPERVISOR' ? allowedAdminId : null);
+    if (!targetAdminId) return;
+
+    const playType = blockedPlayForm.playType;
+    let number = blockedPlayForm.number.trim().replace(/\D/g, ''); // Digits only
+
+    // Validation matching KMP normalizeBlockedSalePlay
+    let isValid = false;
+    if (playType === 'Q' && number.length === 2) isValid = true;
+    else if ((playType === 'P' || playType === 'SP') && number.length === 4) {
+      isValid = true;
+      if (playType === 'SP') {
+        number = `${number.slice(0, 2)}-${number.slice(2)}`;
+      }
+    }
+    else if (playType === 'T' && number.length === 6) isValid = true;
+    else if ((playType === 'P3' || playType === 'P3BOX') && number.length === 3) isValid = true;
+    else if ((playType === 'P4' || playType === 'P4BOX') && number.length === 4) isValid = true;
+
+    if (!isValid) {
+      alert(`Número no válido para el tipo de jugada. Quiniela: 2 dígitos, Palé/Super Palé: 4 dígitos, Tripleta: 6 dígitos, Pick 3: 3 dígitos, Pick 4: 4 dígitos.`);
+      return;
+    }
+
+    const exists = blockedSalePlays.some(p => p.playType === playType && p.number === number);
+    if (exists) {
+      alert('Esta combinación de jugada ya se encuentra bloqueada.');
+      return;
+    }
+
+    try {
+      const updatedPlays = [...blockedSalePlays, { playType, number }].sort((a, b) => a.playType.localeCompare(b.playType) || a.number.localeCompare(b.number));
+      
+      const currentConfig = await getAdminSystemModeConfig(targetAdminId);
+      await saveAdminSystemModeConfig(targetAdminId, {
+        ...currentConfig,
+        blockedSalePlays: updatedPlays
+      });
+
+      setBlockedSalePlays(updatedPlays);
+      setBlockedPlayForm({ ...blockedPlayForm, number: '' });
+
+      await addAuditLog(
+        { id: user.id, user: user.user, role: user.role },
+        'BLOCK_PLAY_NUMBER',
+        `Jugada bloqueada: ${playType} - ${number}`,
+        'success'
+      );
+    } catch (err) {
+      console.error(err);
+      alert('Error guardando el bloqueo de jugada.');
+    }
+  };
+
+  const handleRemoveBlockedPlay = async (playToRemove: BlockedSalePlay) => {
+    if (!user) return;
+    const savedUser = localStorage.getItem('lotterynet_session_user');
+    const parsedUser = savedUser ? JSON.parse(savedUser) : null;
+    const allowedId = parsedUser?.id || user?.id;
+    const allowedAdminId = parsedUser?.adminId || user?.adminId;
+    const allowedRole = parsedUser?.role || user?.role;
+    
+    const targetAdminId = allowedRole === 'ADMIN' ? allowedId : (allowedRole === 'SUPERVISOR' ? allowedAdminId : null);
+    if (!targetAdminId) return;
+
+    try {
+      const updatedPlays = blockedSalePlays.filter(p => !(p.playType === playToRemove.playType && p.number === playToRemove.number));
+      
+      const currentConfig = await getAdminSystemModeConfig(targetAdminId);
+      await saveAdminSystemModeConfig(targetAdminId, {
+        ...currentConfig,
+        blockedSalePlays: updatedPlays
+      });
+
+      setBlockedSalePlays(updatedPlays);
+
+      await addAuditLog(
+        { id: user.id, user: user.user, role: user.role },
+        'UNBLOCK_PLAY_NUMBER',
+        `Jugada desbloqueada: ${playToRemove.playType} - ${playToRemove.number}`,
+        'success'
+      );
+    } catch (err) {
+      console.error(err);
+      alert('Error eliminando el bloqueo de jugada.');
+    }
+  };
+
   const loadData = async () => {
     setLoading(true);
     try {
@@ -664,11 +852,38 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeTab }) => {
       const l = await fetchLotteries();
       const a = await fetchAuditLogs();
       const r = await fetchDrawResults();
+
+      const targetAdminId = adminScopeId || allowedId;
+      if (targetAdminId) {
+        try {
+          const disabledCfg = await getManualDisabledLotteries(targetAdminId);
+          setManualDisabledLotteryIds(disabledCfg.ids || []);
+
+          const systemCfg = await getAdminSystemModeConfig(targetAdminId);
+          setBlockedSalePlays(systemCfg.blockedSalePlays || []);
+        } catch (err) {
+          console.warn('Error loading blocks / modes from Supabase:', err);
+        }
+      }
+
+      // Chronological sorting by draw time (orden de salida)
+      const sortedL = [...l].sort((a, b) => {
+        return parseTimeToMinutes(a.baseDrawTime) - parseTimeToMinutes(b.baseDrawTime);
+      });
+
+      const sortedR = [...r].sort((a, b) => {
+        const lotA = STATIC_LOTTERIES.find(lot => lot.id === a.lotteryId) || l.find(lot => lot.id === a.lotteryId);
+        const lotB = STATIC_LOTTERIES.find(lot => lot.id === b.lotteryId) || l.find(lot => lot.id === b.lotteryId);
+        const timeA = lotA ? parseTimeToMinutes(lotA.baseDrawTime) : 0;
+        const timeB = lotB ? parseTimeToMinutes(lotB.baseDrawTime) : 0;
+        return timeA - timeB;
+      });
+
       setUsers(u);
       setTickets(t);
-      setLotteries(l);
+      setLotteries(sortedL);
       setAudits(a);
-      setResultsList(r);
+      setResultsList(sortedR);
     } catch (e) {
       console.error(e);
     } finally {
@@ -1286,6 +1501,12 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeTab }) => {
                         const catalogEntry = STATIC_LOTTERIES.find(sl => sl.id === l.id);
                         const logoUrl = catalogEntry?.logoAssetPath || l.logoAssetPath || '/favicon.svg';
                         
+                        const currentMinutes = getCurrentDRMinutesSinceMidnight();
+                        const closeMinutes = parseTimeToMinutes(l.baseCloseTime);
+                        const isTimeClosed = currentMinutes >= closeMinutes;
+                        const isManuallyBlocked = manualDisabledLotteryIds.includes(l.id);
+                        const isClosed = isTimeClosed || isManuallyBlocked;
+
                         return (
                           <div key={l.id} style={{
                             display: 'flex',
@@ -1306,13 +1527,43 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeTab }) => {
                               <div>
                                 <strong style={{ fontSize: '0.875rem', display: 'block' }}>{l.name}</strong>
                                 <span style={{ fontSize: '0.75rem', color: 'hsl(var(--text-secondary))' }}>
-                                  Cierre: {l.baseCloseTime} | Terr: {l.territory}
+                                  Cierre: {l.baseCloseTime} | Sorteo: {l.baseDrawTime}
                                 </span>
                               </div>
                             </div>
-                            <span className="badge badge-success" style={{ fontSize: '0.625rem' }}>
-                              Abierto
-                            </span>
+                            
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                              {isClosed ? (
+                                <span className="badge" style={{ fontSize: '0.625rem', backgroundColor: 'hsl(var(--danger) / 0.1)', color: 'hsl(var(--danger))', border: '1px solid hsl(var(--danger) / 0.2)' }}>
+                                  {isManuallyBlocked ? 'Bloqueado Admin' : 'Cerrado'}
+                                </span>
+                              ) : (
+                                <span className="badge badge-success" style={{ fontSize: '0.625rem' }}>
+                                  Abierto
+                                </span>
+                              )}
+                              
+                              {(user.role === 'ADMIN' || user.role === 'SUPERVISOR') && (
+                                <button
+                                  onClick={() => handleToggleManualDisabledLottery(l.id)}
+                                  className="btn"
+                                  style={{
+                                    padding: '4px 8px',
+                                    fontSize: '0.7rem',
+                                    borderRadius: 'var(--radius-sm)',
+                                    cursor: 'pointer',
+                                    backgroundColor: isManuallyBlocked ? 'hsl(var(--success) / 0.1)' : 'hsl(var(--danger) / 0.1)',
+                                    color: isManuallyBlocked ? 'hsl(var(--success))' : 'hsl(var(--danger))',
+                                    border: `1px solid ${isManuallyBlocked ? 'hsl(var(--success) / 0.2)' : 'hsl(var(--danger) / 0.2)'}`,
+                                    fontWeight: 600,
+                                    transition: 'all 0.2s ease'
+                                  }}
+                                  title={isManuallyBlocked ? 'Habilitar Lotería' : 'Bloquear Lotería'}
+                                >
+                                  {isManuallyBlocked ? 'Habilitar' : 'Bloquear'}
+                                </button>
+                              )}
+                            </div>
                           </div>
                         );
                       })}
@@ -2410,7 +2661,14 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeTab }) => {
                                     style={{ width: '28px', height: '28px', borderRadius: '4px', objectFit: 'contain', backgroundColor: 'rgba(255,255,255,0.05)', padding: '2px' }}
                                     onError={(e) => { (e.target as HTMLImageElement).src = '/favicon.svg'; }}
                                   />
-                                  <strong style={{ fontSize: '0.95rem', color: 'hsl(var(--text-primary))' }}>{res.lotteryName}</strong>
+                                  <div>
+                                    <strong style={{ fontSize: '0.95rem', color: 'hsl(var(--text-primary))', display: 'block' }}>{res.lotteryName}</strong>
+                                    {catalogEntry?.baseDrawTime && (
+                                      <span style={{ fontSize: '0.725rem', color: 'hsl(var(--text-secondary))', display: 'block', marginTop: '2px' }}>
+                                        Sorteo: {catalogEntry.baseDrawTime}
+                                      </span>
+                                    )}
+                                  </div>
                                 </div>
                                 <span style={{ fontSize: '0.75rem', color: 'hsl(var(--text-muted))' }}>{res.dateKey}</span>
                               </div>
@@ -2501,7 +2759,14 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeTab }) => {
                                     style={{ width: '28px', height: '28px', borderRadius: '4px', objectFit: 'contain', backgroundColor: 'rgba(255,255,255,0.05)', padding: '2px' }}
                                     onError={(e) => { (e.target as HTMLImageElement).src = '/favicon.svg'; }}
                                   />
-                                  <strong style={{ fontSize: '0.95rem', color: 'hsl(var(--text-primary))' }}>{res.lotteryName}</strong>
+                                  <div>
+                                    <strong style={{ fontSize: '0.95rem', color: 'hsl(var(--text-primary))', display: 'block' }}>{res.lotteryName}</strong>
+                                    {catalogEntry?.baseDrawTime && (
+                                      <span style={{ fontSize: '0.725rem', color: 'hsl(var(--text-secondary))', display: 'block', marginTop: '2px' }}>
+                                        Sorteo: {catalogEntry.baseDrawTime}
+                                      </span>
+                                    )}
+                                  </div>
                                 </div>
                                 <span style={{ fontSize: '0.75rem', color: 'hsl(var(--text-muted))' }}>{res.dateKey}</span>
                               </div>
@@ -3067,6 +3332,140 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeTab }) => {
                   </div>
                 )}
 
+              </div>
+
+              {/* CARD 5: SPECIFIC PLAYS / NUMBERS BLOCK CONTROL */}
+              <div className="glass-panel" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px', marginTop: '8px' }}>
+                <div>
+                  <h4 style={{ fontSize: '1.05rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '8px', color: 'hsl(var(--danger))' }}>
+                    <Lock size={18} />
+                    Bloqueo de Jugadas y Números Específicos
+                  </h4>
+                  <p style={{ fontSize: '0.75rem', color: 'hsl(var(--text-secondary))', marginTop: '4px' }}>
+                    Bloquea jugadas específicas (ej. un número en Quiniela o una combinación de Palé) para impedir su venta en los cajeros de tu red.
+                  </p>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '24px' }}>
+                  {/* Form to Add Blocked Play */}
+                  <form onSubmit={handleAddBlockedPlay} style={{ display: 'flex', flexDirection: 'column', gap: '16px', borderRight: '1px solid hsl(var(--border))', paddingRight: '24px' }}>
+                    <h5 style={{ fontSize: '0.9rem', fontWeight: 600 }}>Agregar Nuevo Bloqueo</h5>
+                    
+                    <div className="form-group">
+                      <label className="form-label">Tipo de Jugada</label>
+                      <select
+                        className="form-input"
+                        value={blockedPlayForm.playType}
+                        onChange={(e) => setBlockedPlayForm({ ...blockedPlayForm, playType: e.target.value })}
+                      >
+                        <option value="Q">Quiniela</option>
+                        <option value="P">Palé</option>
+                        <option value="SP">Super Palé</option>
+                        <option value="T">Tripleta</option>
+                        <option value="P3">Pick 3 Straight</option>
+                        <option value="P3BOX">Pick 3 Box</option>
+                        <option value="P4">Pick 4 Straight</option>
+                        <option value="P4BOX">Pick 4 Box</option>
+                      </select>
+                    </div>
+
+                    <div className="form-group">
+                      <label className="form-label">Número(s) a Bloquear</label>
+                      <input
+                        type="text"
+                        className="form-input"
+                        placeholder={
+                          blockedPlayForm.playType === 'Q' ? 'Ej. 14 (2 dígitos)' :
+                          blockedPlayForm.playType === 'P' || blockedPlayForm.playType === 'SP' ? 'Ej. 1422 (4 dígitos)' :
+                          blockedPlayForm.playType === 'T' ? 'Ej. 142205 (6 dígitos)' :
+                          blockedPlayForm.playType === 'P3' || blockedPlayForm.playType === 'P3BOX' ? 'Ej. 123 (3 dígitos)' : 'Ej. 1234 (4 dígitos)'
+                        }
+                        value={blockedPlayForm.number}
+                        onChange={(e) => setBlockedPlayForm({ ...blockedPlayForm, number: e.target.value })}
+                        maxLength={blockedPlayForm.playType === 'T' ? 6 : blockedPlayForm.playType === 'Q' ? 2 : blockedPlayForm.playType === 'P3' || blockedPlayForm.playType === 'P3BOX' ? 3 : 4}
+                        required
+                      />
+                      <span style={{ fontSize: '0.675rem', color: 'hsl(var(--text-muted))', marginTop: '4px', display: 'block' }}>
+                        Introduce solo los dígitos numéricos consecutivos. El sistema formateará el Super Palé automáticamente.
+                      </span>
+                    </div>
+
+                    <button type="submit" className="btn btn-primary" style={{ width: '100%', padding: '10px', marginTop: '8px' }}>
+                      Bloquear Jugada
+                    </button>
+                  </form>
+
+                  {/* List of Blocked Plays */}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                    <h5 style={{ fontSize: '0.9rem', fontWeight: 600, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span>Jugadas Bloqueadas Actualmente</span>
+                      <span className="badge" style={{ backgroundColor: 'hsl(var(--danger) / 0.1)', color: 'hsl(var(--danger))', fontSize: '0.7rem' }}>
+                        {blockedSalePlays.length} Bloqueo(s)
+                      </span>
+                    </h5>
+
+                    {blockedSalePlays.length === 0 ? (
+                      <div style={{ padding: '24px', textAlign: 'center', color: 'hsl(var(--text-muted))', backgroundColor: 'hsl(var(--background))', borderRadius: 'var(--radius-md)', border: '1px dashed hsl(var(--border))' }}>
+                        No tienes jugadas bloqueadas en esta banca.
+                      </div>
+                    ) : (
+                      <div style={{ maxHeight: '280px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '8px', paddingRight: '8px' }}>
+                        {blockedSalePlays.map((play, index) => {
+                          const displayType = 
+                            play.playType === 'Q' ? 'Quiniela' :
+                            play.playType === 'P' ? 'Palé' :
+                            play.playType === 'SP' ? 'Super Palé' :
+                            play.playType === 'T' ? 'Tripleta' :
+                            play.playType === 'P3' ? 'Pick 3 Straight' :
+                            play.playType === 'P3BOX' ? 'Pick 3 Box' :
+                            play.playType === 'P4' ? 'Pick 4 Straight' : 'Pick 4 Box';
+                          
+                          return (
+                            <div key={index} style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'space-between',
+                              padding: '10px 14px',
+                              borderRadius: 'var(--radius-sm)',
+                              backgroundColor: 'hsl(var(--background))',
+                              border: '1px solid hsl(var(--border))',
+                              fontSize: '0.85rem'
+                            }}>
+                              <div>
+                                <span style={{ fontWeight: 600, color: 'hsl(var(--text-primary))', display: 'block' }}>
+                                  {play.number}
+                                </span>
+                                <span style={{ fontSize: '0.725rem', color: 'hsl(var(--text-secondary))' }}>
+                                  Tipo: {displayType}
+                                </span>
+                              </div>
+                              <button
+                                onClick={() => handleRemoveBlockedPlay(play)}
+                                style={{
+                                  border: 'none',
+                                  background: 'transparent',
+                                  color: 'hsl(var(--danger))',
+                                  cursor: 'pointer',
+                                  padding: '4px',
+                                  borderRadius: '4px',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  transition: 'all 0.2s'
+                                }}
+                                title="Eliminar Bloqueo"
+                                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'hsl(var(--danger) / 0.1)'}
+                                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                              >
+                                <Trash2 size={16} />
+                              </button>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                </div>
               </div>
 
               {/* SAVE BUTTON ACTION BAR */}

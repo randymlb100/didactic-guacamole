@@ -953,3 +953,171 @@ export const createDrawResult = async (result: DrawResult): Promise<DrawResult> 
   return result;
 };
 
+// --- SYSTEM MODE CONFIG & BLOCKED PLAYS/NUMBERS (COMPATIBLE WITH KOTLIN CONTRACT) ---
+
+export interface BlockedSalePlay {
+  playType: string; // 'Q', 'P', 'SP', 'T', 'P3', 'P3BOX', 'P4', 'P4BOX'
+  number: string;
+}
+
+export interface AdminSystemModeConfig {
+  posLiteEnabled: boolean;
+  lotteryModeEnabled: boolean;
+  pickModeEnabled: boolean;
+  cashierPickEnabled: boolean;
+  cashierModeEnabled: boolean;
+  cashierLotteryModeEnabled: boolean;
+  cashierPickModeEnabled: boolean;
+  blockedSalePlays: BlockedSalePlay[];
+  updatedAt: number;
+}
+
+export const getAdminSystemModeConfig = async (adminId: string): Promise<AdminSystemModeConfig> => {
+  const defaultVal: AdminSystemModeConfig = {
+    posLiteEnabled: false,
+    lotteryModeEnabled: true,
+    pickModeEnabled: true,
+    cashierPickEnabled: true,
+    cashierModeEnabled: true,
+    cashierLotteryModeEnabled: true,
+    cashierPickModeEnabled: true,
+    blockedSalePlays: [],
+    updatedAt: Date.now()
+  };
+
+  if (isSupabaseConfigured && supabase) {
+    try {
+      const { data, error } = await supabase
+        .from('lotterynet_kv')
+        .select('value')
+        .eq('key', `system_modes:${adminId}`)
+        .maybeSingle();
+
+      if (!error && data && data.value) {
+        const parsed = typeof data.value === 'string' ? JSON.parse(data.value) : data.value;
+        return {
+          ...defaultVal,
+          ...parsed,
+          blockedSalePlays: Array.isArray(parsed.blockedSalePlays) ? parsed.blockedSalePlays : []
+        };
+      }
+    } catch (e) {
+      console.warn(`Failed to fetch system_modes:${adminId} from Supabase, returning default`, e);
+    }
+  }
+
+  const localVal = localStorage.getItem(`lotterynet_system_modes_${adminId}`);
+  if (localVal) {
+    try {
+      return JSON.parse(localVal);
+    } catch (e) {
+      return defaultVal;
+    }
+  }
+  return defaultVal;
+};
+
+export const saveAdminSystemModeConfig = async (adminId: string, config: AdminSystemModeConfig): Promise<void> => {
+  const payload = {
+    ...config,
+    updatedAt: Date.now()
+  };
+
+  if (isSupabaseConfigured && supabase) {
+    try {
+      const { error } = await supabase
+        .from('lotterynet_kv')
+        .upsert({
+          key: `system_modes:${adminId}`,
+          value: payload,
+          updated_at: new Date().toISOString()
+        });
+      if (!error) return;
+    } catch (e) {
+      console.warn(`Failed to upsert system_modes:${adminId} to Supabase, saving locally`, e);
+    }
+  }
+
+  localStorage.setItem(`lotterynet_system_modes_${adminId}`, JSON.stringify(payload));
+};
+
+// --- MANUAL DISABLED LOTTERIES SYNC ---
+
+export interface ManualDisabledLotteryConfig {
+  ids: string[];
+  date: string;
+  permanent: boolean;
+  updatedAt: number;
+}
+
+export const getManualDisabledLotteries = async (adminId: string): Promise<ManualDisabledLotteryConfig> => {
+  const todayStr = new Intl.DateTimeFormat('fr-CA', { timeZone: 'America/Santo_Domingo' }).format(new Date()); // yyyy-mm-dd
+  const defaultVal: ManualDisabledLotteryConfig = {
+    ids: [],
+    date: todayStr,
+    permanent: false,
+    updatedAt: Date.now()
+  };
+
+  if (isSupabaseConfigured && supabase) {
+    try {
+      const { data, error } = await supabase
+        .from('lotterynet_kv')
+        .select('value')
+        .eq('key', `manual_disabled_lotteries:${adminId}`)
+        .maybeSingle();
+
+      if (!error && data && data.value) {
+        const parsed = typeof data.value === 'string' ? JSON.parse(data.value) : data.value;
+        const isStillActive = parsed.permanent || parsed.date === todayStr;
+        if (isStillActive) {
+          return {
+            ...defaultVal,
+            ...parsed,
+            ids: Array.isArray(parsed.ids) ? parsed.ids : []
+          };
+        } else {
+          return defaultVal;
+        }
+      }
+    } catch (e) {
+      console.warn(`Failed to fetch manual_disabled_lotteries:${adminId} from Supabase, returning default`, e);
+    }
+  }
+
+  const localVal = localStorage.getItem(`lotterynet_manual_disabled_lotteries_${adminId}`);
+  if (localVal) {
+    try {
+      const parsed = JSON.parse(localVal);
+      const isStillActive = parsed.permanent || parsed.date === todayStr;
+      if (isStillActive) return parsed;
+    } catch (e) {}
+  }
+  return defaultVal;
+};
+
+export const saveManualDisabledLotteries = async (adminId: string, config: ManualDisabledLotteryConfig): Promise<void> => {
+  const payload = {
+    ...config,
+    updatedAt: Date.now()
+  };
+
+  if (isSupabaseConfigured && supabase) {
+    try {
+      const { error } = await supabase
+        .from('lotterynet_kv')
+        .upsert({
+          key: `manual_disabled_lotteries:${adminId}`,
+          value: payload,
+          updated_at: new Date().toISOString()
+        });
+      if (!error) return;
+    } catch (e) {
+      console.warn(`Failed to upsert manual_disabled_lotteries:${adminId} to Supabase, saving locally`, e);
+    }
+  }
+
+  localStorage.setItem(`lotterynet_manual_disabled_lotteries_${adminId}`, JSON.stringify(payload));
+};
+
+
