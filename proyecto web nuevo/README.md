@@ -71,3 +71,6 @@ export default defineConfig([
   },
 ])
 ```
+
+## Deployment Optimization
+This project has been optimized with smart tab-scoping for API requests.
