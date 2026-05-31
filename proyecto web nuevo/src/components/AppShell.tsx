@@ -115,23 +115,57 @@ export const AppShell: React.FC<AppShellProps> = ({ children, activeTab, setActi
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '32px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <div style={{
-              width: '38px',
-              height: '38px',
-              borderRadius: 'var(--radius-md)',
-              backgroundColor: 'hsl(var(--primary))',
+              width: '42px',
+              height: '42px',
+              borderRadius: '50%',
+              backgroundColor: 'transparent',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              boxShadow: 'var(--shadow-glow)'
+              boxShadow: '0 4px 15px hsl(var(--primary) / 0.15)'
             }}>
-              <TrendingUp size={20} color="#fff" />
+              <svg width="42" height="42" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                {/* Circular Teal Background */}
+                <circle cx="50" cy="50" r="48" fill="#2A859A" stroke="#ffffff" strokeWidth="2"/>
+                
+                {/* Face/Head */}
+                <circle cx="50" cy="54" r="22" fill="#FFE0B2"/>
+                
+                {/* Curly Hair (Clustered Circles) */}
+                <circle cx="50" cy="32" r="10" fill="#263238"/>
+                <circle cx="40" cy="34" r="9" fill="#263238"/>
+                <circle cx="60" cy="34" r="9" fill="#263238"/>
+                <circle cx="33" cy="40" r="8" fill="#263238"/>
+                <circle cx="67" cy="40" r="8" fill="#263238"/>
+                <circle cx="31" cy="48" r="7" fill="#263238"/>
+                <circle cx="69" cy="48" r="7" fill="#263238"/>
+                
+                {/* Forehead curls */}
+                <circle cx="45" cy="38" r="6" fill="#263238"/>
+                <circle cx="55" cy="38" r="6" fill="#263238"/>
+                
+                {/* Smile */}
+                <path d="M44 62C44 65.3 46.7 68 50 68C53.3 68 56 65.3 56 62" stroke="#263238" strokeWidth="2.5" strokeLinecap="round"/>
+                
+                {/* Glasses */}
+                <circle cx="41" cy="52" r="7.5" fill="#B2EBF2" stroke="#263238" strokeWidth="2.5"/>
+                <circle cx="41" cy="52" r="2" fill="#263238"/>
+                
+                <circle cx="59" cy="52" r="7.5" fill="#B2EBF2" stroke="#263238" strokeWidth="2.5"/>
+                <circle cx="59" cy="52" r="2" fill="#263238"/>
+                
+                <path d="M48.5 52H51.5" stroke="#263238" strokeWidth="2.5" strokeLinecap="round"/>
+                
+                <path d="M33.5 52H30.5" stroke="#263238" strokeWidth="2" strokeLinecap="round"/>
+                <path d="M66.5 52H69.5" stroke="#263238" strokeWidth="2" strokeLinecap="round"/>
+              </svg>
             </div>
             <div>
-              <span style={{ fontSize: '1.15rem', fontWeight: 700, fontFamily: 'var(--font-display)', letterSpacing: '-0.02em', display: 'block' }}>
-                Multi Banca
+              <span style={{ fontSize: '1.15rem', fontWeight: 800, fontFamily: 'var(--font-display)', letterSpacing: '0.02em', display: 'block', textTransform: 'uppercase', color: 'hsl(var(--text-primary))' }}>
+                LotteryNet Pro
               </span>
-              <span style={{ fontSize: '0.70rem', color: 'hsl(var(--text-muted))', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                Panel Administrativo
+              <span style={{ fontSize: '0.625rem', color: 'hsl(var(--primary))', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.03em', display: 'block', lineHeight: '1.2' }}>
+                Impulsa tu éxito
               </span>
             </div>
           </div>
