@@ -1054,8 +1054,6 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeTab }) => {
   const loadData = async () => {
     setLoading(true);
     try {
-      const u = await fetchUsers();
-      // Scope tickets to current admin if ADMIN or SUPERVISOR role
       const savedUser = localStorage.getItem('lotterynet_session_user');
       const parsedUser = savedUser ? JSON.parse(savedUser) : null;
       
@@ -1067,14 +1065,33 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeTab }) => {
         ? allowedId 
         : (allowedRole === 'SUPERVISOR' ? allowedAdminId : undefined);
 
-      const t = await fetchTickets(adminScopeId);
-      const st = await fetchSportsTickets(adminScopeId);
-      const l = await fetchLotteries();
-      const a = await fetchAuditLogs();
-      const r = await fetchDrawResults();
+      // Smart Tab-based selective fetching to reduce database/network calls
+      const u = (activeTab === 'dashboard' || activeTab === 'cajeros' || activeTab === 'supervisores' || activeTab === 'monitoreo' || activeTab === 'deportiva' || activeTab === 'tickets' || activeTab === 'ganadores' || activeTab === 'limites' || activeTab === 'cuadre' || activeTab === 'finanzas')
+        ? await fetchUsers()
+        : users;
+
+      const t = (activeTab === 'dashboard' || activeTab === 'cajeros' || activeTab === 'monitoreo' || activeTab === 'tickets' || activeTab === 'ganadores' || activeTab === 'cuadre')
+        ? await fetchTickets(adminScopeId)
+        : tickets;
+
+      const st = (activeTab === 'dashboard' || activeTab === 'cajeros' || activeTab === 'deportiva' || activeTab === 'cuadre')
+        ? await fetchSportsTickets(adminScopeId)
+        : sportsTickets;
+
+      const l = (lotteries.length === 0 || activeTab === 'dashboard' || activeTab === 'monitoreo' || activeTab === 'resultados')
+        ? (lotteries.length > 0 ? lotteries : await fetchLotteries())
+        : lotteries;
+
+      const a = (activeTab === 'finanzas' || activeTab === 'auditoria')
+        ? await fetchAuditLogs()
+        : audits;
+
+      const r = (activeTab === 'dashboard' || activeTab === 'resultados')
+        ? await fetchDrawResults()
+        : resultsList;
 
       const targetAdminId = adminScopeId || allowedId;
-      if (targetAdminId) {
+      if (targetAdminId && (activeTab === 'dashboard' || activeTab === 'limites' || activeTab === 'monitoreo')) {
         try {
           const disabledCfg = await getManualDisabledLotteries(targetAdminId);
           setManualDisabledLotteryIds(disabledCfg.ids || []);
