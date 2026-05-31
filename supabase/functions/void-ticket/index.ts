@@ -69,10 +69,8 @@ async function authenticatedActor(req: Request, actorKey: string): Promise<{ ok:
   if (error || !data.user) return { ok: false, message: "Sesion del servidor invalida." };
 
   const metadata = data.user.app_metadata ?? {};
-  if ([metadata.legacy_id, metadata.username, metadata.user, metadata.admin_id, metadata.admin_user]
-    .some((candidate) => lower(candidate) === lower(actorKey))) {
-    return { ok: true };
-  }
+  const metadataMatches = [metadata.legacy_id, metadata.username, metadata.user, metadata.admin_id, metadata.admin_user]
+    .some((candidate) => lower(candidate) === lower(actorKey));
 
   const { data: state, error: stateError } = await supabase
     .from("lotterynet_users_state")
@@ -82,8 +80,15 @@ async function authenticatedActor(req: Request, actorKey: string): Promise<{ ok:
   if (stateError) return { ok: false, message: stateError.message };
 
   const payload = (state?.payload ?? {}) as Record<string, unknown>;
-  const actor = allAccounts(payload).find((account) => accountMatches(account, actorKey));
-  if (!actor) return { ok: false, message: "Usuario no existe en servidor." };
+  const accounts = allAccounts(payload);
+  const actor = accounts.find((account) => accountMatches(account, actorKey)) ??
+    accounts.find((account) =>
+      [metadata.legacy_id, metadata.username, metadata.user, metadata.admin_id, metadata.admin_user]
+        .some((candidate) => accountMatches(account, clean(candidate)))
+    );
+  if (!actor) {
+    return metadataMatches ? { ok: true } : { ok: false, message: "Usuario no existe en servidor." };
+  }
   if (actor.activo === false || actor.active === false || actor.blocked === true || actor.disabled === true) {
     return { ok: false, message: "Usuario bloqueado." };
   }

@@ -143,3 +143,28 @@ export interface BlockedSalePlay {
   number: string;
 }
 
+export interface SportsTicketLeg {
+  eventLabel: string;
+  marketTitle: string;
+  selectionLabel: string;
+  decimalOdds: number;
+  status: 'pending' | 'won' | 'lost' | 'push' | 'void';
+}
+
+export interface SportsTicketRecord {
+  id: string;
+  ticketCode: string;
+  sellerUsername: string;
+  bancaName: string;
+  ticketType: 'straight' | 'parlay';
+  stake: number;
+  decimalOdds: number;
+  potentialPayout: number;
+  status: 'pending' | 'won' | 'lost' | 'push' | 'void' | 'paid';
+  soldAt: string;
+  legs: SportsTicketLeg[];
+  adminKey?: string;
+  ownerKey?: string;
+}
+
+

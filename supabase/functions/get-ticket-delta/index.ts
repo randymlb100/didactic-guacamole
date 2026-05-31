@@ -51,12 +51,18 @@ async function fetchTicketRows(ownerKey: string, sinceCursor: string, limit: num
 async function fetchTicketItems(ticketIds: string[]): Promise<Row[]> {
   if (ticketIds.length === 0) return [];
   const supabase = supabaseAdmin();
-  const { data, error } = await supabase
-    .from("ticket_items")
-    .select("*")
-    .in("ticket_id", ticketIds);
-  if (error) throw error;
-  return (data ?? []) as Row[];
+  const rows: Row[] = [];
+  for (let index = 0; index < ticketIds.length; index += 35) {
+    const idChunk = ticketIds.slice(index, index + 35);
+    const { data, error } = await supabase
+      .from("ticket_items")
+      .select("*")
+      .in("ticket_id", idChunk)
+      .range(0, 4999);
+    if (error) throw error;
+    rows.push(...((data ?? []) as Row[]));
+  }
+  return rows;
 }
 
 Deno.serve(async (req) => {

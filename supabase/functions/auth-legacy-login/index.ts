@@ -121,7 +121,10 @@ async function findAuthUserByEmail(email: string): Promise<string | null> {
   return null;
 }
 
-async function ensureAuthUser(account: Record<string, unknown>, password: string): Promise<{ id: string; email: string }> {
+async function ensureAuthUser(
+  account: Record<string, unknown>,
+  password: string,
+): Promise<{ id: string; email: string; created: boolean }> {
   const email = authEmailFor(clean(account.user));
   const appMetadata = {
     provider: "legacy-lotterynet",
@@ -140,13 +143,12 @@ async function ensureAuthUser(account: Record<string, unknown>, password: string
   const existingId = await findAuthUserByEmail(email);
   if (existingId) {
     const { error } = await service.auth.admin.updateUserById(existingId, {
-      password,
       email_confirm: true,
       app_metadata: appMetadata,
       user_metadata: userMetadata,
     });
     if (error) throw error;
-    return { id: existingId, email };
+    return { id: existingId, email, created: false };
   }
 
   const { data, error } = await service.auth.admin.createUser({
@@ -158,7 +160,30 @@ async function ensureAuthUser(account: Record<string, unknown>, password: string
   });
   if (error) throw error;
   if (!data.user?.id) throw new Error("Supabase Auth no devolvio usuario.");
-  return { id: data.user.id, email };
+  return { id: data.user.id, email, created: true };
+}
+
+async function updateAuthUserPassword(account: Record<string, unknown>, authUserId: string, password: string) {
+  const appMetadata = {
+    provider: "legacy-lotterynet",
+    legacy_id: clean(account.id),
+    username: clean(account.user),
+    role: normalizeRole(account.role),
+    admin_id: clean(account.adminId),
+    admin_user: clean(account.adminUser),
+    banca: clean(account.banca),
+  };
+  const userMetadata = {
+    display_name: clean(account.nombre ?? account.name ?? account.displayName),
+    username: clean(account.user),
+  };
+  const { error } = await service.auth.admin.updateUserById(authUserId, {
+    password,
+    email_confirm: true,
+    app_metadata: appMetadata,
+    user_metadata: userMetadata,
+  });
+  if (error) throw error;
 }
 
 async function signIn(email: string, password: string) {
@@ -250,7 +275,14 @@ Deno.serve(async (req) => {
     if (!await verifyLegacyPassword(account, password)) return json({ message: "Credenciales invalidas." }, 401);
 
     const authUser = await ensureAuthUser(account, password);
-    const session = await signIn(authUser.email, password);
+    let session;
+    try {
+      session = await signIn(authUser.email, password);
+    } catch (error) {
+      if (authUser.created) throw error;
+      await updateAuthUserPassword(account, authUser.id, password);
+      session = await signIn(authUser.email, password);
+    }
     await upsertProfile(account, authUser.id);
     await saveAuthLink(account, authUser.id);
 

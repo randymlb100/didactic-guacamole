@@ -106,7 +106,11 @@ function mergeTickets(snapshotTickets: unknown[], officialTickets: JsonMap[], de
   }
   for (const ticket of officialTickets) {
     const key = ticketKey(ticket);
-    if (key && !deletedIds.has(key) && !hasDeletedStatus(ticket)) map.set(key, ticket);
+    const items = Array.isArray(ticket.items) ? ticket.items : [];
+    const total = number(ticket.total ?? ticket.tot);
+    if (!key || deletedIds.has(key) || hasDeletedStatus(ticket)) continue;
+    if (items.length === 0 && total > 0 && map.has(key)) continue;
+    map.set(key, ticket);
   }
   return Array.from(map.values()).sort((a, b) => number((b as JsonMap).createdAtMs) - number((a as JsonMap).createdAtMs));
 }
@@ -135,7 +139,22 @@ function appTicketFromOfficial(ticket: JsonMap, items: JsonMap[]): JsonMap {
       lotteryName: clean(item.lottery_name ?? ticket.lottery_name),
       secondaryLotteryId: clean(item.secondary_lottery_legacy_id),
       secondaryLotteryName: clean(item.secondary_lottery_name),
+      isWinner: Boolean(item.is_winner),
+      payoutAmount: number(item.payout_amount),
+      hitPosition: clean(item.hit_position),
+      resultNumber: clean(item.result_number),
     })),
+    winningDetails: items
+      .filter((item) => Boolean(item.is_winner) || number(item.payout_amount) > 0)
+      .map((item) => ({
+        lotteryName: clean(item.lottery_name ?? ticket.lottery_name),
+        playType: clean(item.play_type),
+        playedNumber: clean(item.play_numbers),
+        resultNumber: clean(item.result_number),
+        hitPosition: clean(item.hit_position),
+        amount: number(item.amount),
+        payoutAmount: number(item.payout_amount),
+      })),
     subtotal: number(ticket.total_amount ?? ticket.monto),
     discount: 0,
     tot: number(ticket.total_amount ?? ticket.monto),
@@ -161,54 +180,125 @@ function appTicketFromOfficial(ticket: JsonMap, items: JsonMap[]): JsonMap {
   };
 }
 
-async function latestUpdatedAtForOwner(admin: ReturnType<typeof createClient>, ownerKey: string): Promise<string | null> {
-  const { data: latest, error } = await admin
-    .from("tickets")
-    .select("server_created_at,updated_at")
-    .or(`admin_key.eq.${ownerKey},cashier_key.eq.${ownerKey}`)
-    .order("server_created_at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
-  if (error) throw new Error(error.message);
-  const latestStamp = clean((latest as JsonMap | null)?.updated_at ?? (latest as JsonMap | null)?.server_created_at);
-  if (latestStamp) return latestStamp;
+async function ownerLookupKeys(admin: ReturnType<typeof createClient>, ownerKey: string): Promise<string[]> {
+  const keys = new Set([ownerKey].map(clean).filter(Boolean));
+  const { data, error } = await admin
+    .from("profiles")
+    .select("username,legacy_key,legacy_admin_id,legacy_admin_user")
+    .or(`username.eq.${ownerKey},legacy_key.eq.${ownerKey},legacy_admin_id.eq.${ownerKey},legacy_admin_user.eq.${ownerKey}`);
+  if (error) return Array.from(keys);
+  if (Array.isArray(data)) {
+    for (const profile of data as JsonMap[]) {
+      [profile.username, profile.legacy_key, profile.legacy_admin_id, profile.legacy_admin_user]
+        .map(clean)
+        .filter(Boolean)
+        .forEach((key) => keys.add(key));
+    }
+  }
+  return Array.from(keys);
+}
+
+async function latestUpdatedAtForOwner(admin: ReturnType<typeof createClient>, ownerKey: string, ownerKeys: string[]): Promise<string | null> {
+  const stamps: string[] = [];
+  const latestByColumn = async (column: "admin_key" | "cashier_key", orderColumn: "server_created_at" | "updated_at"): Promise<JsonMap | null> => {
+    const { data, error } = await admin
+      .from("tickets")
+      .select("server_created_at,updated_at")
+      .in(column, ownerKeys)
+      .order(orderColumn, { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (error) throw new Error(error.message);
+    return data as JsonMap | null;
+  };
+
+  for (const latestServerCreated of [
+    await latestByColumn("admin_key", "server_created_at"),
+    await latestByColumn("cashier_key", "server_created_at"),
+  ]) {
+    const createdStamp = clean(latestServerCreated?.server_created_at);
+    const createdRowUpdatedStamp = clean(latestServerCreated?.updated_at);
+    if (createdStamp) stamps.push(createdStamp);
+    if (createdRowUpdatedStamp) stamps.push(createdRowUpdatedStamp);
+  }
+
+  for (const latestUpdated of [
+    await latestByColumn("admin_key", "updated_at"),
+    await latestByColumn("cashier_key", "updated_at"),
+  ]) {
+    const updatedStamp = clean(latestUpdated?.updated_at);
+    const updatedRowCreatedStamp = clean(latestUpdated?.server_created_at);
+    if (updatedStamp) stamps.push(updatedStamp);
+    if (updatedRowCreatedStamp) stamps.push(updatedRowCreatedStamp);
+  }
+
   const { data: snapshot, error: snapshotError } = await admin
     .from("lotterynet_tickets_by_owner")
     .select("updated_at")
     .eq("owner_key", ownerKey)
     .maybeSingle();
   if (snapshotError) throw new Error(snapshotError.message);
-  return clean((snapshot as JsonMap | null)?.updated_at) || null;
+  const snapshotStamp = clean((snapshot as JsonMap | null)?.updated_at);
+  if (snapshotStamp) stamps.push(snapshotStamp);
+
+  return stamps.sort().at(-1) ?? null;
 }
 
-async function officialTicketsForOwner(admin: ReturnType<typeof createClient>, ownerKey: string): Promise<JsonMap[]> {
-  const since = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString();
-  const { data: tickets, error } = await admin
-    .from("tickets")
-    .select("id,client_request_id,ticket_code,total_amount,monto,status,estado,payout_amount,admin_key,cashier_key,lottery_name,lottery_endpoint,server_created_at,created_at")
-    .or(`admin_key.eq.${ownerKey},cashier_key.eq.${ownerKey}`)
-    .is("deleted_at", null)
-    .gte("server_created_at", since)
-    .order("server_created_at", { ascending: false })
-    .limit(300);
-  if (error || !Array.isArray(tickets) || tickets.length === 0) return [];
+function chunk<T>(values: T[], size: number): T[][] {
+  const chunks: T[][] = [];
+  for (let index = 0; index < values.length; index += size) {
+    chunks.push(values.slice(index, index + size));
+  }
+  return chunks;
+}
 
-  const ids = tickets.map((ticket: JsonMap) => clean(ticket.id)).filter(Boolean);
-  const itemResult = ids.length
-    ? await admin
-      .from("ticket_items")
-      .select("ticket_id,play_type,play_numbers,amount,lottery_legacy_id,lottery_name,secondary_lottery_legacy_id,secondary_lottery_name,sorteo_id")
-      .in("ticket_id", ids)
-    : { data: [] };
+async function officialItemsByTicket(admin: ReturnType<typeof createClient>, ids: string[]): Promise<Map<string, JsonMap[]>> {
   const itemsByTicket = new Map<string, JsonMap[]>();
-  if (Array.isArray(itemResult.data)) {
-    for (const item of itemResult.data as JsonMap[]) {
+  for (const idChunk of chunk(ids, 35)) {
+    const { data, error } = await admin
+      .from("ticket_items")
+      .select("ticket_id,play_type,play_numbers,amount,lottery_legacy_id,lottery_name,secondary_lottery_legacy_id,secondary_lottery_name,sorteo_id,is_winner,payout_amount,hit_position")
+      .in("ticket_id", idChunk)
+      .range(0, 4999);
+    if (error) throw new Error(error.message);
+    if (!Array.isArray(data)) continue;
+    for (const item of data as JsonMap[]) {
       const key = clean(item.ticket_id);
       if (!itemsByTicket.has(key)) itemsByTicket.set(key, []);
       itemsByTicket.get(key)!.push(item);
     }
   }
-  return (tickets as JsonMap[]).map((ticket) => appTicketFromOfficial(ticket, itemsByTicket.get(clean(ticket.id)) ?? []));
+  return itemsByTicket;
+}
+
+async function officialTicketsForOwner(admin: ReturnType<typeof createClient>, ownerKeys: string[]): Promise<JsonMap[]> {
+  const since = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString();
+  const selectColumns = "id,client_request_id,ticket_code,total_amount,monto,status,estado,payout_amount,admin_key,cashier_key,lottery_name,lottery_endpoint,server_created_at,created_at,updated_at";
+  const fetchByColumn = async (column: "admin_key" | "cashier_key"): Promise<JsonMap[]> => {
+    const { data, error } = await admin
+      .from("tickets")
+      .select(selectColumns)
+      .in(column, ownerKeys)
+      .is("deleted_at", null)
+      .gte("server_created_at", since)
+      .order("server_created_at", { ascending: false })
+      .limit(300);
+    if (error) throw new Error(error.message);
+    return Array.isArray(data) ? data as JsonMap[] : [];
+  };
+  const byId = new Map<string, JsonMap>();
+  for (const ticket of [...await fetchByColumn("admin_key"), ...await fetchByColumn("cashier_key")]) {
+    const key = clean(ticket.id);
+    if (key) byId.set(key, ticket);
+  }
+  const tickets = Array.from(byId.values())
+    .sort((a, b) => clean(b.server_created_at ?? b.created_at).localeCompare(clean(a.server_created_at ?? a.created_at)))
+    .slice(0, 300);
+  if (tickets.length === 0) return [];
+
+  const ids = tickets.map((ticket: JsonMap) => clean(ticket.id)).filter(Boolean);
+  const itemsByTicket = await officialItemsByTicket(admin, ids);
+  return tickets.map((ticket) => appTicketFromOfficial(ticket, itemsByTicket.get(clean(ticket.id)) ?? []));
 }
 
 Deno.serve(async (req: Request) => {
@@ -225,9 +315,10 @@ Deno.serve(async (req: Request) => {
     const action = clean(body.action || "fetch").toLowerCase();
     const ownerKey = clean(body.ownerKey ?? body.owner_key);
     if (!ownerKey) return json(400, { ok: false, message: "Owner requerido" });
+    const ownerKeys = await ownerLookupKeys(admin, ownerKey);
 
     if (action === "updated-at") {
-      return json(200, { ok: true, ownerKey, updatedAt: await latestUpdatedAtForOwner(admin, ownerKey) });
+      return json(200, { ok: true, ownerKey, updatedAt: await latestUpdatedAtForOwner(admin, ownerKey, ownerKeys) });
     }
 
     const { data, error } = await admin
@@ -256,7 +347,7 @@ Deno.serve(async (req: Request) => {
     }
 
     const deletedIds = new Set(payloadDeletedIds(basePayload));
-    const officialTickets = await officialTicketsForOwner(admin, ownerKey);
+    const officialTickets = await officialTicketsForOwner(admin, ownerKeys);
     const payload = {
       ...basePayload,
       schemaVersion: Number(basePayload.schemaVersion ?? 2),

@@ -180,7 +180,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setLoading(true);
     try {
       const usersList = await fetchUsers();
-      const found = usersList.find((u: any) => u.role === targetRole);
+      let found;
+      if (targetRole === 'ADMIN') {
+        found = usersList.find((u: any) => u.role === 'ADMIN' && u.user === 'podero02');
+      } else if (targetRole === 'SUPERVISOR') {
+        found = usersList.find((u: any) => u.role === 'SUPERVISOR' && u.user === 'sup720869');
+      }
+      
+      if (!found) {
+        found = usersList.find((u: any) => u.role === targetRole);
+      }
+
       if (found) {
         setUser(found);
         localStorage.setItem('lotterynet_session_user', JSON.stringify(found));

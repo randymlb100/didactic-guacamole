@@ -2,8 +2,7 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { clean, corsHeaders, fetchKvValue, json, supabaseAdmin } from "../_shared/lotterynet-admin.ts";
 
 function isAllowedKey(key: string): boolean {
-  return /^(cashier_limits|cashier_prize_payouts|recharge_limits|admin_operational_limits):[A-Za-z0-9_.:-]+$/.test(key) ||
-    /^system_modes:[A-Za-z0-9_.:-]+$/.test(key) ||
+  return /^(cashier_limits|cashier_prize_payouts|recharge_limits|admin_operational_limits|system_modes|manual_disabled_lotteries):[A-Za-z0-9_.:-]+$/.test(key) ||
     /^sys_[A-Za-z0-9_.:-]+$/.test(key);
 }
 

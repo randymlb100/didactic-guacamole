@@ -1,10 +1,11 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { clean, corsHeaders, json, supabaseAdmin } from "../_shared/lotterynet-admin.ts";
 
-type KvRow = {
-  key: string;
-  value: unknown;
-  upd?: string | null;
+type ResultDrawRow = {
+  game?: string | null;
+  status?: string | null;
+  updated_at?: string | null;
+  source_payload?: Record<string, unknown> | null;
 };
 
 function normalizeDayKey(value: unknown): string {
@@ -22,26 +23,18 @@ function normalizeDayKey(value: unknown): string {
   }).format(new Date()).replaceAll("/", "-");
 }
 
-function rowsFrom(value: unknown): unknown[] {
-  if (!value) return [];
-  if (typeof value === "string") {
-    try {
-      return rowsFrom(JSON.parse(value));
-    } catch {
-      return [];
-    }
-  }
-  if (Array.isArray(value)) return value;
-  if (typeof value !== "object") return [];
-  const objectValue = value as Record<string, unknown>;
-  if (Array.isArray(objectValue.results)) return objectValue.results;
-  if (Array.isArray(objectValue.rows)) return objectValue.rows;
-  return [];
+function latestVersion(rows: ResultDrawRow[]): string | null {
+  return rows.map((row) => clean(row.updated_at)).filter(Boolean).sort().at(-1) ?? null;
 }
 
-function versionFrom(row: KvRow | undefined): string | null {
-  if (!row) return null;
-  return clean(row.upd) || null;
+function isPick(row: ResultDrawRow): boolean {
+  const game = clean(row.game).toLowerCase();
+  return game === "pick3" || game === "pick4";
+}
+
+function isManualOverride(row: ResultDrawRow): boolean {
+  const payload = row.source_payload ?? {};
+  return payload.isManualOverride === true || clean(payload.source).toLowerCase() === "manual-override";
 }
 
 Deno.serve(async (req) => {
@@ -50,36 +43,29 @@ Deno.serve(async (req) => {
 
   try {
     const body = await req.json().catch(() => ({}));
-    const dayKey = normalizeDayKey(body.dayKey);
-    const keys = [
-      `lot_results_cache_by_day:${dayKey}`,
-      `pick_results_cache_by_day:${dayKey}`,
-      `manual_results_overrides_by_day:${dayKey}`,
-    ];
+    const dayKey = normalizeDayKey(body.dayKey ?? body.date);
     const { data, error } = await supabaseAdmin()
-      .from("lotterynet_kv")
-      .select("key,value,upd")
-      .in("key", keys);
+      .from("result_draws")
+      .select("game,status,updated_at,source_payload")
+      .eq("result_day_key", dayKey);
     if (error) throw error;
 
-    const byKey = new Map((data ?? []).map((row) => [row.key, row as KvRow]));
-    const lotteries = byKey.get(keys[0]);
-    const picks = byKey.get(keys[1]);
-    const overrides = byKey.get(keys[2]);
+    const rows = (data ?? []) as ResultDrawRow[];
 
     return json({
       ok: true,
       dayKey,
-      version: [versionFrom(lotteries), versionFrom(picks), versionFrom(overrides)].filter(Boolean).sort().at(-1) ?? null,
+      source: "result_draws",
+      version: latestVersion(rows),
       counts: {
-        lotteries: rowsFrom(lotteries?.value).length,
-        picks: rowsFrom(picks?.value).length,
-        overrides: rowsFrom(overrides?.value).length,
+        lotteries: rows.filter((row) => !isPick(row)).length,
+        picks: rows.filter(isPick).length,
+        overrides: rows.filter(isManualOverride).length,
       },
       updatedAt: {
-        lotteries: versionFrom(lotteries),
-        picks: versionFrom(picks),
-        overrides: versionFrom(overrides),
+        lotteries: latestVersion(rows.filter((row) => !isPick(row))),
+        picks: latestVersion(rows.filter(isPick)),
+        overrides: latestVersion(rows.filter(isManualOverride)),
       },
     });
   } catch (error) {

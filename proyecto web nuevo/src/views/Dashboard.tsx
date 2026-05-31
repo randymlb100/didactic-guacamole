@@ -14,6 +14,8 @@ import {
   saveAllUsers,
   getAdminLimitsPayload,
   saveAdminLimitsPayload,
+  getAdminPayoutsPayload,
+  saveAdminPayoutsPayload,
   fetchDrawResults,
   createDrawResult,
   STATIC_LOTTERIES,
@@ -21,13 +23,18 @@ import {
   getAdminSystemModeConfig,
   saveAdminSystemModeConfig,
   getManualDisabledLotteries,
-  saveManualDisabledLotteries
+  saveManualDisabledLotteries,
+  isSupabaseConfigured,
+  fetchSportsTickets,
+  getSportsLimits,
+  saveSportsLimits
 } from '../utils/supabase';
-import type { UserAccount, TicketRecord, LotteryCatalogItem, AuditLog, DrawResult, BlockedSalePlay } from '../types';
+import type { UserAccount, TicketRecord, LotteryCatalogItem, AuditLog, DrawResult, BlockedSalePlay, SportsTicketRecord } from '../types';
+
 import { 
   Users, Layers, TrendingUp, DollarSign, Activity, 
   Plus, Search, RefreshCw, CheckCircle, AlertTriangle, 
-  ArrowRightLeft, FileSpreadsheet, Lock, Trash2, Key, Info, Settings, Edit2
+  ArrowRightLeft, FileSpreadsheet, Lock, Trash2, Key, Info, Settings, Edit2, Trophy
 } from 'lucide-react';
 
 interface DashboardProps {
@@ -101,6 +108,17 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeTab }) => {
   const [audits, setAudits] = useState<AuditLog[]>([]);
   const [loading, setLoading] = useState(true);
 
+  // Sportsbook states
+  const [sportsTickets, setSportsTickets] = useState<SportsTicketRecord[]>([]);
+  const [selectedSportsTicketForDetail, setSelectedSportsTicketForDetail] = useState<SportsTicketRecord | null>(null);
+  const [dashboardViewContext, setDashboardViewContext] = useState<'lottery' | 'sports' | 'combined'>('combined');
+  const [sportsLimitsForm, setSportsLimitsForm] = useState({
+    max_ticket_stake: 10000,
+    max_potential_payout: 100000,
+    enabled_markets: ['moneyline', 'runline', 'spread', 'total', 'first_half', 'first_five'] as string[]
+  });
+
+
   // Search & Filter states
   const [searchQuery, setSearchQuery] = useState('');
   const [filterStatus, setFilterStatus] = useState<'all' | 'active' | 'blocked'>('all');
@@ -171,7 +189,43 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeTab }) => {
     p4box: 500,
     systemModeOverride: ''
   });
+
+  // Game Modes (Traditional vs US Pick) & Payout states
+  const [systemModeConfig, setSystemModeConfig] = useState<any>({
+    posLiteEnabled: false,
+    lotteryModeEnabled: true,
+    pickModeEnabled: true,
+    cashierPickEnabled: true,
+    cashierModeEnabled: true,
+    cashierLotteryModeEnabled: true,
+    cashierPickModeEnabled: true,
+    blockedSalePlays: [],
+    updatedAt: Date.now()
+  });
+
+  const [payoutsPayload, setPayoutsPayload] = useState<any>({
+    defaults: {
+      q1: 60, q2: 12, q3: 4,
+      pale: 1000, pale12: 1000, pale13: 1000, pale23: 1000,
+      tripleta: 20000, tripleta3: 20000, tripleta2: 1000,
+      superPale: 3000,
+      pick3Straight: 500, pick3Box3: 160, pick3Box6: 80, pick3BackPair: 50,
+      pick4Straight: 5000, pick4Box4: 1200, pick4Box6: 800, pick4Box12: 400, pick4Box24: 200, pick4BackPair: 50
+    },
+    byUser: {}
+  });
+
+  const [currentPayoutsForm, setCurrentPayoutsForm] = useState<any>({
+    q1: 60, q2: 12, q3: 4,
+    pale: 1000, pale12: 1000, pale13: 1000, pale23: 1000,
+    tripleta: 20000, tripleta3: 20000, tripleta2: 1000,
+    superPale: 3000,
+    pick3Straight: 500, pick3Box3: 160, pick3Box6: 80, pick3BackPair: 50,
+    pick4Straight: 5000, pick4Box4: 1200, pick4Box6: 800, pick4Box12: 400, pick4Box24: 200, pick4BackPair: 50
+  });
   const [saveSuccessNotification, setSaveSuccessNotification] = useState(false);
+  const [limitsConfirmOpen, setLimitsConfirmOpen] = useState(false);
+  const [limitsSaving, setLimitsSaving] = useState(false);
 
   // Monitoreo states
   const [monitoreoSubTab, setMonitoreoSubTab] = useState<'lotteries' | 'plays' | 'cajeros'>('lotteries');
@@ -186,6 +240,10 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeTab }) => {
   const [ticketFilterCashier, setTicketFilterCashier] = useState('all');
   const [annulModalOpen, setAnnulModalOpen] = useState(false);
   const [selectedTicketForAnnul, setSelectedTicketForAnnul] = useState<TicketRecord | null>(null);
+  const [selectedTicketForDetail, setSelectedTicketForDetail] = useState<TicketRecord | null>(null);
+  const [selectedTicketForDelete, setSelectedTicketForDelete] = useState<TicketRecord | null>(null);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [isDeletingTicket, setIsDeletingTicket] = useState(false);
 
   // Ganadores states
   const [ganadoresFilter, setGanadoresFilter] = useState<'pending' | 'paid' | 'all'>('pending');
@@ -503,6 +561,50 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeTab }) => {
     }
   };
 
+  const handleDeleteTicket = async (ticket: TicketRecord) => {
+    if (!user) return;
+    setIsDeletingTicket(true);
+    try {
+      if (isSupabaseConfigured && supabase) {
+        const { error: ticketErr } = await supabase.from('tickets').delete().eq('id', ticket.id);
+        if (ticketErr) throw ticketErr;
+        await supabase.from('lotterynet_kv').delete().eq('key', `ticket:${ticket.id}`);
+      }
+
+      if (localStorage.getItem('lotterynet_tickets')) {
+        const localTk = JSON.parse(localStorage.getItem('lotterynet_tickets') || '[]');
+        const filtered = localTk.filter((t: any) => t.id !== ticket.id);
+        localStorage.setItem('lotterynet_tickets', JSON.stringify(filtered));
+      }
+
+      if (ticket.status !== 'cancelled' && ticket.status !== 'voided') {
+        const updatedUsers = [...users];
+        const cashierIdx = updatedUsers.findIndex(u => u.user === ticket.sellerUser && u.role === 'CASHIER');
+        if (cashierIdx !== -1) {
+          updatedUsers[cashierIdx].balance = Math.max(0, updatedUsers[cashierIdx].balance - ticket.total);
+          await saveAllUsers(updatedUsers);
+        }
+      }
+
+      await addAuditLog(
+        { id: user.id, user: user.user, role: user.role },
+        'DELETE_TICKET',
+        `Ticket eliminado físicamente: ${ticket.serial || ticket.id}. Monto: $${ticket.total}. Balances recalculados.`,
+        'failed'
+      );
+
+      await loadData();
+      setDeleteModalOpen(false);
+      setSelectedTicketForDelete(null);
+      alert('Ticket eliminado físicamente con éxito. Los balances se han recalculado.');
+    } catch (e) {
+      console.error(e);
+      alert('Error al eliminar físicamente el ticket.');
+    } finally {
+      setIsDeletingTicket(false);
+    }
+  };
+
   const handlePayWinner = async (ticket: TicketRecord) => {
     if (!user) return;
     try {
@@ -575,14 +677,19 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeTab }) => {
   // Load limits when tab is active
   useEffect(() => {
     if (!user) return;
-    if (activeTab === 'limites' && user.role === 'ADMIN') {
+    if (activeTab === 'limites' && (user.role === 'ADMIN' || user.role === 'MASTER')) {
       const loadLimits = async () => {
-        const raw = await getAdminLimitsPayload(user.id);
         try {
+          const raw = await getAdminLimitsPayload(user.id);
+          const sysCfg = await getAdminSystemModeConfig(user.id);
+          const rawPayouts = await getAdminPayoutsPayload(user.id);
+
           const parsed = JSON.parse(raw);
           setLimitsPayload(parsed);
+          setSystemModeConfig(sysCfg);
+          setPayoutsPayload(JSON.parse(rawPayouts));
           
-          const defaultCashiers = users.filter(u => u.role === 'CASHIER' && u.adminId === user.id);
+          const defaultCashiers = users.filter(u => u.role === 'CASHIER' && (user.role === 'MASTER' ? true : u.adminId === user.id));
           if (defaultCashiers.length > 0 && !selectedCashierUsername) {
             setSelectedCashierUsername(defaultCashiers[0].user);
           }
@@ -626,10 +733,50 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeTab }) => {
       p4box: targetLimits.p4box ?? 0,
       systemModeOverride: sysMode
     });
-  }, [selectedScope, selectedCashierUsername, limitsPayload, users, user]);
+
+    let targetPayouts = payoutsPayload?.defaults || {
+      q1: 60, q2: 12, q3: 4,
+      pale: 1000, pale12: 1000, pale13: 1000, pale23: 1000,
+      tripleta: 20000, tripleta3: 20000, tripleta2: 1000,
+      superPale: 3000,
+      pick3Straight: 500, pick3Box3: 160, pick3Box6: 80, pick3BackPair: 50,
+      pick4Straight: 5000, pick4Box4: 1200, pick4Box6: 800, pick4Box12: 400, pick4Box24: 200, pick4BackPair: 50
+    };
+
+    if (selectedScope === 'CASHIER_SPECIFIC' && selectedCashierUsername) {
+      if (payoutsPayload?.byUser && payoutsPayload.byUser[selectedCashierUsername]) {
+        targetPayouts = payoutsPayload.byUser[selectedCashierUsername];
+      }
+    }
+
+    setCurrentPayoutsForm({
+      q1: targetPayouts.q1 ?? 60,
+      q2: targetPayouts.q2 ?? 12,
+      q3: targetPayouts.q3 ?? 4,
+      pale: targetPayouts.pale ?? 1000,
+      pale12: targetPayouts.pale12 ?? 1000,
+      pale13: targetPayouts.pale13 ?? 1000,
+      pale23: targetPayouts.pale23 ?? 1000,
+      tripleta: targetPayouts.tripleta ?? 20000,
+      tripleta3: targetPayouts.tripleta3 ?? 20000,
+      tripleta2: targetPayouts.tripleta2 ?? 1000,
+      superPale: targetPayouts.superPale ?? 3000,
+      pick3Straight: targetPayouts.pick3Straight ?? 500,
+      pick3Box3: targetPayouts.pick3Box3 ?? 160,
+      pick3Box6: targetPayouts.pick3Box6 ?? 80,
+      pick3BackPair: targetPayouts.pick3BackPair ?? 50,
+      pick4Straight: targetPayouts.pick4Straight ?? 5000,
+      pick4Box4: targetPayouts.pick4Box4 ?? 1200,
+      pick4Box6: targetPayouts.pick4Box6 ?? 800,
+      pick4Box12: targetPayouts.pick4Box12 ?? 400,
+      pick4Box24: targetPayouts.pick4Box24 ?? 200,
+      pick4BackPair: targetPayouts.pick4BackPair ?? 50
+    });
+  }, [selectedScope, selectedCashierUsername, limitsPayload, payoutsPayload, users, user]);
 
   const handleSaveLimits = async () => {
     if (!user) return;
+    setLimitsSaving(true);
     try {
       const updatedPayload = { ...limitsPayload };
       
@@ -658,6 +805,45 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeTab }) => {
       await saveAdminLimitsPayload(user.id, JSON.stringify(updatedPayload));
       setLimitsPayload(updatedPayload);
 
+      // Save payouts payload
+      const updatedPayouts = { ...payoutsPayload };
+      const newPayoutsObj = {
+        q1: Number(currentPayoutsForm.q1),
+        q2: Number(currentPayoutsForm.q2),
+        q3: Number(currentPayoutsForm.q3),
+        pale: Number(currentPayoutsForm.pale),
+        pale12: Number(currentPayoutsForm.pale12),
+        pale13: Number(currentPayoutsForm.pale13),
+        pale23: Number(currentPayoutsForm.pale23),
+        tripleta: Number(currentPayoutsForm.tripleta),
+        tripleta3: Number(currentPayoutsForm.tripleta3),
+        tripleta2: Number(currentPayoutsForm.tripleta2),
+        superPale: Number(currentPayoutsForm.superPale),
+        pick3Straight: Number(currentPayoutsForm.pick3Straight),
+        pick3Box3: Number(currentPayoutsForm.pick3Box3),
+        pick3Box6: Number(currentPayoutsForm.pick3Box6),
+        pick3BackPair: Number(currentPayoutsForm.pick3BackPair),
+        pick4Straight: Number(currentPayoutsForm.pick4Straight),
+        pick4Box4: Number(currentPayoutsForm.pick4Box4),
+        pick4Box6: Number(currentPayoutsForm.pick4Box6),
+        pick4Box12: Number(currentPayoutsForm.pick4Box12),
+        pick4Box24: Number(currentPayoutsForm.pick4Box24),
+        pick4BackPair: Number(currentPayoutsForm.pick4BackPair),
+      };
+
+      if (selectedScope === 'CASHIER_SPECIFIC' && selectedCashierUsername) {
+        if (!updatedPayouts.byUser) updatedPayouts.byUser = {};
+        updatedPayouts.byUser[selectedCashierUsername] = newPayoutsObj;
+      } else {
+        updatedPayouts.defaults = newPayoutsObj;
+      }
+
+      await saveAdminPayoutsPayload(user.id, JSON.stringify(updatedPayouts));
+      setPayoutsPayload(updatedPayouts);
+
+      // Save system config mode (traditional vs pick)
+      await saveAdminSystemModeConfig(user.id, systemModeConfig);
+
       if (selectedScope === 'ADMIN_SELF') {
         const adminAcc = users.find(u => u.id === user.id);
         if (adminAcc && adminAcc.systemModeOverride !== currentLimitsForm.systemModeOverride) {
@@ -683,11 +869,35 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeTab }) => {
         'success'
       );
 
+      // Add a simulated server latency to show premium sync indicator
+      await new Promise(resolve => setTimeout(resolve, 800));
+
+      // Save sports limits
+      const sportsScopeKey = selectedScope === 'ADMIN_SELF' 
+        ? user.id 
+        : selectedScope === 'CASHIER_DEFAULTS' 
+        ? 'global' 
+        : selectedCashierUsername || 'global';
+
+      await saveSportsLimits({
+        scope_key: sportsScopeKey,
+        max_ticket_stake: sportsLimitsForm.max_ticket_stake,
+        max_selection_stake: Math.floor(sportsLimitsForm.max_ticket_stake / 2),
+        max_event_exposure: sportsLimitsForm.max_ticket_stake * 5,
+        max_potential_payout: sportsLimitsForm.max_potential_payout,
+        enabled_markets: sportsLimitsForm.enabled_markets,
+        updated_by: user.user
+      });
+
       await loadData();
+      setLimitsSaving(false);
+      setLimitsConfirmOpen(false);
+
       setSaveSuccessNotification(true);
       setTimeout(() => setSaveSuccessNotification(false), 3000);
     } catch (e) {
       console.error(e);
+      setLimitsSaving(false);
       alert('Error guardando los límites.');
     }
   };
@@ -849,6 +1059,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeTab }) => {
         : (allowedRole === 'SUPERVISOR' ? allowedAdminId : undefined);
 
       const t = await fetchTickets(adminScopeId);
+      const st = await fetchSportsTickets(adminScopeId);
       const l = await fetchLotteries();
       const a = await fetchAuditLogs();
       const r = await fetchDrawResults();
@@ -881,9 +1092,11 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeTab }) => {
 
       setUsers(u);
       setTickets(t);
+      setSportsTickets(st);
       setLotteries(sortedL);
       setAudits(a);
       setResultsList(sortedR);
+
     } catch (e) {
       console.error(e);
     } finally {
@@ -894,6 +1107,33 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeTab }) => {
   useEffect(() => {
     loadData();
   }, [activeTab]);
+
+  // Load Sports limits when scope or selected cashier changes
+  useEffect(() => {
+    if (!user) return;
+    if (activeTab === 'limites') {
+      const loadSportsLimits = async () => {
+        try {
+          const scopeKey = selectedScope === 'ADMIN_SELF' 
+            ? user.id 
+            : selectedScope === 'CASHIER_DEFAULTS' 
+            ? 'global' 
+            : selectedCashierUsername || 'global';
+            
+          const cfg = await getSportsLimits(scopeKey);
+          setSportsLimitsForm({
+            max_ticket_stake: cfg.max_ticket_stake,
+            max_potential_payout: cfg.max_potential_payout,
+            enabled_markets: cfg.enabled_markets
+          });
+        } catch (e) {
+          console.warn("Failed to load sports limits", e);
+        }
+      };
+      loadSportsLimits();
+    }
+  }, [activeTab, selectedScope, selectedCashierUsername, user]);
+
 
   useEffect(() => {
     if (!supabase) return;
@@ -1264,8 +1504,18 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeTab }) => {
       const totalAdmins = users.filter(u => u.role === 'ADMIN').length;
       const activeCashiers = users.filter(u => u.role === 'CASHIER' && u.active).length;
       
-      const salesTotal = tickets.filter(t => t.status !== 'cancelled').reduce((acc, t) => acc + t.total, 0);
-      const prizesTotal = tickets.filter(t => t.status === 'paid' || t.status === 'winner').reduce((acc, t) => acc + t.totalPrize, 0);
+      let salesTotal = 0;
+      let prizesTotal = 0;
+
+      if (dashboardViewContext === 'lottery' || dashboardViewContext === 'combined') {
+        salesTotal += tickets.filter(t => t.status !== 'cancelled' && t.status !== 'voided').reduce((acc, t) => acc + t.total, 0);
+        prizesTotal += tickets.filter(t => t.status === 'paid' || t.status === 'winner').reduce((acc, t) => acc + t.totalPrize, 0);
+      }
+      
+      if (dashboardViewContext === 'sports' || dashboardViewContext === 'combined') {
+        salesTotal += sportsTickets.filter(t => t.status !== 'void').reduce((acc, t) => acc + t.stake, 0);
+        prizesTotal += sportsTickets.filter(t => t.status === 'paid' || t.status === 'won').reduce((acc, t) => acc + t.potentialPayout, 0);
+      }
       
       return {
         card1: { title: 'Bancas Activas', value: `${activeAdmins}/${totalAdmins}`, icon: Layers, color: 'var(--primary)' },
@@ -1282,11 +1532,63 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeTab }) => {
       const activeMyCashiers = myCashiers.filter(c => c.active).length;
       
       const cashierUsernames = myCashiers.map(c => c.user);
-      const myTickets = tickets.filter(t => cashierUsernames.includes(t.sellerUser || ''));
-      const salesTotal = myTickets.filter(t => t.status !== 'cancelled').reduce((acc, t) => acc + t.total, 0);
       
-      const balance = user?.balance ?? 0;
-      const rechargesBalance = user?.rechargesBalance ?? 0;
+      let salesTotal = 0;
+      if (dashboardViewContext === 'lottery' || dashboardViewContext === 'combined') {
+        const myTickets = tickets.filter(t => cashierUsernames.includes(t.sellerUser || ''));
+        salesTotal += myTickets.filter(t => t.status !== 'cancelled' && t.status !== 'voided').reduce((acc, t) => acc + t.total, 0);
+      }
+      if (dashboardViewContext === 'sports' || dashboardViewContext === 'combined') {
+        const mySportsTickets = sportsTickets.filter(t => cashierUsernames.includes(t.sellerUsername || ''));
+        salesTotal += mySportsTickets.filter(t => t.status !== 'void').reduce((acc, t) => acc + t.stake, 0);
+      }
+      
+      let balance = user?.balance ?? 0;
+      let rechargesBalance = user?.rechargesBalance ?? 0;
+
+      // Dynamic fallbacks when static value is 0 or empty for ADMIN / SUPERVISOR
+      if (balance === 0 || user.role === 'SUPERVISOR') {
+        const calculatedBalance = myCashiers.reduce((sum, cashier) => {
+          let tkSales = 0;
+          let tkPremiosPagados = 0;
+          let tkPremiosPendientes = 0;
+          let tkComisiones = 0;
+
+          if (dashboardViewContext === 'lottery' || dashboardViewContext === 'combined') {
+            const cashierTks = tickets.filter(t => t.sellerUser === cashier.user && t.status !== 'cancelled' && t.status !== 'voided');
+            tkSales = cashierTks.reduce((acc, t) => acc + t.total, 0);
+            tkPremiosPagados = cashierTks.filter(t => t.status === 'paid').reduce((acc, t) => acc + t.totalPrize, 0);
+            tkPremiosPendientes = cashierTks.filter(t => t.status === 'winner').reduce((acc, t) => acc + t.totalPrize, 0);
+            tkComisiones = tkSales * normalizeRate(cashier.commissionRate);
+          }
+
+          let sportsSalesAmt = 0;
+          let sportsPaidAmt = 0;
+          let sportsWonAmt = 0;
+          let sportsComisiones = 0;
+
+          if (dashboardViewContext === 'sports' || dashboardViewContext === 'combined') {
+            const cashierSports = sportsTickets.filter(t => t.sellerUsername === cashier.user && t.status !== 'void');
+            sportsSalesAmt = cashierSports.reduce((acc, t) => acc + t.stake, 0);
+            sportsPaidAmt = cashierSports.filter(t => t.status === 'paid').reduce((acc, t) => acc + t.potentialPayout, 0);
+            sportsWonAmt = cashierSports.filter(t => t.status === 'won').reduce((acc, t) => acc + t.potentialPayout, 0);
+            sportsComisiones = sportsSalesAmt * normalizeRate(cashier.commissionRate);
+          }
+
+          const tkRecargas = cashier.rechargesAssignedBalance || 0;
+          const tkCaja = (tkSales + sportsSalesAmt) + tkRecargas - (tkComisiones + sportsComisiones) - (tkPremiosPagados + sportsPaidAmt) - (tkPremiosPendientes + sportsWonAmt);
+          return sum + tkCaja;
+        }, 0);
+        
+        balance = calculatedBalance;
+      }
+
+      if (rechargesBalance === 0) {
+        const calculatedRecharges = myCashiers.reduce((sum, cashier) => {
+          return sum + (cashier.rechargesBalance || 0);
+        }, 0);
+        rechargesBalance = calculatedRecharges;
+      }
 
       return {
         card1: { title: user.role === 'SUPERVISOR' ? 'Mis Cajeros Activos' : 'Cajeros Activos', value: `${activeMyCashiers}/${myCashiers.length}`, icon: Users, color: 'var(--primary)' },
@@ -1297,11 +1599,12 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeTab }) => {
     }
   };
 
+
   const stats = getDashboardStats();
 
   const myCashiersForDashboard = user.role === 'SUPERVISOR' 
     ? users.filter(u => u.role === 'CASHIER' && u.supervisorIds.includes(user.id))
-    : (user.role === 'ADMIN' ? users.filter(u => u.role === 'CASHIER' && u.adminId === user.id) : []);
+    : (user.role === 'ADMIN' ? users.filter(u => (u.role === 'CASHIER' || u.role === 'ADMIN') && (u.adminId === user.id || u.id === user.id)) : []);
 
   const cashierUsernamesForDashboard = myCashiersForDashboard.map(c => c.user);
   const dashboardTicketsToShow = user.role === 'MASTER'
@@ -1342,13 +1645,57 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeTab }) => {
           {activeTab === 'dashboard' && (
             <div className="fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
               
+              {/* Context Selector (Lotería / Deportes / Combinado) */}
+              {user.role !== 'MASTER' && (
+                <div className="glass-panel" style={{
+                  padding: '12px 20px',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  backgroundColor: 'hsl(var(--surface) / 0.6)',
+                  gap: '12px',
+                  flexWrap: 'wrap'
+                }}>
+                  <div style={{ display: 'flex', flexDirection: 'column' }}>
+                    <span style={{ fontSize: '0.9rem', fontWeight: 600, color: 'hsl(var(--text-primary))' }}>
+                      Contexto Operativo
+                    </span>
+                    <span style={{ fontSize: '0.75rem', color: 'hsl(var(--text-muted))' }}>
+                      Visualizar acumulados de ventas y comisiones
+                    </span>
+                  </div>
+                  <div style={{ display: 'flex', gap: '6px' }}>
+                    {(['combined', 'lottery', 'sports'] as const).map((ctx) => (
+                      <button
+                        key={ctx}
+                        onClick={() => setDashboardViewContext(ctx)}
+                        style={{
+                          padding: '8px 14px',
+                          borderRadius: 'var(--radius-sm)',
+                          border: '1px solid hsl(var(--border))',
+                          backgroundColor: dashboardViewContext === ctx ? 'hsl(var(--primary))' : 'hsl(var(--surface-hover))',
+                          color: dashboardViewContext === ctx ? '#ffffff' : 'hsl(var(--text-secondary))',
+                          fontSize: '0.8rem',
+                          fontWeight: 600,
+                          cursor: 'pointer',
+                          transition: 'all 0.2s ease'
+                        }}
+                      >
+                        {ctx === 'combined' ? 'Combinado' : ctx === 'lottery' ? 'Solo Lotería' : 'Solo Deportes'}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {/* METRIC CARDS GRID */}
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '20px' }}>
+
                 
                 {[stats.card1, stats.card2, stats.card3, stats.card4].map((c, i) => {
                   const Icon = c.icon;
                   return (
-                    <div key={i} className="glass-panel" style={{
+                    <div key={i} className="glass-panel-premium" style={{
                       padding: '24px',
                       display: 'flex',
                       alignItems: 'center',
@@ -1388,7 +1735,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeTab }) => {
                 
                 {/* Visual exposure monitoring / live transactions */}
                 {user.role !== 'MASTER' && (
-                  <div className="glass-panel" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                  <div className="glass-panel-premium" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <h3 style={{ fontSize: '1.1rem', color: 'hsl(var(--text-primary))' }}>
                         Tickets Emitidos Recientemente
@@ -1419,11 +1766,22 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeTab }) => {
                             </tr>
                           ) : (
                             dashboardTicketsToShow.map((t) => (
-                              <tr key={t.id}>
+                              <tr key={t.id} onClick={() => setSelectedTicketForDetail(t)} style={{ cursor: 'pointer' }}>
                                 <td style={{ fontWeight: 600 }}>{t.serial || t.id.substring(0, 8).toUpperCase()}</td>
                                 <td>{t.sellerUser}</td>
                                 <td style={{ fontSize: '0.8rem' }}>
-                                  {t.plays.map(p => p.lotteryName).join(', ')}
+                                  {(() => {
+                                    const uniqueLots = new Set();
+                                    t.plays.forEach(p => {
+                                      if (p.lotteryName) {
+                                        p.lotteryName.split(/[\/,]+/).forEach(part => {
+                                          const trimmed = part.trim();
+                                          if (trimmed) uniqueLots.add(trimmed);
+                                        });
+                                      }
+                                    });
+                                    return Array.from(uniqueLots).join(' / ');
+                                  })()}
                                 </td>
                                 <td style={{ fontWeight: 600 }}>${t.total.toFixed(2)}</td>
                                 <td style={{ color: t.totalPrize > 0 ? 'hsl(var(--success))' : 'inherit', fontWeight: 600 }}>
@@ -1497,7 +1855,16 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeTab }) => {
                     </h3>
                     
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                      {lotteries.map((l) => {
+                      {lotteries
+                        .filter((l) => {
+                          const isPick = l.type === 'Pick3' || l.type === 'Pick4' || l.name.startsWith('US-P') || l.id.startsWith('US-P');
+                          if (isPick) {
+                            return systemModeConfig.pickModeEnabled !== false;
+                          } else {
+                            return systemModeConfig.lotteryModeEnabled !== false;
+                          }
+                        })
+                        .map((l) => {
                         const catalogEntry = STATIC_LOTTERIES.find(sl => sl.id === l.id);
                         const logoUrl = catalogEntry?.logoAssetPath || l.logoAssetPath || '/favicon.svg';
                         
@@ -1697,7 +2064,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeTab }) => {
           )}
 
           {/* TAB 3: ADMIN ONLY - MANAGE CAJEROS */}
-          {activeTab === 'cajeros' && user.role === 'ADMIN' && (
+          {activeTab === 'cajeros' && (user.role === 'ADMIN' || user.role === 'MASTER') && (
             <div className="fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
               
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -1744,21 +2111,31 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeTab }) => {
                     </tr>
                   </thead>
                   <tbody>
-                    {users.filter(u => u.role === 'CASHIER' && u.adminId === user.id).length === 0 ? (
+                    {users.filter(u => u.role === 'CASHIER' && (user.role === 'MASTER' ? true : u.adminId === user.id)).length === 0 ? (
                       <tr>
                         <td colSpan={8} style={{ textAlign: 'center', color: 'hsl(var(--text-secondary))', padding: '24px' }}>
                           No hay cajeros asignados a tu banca todavía.
                         </td>
                       </tr>
                     ) : (
-                      users.filter(u => u.role === 'CASHIER' && u.adminId === user.id).map((c) => (
+                      users.filter(u => u.role === 'CASHIER' && (user.role === 'MASTER' ? true : u.adminId === user.id)).map((c) => (
                         <tr key={c.id}>
                           <td style={{ fontWeight: 600 }}>{c.displayName}</td>
                           <td>@{c.user}</td>
                           <td>
                             <span className="badge badge-primary">{c.territory}</span>
                           </td>
-                          <td style={{ fontWeight: 600 }}>${c.balance.toFixed(2)}</td>
+                          {(() => {
+                            const cashierTickets = tickets.filter(t => t.sellerUser === c.user && t.status !== 'cancelled' && t.status !== 'voided');
+                            const salesTotalToday = cashierTickets.filter(t => {
+                              const todayStr = new Intl.DateTimeFormat('fr-CA', { timeZone: 'America/Santo_Domingo' }).format(new Date()); // yyyy-mm-dd
+                              return t.drawDateKey === todayStr || (Date.now() - t.createdAtEpochMs) <= 86400000;
+                            }).reduce((acc, t) => acc + t.total, 0);
+                            
+                            return (
+                              <td style={{ fontWeight: 600 }}>${salesTotalToday.toLocaleString('en-US', { minimumFractionDigits: 2 })}</td>
+                            );
+                          })()}
                           <td style={{ fontWeight: 600 }}>
                             ${c.rechargesBalance.toFixed(2)}
                             {c.rechargesEnabled ? (
@@ -1812,7 +2189,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeTab }) => {
           )}
 
           {/* TAB 4: ADMIN ONLY - MANAGE SUPERVISORES */}
-          {activeTab === 'supervisores' && user.role === 'ADMIN' && (
+          {activeTab === 'supervisores' && (user.role === 'ADMIN' || user.role === 'MASTER') && (
             <div className="fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
               
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -1838,14 +2215,14 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeTab }) => {
                     </tr>
                   </thead>
                   <tbody>
-                    {users.filter(u => u.role === 'SUPERVISOR' && u.adminId === user.id).length === 0 ? (
+                    {users.filter(u => u.role === 'SUPERVISOR' && (user.role === 'MASTER' ? true : u.adminId === user.id)).length === 0 ? (
                       <tr>
                         <td colSpan={7} style={{ textAlign: 'center', color: 'hsl(var(--text-secondary))', padding: '24px' }}>
                           No hay supervisores asociados a tu banca.
                         </td>
                       </tr>
                     ) : (
-                      users.filter(u => u.role === 'SUPERVISOR' && u.adminId === user.id).map((s) => (
+                      users.filter(u => u.role === 'SUPERVISOR' && (user.role === 'MASTER' ? true : u.adminId === user.id)).map((s) => (
                         <tr key={s.id}>
                           <td style={{ fontWeight: 600 }}>{s.displayName}</td>
                           <td>@{s.user}</td>
@@ -1906,7 +2283,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeTab }) => {
           )}
 
           {/* TAB 5: COMPREHENSIVE NETWORK & PLAY MONITORING */}
-          {activeTab === 'monitoreo' && (user.role === 'ADMIN' || user.role === 'SUPERVISOR') && (
+          {activeTab === 'monitoreo' && (user.role === 'ADMIN' || user.role === 'SUPERVISOR' || user.role === 'MASTER') && (
             <div className="fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
               
               {/* Monitoreo Top Controls */}
@@ -2194,8 +2571,12 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeTab }) => {
               {/* Sub-Tab 3: CASHIER PRESENCE & ONLINE STATUS */}
               {monitoreoSubTab === 'cajeros' && (
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '20px' }}>
-                  {users.filter(u => u.role === 'CASHIER' && (user.role === 'ADMIN' ? u.adminId === user.id : u.supervisorIds.includes(user.id))).map((c) => {
-                    const cashierTickets = tickets.filter(t => t.sellerUser === c.user && t.status !== 'cancelled');
+                  {users.filter(u => {
+                    if (user.role === 'MASTER') return u.role === 'CASHIER';
+                    if (user.role === 'ADMIN') return (u.role === 'CASHIER' || u.role === 'ADMIN') && (u.adminId === user.id || u.id === user.id);
+                    return u.role === 'CASHIER' && u.supervisorIds.includes(user.id);
+                  }).map((c) => {
+                    const cashierTickets = tickets.filter(t => t.sellerUser === c.user && t.status !== 'cancelled' && t.status !== 'voided');
                     const hasVendidoToday = cashierTickets.some(t => (Date.now() - t.createdAtEpochMs) <= 86400000);
                     const presence = !c.active ? 'Bloqueado' : hasVendidoToday ? 'Activo' : 'Sin movimiento';
 
@@ -2240,7 +2621,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeTab }) => {
           )}
 
           {/* TAB 10: TICKETS SEARCH & VOID SYSTEM */}
-          {activeTab === 'tickets' && (user.role === 'ADMIN' || user.role === 'SUPERVISOR') && (
+          {activeTab === 'tickets' && (user.role === 'ADMIN' || user.role === 'SUPERVISOR' || user.role === 'MASTER') && (
             <div className="fade-in glass-panel" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
                 <div>
@@ -2284,9 +2665,13 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeTab }) => {
                   onChange={(e) => setTicketFilterCashier(e.target.value)}
                   style={{ width: '180px' }}
                 >
-                  <option value="all">Todos los Cajeros</option>
-                  {users.filter(u => u.role === 'CASHIER' && (user.role === 'ADMIN' ? u.adminId === user.id : u.supervisorIds.includes(user.id))).map(c => (
-                    <option key={c.id} value={c.user}>@{c.user}</option>
+                  <option value="all">Todos los Puntos</option>
+                  {users.filter(u => {
+                    if (user.role === 'MASTER') return u.role === 'CASHIER' || u.role === 'ADMIN';
+                    if (user.role === 'ADMIN') return (u.role === 'CASHIER' || u.role === 'ADMIN') && (u.adminId === user.id || u.id === user.id);
+                    return u.role === 'CASHIER' && u.supervisorIds.includes(user.id);
+                  }).map(c => (
+                    <option key={c.id} value={c.user}>@{c.user} {c.role === 'ADMIN' ? '(Banca/Admin)' : ''}</option>
                   ))}
                 </select>
               </div>
@@ -2294,12 +2679,13 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeTab }) => {
               {/* Table of tickets */}
               {(() => {
                 const isSupervisor = user.role === 'SUPERVISOR';
+                const isMaster = user.role === 'MASTER';
                 const allowedAdminId = isSupervisor ? user.adminId : user.id;
                 const supervisedCashierUsers = isSupervisor 
                   ? users.filter(u => u.role === 'CASHIER' && u.supervisorIds.includes(user.id)).map(u => u.user)
                   : [];
 
-                const filtered = tickets.filter(t => t.adminId === allowedAdminId)
+                const filtered = tickets.filter(t => isMaster ? true : t.adminId === allowedAdminId)
                   .filter(t => {
                     if (isSupervisor && (!t.sellerUser || !supervisedCashierUsers.includes(t.sellerUser))) return false;
                     if (ticketSearchSerial && !t.id.toLowerCase().includes(ticketSearchSerial.toLowerCase()) && !t.serial?.toLowerCase().includes(ticketSearchSerial.toLowerCase())) return false;
@@ -2333,7 +2719,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeTab }) => {
                       </thead>
                       <tbody>
                         {filtered.map((t) => (
-                          <tr key={t.id}>
+                          <tr key={t.id} onClick={() => setSelectedTicketForDetail(t)} style={{ cursor: 'pointer' }}>
                             <td>
                               <div style={{ display: 'flex', flexDirection: 'column' }}>
                                 <strong style={{ color: 'hsl(var(--text-primary))' }}>{t.serial || t.id}</strong>
@@ -2360,11 +2746,22 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeTab }) => {
                             </td>
                             <td>
                               <div style={{ display: 'flex', gap: '8px' }}>
+                                <button
+                                  className="btn btn-secondary"
+                                  style={{ padding: '4px 8px', fontSize: '0.75rem', color: 'hsl(var(--primary))', border: '1px solid hsl(var(--primary) / 0.2)' }}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setSelectedTicketForDetail(t);
+                                  }}
+                                >
+                                  Ver
+                                </button>
                                 {t.status === 'active' && (
                                   <button
                                     className="btn btn-secondary"
                                     style={{ padding: '4px 8px', fontSize: '0.75rem', color: 'hsl(var(--danger))', border: '1px solid hsl(var(--danger) / 0.2)' }}
-                                    onClick={() => {
+                                    onClick={(e) => {
+                                      e.stopPropagation();
                                       setSelectedTicketForAnnul(t);
                                       setAnnulModalOpen(true);
                                     }}
@@ -2376,9 +2773,25 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeTab }) => {
                                   <button
                                     className="btn btn-primary"
                                     style={{ padding: '4px 8px', fontSize: '0.75rem' }}
-                                    onClick={() => handlePayWinner(t)}
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handlePayWinner(t);
+                                    }}
                                   >
                                     Pagar
+                                  </button>
+                                )}
+                                {(user.role === 'ADMIN' || user.role === 'MASTER') && (
+                                  <button
+                                    className="btn btn-secondary"
+                                    style={{ padding: '4px 8px', fontSize: '0.75rem', color: 'hsl(var(--danger))', backgroundColor: 'hsl(var(--danger) / 0.1)', border: '1px solid hsl(var(--danger) / 0.3)' }}
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setSelectedTicketForDelete(t);
+                                      setDeleteModalOpen(true);
+                                    }}
+                                  >
+                                    Eliminar
                                   </button>
                                 )}
                               </div>
@@ -2393,13 +2806,323 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeTab }) => {
             </div>
           )}
 
+          {/* TAB 10.5: SPORTSBOOK APUESTAS DEPORTIVAS */}
+          {activeTab === 'deportiva' && (
+            <div className="fade-in glass-panel" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
+                <div>
+                  <h3 style={{ fontSize: '1.2rem', fontWeight: 700, color: 'hsl(var(--text-primary))' }}>
+                    Monitoreo de Apuestas Deportivas
+                  </h3>
+                  <p style={{ fontSize: '0.8rem', color: 'hsl(var(--text-muted))', marginTop: '2px' }}>
+                    Administre, anule y procese el cobro de tickets de banca deportiva
+                  </p>
+                </div>
+                <button className="btn btn-secondary" onClick={loadData} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <RefreshCw size={16} />
+                  Actualizar Datos
+                </button>
+              </div>
+
+              {/* Filters Bar */}
+              <div style={{
+                display: 'flex',
+                gap: '12px',
+                flexWrap: 'wrap',
+                padding: '16px',
+                borderRadius: 'var(--radius-md)',
+                backgroundColor: 'hsl(var(--surface-hover))',
+                border: '1px solid hsl(var(--border))'
+              }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', minWidth: '150px' }}>
+                  <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'hsl(var(--text-secondary))' }}>
+                    Cajero Emisor
+                  </span>
+                  <select
+                    value={ticketFilterCashier}
+                    onChange={(e) => setTicketFilterCashier(e.target.value)}
+                    style={{
+                      padding: '8px 12px',
+                      borderRadius: 'var(--radius-sm)',
+                      backgroundColor: 'hsl(var(--surface))',
+                      border: '1px solid hsl(var(--border))',
+                      color: 'hsl(var(--text-primary))',
+                      fontSize: '0.85rem',
+                      outline: 'none'
+                    }}
+                  >
+                    <option value="all">Todos los cajeros</option>
+                    {users.filter(u => u.role === 'CASHIER').map(c => (
+                      <option key={c.id} value={c.user}>@{c.user} - {c.displayName}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', minWidth: '150px' }}>
+                  <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'hsl(var(--text-secondary))' }}>
+                    Estado
+                  </span>
+                  <select
+                    value={ticketFilterStatus}
+                    onChange={(e) => setTicketFilterStatus(e.target.value)}
+                    style={{
+                      padding: '8px 12px',
+                      borderRadius: 'var(--radius-sm)',
+                      backgroundColor: 'hsl(var(--surface))',
+                      border: '1px solid hsl(var(--border))',
+                      color: 'hsl(var(--text-primary))',
+                      fontSize: '0.85rem',
+                      outline: 'none'
+                    }}
+                  >
+                    <option value="all">Todos los estados</option>
+                    <option value="pending">Pendientes</option>
+                    <option value="won">Ganadores (Sin Cobrar)</option>
+                    <option value="paid">Cobrados (Pagados)</option>
+                    <option value="lost">Perdedores</option>
+                    <option value="void">Anulados (Void)</option>
+                  </select>
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', flex: 1, minWidth: '200px' }}>
+                  <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'hsl(var(--text-secondary))' }}>
+                    Buscar por Código
+                  </span>
+                  <div style={{ position: 'relative' }}>
+                    <Search size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'hsl(var(--text-muted))' }} />
+                    <input
+                      type="text"
+                      placeholder="Buscar por código de ticket..."
+                      value={ticketSearchSerial}
+                      onChange={(e) => setTicketSearchSerial(e.target.value)}
+                      style={{
+                        width: '100%',
+                        padding: '8px 12px 8px 36px',
+                        borderRadius: 'var(--radius-sm)',
+                        backgroundColor: 'hsl(var(--surface))',
+                        border: '1px solid hsl(var(--border))',
+                        color: 'hsl(var(--text-primary))',
+                        fontSize: '0.85rem',
+                        outline: 'none'
+                      }}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Tickets Table */}
+              {(() => {
+                let filtered = [...sportsTickets];
+
+                // Scoping rules: MASTER sees all, ADMIN sees only their network's wagers
+                if (user.role === 'ADMIN') {
+                  const cashierUsernames = users.filter(u => u.adminId === user.id).map(u => u.user);
+                  filtered = filtered.filter(t => cashierUsernames.includes(t.sellerUsername || ''));
+                } else if (user.role === 'SUPERVISOR') {
+                  const cashierUsernames = users.filter(u => u.supervisorIds.includes(user.id)).map(u => u.user);
+                  filtered = filtered.filter(t => cashierUsernames.includes(t.sellerUsername || ''));
+                }
+
+                if (ticketFilterCashier !== 'all') {
+                  filtered = filtered.filter(t => t.sellerUsername === ticketFilterCashier);
+                }
+
+                if (ticketFilterStatus !== 'all') {
+                  filtered = filtered.filter(t => t.status === ticketFilterStatus);
+                }
+
+                if (ticketSearchSerial.trim()) {
+                  const query = ticketSearchSerial.trim().toLowerCase();
+                  filtered = filtered.filter(t => t.ticketCode.toLowerCase().includes(query));
+                }
+
+                if (filtered.length === 0) {
+                  return (
+                    <div style={{ padding: '40px', textAlign: 'center', color: 'hsl(var(--text-muted))' }}>
+                      <AlertTriangle size={32} style={{ marginBottom: '12px', color: 'hsl(var(--warning))' }} />
+                      <p>No se encontraron apuestas deportivas con los filtros especificados.</p>
+                    </div>
+                  );
+                }
+
+                return (
+                  <div className="table-container">
+                    <table className="table-el">
+                      <thead>
+                        <tr>
+                          <th>Código</th>
+                          <th>Cajero</th>
+                          <th>Banca</th>
+                          <th>Tipo</th>
+                          <th>Jugadas (Parlay Legs)</th>
+                          <th>Monto</th>
+                          <th>Cuota</th>
+                          <th>Posible Premio</th>
+                          <th>Fecha</th>
+                          <th>Estado</th>
+                          <th style={{ textAlign: 'right' }}>Acciones</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {filtered.map((t) => {
+                          const formattedDate = new Date(t.soldAt).toLocaleString('es-DO', {
+                            day: '2-digit',
+                            month: '2-digit',
+                            hour: '2-digit',
+                            minute: '2-digit',
+                            hour12: true
+                          });
+
+                          return (
+                            <tr
+                              key={t.id}
+                              onClick={() => setSelectedSportsTicketForDetail(t)}
+                              style={{ cursor: 'pointer', transition: 'all 0.2s ease' }}
+                              className="table-row-hover"
+                            >
+                              <td style={{ fontWeight: 700, fontFamily: 'monospace' }}>
+                                {t.ticketCode}
+                              </td>
+                              <td style={{ fontWeight: 600 }}>@{t.sellerUsername}</td>
+                              <td style={{ color: 'hsl(var(--text-secondary))', fontSize: '0.85rem' }}>{t.bancaName || 'N/A'}</td>
+                              <td>
+                                <span className={`badge ${t.ticketType === 'parlay' ? 'badge-primary' : 'badge-success'}`}>
+                                  {t.ticketType === 'parlay' ? 'Parlay' : 'Directa'}
+                                </span>
+                              </td>
+                              <td style={{ fontSize: '0.8rem', maxWidth: '240px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                {(t.legs || []).map(l => l.eventLabel).join(' | ') || 'Sin piernas'}
+                              </td>
+                              <td style={{ fontWeight: 600 }}>
+                                ${t.stake.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                              </td>
+                              <td style={{ fontFamily: 'monospace', fontWeight: 600 }}>
+                                x{Number(t.decimalOdds).toFixed(2)}
+                              </td>
+                              <td style={{ color: 'hsl(var(--success))', fontWeight: 700 }}>
+                                ${t.potentialPayout.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                              </td>
+                              <td style={{ fontSize: '0.8rem', color: 'hsl(var(--text-secondary))' }}>
+                                {formattedDate}
+                              </td>
+                              <td>
+                                <span className={`badge ${
+                                  t.status === 'pending' ? 'badge-warning' :
+                                  t.status === 'won' ? 'badge-primary' :
+                                  t.status === 'paid' ? 'badge-success' :
+                                  t.status === 'lost' ? 'badge-danger' : 'badge-secondary'
+                                }`}>
+                                  {t.status === 'pending' ? 'Pendiente' :
+                                   t.status === 'won' ? 'Ganado' :
+                                   t.status === 'paid' ? 'Cobrado' :
+                                   t.status === 'lost' ? 'Perdido' : 'Anulado'}
+                                </span>
+                              </td>
+                              <td style={{ textAlign: 'right' }} onClick={(e) => e.stopPropagation()}>
+                                <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+                                  <button
+                                    className="btn btn-secondary"
+                                    style={{ padding: '4px 8px', fontSize: '0.75rem' }}
+                                    onClick={() => setSelectedSportsTicketForDetail(t)}
+                                  >
+                                    Ver
+                                  </button>
+                                  {t.status === 'pending' && (
+                                    <button
+                                      className="btn btn-secondary"
+                                      style={{ padding: '4px 8px', fontSize: '0.75rem', color: 'hsl(var(--warning))', backgroundColor: 'hsl(var(--warning) / 0.1)', border: '1px solid hsl(var(--warning) / 0.3)' }}
+                                      onClick={async () => {
+                                        if (!window.confirm(`¿Está seguro de ANULAR administrativamente la apuesta ${t.ticketCode}? Se devolverá el balance de fianza al cajero.`)) return;
+                                        try {
+                                          if (isSupabaseConfigured && supabase) {
+                                            const { error } = await supabase.functions.invoke('void-sports-ticket', {
+                                              body: { ticketId: t.id, actorKey: user.user }
+                                            });
+                                            if (error) throw error;
+                                          } else {
+                                            // Mock voiding in local storage
+                                            const updated = sportsTickets.map(st => st.id === t.id ? { ...st, status: 'void' as const } : st);
+                                            setSportsTickets(updated);
+                                            localStorage.setItem('lotterynet_sports_tickets', JSON.stringify(updated));
+
+                                            // Return balance to cashier in local storage mock
+                                            const uList = [...users];
+                                            const cashierIdx = uList.findIndex(u => u.user === t.sellerUsername);
+                                            if (cashierIdx !== -1) {
+                                              uList[cashierIdx].balance = Math.max(0, uList[cashierIdx].balance - t.stake);
+                                              await saveAllUsers(uList);
+                                            }
+                                          }
+                                          await addAuditLog(
+                                            { id: user.id, user: user.user, role: user.role },
+                                            'VOID_SPORTS_TICKET',
+                                            `Apuesta deportiva anulada: ${t.ticketCode}. Se retornó $${t.stake} al cajero @${t.sellerUsername}`,
+                                            'warning'
+                                          );
+                                          loadData();
+                                          alert('Apuesta deportiva anulada correctamente.');
+                                        } catch (e: any) {
+                                          alert(e.message || 'Error al anular apuesta deportiva');
+                                        }
+                                      }}
+                                    >
+                                      Anular
+                                    </button>
+                                  )}
+                                  {t.status === 'won' && (
+                                    <button
+                                      className="btn btn-success"
+                                      style={{ padding: '4px 8px', fontSize: '0.75rem' }}
+                                      onClick={async () => {
+                                        if (!window.confirm(`¿Está seguro de PAGAR el premio de $${t.potentialPayout} para la apuesta ${t.ticketCode}?`)) return;
+                                        try {
+                                          if (isSupabaseConfigured && supabase) {
+                                            const { error } = await supabase.functions.invoke('pay-sports-ticket', {
+                                              body: { ticketId: t.id, actorKey: user.user }
+                                            });
+                                            if (error) throw error;
+                                          } else {
+                                            // Mock paying in local storage
+                                            const updated = sportsTickets.map(st => st.id === t.id ? { ...st, status: 'paid' as const } : st);
+                                            setSportsTickets(updated);
+                                            localStorage.setItem('lotterynet_sports_tickets', JSON.stringify(updated));
+                                          }
+                                          await addAuditLog(
+                                            { id: user.id, user: user.user, role: user.role },
+                                            'PAY_SPORTS_TICKET',
+                                            `Premio deportivo pagado: $${t.potentialPayout} para la apuesta ${t.ticketCode}`,
+                                            'success'
+                                          );
+                                          loadData();
+                                          alert('Premio deportivo pagado y cobrado correctamente.');
+                                        } catch (e: any) {
+                                          alert(e.message || 'Error al pagar premio deportivo');
+                                        }
+                                      }}
+                                    >
+                                      Pagar
+                                    </button>
+                                  )}
+                                </div>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                );
+              })()}
+            </div>
+          )}
+
           {/* TAB 11: WINNERS PRIZE PAYOUT MODULE */}
-          {activeTab === 'ganadores' && user.role === 'ADMIN' && (
+          {activeTab === 'ganadores' && (user.role === 'ADMIN' || user.role === 'MASTER') && (
             <div className="fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
               
               {/* Summary Cards */}
               {(() => {
-                const adminTickets = tickets.filter(t => t.adminId === user.id && (t.status === 'winner' || t.status === 'paid' || t.totalPrize > 0));
+                const adminTickets = tickets.filter(t => (user.role === 'MASTER' ? true : t.adminId === user.id) && (t.status === 'winner' || t.status === 'paid' || t.totalPrize > 0));
                 const pendingWinners = adminTickets.filter(t => t.status === 'winner' || (t.status !== 'paid' && t.totalPrize > 0));
                 const paidWinners = adminTickets.filter(t => t.status === 'paid');
 
@@ -2814,7 +3537,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeTab }) => {
           )}
 
           {/* TAB 13: CUADRE DE CAJA AND DETAILED OPERATIONAL REPORTS */}
-          {activeTab === 'cuadre' && (user.role === 'ADMIN' || user.role === 'SUPERVISOR') && (
+          {activeTab === 'cuadre' && (user.role === 'ADMIN' || user.role === 'SUPERVISOR' || user.role === 'MASTER') && (
             <div className="fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
               
               {/* Cuadre controls */}
@@ -2854,9 +3577,13 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeTab }) => {
                     onChange={(e) => setCuadreCashierFilter(e.target.value)}
                     style={{ width: '200px' }}
                   >
-                    <option value="all">Todos los Cajeros</option>
-                    {users.filter(u => u.role === 'CASHIER' && (user.role === 'ADMIN' ? u.adminId === user.id : u.supervisorIds.includes(user.id))).map(c => (
-                      <option key={c.id} value={c.user}>@{c.user}</option>
+                    <option value="all">Todos los Puntos</option>
+                    {users.filter(u => {
+                      if (user.role === 'MASTER') return u.role === 'CASHIER' || u.role === 'ADMIN';
+                      if (user.role === 'ADMIN') return (u.role === 'CASHIER' || u.role === 'ADMIN') && (u.adminId === user.id || u.id === user.id);
+                      return u.role === 'CASHIER' && u.supervisorIds.includes(user.id);
+                    }).map(c => (
+                      <option key={c.id} value={c.user}>@{c.user} {c.role === 'ADMIN' ? '(Banca/Admin)' : ''}</option>
                     ))}
                   </select>
 
@@ -2885,12 +3612,19 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeTab }) => {
               {/* Computes and metrics desing */}
               {(() => {
                 const isSupervisor = user.role === 'SUPERVISOR';
+                const isMaster = user.role === 'MASTER';
                 const allowedAdminId = isSupervisor ? user.adminId : user.id;
                 const supervisedCashierUsers = isSupervisor 
                   ? users.filter(u => u.role === 'CASHIER' && u.supervisorIds.includes(user.id)).map(u => u.user)
                   : [];
 
-                const scopedTickets = tickets.filter(t => t.adminId === allowedAdminId && t.status !== 'cancelled')
+                const scopedTickets = tickets.filter(t => t.status !== 'cancelled' && t.status !== 'voided')
+                  .filter(t => {
+                    if (isMaster) return true;
+                    if (isSupervisor && (!t.sellerUser || !supervisedCashierUsers.includes(t.sellerUser))) return false;
+                    if (!isSupervisor && t.adminId !== allowedAdminId) return false;
+                    return true;
+                  })
                   .filter(t => {
                     if (isSupervisor && (!t.sellerUser || !supervisedCashierUsers.includes(t.sellerUser))) return false;
                     if (cuadreCashierFilter !== 'all' && t.sellerUser !== cuadreCashierFilter) return false;
@@ -2906,20 +3640,55 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeTab }) => {
                     return true;
                   });
 
-                const ventasBrutas = scopedTickets.reduce((acc, t) => acc + t.total, 0);
-                const premiosPagados = scopedTickets.filter(t => t.status === 'paid').reduce((acc, t) => acc + t.totalPrize, 0);
-                const premiosPendientes = scopedTickets.filter(t => t.status === 'winner').reduce((acc, t) => acc + t.totalPrize, 0);
-                
-                // Commissions based on cashier commission rates
-                let comisiones = 0;
+                const scopedSportsTickets = sportsTickets.filter(t => t.status !== 'void')
+                  .filter(t => {
+                    if (isMaster) return true;
+                    if (isSupervisor && (!t.sellerUsername || !supervisedCashierUsers.includes(t.sellerUsername))) return false;
+                    if (!isSupervisor && t.adminKey !== allowedAdminId && t.ownerKey !== allowedAdminId) return false;
+                    return true;
+                  })
+                  .filter(t => {
+                    if (cuadreCashierFilter !== 'all' && t.sellerUsername !== cuadreCashierFilter) return false;
+                    
+                    const dateLimit = cuadrePeriod === 'today' ? 1 : cuadrePeriod === 'week' ? 7 : cuadrePeriod === 'month' ? 30 : 0;
+                    const soldAtTime = new Date(t.soldAt).getTime();
+                    if (dateLimit > 0) {
+                      return (Date.now() - soldAtTime) <= (dateLimit * 86400000);
+                    } else if (cuadrePeriod === 'manual') {
+                      const from = new Date(cuadreDateFrom).getTime();
+                      const to = new Date(cuadreDateTo).getTime() + 86400000;
+                      return soldAtTime >= from && soldAtTime <= to;
+                    }
+                    return true;
+                  });
+
+                const loteriaVentas = scopedTickets.reduce((acc, t) => acc + t.total, 0);
+                const loteriaPremiosPagados = scopedTickets.filter(t => t.status === 'paid').reduce((acc, t) => acc + t.totalPrize, 0);
+                const loteriaPremiosPendientes = scopedTickets.filter(t => t.status === 'winner').reduce((acc, t) => acc + t.totalPrize, 0);
+                let loteriaComisiones = 0;
                 scopedTickets.forEach(t => {
-                  const cashier = users.find(u => u.user === t.sellerUser && u.role === 'CASHIER');
-                  comisiones += t.total * normalizeRate(cashier?.commissionRate);
+                  const cashier = users.find(u => u.user === t.sellerUser);
+                  loteriaComisiones += t.total * normalizeRate(cashier?.commissionRate);
                 });
 
-                // Recharges
+                const deportesVentas = scopedSportsTickets.reduce((acc, t) => acc + t.stake, 0);
+                const deportesPremiosPagados = scopedSportsTickets.filter(t => t.status === 'paid').reduce((acc, t) => acc + t.potentialPayout, 0);
+                const deportesPremiosPendientes = scopedSportsTickets.filter(t => t.status === 'won').reduce((acc, t) => acc + t.potentialPayout, 0);
+                let deportesComisiones = 0;
+                scopedSportsTickets.forEach(t => {
+                  const cashier = users.find(u => u.user === t.sellerUsername);
+                  deportesComisiones += t.stake * normalizeRate(cashier?.commissionRate);
+                });
+
+                const ventasBrutas = loteriaVentas + deportesVentas;
+                const comisiones = loteriaComisiones + deportesComisiones;
+                const premiosPagados = loteriaPremiosPagados + deportesPremiosPagados;
+                const premiosPendientes = loteriaPremiosPendientes + deportesPremiosPendientes;
+
                 let recargas = 0;
-                const cashierScope = users.filter(u => u.role === 'CASHIER' && (user.role === 'ADMIN' ? u.adminId === user.id : u.supervisorIds.includes(user.id)));
+                const cashierScope = user.role === 'MASTER'
+                  ? users.filter(u => u.role === 'CASHIER')
+                  : users.filter(u => u.role === 'CASHIER' && (user.role === 'ADMIN' ? u.adminId === user.id : u.supervisorIds.includes(user.id)));
                 if (cuadreCashierFilter === 'all') {
                   recargas = cashierScope.reduce((acc, c) => acc + c.rechargesAssignedBalance, 0);
                 } else {
@@ -2938,17 +3707,17 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeTab }) => {
                       <div className="glass-panel" style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
                         <span style={{ color: 'hsl(var(--text-secondary))', fontSize: '0.8rem' }}>Venta Bruta</span>
                         <strong style={{ fontSize: '1.5rem' }}>${ventasBrutas.toFixed(2)}</strong>
-                        <span style={{ fontSize: '0.7rem', color: 'hsl(var(--text-muted))' }}>{scopedTickets.length} tickets activos</span>
+                        <span style={{ fontSize: '0.7rem', color: 'hsl(var(--text-muted))' }}>Lot: ${loteriaVentas.toFixed(2)} | Dep: ${deportesVentas.toFixed(2)}</span>
                       </div>
                       <div className="glass-panel" style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
                         <span style={{ color: 'hsl(var(--text-secondary))', fontSize: '0.8rem' }}>Comisión Retenida</span>
                         <strong style={{ fontSize: '1.5rem', color: 'hsl(var(--danger))' }}>${comisiones.toFixed(2)}</strong>
-                        <span style={{ fontSize: '0.7rem', color: 'hsl(var(--text-muted))' }}>Promedio de comisión de red</span>
+                        <span style={{ fontSize: '0.7rem', color: 'hsl(var(--text-muted))' }}>Lot: ${loteriaComisiones.toFixed(2)} | Dep: ${deportesComisiones.toFixed(2)}</span>
                       </div>
                       <div className="glass-panel" style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
                         <span style={{ color: 'hsl(var(--text-secondary))', fontSize: '0.8rem' }}>Premios Pagados</span>
                         <strong style={{ fontSize: '1.5rem', color: 'hsl(var(--warning))' }}>${premiosPagados.toFixed(2)}</strong>
-                        <span style={{ fontSize: '0.7rem', color: 'hsl(var(--text-muted))' }}>Tickets liquidados</span>
+                        <span style={{ fontSize: '0.7rem', color: 'hsl(var(--text-muted))' }}>Lot: ${loteriaPremiosPagados.toFixed(2)} | Dep: ${deportesPremiosPagados.toFixed(2)}</span>
                       </div>
                       <div className="glass-panel" style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
                         <span style={{ color: 'hsl(var(--text-secondary))', fontSize: '0.8rem' }}>Recarga Distribuida</span>
@@ -2989,8 +3758,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeTab }) => {
                             </tr>
                           </thead>
                           <tbody>
-                            {users.filter(u => u.role === 'CASHIER' && (user.role === 'ADMIN' ? u.adminId === user.id : u.supervisorIds.includes(user.id))).map(cashier => {
-                              const cashierTks = tickets.filter(t => t.sellerUser === cashier.user && t.status !== 'cancelled')
+                            {users.filter(u => u.role === 'CASHIER' && (user.role === 'MASTER' ? true : (user.role === 'ADMIN' ? u.adminId === user.id : u.supervisorIds.includes(user.id)))).map(cashier => {
+                              const cashierTks = tickets.filter(t => t.sellerUser === cashier.user && t.status !== 'cancelled' && t.status !== 'voided')
                                 .filter(t => {
                                   const dateLimit = cuadrePeriod === 'today' ? 1 : cuadrePeriod === 'week' ? 7 : cuadrePeriod === 'month' ? 30 : 0;
                                   if (dateLimit > 0) return (Date.now() - t.createdAtEpochMs) <= (dateLimit * 86400000);
@@ -3001,15 +3770,31 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeTab }) => {
                               const tkPremiosPagados = cashierTks.filter(t => t.status === 'paid').reduce((acc, t) => acc + t.totalPrize, 0);
                               const tkPremiosPendientes = cashierTks.filter(t => t.status === 'winner').reduce((acc, t) => acc + t.totalPrize, 0);
                               const tkComisiones = tkSales * normalizeRate(cashier.commissionRate);
+
+                              const cashierSports = sportsTickets.filter(t => t.sellerUsername === cashier.user && t.status !== 'void')
+                                .filter(t => {
+                                  const dateLimit = cuadrePeriod === 'today' ? 1 : cuadrePeriod === 'week' ? 7 : cuadrePeriod === 'month' ? 30 : 0;
+                                  if (dateLimit > 0) return (Date.now() - new Date(t.soldAt).getTime()) <= (dateLimit * 86400000);
+                                  return true;
+                                });
+
+                              const spSales = cashierSports.reduce((acc, t) => acc + t.stake, 0);
+                              const spPremiosPagados = cashierSports.filter(t => t.status === 'paid').reduce((acc, t) => acc + t.potentialPayout, 0);
+                              const spPremiosPendientes = cashierSports.filter(t => t.status === 'won').reduce((acc, t) => acc + t.potentialPayout, 0);
+                              const spComisiones = spSales * normalizeRate(cashier.commissionRate);
+
+                              const totalSales = tkSales + spSales;
+                              const totalComisiones = tkComisiones + spComisiones;
+                              const totalPremios = tkPremiosPagados + spPremiosPagados;
                               const tkRecargas = cashier.rechargesAssignedBalance || 0;
-                              const tkCaja = tkSales + tkRecargas - tkComisiones - tkPremiosPagados - tkPremiosPendientes;
+                              const tkCaja = totalSales + tkRecargas - totalComisiones - totalPremios - (tkPremiosPendientes + spPremiosPendientes);
 
                               return (
                                 <tr key={cashier.id}>
                                   <td style={{ fontWeight: 600 }}>{cashier.displayName || cashier.user}</td>
-                                  <td style={{ fontWeight: 600 }}>${tkSales.toFixed(2)}</td>
-                                  <td style={{ color: 'hsl(var(--danger))' }}>${tkComisiones.toFixed(2)}</td>
-                                  <td style={{ color: 'hsl(var(--warning))' }}>${(tkPremiosPagados + tkPremiosPendientes).toFixed(2)}</td>
+                                  <td style={{ fontWeight: 600 }}>${totalSales.toFixed(2)}</td>
+                                  <td style={{ color: 'hsl(var(--danger))' }}>${totalComisiones.toFixed(2)}</td>
+                                  <td style={{ color: 'hsl(var(--warning))' }}>${totalPremios.toFixed(2)}</td>
                                   <td>${tkRecargas.toFixed(2)}</td>
                                   <td style={{ fontWeight: 700, color: tkCaja >= 0 ? 'hsl(var(--success))' : 'hsl(var(--danger))' }}>
                                     ${tkCaja.toFixed(2)}
@@ -3036,7 +3821,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeTab }) => {
 
 
           {/* TAB 6: LIMITS AND PERMISSIONS */}
-          {activeTab === 'limites' && user.role === 'ADMIN' && (
+          {activeTab === 'limites' && (user.role === 'ADMIN' || user.role === 'MASTER') && (
             <div className="fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
               
               {/* TOP BAR / SCOPE SEGMENT CONTROLS */}
@@ -3070,56 +3855,44 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeTab }) => {
                   )}
                 </div>
 
-                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', borderBottom: '1px solid hsl(var(--border))', paddingBottom: '16px' }}>
-                  {[
-                    { id: 'ADMIN_SELF', label: 'Mis límites' },
-                    { id: 'CASHIER_DEFAULTS', label: 'Todos los cajeros (Defecto)' },
-                    { id: 'CASHIER_SPECIFIC', label: 'Por cajero (Personalizado)' },
-                  ].map((scope) => (
-                    <button
-                      key={scope.id}
-                      onClick={() => setSelectedScope(scope.id as any)}
-                      style={{
-                        padding: '10px 18px',
-                        borderRadius: 'var(--radius-md)',
-                        border: '1px solid ' + (selectedScope === scope.id ? 'hsl(var(--primary))' : 'hsl(var(--border))'),
-                        background: selectedScope === scope.id ? 'hsl(var(--primary) / 0.08)' : 'transparent',
-                        color: selectedScope === scope.id ? 'hsl(var(--primary))' : 'hsl(var(--text-secondary))',
-                        fontSize: '0.875rem',
-                        fontWeight: 600,
-                        cursor: 'pointer',
-                        transition: 'all 0.2s ease'
-                      }}
-                    >
-                      {scope.label}
-                    </button>
-                  ))}
-                </div>
-
-                {/* CASHIER SPECIFIC DROPDOWN SELECT */}
-                {selectedScope === 'CASHIER_SPECIFIC' && (
-                  <div className="fade-in" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                    <label style={{ fontSize: '0.875rem', fontWeight: 600, color: 'hsl(var(--text-primary))' }}>
-                      Seleccionar Cajero:
-                    </label>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', borderBottom: '1px solid hsl(var(--border))', paddingBottom: '16px' }}>
+                  <label style={{ fontSize: '0.85rem', fontWeight: 600, color: 'hsl(var(--text-secondary))' }}>
+                    Ámbito de Configuración (Alcance)
+                  </label>
+                  <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', alignItems: 'center' }}>
                     <select
                       className="form-input"
-                      value={selectedCashierUsername}
-                      onChange={(e) => setSelectedCashierUsername(e.target.value)}
-                      style={{ maxWidth: '280px' }}
+                      value={selectedScope}
+                      onChange={(e) => setSelectedScope(e.target.value as any)}
+                      style={{ maxWidth: '360px', padding: '12px 16px', fontSize: '0.9rem', fontWeight: 600, cursor: 'pointer' }}
                     >
-                      {users.filter(u => u.role === 'CASHIER' && u.adminId === user.id).length === 0 ? (
-                        <option value="">No tienes cajeros registrados</option>
-                      ) : (
-                        users.filter(u => u.role === 'CASHIER' && u.adminId === user.id).map(c => (
-                          <option key={c.id} value={c.user}>
-                            {c.displayName || c.user} (@{c.user})
-                          </option>
-                        ))
-                      )}
+                      <option value="ADMIN_SELF">⚙️ Mi Cuenta (Límites de Banca y Propios)</option>
+                      <option value="CASHIER_DEFAULTS">👥 Todos los Cajeros (Valores Estándar)</option>
+                      <option value="CASHIER_SPECIFIC">👤 Por Cajero (Configuración Personalizada)</option>
                     </select>
+                    
+                    {selectedScope === 'CASHIER_SPECIFIC' && (
+                      <div className="fade-in" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <select
+                          className="form-input"
+                          value={selectedCashierUsername}
+                          onChange={(e) => setSelectedCashierUsername(e.target.value)}
+                          style={{ minWidth: '220px', padding: '12px 16px', fontSize: '0.9rem', cursor: 'pointer' }}
+                        >
+                          {users.filter(u => u.role === 'CASHIER' && (user.role === 'MASTER' ? true : u.adminId === user.id)).length === 0 ? (
+                            <option value="">No tienes cajeros registrados</option>
+                          ) : (
+                            users.filter(u => u.role === 'CASHIER' && (user.role === 'MASTER' ? true : u.adminId === user.id)).map(c => (
+                              <option key={c.id} value={c.user}>
+                                👤 {c.displayName || c.user} (@{c.user})
+                              </option>
+                            ))
+                          )}
+                        </select>
+                      </div>
+                    )}
                   </div>
-                )}
+                </div>
               </div>
 
               {/* LIMIT SECTIONS CARDS GRID */}
@@ -3329,13 +4102,353 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeTab }) => {
                         Activa una interfaz compacta optimizada para terminales con pantallas reducidas o impresoras térmicas pequeñas.
                       </span>
                     </div>
+
+                    <div style={{ borderTop: '1px solid hsl(var(--border))', paddingTop: '16px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                      <h5 style={{ fontSize: '0.85rem', fontWeight: 600, color: 'hsl(var(--text-primary))' }}>
+                        {selectedScope === 'ADMIN_SELF' ? 'Modos de Juego Habilitados para la Banca' : 'Permisos de Juego para el Cajero'}
+                      </h5>
+                      
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', borderRadius: 'var(--radius-sm)', backgroundColor: 'rgba(255,255,255,0.02)', border: '1px solid hsl(var(--border))' }}>
+                        <div>
+                          <span style={{ fontSize: '0.85rem', fontWeight: 600, display: 'block' }}>Lotería Tradicional</span>
+                          <span style={{ fontSize: '0.7rem', color: 'hsl(var(--text-secondary))' }}>Quiniela, Palé, Super Palé, Tripleta</span>
+                        </div>
+                        <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}>
+                          <input
+                            type="checkbox"
+                            checked={selectedScope === 'ADMIN_SELF' ? (systemModeConfig.lotteryModeEnabled !== false) : (systemModeConfig.cashierLotteryModeEnabled !== false)}
+                            onChange={(e) => {
+                              if (selectedScope === 'ADMIN_SELF') {
+                                setSystemModeConfig({ ...systemModeConfig, lotteryModeEnabled: e.target.checked });
+                              } else {
+                                setSystemModeConfig({ ...systemModeConfig, cashierLotteryModeEnabled: e.target.checked });
+                              }
+                            }}
+                            style={{ width: '18px', height: '18px', cursor: 'pointer', accentColor: 'var(--primary)' }}
+                          />
+                        </label>
+                      </div>
+
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', borderRadius: 'var(--radius-sm)', backgroundColor: 'rgba(255,255,255,0.02)', border: '1px solid hsl(var(--border))' }}>
+                        <div>
+                          <span style={{ fontSize: '0.85rem', fontWeight: 600, display: 'block' }}>USA Pick</span>
+                          <span style={{ fontSize: '0.7rem', color: 'hsl(var(--text-secondary))' }}>Pick 3 y Pick 4 (Straight, Box, Pair)</span>
+                        </div>
+                        <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}>
+                          <input
+                            type="checkbox"
+                            checked={selectedScope === 'ADMIN_SELF' ? (systemModeConfig.pickModeEnabled !== false) : (systemModeConfig.cashierPickModeEnabled !== false)}
+                            onChange={(e) => {
+                              if (selectedScope === 'ADMIN_SELF') {
+                                setSystemModeConfig({ ...systemModeConfig, pickModeEnabled: e.target.checked });
+                              } else {
+                                setSystemModeConfig({ ...systemModeConfig, cashierPickModeEnabled: e.target.checked });
+                              }
+                            }}
+                            style={{ width: '18px', height: '18px', cursor: 'pointer', accentColor: 'var(--primary)' }}
+                          />
+                        </label>
+                      </div>
+                    </div>
                   </div>
                 )}
 
               </div>
 
+              {/* CARD: PAGA DE PREMIOS (MULTIPLICADORES DE PAYOUT) */}
+              <div className="glass-panel fade-in" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px', marginTop: '24px' }}>
+                <div>
+                  <h4 style={{ fontSize: '1.05rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <TrendingUp size={18} color="var(--primary)" />
+                    Paga de Premios (Multiplicadores de Payout)
+                  </h4>
+                  <p style={{ fontSize: '0.75rem', color: 'hsl(var(--text-secondary))', marginTop: '4px' }}>
+                    {selectedScope === 'ADMIN_SELF' || selectedScope === 'CASHIER_DEFAULTS' 
+                      ? 'Configura la escala de premios estándar para tu red de cajeros (multiplicador x cada $1 apostado).' 
+                      : `Personaliza la paga de premios exclusiva para el cajero @${selectedCashierUsername}.`}
+                  </p>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '24px' }}>
+                  {/* Traditional Payouts */}
+                  {systemModeConfig.lotteryModeEnabled !== false && (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                      <h5 style={{ fontSize: '0.9rem', fontWeight: 600, borderBottom: '1px solid hsl(var(--border))', paddingBottom: '8px', color: 'var(--primary)' }}>
+                        Loterías Tradicionales (Escala RD)
+                      </h5>
+                      
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                        <div className="form-group">
+                          <label className="form-label">Quiniela 1ra (x1)</label>
+                          <input
+                            type="number"
+                            className="form-input"
+                            value={currentPayoutsForm.q1}
+                            onChange={(e) => setCurrentPayoutsForm({ ...currentPayoutsForm, q1: Number(e.target.value) })}
+                            min={0}
+                          />
+                        </div>
+                        <div className="form-group">
+                          <label className="form-label">Quiniela 2da (x1)</label>
+                          <input
+                            type="number"
+                            className="form-input"
+                            value={currentPayoutsForm.q2}
+                            onChange={(e) => setCurrentPayoutsForm({ ...currentPayoutsForm, q2: Number(e.target.value) })}
+                            min={0}
+                          />
+                        </div>
+                        <div className="form-group">
+                          <label className="form-label">Quiniela 3ra (x1)</label>
+                          <input
+                            type="number"
+                            className="form-input"
+                            value={currentPayoutsForm.q3}
+                            onChange={(e) => setCurrentPayoutsForm({ ...currentPayoutsForm, q3: Number(e.target.value) })}
+                            min={0}
+                          />
+                        </div>
+                        <div className="form-group">
+                          <label className="form-label">Palé (x1)</label>
+                          <input
+                            type="number"
+                            className="form-input"
+                            value={currentPayoutsForm.pale}
+                            onChange={(e) => setCurrentPayoutsForm({ ...currentPayoutsForm, pale: Number(e.target.value) })}
+                            min={0}
+                          />
+                        </div>
+                        <div className="form-group">
+                          <label className="form-label">Super Palé (x1)</label>
+                          <input
+                            type="number"
+                            className="form-input"
+                            value={currentPayoutsForm.superPale}
+                            onChange={(e) => setCurrentPayoutsForm({ ...currentPayoutsForm, superPale: Number(e.target.value) })}
+                            min={0}
+                          />
+                        </div>
+                        <div className="form-group">
+                          <label className="form-label">Tripleta (x1)</label>
+                          <input
+                            type="number"
+                            className="form-input"
+                            value={currentPayoutsForm.tripleta}
+                            onChange={(e) => setCurrentPayoutsForm({ ...currentPayoutsForm, tripleta: Number(e.target.value) })}
+                            min={0}
+                          />
+                        </div>
+                        <div className="form-group" style={{ gridColumn: 'span 2' }}>
+                          <label className="form-label">Tripleta 2 Aciertos (Consolación)</label>
+                          <input
+                            type="number"
+                            className="form-input"
+                            value={currentPayoutsForm.tripleta2}
+                            onChange={(e) => setCurrentPayoutsForm({ ...currentPayoutsForm, tripleta2: Number(e.target.value) })}
+                            min={0}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* USA Pick Payouts */}
+                  {systemModeConfig.pickModeEnabled !== false && (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                      <h5 style={{ fontSize: '0.9rem', fontWeight: 600, borderBottom: '1px solid hsl(var(--border))', paddingBottom: '8px', color: 'var(--primary)' }}>
+                        Loterías USA (Pick 3 / Pick 4)
+                      </h5>
+
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                        <div className="form-group">
+                          <label className="form-label">Pick 3 Straight</label>
+                          <input
+                            type="number"
+                            className="form-input"
+                            value={currentPayoutsForm.pick3Straight}
+                            onChange={(e) => setCurrentPayoutsForm({ ...currentPayoutsForm, pick3Straight: Number(e.target.value) })}
+                            min={0}
+                          />
+                        </div>
+                        <div className="form-group">
+                          <label className="form-label">Pick 3 Back Pair</label>
+                          <input
+                            type="number"
+                            className="form-input"
+                            value={currentPayoutsForm.pick3BackPair}
+                            onChange={(e) => setCurrentPayoutsForm({ ...currentPayoutsForm, pick3BackPair: Number(e.target.value) })}
+                            min={0}
+                          />
+                        </div>
+                        <div className="form-group">
+                          <label className="form-label">Pick 3 Box 3-Way</label>
+                          <input
+                            type="number"
+                            className="form-input"
+                            value={currentPayoutsForm.pick3Box3}
+                            onChange={(e) => setCurrentPayoutsForm({ ...currentPayoutsForm, pick3Box3: Number(e.target.value) })}
+                            min={0}
+                          />
+                        </div>
+                        <div className="form-group">
+                          <label className="form-label">Pick 3 Box 6-Way</label>
+                          <input
+                            type="number"
+                            className="form-input"
+                            value={currentPayoutsForm.pick3Box6}
+                            onChange={(e) => setCurrentPayoutsForm({ ...currentPayoutsForm, pick3Box6: Number(e.target.value) })}
+                            min={0}
+                          />
+                        </div>
+
+                        <div className="form-group">
+                          <label className="form-label">Pick 4 Straight</label>
+                          <input
+                            type="number"
+                            className="form-input"
+                            value={currentPayoutsForm.pick4Straight}
+                            onChange={(e) => setCurrentPayoutsForm({ ...currentPayoutsForm, pick4Straight: Number(e.target.value) })}
+                            min={0}
+                          />
+                        </div>
+                        <div className="form-group">
+                          <label className="form-label">Pick 4 Back Pair</label>
+                          <input
+                            type="number"
+                            className="form-input"
+                            value={currentPayoutsForm.pick4BackPair}
+                            onChange={(e) => setCurrentPayoutsForm({ ...currentPayoutsForm, pick4BackPair: Number(e.target.value) })}
+                            min={0}
+                          />
+                        </div>
+
+                        <div className="form-group">
+                          <label className="form-label">Pick 4 Box 4-Way</label>
+                          <input
+                            type="number"
+                            className="form-input"
+                            value={currentPayoutsForm.pick4Box4}
+                            onChange={(e) => setCurrentPayoutsForm({ ...currentPayoutsForm, pick4Box4: Number(e.target.value) })}
+                            min={0}
+                          />
+                        </div>
+                        <div className="form-group">
+                          <label className="form-label">Pick 4 Box 6-Way</label>
+                          <input
+                            type="number"
+                            className="form-input"
+                            value={currentPayoutsForm.pick4Box6}
+                            onChange={(e) => setCurrentPayoutsForm({ ...currentPayoutsForm, pick4Box6: Number(e.target.value) })}
+                            min={0}
+                          />
+                        </div>
+                        <div className="form-group">
+                          <label className="form-label">Pick 4 Box 12-Way</label>
+                          <input
+                            type="number"
+                            className="form-input"
+                            value={currentPayoutsForm.pick4Box12}
+                            onChange={(e) => setCurrentPayoutsForm({ ...currentPayoutsForm, pick4Box12: Number(e.target.value) })}
+                            min={0}
+                          />
+                        </div>
+                        <div className="form-group">
+                          <label className="form-label">Pick 4 Box 24-Way</label>
+                          <input
+                            type="number"
+                            className="form-input"
+                            value={currentPayoutsForm.pick4Box24}
+                            onChange={(e) => setCurrentPayoutsForm({ ...currentPayoutsForm, pick4Box24: Number(e.target.value) })}
+                            min={0}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* CARD 4.5: SPORTSBOOK LIMITS CONFIGURATION */}
+                  <div className="glass-panel-premium" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                    <div>
+                      <h4 style={{ fontSize: '1.05rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <Trophy size={18} color="var(--primary)" />
+                        Límites de Banca Deportiva
+                      </h4>
+                      <p style={{ fontSize: '0.75rem', color: 'hsl(var(--text-secondary))', marginTop: '4px' }}>
+                        Establece topes máximos para apuestas y cobros deportivos en este ámbito.
+                      </p>
+                    </div>
+
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                      <div className="form-group">
+                        <label className="form-label" style={{ fontWeight: 600 }}>
+                          Apuesta Máxima por Ticket ($)
+                        </label>
+                        <input
+                          type="number"
+                          className="form-input"
+                          value={sportsLimitsForm.max_ticket_stake}
+                          onChange={(e) => setSportsLimitsForm({ ...sportsLimitsForm, max_ticket_stake: Number(e.target.value) })}
+                          min={0}
+                        />
+                      </div>
+
+                      <div className="form-group">
+                        <label className="form-label" style={{ fontWeight: 600 }}>
+                          Pago Máximo por Ticket ($)
+                        </label>
+                        <input
+                          type="number"
+                          className="form-input"
+                          value={sportsLimitsForm.max_potential_payout}
+                          onChange={(e) => setSportsLimitsForm({ ...sportsLimitsForm, max_potential_payout: Number(e.target.value) })}
+                          min={0}
+                        />
+                      </div>
+
+                      <div className="form-group">
+                        <label className="form-label" style={{ fontWeight: 600, marginBottom: '8px', display: 'block' }}>
+                          Mercados Deportivos Autorizados
+                        </label>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                          {[
+                            { id: 'moneyline', label: 'Moneyline (Ganador)' },
+                            { id: 'spread', label: 'Spread (Handicap)' },
+                            { id: 'total', label: 'Alta/Baja (Totals)' },
+                            { id: 'runline', label: 'Runline (Handicap)' },
+                            { id: 'first_half', label: 'Primera Mitad' },
+                            { id: 'first_five', label: 'Primeras 5 Entradas' }
+                          ].map((mkt) => {
+                            const isChecked = sportsLimitsForm.enabled_markets.includes(mkt.id);
+                            return (
+                              <label key={mkt.id} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.8rem', cursor: 'pointer' }}>
+                                <input
+                                  type="checkbox"
+                                  checked={isChecked}
+                                  onChange={(e) => {
+                                    let nextMkts = [...sportsLimitsForm.enabled_markets];
+                                    if (e.target.checked) {
+                                      if (!nextMkts.includes(mkt.id)) nextMkts.push(mkt.id);
+                                    } else {
+                                      nextMkts = nextMkts.filter(m => m !== mkt.id);
+                                    }
+                                    setSportsLimitsForm({ ...sportsLimitsForm, enabled_markets: nextMkts });
+                                  }}
+                                />
+                                {mkt.label}
+                              </label>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                </div>
+              </div>
+
+
               {/* CARD 5: SPECIFIC PLAYS / NUMBERS BLOCK CONTROL */}
-              <div className="glass-panel" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px', marginTop: '8px' }}>
+              <div className="glass-panel" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px', marginTop: '24px' }}>
                 <div>
                   <h4 style={{ fontSize: '1.05rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '8px', color: 'hsl(var(--danger))' }}>
                     <Lock size={18} />
@@ -3472,7 +4585,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeTab }) => {
               <div className="glass-panel" style={{ padding: '20px 24px', display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
                 <button
                   className="btn btn-primary"
-                  onClick={handleSaveLimits}
+                  onClick={() => setLimitsConfirmOpen(true)}
                   style={{
                     padding: '12px 32px',
                     fontSize: '0.95rem',
@@ -3490,7 +4603,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeTab }) => {
           )}
 
           {/* TAB 7: FINANCE SUMMARY AND RECHARGES */}
-          {activeTab === 'finanzas' && user.role === 'ADMIN' && (
+          {activeTab === 'finanzas' && (user.role === 'ADMIN' || user.role === 'MASTER') && (
             <div className="fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
               
               {/* Cupos summary */}
@@ -3569,7 +4682,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeTab }) => {
                 <div style={{ backgroundColor: 'hsl(var(--background))', padding: '20px', borderRadius: 'var(--radius-md)', display: 'flex', flexDirection: 'column', gap: '6px' }}>
                   <span style={{ color: 'hsl(var(--text-secondary))', fontSize: '0.85rem' }}>Ventas Brutas Totales</span>
                   <span style={{ fontSize: '1.5rem', fontWeight: 700 }}>
-                    ${tickets.filter(t => t.status !== 'cancelled').reduce((acc, t) => acc + t.total, 0).toFixed(2)}
+                    ${tickets.filter(t => t.status !== 'cancelled' && t.status !== 'voided').reduce((acc, t) => acc + t.total, 0).toFixed(2)}
                   </span>
                 </div>
                 <div style={{ backgroundColor: 'hsl(var(--background))', padding: '20px', borderRadius: 'var(--radius-md)', display: 'flex', flexDirection: 'column', gap: '6px' }}>
@@ -3582,7 +4695,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeTab }) => {
                   <span style={{ color: 'hsl(var(--text-secondary))', fontSize: '0.85rem' }}>Ingreso Neto (Ganancia)</span>
                   <span style={{ fontSize: '1.5rem', fontWeight: 700, color: 'hsl(var(--success))' }}>
                     ${(
-                      tickets.filter(t => t.status !== 'cancelled').reduce((acc, t) => acc + t.total, 0) -
+                      tickets.filter(t => t.status !== 'cancelled' && t.status !== 'voided').reduce((acc, t) => acc + t.total, 0) -
                       tickets.filter(t => t.status === 'paid' || t.status === 'winner').reduce((acc, t) => acc + t.totalPrize, 0)
                     ).toFixed(2)}
                   </span>
@@ -4130,6 +5243,360 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeTab }) => {
         </div>
       )}
 
+
+      {/* --- MODAL: DELETE TICKET PHYSICAL CONFIRMATION --- */}
+      {deleteModalOpen && selectedTicketForDelete && (
+        <div style={{
+          position: 'fixed',
+          inset: 0,
+          backgroundColor: 'rgba(0,0,0,0.6)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 101,
+          backdropFilter: 'blur(5px)'
+        }}>
+          <div className="glass-panel fade-in" style={{
+            maxWidth: '480px',
+            width: '100%',
+            padding: '30px',
+            backgroundColor: 'hsl(var(--surface))',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '16px',
+            border: '2px solid hsl(var(--danger) / 0.4)'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: 'hsl(var(--danger))' }}>
+              <AlertTriangle size={24} />
+              <h3 style={{ fontSize: '1.25rem', margin: 0 }}>¡ELIMINACIÓN FÍSICA CRÍTICA!</h3>
+            </div>
+            
+            <p style={{ fontSize: '0.875rem', color: 'hsl(var(--text-secondary))', lineHeight: 1.5 }}>
+              ¿Está completamente seguro que desea <strong style={{ color: 'hsl(var(--danger))' }}>ELIMINAR FÍSICAMENTE</strong> el ticket <strong style={{ color: 'hsl(var(--text-primary))' }}>{selectedTicketForDelete.serial || selectedTicketForDelete.id}</strong> del servidor?
+              <br/><br/>
+              <span style={{ color: 'hsl(var(--danger))', fontWeight: 'bold' }}>ADVERTENCIA: Esta acción es 100% irreversible.</span> Se borrará del registro de Supabase y recalculará la caja disponible y fianza a cero si es necesario.
+            </p>
+
+            <div style={{ backgroundColor: 'hsl(var(--background))', padding: '12px', borderRadius: 'var(--radius-sm)', border: '1px solid hsl(var(--border))', fontSize: '0.8rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
+                <span style={{ color: 'hsl(var(--text-secondary))' }}>Emisor:</span>
+                <strong>@{selectedTicketForDelete.sellerUser}</strong>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
+                <span style={{ color: 'hsl(var(--text-secondary))' }}>Monto:</span>
+                <strong>${selectedTicketForDelete.total.toFixed(2)}</strong>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span style={{ color: 'hsl(var(--text-secondary))' }}>Hora:</span>
+                <strong>{new Date(selectedTicketForDelete.createdAtEpochMs).toLocaleTimeString()}</strong>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', gap: '12px', marginTop: '12px' }}>
+              <button
+                className="btn btn-primary"
+                style={{ flex: 1, backgroundColor: 'hsl(var(--danger))', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
+                onClick={() => handleDeleteTicket(selectedTicketForDelete)}
+                disabled={isDeletingTicket}
+              >
+                {isDeletingTicket ? 'Eliminando...' : 'Eliminar Permanentemente'}
+              </button>
+              <button
+                className="btn btn-secondary"
+                style={{ flex: 1 }}
+                onClick={() => {
+                  setDeleteModalOpen(false);
+                  setSelectedTicketForDelete(null);
+                }}
+                disabled={isDeletingTicket}
+              >
+                Cancelar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+
+      {/* --- MODAL: SNAPSHOT VISOR TICKET PREMIUM (RECIBO TÉRMICO) --- */}
+      {selectedTicketForDetail && (
+        <div style={{
+          position: 'fixed',
+          inset: 0,
+          backgroundColor: 'rgba(0,0,0,0.7)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 102,
+          backdropFilter: 'blur(6px)'
+        }}>
+          <div className="fade-in" style={{
+            maxWidth: '380px',
+            width: '100%',
+            backgroundColor: '#ffffff',
+            color: '#111111',
+            fontFamily: '"Courier New", Courier, monospace',
+            padding: '24px',
+            boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.3), 0 8px 10px -6px rgb(0 0 0 / 0.3)',
+            borderRadius: '8px',
+            display: 'flex',
+            flexDirection: 'column',
+            position: 'relative',
+            maxHeight: '90vh',
+            overflowY: 'auto'
+          }}>
+            {/* Watermark of status */}
+            <div style={{
+              position: 'absolute',
+              top: '50%',
+              left: '50%',
+              transform: 'translate(-50%, -50%) rotate(-30deg)',
+              fontSize: '3rem',
+              fontWeight: 900,
+              opacity: 0.12,
+              pointerEvents: 'none',
+              width: '100%',
+              textAlign: 'center',
+              color: selectedTicketForDetail.status === 'paid' ? '#10b981' 
+                     : selectedTicketForDetail.status === 'cancelled' || selectedTicketForDetail.status === 'voided' ? '#ef4444' 
+                     : selectedTicketForDetail.status === 'winner' ? '#f59e0b' : '#3b82f6',
+              border: `6px double ${selectedTicketForDetail.status === 'paid' ? '#10b981' : selectedTicketForDetail.status === 'cancelled' || selectedTicketForDetail.status === 'voided' ? '#ef4444' : selectedTicketForDetail.status === 'winner' ? '#f59e0b' : '#3b82f6'}`
+            }}>
+              {selectedTicketForDetail.status === 'paid' ? 'COBRADO' 
+               : selectedTicketForDetail.status === 'cancelled' || selectedTicketForDetail.status === 'voided' ? 'ANULADO' 
+               : selectedTicketForDetail.status === 'winner' ? 'PREMIADO' : 'ACTIVO'}
+            </div>
+
+            {/* Thermal Header */}
+            <div style={{ textAlign: 'center', borderBottom: '1px dashed #111111', paddingBottom: '12px', marginBottom: '12px' }}>
+              <h4 style={{ margin: '0 0 4px 0', fontSize: '1.1rem', fontWeight: 'bold', fontFamily: 'sans-serif' }}>BANCA EL FUERTE</h4>
+              <p style={{ margin: 0, fontSize: '0.75rem', textTransform: 'uppercase' }}>Consorcio de Loterías RD</p>
+              <p style={{ margin: '4px 0 0 0', fontSize: '0.75rem' }}>Cajero: @{selectedTicketForDetail.sellerUser}</p>
+            </div>
+
+            {/* Ticket Info */}
+            <div style={{ fontSize: '0.75rem', marginBottom: '12px', display: 'flex', flexDirection: 'column', gap: '2px' }}>
+              <div>FECHA: {new Date(selectedTicketForDetail.createdAtEpochMs).toLocaleString('es-DO', { timeZone: 'America/Santo_Domingo' })}</div>
+              <div>SERIAL: {selectedTicketForDetail.serial || selectedTicketForDetail.id}</div>
+              <div>TICKET ID: {selectedTicketForDetail.id}</div>
+              <div style={{ borderBottom: '1px dashed #111111', margin: '6px 0' }} />
+              <div>
+                <strong>LOTERÍAS:</strong>{' '}
+                {(() => {
+                  const uniqueLots = new Set();
+                  selectedTicketForDetail.plays.forEach(p => {
+                    if (p.lotteryName) {
+                      p.lotteryName.split(/[\/,]+/).forEach(part => {
+                        const trimmed = part.trim();
+                        if (trimmed) uniqueLots.add(trimmed);
+                      });
+                    }
+                  });
+                  return Array.from(uniqueLots).join(' / ');
+                })()}
+              </div>
+            </div>
+
+            {/* Plays Table Header */}
+            <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr', fontSize: '0.8rem', fontWeight: 'bold', borderBottom: '1px solid #111111', paddingBottom: '4px', marginBottom: '4px' }}>
+              <span>JUGADA</span>
+              <span style={{ textAlign: 'center' }}>TIPO</span>
+              <span style={{ textAlign: 'right' }}>MONTO</span>
+            </div>
+
+            {/* Plays Table Body */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '0.75rem', minHeight: '60px' }}>
+              {selectedTicketForDetail.plays.map((p, idx) => (
+                <div key={idx} style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr' }}>
+                  <span style={{ fontWeight: 'bold' }}>{p.number}</span>
+                  <span style={{ textAlign: 'center' }}>{p.playType.toUpperCase()}</span>
+                  <span style={{ textAlign: 'right' }}>${p.amount.toFixed(2)}</span>
+                </div>
+              ))}
+            </div>
+
+            {/* Total Footer */}
+            <div style={{ borderTop: '1px dashed #111111', marginTop: '12px', paddingTop: '8px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem' }}>
+                <span>SUBTOTAL:</span>
+                <span>${selectedTicketForDetail.total.toFixed(2)}</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem' }}>
+                <span>DESCUENTO:</span>
+                <span>$0.00</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.9rem', fontWeight: 'bold', borderTop: '1px solid #111111', paddingTop: '4px' }}>
+                <span>TOTAL APOSTADO:</span>
+                <span>${selectedTicketForDetail.total.toFixed(2)}</span>
+              </div>
+              {selectedTicketForDetail.totalPrize > 0 && (
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.9rem', fontWeight: 'bold', color: '#dc2626' }}>
+                  <span>PREMIO ACUMULADO:</span>
+                  <span>${selectedTicketForDetail.totalPrize.toFixed(2)}</span>
+                </div>
+              )}
+            </div>
+
+            {/* Simulated Barcode */}
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginTop: '20px', gap: '4px' }}>
+              <div style={{
+                height: '40px',
+                width: '100%',
+                background: 'repeating-linear-gradient(90deg, #111 0px, #111 2px, transparent 2px, transparent 6px, #111 6px, #111 7px, transparent 7px, transparent 10px)',
+                opacity: 0.8
+              }} />
+              <span style={{ fontSize: '0.65rem' }}>*{selectedTicketForDetail.id.substring(0, 18).toUpperCase()}*</span>
+            </div>
+
+            {/* Buttons for actions */}
+            <div style={{ display: 'flex', gap: '10px', marginTop: '24px', fontFamily: 'sans-serif' }} className="no-print">
+              <button
+                className="btn btn-primary"
+                style={{ flex: 1, backgroundColor: '#111111', color: '#ffffff', border: 'none', fontSize: '0.8rem', padding: '8px' }}
+                onClick={() => window.print()}
+              >
+                Imprimir
+              </button>
+              <button
+                className="btn btn-secondary"
+                style={{ flex: 1, border: '1px solid #111111', color: '#111111', background: '#ffffff', fontSize: '0.8rem', padding: '8px' }}
+                onClick={() => setSelectedTicketForDetail(null)}
+              >
+                Cerrar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+
+      {/* --- MODAL: SNAPSHOT VISOR SPORTS TICKET PREMIUM (RECIBO TÉRMICO) --- */}
+      {selectedSportsTicketForDetail && (
+        <div style={{
+          position: 'fixed',
+          inset: 0,
+          backgroundColor: 'rgba(0,0,0,0.7)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 102,
+          backdropFilter: 'blur(6px)'
+        }}>
+          <div className="fade-in" style={{
+            maxWidth: '380px',
+            width: '100%',
+            backgroundColor: '#ffffff',
+            color: '#111111',
+            fontFamily: '"Courier New", Courier, monospace',
+            padding: '24px',
+            boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.3), 0 8px 10px -6px rgb(0 0 0 / 0.3)',
+            borderRadius: '8px',
+            display: 'flex',
+            flexDirection: 'column',
+            position: 'relative',
+            maxHeight: '90vh',
+            overflowY: 'auto'
+          }}>
+            {/* Watermark of status */}
+            <div style={{
+              position: 'absolute',
+              top: '50%',
+              left: '50%',
+              transform: 'translate(-50%, -50%) rotate(-30deg)',
+              fontSize: '3rem',
+              fontWeight: 900,
+              color: selectedSportsTicketForDetail.status === 'paid' ? 'rgba(16, 185, 129, 0.15)'
+                     : selectedSportsTicketForDetail.status === 'void' ? 'rgba(107, 114, 128, 0.15)'
+                     : selectedSportsTicketForDetail.status === 'lost' ? 'rgba(239, 68, 68, 0.15)'
+                     : selectedSportsTicketForDetail.status === 'won' ? 'rgba(59, 130, 246, 0.15)' : 'rgba(245, 158, 11, 0.15)',
+              border: `6px double ${
+                selectedSportsTicketForDetail.status === 'paid' ? '#10b981'
+                : selectedSportsTicketForDetail.status === 'void' ? '#6b7280'
+                : selectedSportsTicketForDetail.status === 'lost' ? '#ef4448'
+                : selectedSportsTicketForDetail.status === 'won' ? '#3b82f6' : '#f59e0b'
+              }`,
+              padding: '10px 20px',
+              borderRadius: '8px',
+              pointerEvents: 'none',
+              zIndex: 1,
+              whiteSpace: 'nowrap'
+            }}>
+              {selectedSportsTicketForDetail.status === 'paid' ? 'COBRADO'
+               : selectedSportsTicketForDetail.status === 'void' ? 'ANULADO'
+               : selectedSportsTicketForDetail.status === 'lost' ? 'PERDIDO'
+               : selectedSportsTicketForDetail.status === 'won' ? 'GANADO' : 'PENDIENTE'}
+            </div>
+
+            <div style={{ textAlign: 'center', borderBottom: '1px dashed #111111', paddingBottom: '12px', zIndex: 2 }}>
+              <span style={{ fontSize: '1.25rem', fontWeight: 'bold', display: 'block' }}>SPORTS BOOK</span>
+              <span style={{ fontSize: '0.8rem', display: 'block', textTransform: 'uppercase' }}>{selectedSportsTicketForDetail.bancaName || 'BANCA DEPORTIVA'}</span>
+              <p style={{ margin: '4px 0 0 0', fontSize: '0.75rem' }}>Cajero: @{selectedSportsTicketForDetail.sellerUsername}</p>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '0.75rem', padding: '10px 0', borderBottom: '1px dashed #111111', zIndex: 2 }}>
+              <div>FECHA: {new Date(selectedSportsTicketForDetail.soldAt).toLocaleString('es-DO')}</div>
+              <div>TICKET ID: {selectedSportsTicketForDetail.ticketCode}</div>
+              <div>TIPO: {selectedSportsTicketForDetail.ticketType.toUpperCase()}</div>
+            </div>
+
+            {/* Parlay legs detail */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', padding: '12px 0', borderBottom: '1px dashed #111111', zIndex: 2 }}>
+              {(selectedSportsTicketForDetail.legs || []).map((leg, idx) => (
+                <div key={idx} style={{ fontSize: '0.75rem' }}>
+                  <div style={{ fontWeight: 'bold' }}>{leg.eventLabel}</div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '2px', color: '#555' }}>
+                    <span>{leg.marketTitle} ({leg.selectionLabel})</span>
+                    <span>x{Number(leg.decimalOdds).toFixed(2)}</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem', color: '#888' }}>
+                    <span>Estado:</span>
+                    <span style={{ fontWeight: 'bold', color: leg.status === 'won' ? '#10b981' : leg.status === 'lost' ? '#ef4448' : '#e59b0b' }}>
+                      {leg.status.toUpperCase()}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Total / potential payout breakdown */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', padding: '10px 0', zIndex: 2 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem' }}>
+                <span>MONTO APOSTADO:</span>
+                <strong>${Number(selectedSportsTicketForDetail.stake).toFixed(2)}</strong>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem' }}>
+                <span>CUOTA TOTAL:</span>
+                <strong>x{Number(selectedSportsTicketForDetail.decimalOdds).toFixed(2)}</strong>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.9rem', fontWeight: 'bold', borderTop: '1px solid #111111', paddingTop: '4px' }}>
+                <span>POTENCIAL PREMIO:</span>
+                <span style={{ color: '#10b981' }}>${Number(selectedSportsTicketForDetail.potentialPayout).toFixed(2)}</span>
+              </div>
+            </div>
+
+            {/* Buttons for actions */}
+            <div style={{ display: 'flex', gap: '10px', marginTop: '24px', fontFamily: 'sans-serif', zIndex: 2 }} className="no-print">
+              <button
+                className="btn btn-primary"
+                style={{ flex: 1, backgroundColor: '#111111', color: '#ffffff', border: 'none', fontSize: '0.8rem', padding: '8px' }}
+                onClick={() => window.print()}
+              >
+                Imprimir
+              </button>
+              <button
+                className="btn btn-secondary"
+                style={{ flex: 1, border: '1px solid #111111', color: '#111111', background: '#ffffff', fontSize: '0.8rem', padding: '8px' }}
+                onClick={() => setSelectedSportsTicketForDetail(null)}
+              >
+                Cerrar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+
+
       {/* --- MODAL: SHARE CREDS (MASTER ONLY) --- */}
       {credsShareOpen && (
         <div style={{
@@ -4184,6 +5651,135 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeTab }) => {
               </button>
               <button className="btn btn-secondary" onClick={() => setCredsShareOpen(false)}>
                 Cerrar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* --- MODAL / BOTTOM SHEET: CONFIRMAR CAMBIOS EN LÍMITES --- */}
+      {limitsConfirmOpen && (
+        <div style={{
+          position: 'fixed',
+          inset: 0,
+          backgroundColor: 'rgba(0,0,0,0.6)',
+          display: 'flex',
+          alignItems: 'flex-end', // Slides up like a bottom sheet on mobile!
+          justifyContent: 'center',
+          zIndex: 110,
+          backdropFilter: 'blur(10px)',
+          transition: 'all 0.3s ease'
+        }}>
+          <div className="glass-panel fade-in" style={{
+            maxWidth: '540px',
+            width: '100%',
+            padding: '28px',
+            borderTopLeftRadius: '24px',
+            borderTopRightRadius: '24px',
+            borderBottomLeftRadius: '0px',
+            borderBottomRightRadius: '0px',
+            backgroundColor: 'hsl(var(--surface))',
+            maxHeight: '85vh',
+            overflowY: 'auto',
+            boxShadow: '0 -10px 25px rgba(0,0,0,0.3)',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '20px'
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <Settings size={22} color="var(--primary)" />
+                <h3 style={{ fontSize: '1.2rem', margin: 0, fontWeight: 700 }}>Confirmar Guardar Límites</h3>
+              </div>
+              <button 
+                onClick={() => setLimitsConfirmOpen(false)}
+                style={{ border: 'none', background: 'transparent', fontSize: '1.4rem', cursor: 'pointer', color: 'hsl(var(--text-muted))' }}
+              >
+                &times;
+              </button>
+            </div>
+
+            <p style={{ fontSize: '0.85rem', color: 'hsl(var(--text-secondary))', lineHeight: 1.5 }}>
+              Revisa los límites operativos y la escala de premios antes de sincronizar con los cajeros y terminales en vivo.
+            </p>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', backgroundColor: 'rgba(255,255,255,0.02)', padding: '16px', borderRadius: 'var(--radius-md)', border: '1px solid hsl(var(--border))' }}>
+              <div style={{ fontSize: '0.8rem', display: 'flex', justifyContent: 'space-between' }}>
+                <span style={{ color: 'hsl(var(--text-muted))' }}>Alcance / Destinatario:</span>
+                <strong style={{ color: 'var(--primary)' }}>
+                  {selectedScope === 'ADMIN_SELF' ? '⚙️ Banca / Propios' : selectedScope === 'CASHIER_DEFAULTS' ? '👥 Todos los Cajeros (Defecto)' : `👤 Cajero @${selectedCashierUsername}`}
+                </strong>
+              </div>
+
+              <div style={{ borderTop: '1px solid hsl(var(--border))', paddingTop: '10px' }}>
+                <span style={{ fontSize: '0.8rem', fontWeight: 600, display: 'block', marginBottom: '8px', color: 'hsl(var(--text-primary))' }}>Topes de Venta Diarios</span>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px 16px', fontSize: '0.75rem', color: 'hsl(var(--text-secondary))' }}>
+                  <div>Venta Máxima: <strong>${currentLimitsForm.daySale || 'Sin límite'}</strong></div>
+                  <div>Tope Pago Premios: <strong>${currentLimitsForm.payout || 'Sin tope'}</strong></div>
+                  {systemModeConfig.lotteryModeEnabled !== false && (
+                    <>
+                      <div>Quiniela Tope: <strong>${currentLimitsForm.q}</strong></div>
+                      <div>Palé Tope: <strong>${currentLimitsForm.pale}</strong></div>
+                      <div>Super Palé: <strong>${currentLimitsForm.sp}</strong></div>
+                      <div>Tripleta Tope: <strong>${currentLimitsForm.t}</strong></div>
+                    </>
+                  )}
+                  {systemModeConfig.pickModeEnabled !== false && (
+                    <>
+                      <div>Pick 3 Straight: <strong>${currentLimitsForm.p3}</strong></div>
+                      <div>Pick 3 Box: <strong>${currentLimitsForm.p3box}</strong></div>
+                      <div>Pick 4 Straight: <strong>${currentLimitsForm.p4}</strong></div>
+                      <div>Pick 4 Box: <strong>${currentLimitsForm.p4box}</strong></div>
+                    </>
+                  )}
+                </div>
+              </div>
+
+              {(selectedScope === 'ADMIN_SELF' || selectedScope === 'CASHIER_SPECIFIC') && (
+                <div style={{ borderTop: '1px solid hsl(var(--border))', paddingTop: '10px', fontSize: '0.75rem' }}>
+                  <span style={{ color: 'hsl(var(--text-muted))' }}>Modo Visual POS: </span>
+                  <strong style={{ color: 'hsl(var(--text-primary))' }}>
+                    {currentLimitsForm.systemModeOverride === 'compact' ? 'Compacto (POS)' : 'Estándar'}
+                  </strong>
+                </div>
+              )}
+            </div>
+
+            {/* Sync Warning */}
+            <div style={{ display: 'flex', gap: '10px', padding: '12px 16px', borderRadius: 'var(--radius-sm)', backgroundColor: 'hsl(var(--warning) / 0.08)', border: '1px solid hsl(var(--warning) / 0.15)', fontSize: '0.75rem', color: 'hsl(var(--warning))', alignItems: 'flex-start' }}>
+              <Info size={16} style={{ flexShrink: 0, marginTop: '2px' }} />
+              <div>
+                <strong>Guardado Seguro:</strong> Los cajeros de red recibirán estas configuraciones al instante mediante Supabase Realtime la próxima vez que abran wagers o actualicen su terminal.
+              </div>
+            </div>
+
+            {/* Action buttons */}
+            <div style={{ display: 'flex', gap: '12px', marginTop: '10px' }}>
+              <button
+                className="btn btn-primary"
+                style={{ flex: 2, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '12px' }}
+                onClick={handleSaveLimits}
+                disabled={limitsSaving}
+              >
+                {limitsSaving ? (
+                  <>
+                    <RefreshCw size={16} className="animate-spin" />
+                    Sincronizando con Servidor...
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle size={16} />
+                    Confirmar y Sincronizar
+                  </>
+                )}
+              </button>
+              <button
+                className="btn btn-secondary"
+                style={{ flex: 1, padding: '12px' }}
+                onClick={() => setLimitsConfirmOpen(false)}
+                disabled={limitsSaving}
+              >
+                Cancelar
               </button>
             </div>
           </div>

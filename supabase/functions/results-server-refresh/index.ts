@@ -1,11 +1,11 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
-import { clean, corsHeaders, fetchKvValue, json, upsertKvValue } from "../_shared/lotterynet-admin.ts";
+import { clean, corsHeaders, fetchKvValue, json, supabaseAdmin, upsertKvValue } from "../_shared/lotterynet-admin.ts";
 
 type ResultRow = Record<string, unknown>;
 
 const RENDER_BASE_URL = Deno.env.get("LOTTERYNET_RENDER_RESULTS_URL") ?? "https://didactic-guacamole.onrender.com";
 const ENV_CRON_SECRET = Deno.env.get("LOTTERYNET_RESULTS_CRON_SECRET") ?? Deno.env.get("LOTTERYNET_ADMIN_SHARED_SECRET") ?? "";
-const RENDER_LIVE_TIMEOUT_MS = 25_000;
+const RENDER_LIVE_TIMEOUT_MS = 60_000;
 
 function normalizeDateKey(value: unknown): string {
   const raw = clean(value);
@@ -25,10 +25,6 @@ function normalizeDateKey(value: unknown): string {
 function renderDateKey(date: string): string {
   const [day, month, year] = date.split("-");
   return `${year}-${month}-${day}`;
-}
-
-function cacheKey(prefix: string, date: string): string {
-  return `${prefix}:${date}`;
 }
 
 function stableStringify(value: unknown): string {
@@ -114,7 +110,11 @@ function mergeMissingCurrentRows(currentRows: ResultRow[], nextRows: ResultRow[]
 
 function mergeHolidayNoDrawRows(nextRows: ResultRow[], holidayRows: ResultRow[]): ResultRow[] {
   if (holidayRows.length === 0) return nextRows;
-  const holidayById = new Map(holidayRows.map((row) => [rowIdentity(row), row]).filter(([id]) => id !== ""));
+  const holidayById = new Map<string, ResultRow>(
+    holidayRows
+      .map((row): [string, ResultRow] => [rowIdentity(row), row])
+      .filter(([id]) => id !== ""),
+  );
   const mergedRows = nextRows.map((row) => {
     const id = rowIdentity(row);
     if (!holidayById.has(id) || hasPublishedNumbers(row)) return row;
@@ -228,11 +228,11 @@ function splitPayload(payload: unknown): { lotteries: ResultRow[]; picks: Result
 }
 
 async function fetchLiveResults(date: string): Promise<unknown> {
-  const url = new URL("/system-results", RENDER_BASE_URL);
+  const url = new URL("/run-system-scraper", RENDER_BASE_URL);
   url.searchParams.set("date", renderDateKey(date));
   url.searchParams.set("mode", "both");
-  url.searchParams.set("live", "1");
   const response = await fetch(url, {
+    method: "POST",
     headers: { "Accept": "application/json" },
     signal: AbortSignal.timeout(RENDER_LIVE_TIMEOUT_MS),
   });
@@ -253,23 +253,57 @@ async function fetchLiveResultsOrEmpty(date: string): Promise<{ payload: unknown
   }
 }
 
-async function currentRowsForKey(key: string): Promise<ResultRow[]> {
-  return rowsFrom(await fetchKvValue(key));
+async function currentRowsFor(date: string, source: "lottery" | "pick"): Promise<ResultRow[]> {
+  const gameFilter = source === "pick" ? ["pick3", "pick4"] : ["normal"];
+  const { data, error } = await supabaseAdmin()
+    .from("result_draws")
+    .select("source_payload")
+    .eq("result_day_key", date)
+    .in("game", gameFilter);
+  if (error) throw error;
+  return (data ?? []).map((row) => row.source_payload as ResultRow).filter(Boolean);
 }
 
-async function upsertIfChanged(key: string, date: string, rows: ResultRow[]): Promise<boolean> {
+async function upsertIfChanged(source: "lottery" | "pick", date: string, rows: ResultRow[]): Promise<boolean> {
   if (rows.length === 0) return false;
-  const current = await fetchKvValue(key);
-  const currentRows = rowsFrom(current);
+  const currentRows = await currentRowsFor(date, source);
   const effectiveRows = mergeMissingCurrentRows(currentRows, mergeProtectedNoDrawRows(currentRows, rows));
-  const nextValue = {
-    date,
-    refreshedAt: new Date().toISOString(),
-    results: effectiveRows,
-  };
   if (stableStringify(currentRows) === stableStringify(effectiveRows)) return false;
-  await upsertKvValue(key, nextValue);
-  return true;
+  const { data, error } = await supabaseAdmin()
+    .rpc("lotterynet_upsert_result_draws_from_payload", {
+      p_result_day_key: date,
+      p_payload: effectiveRows,
+      p_source: source,
+    });
+  if (error) throw error;
+  return Number(data ?? 0) > 0;
+}
+
+async function saveLegacyResultCaches(date: string, lotteryRows: ResultRow[], pickRows: ResultRow[]): Promise<void> {
+  if (lotteryRows.length > 0) {
+    await upsertKvValue(`lot_results_cache_by_day:${date}`, lotteryRows);
+  }
+  if (pickRows.length > 0) {
+    await upsertKvValue(`pick_results_cache_by_day:${date}`, pickRows);
+  }
+}
+
+async function processPrizeJobsForDay(date: string): Promise<{ data: unknown; error: string | null }> {
+  try {
+    const { data, error } = await supabaseAdmin()
+      .rpc("lotterynet_process_result_reconcile_jobs_for_day", {
+        p_result_day_key: date,
+        p_job_limit: 12,
+        p_ticket_limit: 500,
+      });
+    if (error) throw error;
+    return { data, error: null };
+  } catch (error) {
+    return {
+      data: null,
+      error: error instanceof Error ? error.message : "No se pudo procesar premios del dia.",
+    };
+  }
 }
 
 async function configuredCronSecret(): Promise<string> {
@@ -313,22 +347,29 @@ Deno.serve(async (req) => {
     const payload = live.payload;
     const split = splitPayload(payload);
     const holidaySplit = splitPayload(await fetchHolidayNoDrawRows(date));
-    const lotteryKey = cacheKey("lot_results_cache_by_day", date);
-    const pickKey = cacheKey("pick_results_cache_by_day", date);
-    const lotteryBaseRows = split.lotteries.length > 0 ? split.lotteries : await currentRowsForKey(lotteryKey);
-    const pickBaseRows = split.picks.length > 0 ? split.picks : await currentRowsForKey(pickKey);
+    const lotteryBaseRows = split.lotteries.length > 0 ? split.lotteries : await currentRowsFor(date, "lottery");
+    const pickBaseRows = split.picks.length > 0 ? split.picks : await currentRowsFor(date, "pick");
     const lotteryRows = mergeHolidayNoDrawRows(lotteryBaseRows, holidaySplit.lotteries);
     const pickRows = mergeHolidayNoDrawRows(pickBaseRows, holidaySplit.picks);
-    const lotteryChanged = await upsertIfChanged(lotteryKey, date, lotteryRows);
-    const pickChanged = await upsertIfChanged(pickKey, date, pickRows);
+    const lotteryChanged = await upsertIfChanged("lottery", date, lotteryRows);
+    const pickChanged = await upsertIfChanged("pick", date, pickRows);
+    await saveLegacyResultCaches(date, lotteryRows, pickRows);
+    const prizeReconcile = lotteryChanged || pickChanged
+      ? await processPrizeJobsForDay(date)
+      : { data: null, error: null };
 
     return json({
       ok: true,
       date,
       liveError: live.error || null,
       changed: lotteryChanged || pickChanged,
+      prizeReconcile,
       lotteries: { rows: lotteryRows.length, changed: lotteryChanged },
       picks: { rows: pickRows.length, changed: pickChanged },
+      legacyCache: {
+        lotteryKey: `lot_results_cache_by_day:${date}`,
+        pickKey: `pick_results_cache_by_day:${date}`,
+      },
     });
   } catch (error) {
     return json({

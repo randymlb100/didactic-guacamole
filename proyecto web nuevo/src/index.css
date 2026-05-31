@@ -356,3 +356,101 @@ h1, h2, h3, h4, h5, h6 {
 ::-webkit-scrollbar-thumb:hover {
   background: hsl(var(--text-muted));
 }
+
+/* --- PREMIUM UI/UX GLOW, GLASS & TACTILE SYSTEM --- */
+
+/* Ambient Radial Blur Overlays */
+.atmospheric-glow-1 {
+  position: fixed;
+  top: -10%;
+  left: -10%;
+  width: 50vw;
+  height: 50vw;
+  background: radial-gradient(circle, rgba(29, 104, 245, 0.08) 0%, rgba(99, 102, 241, 0.03) 70%, transparent 100%);
+  filter: blur(120px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.atmospheric-glow-2 {
+  position: fixed;
+  bottom: -10%;
+  right: -10%;
+  width: 55vw;
+  height: 55vw;
+  background: radial-gradient(circle, rgba(16, 185, 129, 0.06) 0%, rgba(29, 104, 245, 0.02) 70%, transparent 100%);
+  filter: blur(140px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Evolved Bento Frosted Glass Panel */
+.glass-panel-premium {
+  background: rgba(11, 17, 30, 0.45);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+  border-radius: var(--radius-lg);
+  transition: all 0.3s cubic-bezier(0.165, 0.84, 0.44, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.glass-panel-premium::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.12) 50%, rgba(255,255,255,0) 100%);
+}
+
+.glass-panel-premium:hover {
+  border-color: rgba(255, 255, 255, 0.12);
+  box-shadow: 0 12px 40px 0 rgba(29, 104, 245, 0.08), 0 8px 32px 0 rgba(0, 0, 0, 0.45);
+  transform: translateY(-2px);
+}
+
+/* Premium Elastic Tactile Buttons */
+.btn-premium {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-family: var(--font-sans);
+  font-weight: 700;
+  font-size: 0.875rem;
+  padding: 12px 24px;
+  border-radius: var(--radius-md);
+  color: #ffffff;
+  background: linear-gradient(135deg, hsl(var(--primary)) 0%, #1e40af 100%);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 4px 14px 0 rgba(29, 104, 245, 0.35);
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  white-space: nowrap;
+}
+
+.btn-premium:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px 0 rgba(29, 104, 245, 0.45), 0 4px 14px 0 rgba(29, 104, 245, 0.3);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.btn-premium:active {
+  transform: translateY(1px);
+  box-shadow: 0 2px 8px 0 rgba(29, 104, 245, 0.2);
+}
+
+/* Mobile-first bottom sheet modal styles */
+.bottom-sheet-premium {
+  border-top-left-radius: var(--radius-xl) !important;
+  border-top-right-radius: var(--radius-xl) !important;
+  background-color: rgba(11, 17, 30, 0.92) !important;
+  backdrop-filter: blur(20px) !important;
+  -webkit-backdrop-filter: blur(20px) !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+

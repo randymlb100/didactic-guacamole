@@ -1,5 +1,5 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
-import { clean, corsHeaders, fetchKvValue, json, lower, requireAdminRole, requireSharedSecret, upsertKvValue } from "../_shared/lotterynet-admin.ts";
+import { clean, corsHeaders, json, lower, requireAdminRole, requireSharedSecret, supabaseAdmin } from "../_shared/lotterynet-admin.ts";
 
 type OverrideRow = {
   id: string;
@@ -21,13 +21,10 @@ function dateKey(value: unknown): string {
   return clean(value);
 }
 
-function kvKeyForDate(date: string): string {
-  return `manual_results_overrides_by_day:${date}`;
-}
-
-async function loadOverrides(date: string): Promise<OverrideRow[]> {
-  const value = await fetchKvValue(kvKeyForDate(date));
-  return Array.isArray(value) ? value as OverrideRow[] : [];
+function resultDateFromDayKey(date: string): string {
+  if (/^\d{4}-\d{2}-\d{2}$/.test(date)) return date;
+  const [day, month, year] = date.split("-");
+  return `${year}-${month}-${day}`;
 }
 
 Deno.serve(async (req) => {
@@ -47,9 +44,13 @@ Deno.serve(async (req) => {
     }
 
     if (req.method === "DELETE") {
-      const current = await loadOverrides(date);
-      const next = current.filter((row) => clean(row.id) != resultId);
-      await upsertKvValue(kvKeyForDate(date), next);
+      const { error } = await supabaseAdmin()
+        .from("result_draws")
+        .delete()
+        .eq("result_day_key", date)
+        .eq("lottery_legacy_id", resultId)
+        .eq("source", "manual-override");
+      if (error) throw error;
       return json({ ok: true, deleted: true, date, resultId });
     }
 
@@ -66,9 +67,7 @@ Deno.serve(async (req) => {
       return json({ ok: false, message: "Formato de numero invalido." }, 400);
     }
 
-    const current = await loadOverrides(date);
-    const next = current.filter((row) => clean(row.id) != resultId);
-    next.push({
+    const overrideRow: OverrideRow = {
       id: resultId,
       name,
       date,
@@ -76,8 +75,31 @@ Deno.serve(async (req) => {
       game,
       editedBy,
       editedAt: new Date().toISOString(),
-    });
-    await upsertKvValue(kvKeyForDate(date), next);
+    };
+    const { error } = await supabaseAdmin()
+      .from("result_draws")
+      .upsert({
+        source: "manual-override",
+        result_date: resultDateFromDayKey(date),
+        result_day_key: date,
+        lottery_legacy_id: resultId,
+        lottery_name: name,
+        game: game === "pick3" || game === "pick4" ? game : "normal",
+        draw_name: "",
+        number_raw: number,
+        number_digits: number.replace(/\D/g, ""),
+        status: "published",
+        source_payload: {
+          ...overrideRow,
+          isManualOverride: true,
+          source: "manual-override",
+          lotteryId: resultId,
+          lotteryName: name,
+        },
+        source_hash: crypto.randomUUID(),
+        updated_at: new Date().toISOString(),
+      }, { onConflict: "result_day_key,lottery_legacy_id,game,draw_name" });
+    if (error) throw error;
     return json({ ok: true, saved: true, date, resultId });
   } catch (error) {
     return json({ ok: false, message: error instanceof Error ? error.message : "No se pudo guardar override manual." }, 500);

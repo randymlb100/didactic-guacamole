@@ -16,7 +16,8 @@ import {
   Settings,
   Layers,
   Activity,
-  DollarSign
+  DollarSign,
+  Trophy
 } from 'lucide-react';
 
 interface AppShellProps {
@@ -61,6 +62,7 @@ export const AppShell: React.FC<AppShellProps> = ({ children, activeTab, setActi
       { id: 'cajeros', label: 'Cajeros & Red', icon: Users, roles: ['ADMIN'] },
       { id: 'supervisores', label: 'Supervisores', icon: Users, roles: ['ADMIN'] },
       { id: 'monitoreo', label: 'Monitoreo Red', icon: Activity, roles: ['ADMIN', 'SUPERVISOR'] },
+      { id: 'deportiva', label: 'Venta Deportiva', icon: Trophy, roles: ['ADMIN', 'MASTER'] },
       { id: 'tickets', label: 'Tickets Emitidos', icon: History, roles: ['ADMIN', 'SUPERVISOR'] },
       { id: 'ganadores', label: 'Cobro de Premios', icon: TrendingUp, roles: ['ADMIN'] },
       { id: 'resultados', label: 'Resultados Sorteos', icon: Sliders, roles: ['MASTER', 'ADMIN', 'SUPERVISOR'] },
@@ -72,6 +74,7 @@ export const AppShell: React.FC<AppShellProps> = ({ children, activeTab, setActi
     return items.filter(item => item.roles.map(r => r.toUpperCase()).includes(role));
   };
 
+
   const navItems = getNavItems();
 
   const handleNavClick = (tabId: string) => {
@@ -82,7 +85,10 @@ export const AppShell: React.FC<AppShellProps> = ({ children, activeTab, setActi
   const activeItem = navItems.find(item => item.id === activeTab) || navItems[0] || { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard };
 
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', backgroundColor: 'hsl(var(--background))' }}>
+    <div style={{ display: 'flex', minHeight: '100vh', backgroundColor: 'hsl(var(--background))', position: 'relative', overflow: 'hidden' }}>
+      {/* Premium Ambient Radial Glows */}
+      <div className="atmospheric-glow-1"></div>
+      <div className="atmospheric-glow-2"></div>
       
       {/* SIDEBAR - DESKTOP & MOBILE */}
       <aside className={`glass-panel ${sidebarOpen ? 'sidebar-open' : ''}`} style={{

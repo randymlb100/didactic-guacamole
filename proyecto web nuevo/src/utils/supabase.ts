@@ -525,10 +525,42 @@ export const addAuditLog = async (
     status,
   };
 
+  // Compatibility mapping for backend and Android clients
+  const formattedDate = (() => {
+    const d = new Date();
+    const pad = (n: number) => n.toString().padStart(2, '0');
+    let hours = d.getHours();
+    const ampm = hours >= 12 ? 'PM' : 'AM';
+    hours = hours % 12;
+    hours = hours ? hours : 12; // hour '0' should be '12'
+    return `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()} ${pad(hours)}:${pad(d.getMinutes())} ${ampm}`;
+  })();
+
+  const compatLog = {
+    ...newLog,
+    ts: formattedDate,
+    user: actor.user,
+    role: actor.role,
+    accion: action,
+    detalle: details
+  };
+
   if (isSupabaseConfigured && supabase) {
     try {
-      await supabase.from('lotterynet_audit_logs').insert([newLog]);
-      return;
+      // 1. Fetch current audits from Supabase to merge
+      const currentLogs = await fetchAuditLogs();
+      const mergedLogs = [compatLog, ...currentLogs].slice(0, 100);
+
+      // 2. Upsert back to lotterynet_kv
+      const { error } = await supabase
+        .from('lotterynet_kv')
+        .upsert({
+          key: 'sys_audit_v4',
+          value: mergedLogs,
+          updated_at: new Date().toISOString()
+        });
+
+      if (!error) return;
     } catch (e) {
       console.warn('Failed to insert audit in Supabase, writing locally', e);
     }
@@ -741,25 +773,92 @@ export const processRecharge = async (
 };
 
 // TICKETS AND PERFORMANCE REPORTS
-// Reads real tickets from lotterynet_kv (keys: bv_t3_<adminId>)
+// Reads real tickets from relational database 'tickets' directly, falling back to KV cache
 export const fetchTickets = async (adminId?: string): Promise<TicketRecord[]> => {
   if (isSupabaseConfigured && supabase) {
     try {
-      // If we have a specific adminId, fetch only that admin's tickets
-      let query = supabase.from('lotterynet_kv').select('key, value');
+      // 1. Fetch users first to map usernames
+      const users = await fetchUsers();
+
+      // 2. Query from relational 'tickets' table directly (source of truth for Android wagers)
+      let ticketsQuery = supabase.from('tickets').select('*');
       if (adminId) {
-        query = query.eq('key', `bv_t3_${adminId}`);
-      } else {
-        query = query.like('key', 'bv_t3_%');
+        ticketsQuery = ticketsQuery.eq('admin_key', adminId);
       }
-      const { data, error } = await query;
-      if (!error && data && data.length > 0) {
+      const { data: ticketsData, error: ticketsError } = await ticketsQuery;
+
+      if (!ticketsError && ticketsData && ticketsData.length > 0) {
         const allTickets: TicketRecord[] = [];
-        for (const row of data) {
+        for (const row of ticketsData) {
+          const seller = users.find(u => u.id === row.cashier_key || u.user === row.cashier_key);
+          const admin = users.find(u => u.id === row.admin_key);
+          
+          // Parse plays from row.numero (comma-separated string e.g. "22,02,74") and row.monto
+          const numParts = (row.numero || '').split(',').map((n: string) => n.trim()).filter(Boolean);
+          const playAmt = numParts.length > 0 ? Math.floor(Number(row.total_amount || row.monto || 0) / numParts.length) : 0;
+          
+          // Map lottery name to static catalog lottery ID
+          const matchedLot = STATIC_LOTTERIES.find(l => l.name.toLowerCase() === (row.lottery_name || '').toLowerCase()) 
+            || STATIC_LOTTERIES.find(l => (row.lottery_name || '').toLowerCase().includes(l.name.toLowerCase()));
+          const lotteryId = matchedLot ? matchedLot.id : (row.lottery_endpoint || 'UNKNOWN');
+
+          const plays = numParts.map((num: string) => {
+            let playType = 'Q';
+            if (num.includes('-') || num.length === 4) playType = 'P';
+            else if (num.includes('/') || num.length === 6) playType = 'T';
+            return {
+              number: num,
+              playType,
+              amount: playAmt,
+              lotteryId,
+              lotteryName: row.lottery_name || 'Lotería',
+            };
+          });
+
+          allTickets.push({
+            id: row.id || '',
+            serial: row.ticket_code || row.id || '',
+            securityCode: row.ticket_code || '',
+            sellerId: row.cashier_key || '',
+            sellerUser: seller ? seller.user : (row.cashier_key || 'cajero'),
+            adminId: row.admin_key || '',
+            adminUser: admin ? admin.user : (row.admin_key || 'admin'),
+            role: 'CASHIER',
+            createdAtEpochMs: Date.parse(row.server_created_at || row.created_at || new Date().toISOString()) || Date.now(),
+            drawDateKey: row.draw_date || row.draw_date_real || '',
+            plays,
+            subtotal: Number(row.total_amount || row.monto || 0),
+            discount: 0,
+            total: Number(row.total_amount || row.monto || 0),
+            totalPrize: Number(row.payout_amount || 0),
+            winningDetails: [],
+            status: row.deleted_at ? 'cancelled' : (row.voided_at ? 'voided' : (row.status ? row.status.toLowerCase() : 'active')),
+            note: row.void_reason || null,
+          });
+        }
+        
+        allTickets.sort((a, b) => b.createdAtEpochMs - a.createdAtEpochMs);
+        return allTickets;
+      }
+    } catch (ticketsErr) {
+      console.warn('Failed to fetch from relational tickets table, trying KV cache fallback', ticketsErr);
+    }
+
+    // 3. Fallback to lotterynet_kv cache if relational table is empty or has issues
+    try {
+      let kvQuery = supabase.from('lotterynet_kv').select('key, value');
+      if (adminId) {
+        kvQuery = kvQuery.eq('key', `bv_t3_${adminId}`);
+      } else {
+        kvQuery = kvQuery.like('key', 'bv_t3_%');
+      }
+      const { data: kvData, error: kvError } = await kvQuery;
+      if (!kvError && kvData && kvData.length > 0) {
+        const allTickets: TicketRecord[] = [];
+        for (const row of kvData) {
           const rawTickets = typeof row.value === 'string' ? JSON.parse(row.value) : row.value;
           if (!Array.isArray(rawTickets)) continue;
           for (const t of rawTickets) {
-            // Map the Android/KMP ticket schema to the web TicketRecord interface
             const plays = (t.items || []).map((item: any) => ({
               number: item.nums || item.number || '',
               playType: item.type || item.playType || 'Q',
@@ -789,15 +888,15 @@ export const fetchTickets = async (adminId?: string): Promise<TicketRecord[]> =>
             });
           }
         }
-        // Sort newest first
         allTickets.sort((a, b) => b.createdAtEpochMs - a.createdAtEpochMs);
         return allTickets;
       }
-    } catch (e) {
-      console.warn('Failed to fetch tickets from lotterynet_kv', e);
+    } catch (kvErr) {
+      console.warn('Failed to fetch tickets from lotterynet_kv cache', kvErr);
     }
   }
 
+  // 4. Fallback to localStorage if offline
   initMockDatabase();
   return JSON.parse(localStorage.getItem('lotterynet_tickets') || '[]');
 };
@@ -814,11 +913,30 @@ export const fetchAuditLogs = async (): Promise<AuditLog[]> => {
   if (isSupabaseConfigured && supabase) {
     try {
       const { data, error } = await supabase
-        .from('lotterynet_audit_logs')
-        .select('*')
-        .order('timestamp_ms', { ascending: false })
-        .limit(100);
-      if (!error && data) return data as AuditLog[];
+        .from('lotterynet_kv')
+        .select('value')
+        .eq('key', 'sys_audit_v4')
+        .maybeSingle();
+
+      if (!error && data && data.value) {
+        const parsed = typeof data.value === 'string' ? JSON.parse(data.value) : data.value;
+        if (Array.isArray(parsed)) {
+          return parsed.map((item: any, index: number) => {
+            const timestampMs = item.timestampMs || (item.ts ? Date.parse(item.ts.replace(/(\d{2})\/(\d{2})\/(\d{4})/, '$3-$2-$1')) : Date.now()) || Date.now();
+            return {
+              id: item.id || `AUD-KV-${index}-${timestampMs}`,
+              timestampMs,
+              actorId: item.actorId || '',
+              actorUser: item.actorUser || item.user || 'system',
+              role: item.role || 'system',
+              action: item.action || item.accion || 'UNKNOWN',
+              details: item.details || item.detalle || '',
+              ipAddress: item.ipAddress || '127.0.0.1',
+              status: item.status || 'success'
+            } as AuditLog;
+          });
+        }
+      }
     } catch (e) {
       console.warn('Failed to fetch audits from Supabase', e);
     }
@@ -882,6 +1000,95 @@ export const saveAdminLimitsPayload = async (adminId: string, payload: string): 
     await saveAllUsers(users);
   }
 };
+
+// --- PRIZE PAYOUT MULTIPLIERS SYNC (COMPATIBLE WITH KOTLIN CONTRACT cashier_prize_payouts) ---
+
+export interface PrizeTableConfig {
+  q1: number;
+  q2: number;
+  q3: number;
+  pale: number;
+  pale12: number;
+  pale13: number;
+  pale23: number;
+  tripleta: number;
+  tripleta3: number;
+  tripleta2: number;
+  superPale: number;
+  pick3Straight: number;
+  pick3Box3: number;
+  pick3Box6: number;
+  pick4Straight: number;
+  pick4Box4: number;
+  pick4Box6: number;
+  pick4Box12: number;
+  pick4Box24: number;
+  pick3BackPair: number;
+  pick4BackPair: number;
+}
+
+export interface PayoutsPayload {
+  defaults: PrizeTableConfig;
+  byUser: Record<string, PrizeTableConfig>;
+}
+
+export const getAdminPayoutsPayload = async (adminId: string): Promise<string> => {
+  const defaultPayouts: PayoutsPayload = {
+    defaults: {
+      q1: 60, q2: 12, q3: 4,
+      pale: 1000, pale12: 1000, pale13: 1000, pale23: 1000,
+      tripleta: 20000, tripleta3: 20000, tripleta2: 1000,
+      superPale: 3000,
+      pick3Straight: 500, pick3Box3: 160, pick3Box6: 80, pick3BackPair: 50,
+      pick4Straight: 5000, pick4Box4: 1200, pick4Box6: 800, pick4Box12: 400, pick4Box24: 200, pick4BackPair: 50
+    },
+    byUser: {}
+  };
+
+  if (isSupabaseConfigured && supabase) {
+    try {
+      const { data, error } = await supabase
+        .from('lotterynet_kv')
+        .select('value')
+        .eq('key', `cashier_prize_payouts:${adminId}`)
+        .maybeSingle();
+
+      if (!error && data && data.value) {
+        const parsed = typeof data.value === 'string' ? JSON.parse(data.value) : data.value;
+        return JSON.stringify({
+          defaults: { ...defaultPayouts.defaults, ...parsed.defaults },
+          byUser: parsed.byUser || {}
+        });
+      }
+    } catch (e) {
+      console.warn(`Failed to fetch cashier_prize_payouts:${adminId} from Supabase`, e);
+    }
+  }
+
+  const localVal = localStorage.getItem(`lotterynet_payouts_${adminId}`);
+  if (localVal) return localVal;
+  return JSON.stringify(defaultPayouts);
+};
+
+export const saveAdminPayoutsPayload = async (adminId: string, payload: string): Promise<void> => {
+  localStorage.setItem(`lotterynet_payouts_${adminId}`, payload);
+
+  if (isSupabaseConfigured && supabase) {
+    try {
+      const parsed = JSON.parse(payload);
+      await supabase
+        .from('lotterynet_kv')
+        .upsert({
+          key: `cashier_prize_payouts:${adminId}`,
+          value: parsed,
+          updated_at: new Date().toISOString()
+        });
+    } catch (e) {
+      console.warn(`Failed to upsert cashier_prize_payouts:${adminId} to Supabase`, e);
+    }
+  }
+};
+
 
 // Helper: get today's date in DD-MM-YYYY format (Dominican Republic timezone UTC-4)
 const getTodayDateKeyDR = (): string => {
@@ -1119,5 +1326,136 @@ export const saveManualDisabledLotteries = async (adminId: string, config: Manua
 
   localStorage.setItem(`lotterynet_manual_disabled_lotteries_${adminId}`, JSON.stringify(payload));
 };
+
+// --- SPORTSBOOK MANAGEMENT UTILITIES ---
+
+import type { SportsTicketRecord } from '../types';
+
+export interface SportsLimitConfig {
+  scope_key: string;
+  max_ticket_stake: number;
+  max_selection_stake: number;
+  max_event_exposure: number;
+  max_potential_payout: number;
+  enabled_markets: string[];
+  updated_by?: string;
+  updated_at?: string;
+}
+
+export const fetchSportsTickets = async (adminId?: string): Promise<SportsTicketRecord[]> => {
+  if (isSupabaseConfigured && supabase) {
+    try {
+      let query = supabase
+        .from('sports_tickets')
+        .select('*, sports_ticket_legs(*)');
+      
+      if (adminId) {
+        query = query.eq('admin_key', adminId);
+      }
+      
+      const { data, error } = await query.order('sold_at', { ascending: false });
+      if (error) throw error;
+      
+      if (data) {
+        return data.map((t: any) => ({
+          id: t.id,
+          ticketCode: t.ticket_code,
+          sellerUsername: t.seller_username,
+          bancaName: t.banca_name,
+          ticketType: t.ticket_type,
+          stake: Number(t.stake),
+          decimalOdds: Number(t.decimal_odds),
+          potentialPayout: Number(t.potential_payout),
+          status: t.status,
+          soldAt: t.sold_at,
+          adminKey: t.admin_key,
+          ownerKey: t.owner_key,
+          legs: (t.sports_ticket_legs || []).map((leg: any) => ({
+            eventLabel: leg.event_label,
+            marketTitle: leg.market_title,
+            selectionLabel: leg.selection_label,
+            decimalOdds: Number(leg.decimal_odds),
+            status: leg.status,
+          }))
+        }));
+      }
+    } catch (e) {
+      console.warn('Failed to fetch sports tickets from Supabase', e);
+    }
+  }
+  
+  // Local storage mock fallback
+  const saved = localStorage.getItem('lotterynet_sports_tickets');
+  if (saved) return JSON.parse(saved);
+  return [];
+};
+
+export const getSportsLimits = async (scopeKey: string): Promise<SportsLimitConfig> => {
+  const defaultVal: SportsLimitConfig = {
+    scope_key: scopeKey,
+    max_ticket_stake: 10000,
+    max_selection_stake: 5000,
+    max_event_exposure: 50000,
+    max_potential_payout: 100000,
+    enabled_markets: ['moneyline', 'runline', 'spread', 'total', 'first_half', 'first_five']
+  };
+
+  if (isSupabaseConfigured && supabase) {
+    try {
+      const { data, error } = await supabase
+        .from('sports_limits')
+        .select('*')
+        .eq('scope_key', scopeKey)
+        .maybeSingle();
+
+      if (!error && data) {
+        return {
+          scope_key: data.scope_key,
+          max_ticket_stake: Number(data.max_ticket_stake),
+          max_selection_stake: Number(data.max_selection_stake),
+          max_event_exposure: Number(data.max_event_exposure),
+          max_potential_payout: Number(data.max_potential_payout),
+          enabled_markets: Array.isArray(data.enabled_markets) ? data.enabled_markets : defaultVal.enabled_markets
+        };
+      }
+    } catch (e) {
+      console.warn(`Failed to fetch sports limits for ${scopeKey} from Supabase, returning default`, e);
+    }
+  }
+
+  const localVal = localStorage.getItem(`lotterynet_sports_limits_${scopeKey}`);
+  if (localVal) {
+    try {
+      return JSON.parse(localVal);
+    } catch (e) {
+      return defaultVal;
+    }
+  }
+  return defaultVal;
+};
+
+export const saveSportsLimits = async (config: SportsLimitConfig): Promise<void> => {
+  if (isSupabaseConfigured && supabase) {
+    try {
+      const { error } = await supabase
+        .from('sports_limits')
+        .upsert({
+          scope_key: config.scope_key,
+          max_ticket_stake: config.max_ticket_stake,
+          max_selection_stake: config.max_selection_stake,
+          max_event_exposure: config.max_event_exposure,
+          max_potential_payout: config.max_potential_payout,
+          enabled_markets: config.enabled_markets,
+          updated_at: new Date().toISOString()
+        });
+      if (!error) return;
+    } catch (e) {
+      console.warn(`Failed to upsert sports_limits for ${config.scope_key} to Supabase, saving locally`, e);
+    }
+  }
+
+  localStorage.setItem(`lotterynet_sports_limits_${config.scope_key}`, JSON.stringify(config));
+};
+
 
 

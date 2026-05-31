@@ -33,10 +33,10 @@ const MainApp: React.FC = () => {
   // Set default tabs based on role if the current tab is invalid
   const getSafeActiveTab = (): string => {
     const roleUpper = (user?.role || 'UNKNOWN').toUpperCase();
-    if (roleUpper === 'MASTER' && ['cajeros', 'supervisores', 'monitoreo', 'finanzas'].includes(activeTab)) {
+    if (roleUpper === 'MASTER' && ['cajeros', 'supervisores', 'monitoreo', 'tickets', 'ganadores', 'limites', 'finanzas', 'cuadre'].includes(activeTab)) {
       return 'dashboard';
     }
-    if (roleUpper === 'ADMIN' && ['admins', 'monitoreo', 'auditoria'].includes(activeTab)) {
+    if (roleUpper === 'ADMIN' && ['admins', 'auditoria'].includes(activeTab)) {
       return 'dashboard';
     }
     if (roleUpper === 'SUPERVISOR' && ['admins', 'cajeros', 'supervisores', 'limites', 'finanzas'].includes(activeTab)) {

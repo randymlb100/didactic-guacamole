@@ -48,6 +48,27 @@ verify_jwt = true
 [functions.get-results-status]
 verify_jwt = true
 
+[functions.sports-get-board]
+verify_jwt = false
+
+[functions.sports-sync-odds]
+verify_jwt = false
+
+[functions.sports-sync-team-assets]
+verify_jwt = false
+
+[functions.create-sports-ticket]
+verify_jwt = true
+
+[functions.get-sports-tickets]
+verify_jwt = true
+
+[functions.pay-sports-ticket]
+verify_jwt = true
+
+[functions.settle-sports-ticket]
+verify_jwt = true
+
 [functions.client-health-batch]
 verify_jwt = true
 
