@@ -238,6 +238,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeTab }) => {
   const [ticketSearchSerial, setTicketSearchSerial] = useState('');
   const [ticketFilterStatus, setTicketFilterStatus] = useState('all');
   const [ticketFilterCashier, setTicketFilterCashier] = useState('all');
+  const [ticketDateFilter, setTicketDateFilter] = useState<'today' | 'yesterday' | 'all'>('today');
   const [annulModalOpen, setAnnulModalOpen] = useState(false);
   const [selectedTicketForAnnul, setSelectedTicketForAnnul] = useState<TicketRecord | null>(null);
   const [selectedTicketForDetail, setSelectedTicketForDetail] = useState<TicketRecord | null>(null);
@@ -263,6 +264,14 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeTab }) => {
   });
 
   // DR time helpers
+  const isSameLocalDate = (epochMs: number, relativeDays: number) => {
+    const target = new Date();
+    target.setDate(target.getDate() - relativeDays);
+    const targetDateStr = target.toLocaleDateString('es-DO', { timeZone: 'America/Santo_Domingo' });
+    const ticketDateStr = new Date(epochMs).toLocaleDateString('es-DO', { timeZone: 'America/Santo_Domingo' });
+    return targetDateStr === ticketDateStr;
+  };
+
   const parseTimeToMinutes = (timeStr: string): number => {
     if (!timeStr) return 0;
     const clean = timeStr.trim().toUpperCase();
@@ -2648,6 +2657,17 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeTab }) => {
 
                 <select
                   className="form-input"
+                  value={ticketDateFilter}
+                  onChange={(e) => setTicketDateFilter(e.target.value as any)}
+                  style={{ width: '160px' }}
+                >
+                  <option value="today">Hoy (Limpio)</option>
+                  <option value="yesterday">Ayer</option>
+                  <option value="all">Todos los días</option>
+                </select>
+
+                <select
+                  className="form-input"
                   value={ticketFilterStatus}
                   onChange={(e) => setTicketFilterStatus(e.target.value)}
                   style={{ width: '140px' }}
@@ -2655,7 +2675,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeTab }) => {
                   <option value="all">Todos los Estados</option>
                   <option value="active">Activos</option>
                   <option value="paid">Cobrados</option>
-                  <option value="cancelled">Anulados</option>
+                  <option value="cancelled">Anulados / Voided</option>
                   <option value="winner">Premiados</option>
                 </select>
 
@@ -2689,7 +2709,21 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeTab }) => {
                   .filter(t => {
                     if (isSupervisor && (!t.sellerUser || !supervisedCashierUsers.includes(t.sellerUser))) return false;
                     if (ticketSearchSerial && !t.id.toLowerCase().includes(ticketSearchSerial.toLowerCase()) && !t.serial?.toLowerCase().includes(ticketSearchSerial.toLowerCase())) return false;
-                    if (ticketFilterStatus !== 'all' && t.status !== ticketFilterStatus) return false;
+                    
+                    // Date Filter
+                    if (ticketDateFilter === 'today') {
+                      if (!isSameLocalDate(t.createdAtEpochMs, 0)) return false;
+                    } else if (ticketDateFilter === 'yesterday') {
+                      if (!isSameLocalDate(t.createdAtEpochMs, 1)) return false;
+                    }
+
+                    // Exclude cancelled/voided tickets by default from 'all' view
+                    if (ticketFilterStatus === 'all') {
+                      if (t.status === 'cancelled' || t.status === 'voided') return false;
+                    } else if (t.status !== ticketFilterStatus) {
+                      return false;
+                    }
+
                     if (ticketFilterCashier !== 'all' && t.sellerUser !== ticketFilterCashier) return false;
                     return true;
                   });
@@ -2860,6 +2894,29 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeTab }) => {
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', minWidth: '150px' }}>
                   <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'hsl(var(--text-secondary))' }}>
+                    Fecha
+                  </span>
+                  <select
+                    value={ticketDateFilter}
+                    onChange={(e) => setTicketDateFilter(e.target.value as any)}
+                    style={{
+                      padding: '8px 12px',
+                      borderRadius: 'var(--radius-sm)',
+                      backgroundColor: 'hsl(var(--surface))',
+                      border: '1px solid hsl(var(--border))',
+                      color: 'hsl(var(--text-primary))',
+                      fontSize: '0.85rem',
+                      outline: 'none'
+                    }}
+                  >
+                    <option value="today">Hoy (Limpio)</option>
+                    <option value="yesterday">Ayer</option>
+                    <option value="all">Todos los días</option>
+                  </select>
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', minWidth: '150px' }}>
+                  <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'hsl(var(--text-secondary))' }}>
                     Estado
                   </span>
                   <select
@@ -2923,11 +2980,25 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeTab }) => {
                   filtered = filtered.filter(t => cashierUsernames.includes(t.sellerUsername || ''));
                 }
 
+                // Date Filter
+                filtered = filtered.filter(t => {
+                  const epoch = Date.parse(t.soldAt) || Date.now();
+                  if (ticketDateFilter === 'today') {
+                    return isSameLocalDate(epoch, 0);
+                  } else if (ticketDateFilter === 'yesterday') {
+                    return isSameLocalDate(epoch, 1);
+                  }
+                  return true;
+                });
+
                 if (ticketFilterCashier !== 'all') {
                   filtered = filtered.filter(t => t.sellerUsername === ticketFilterCashier);
                 }
 
-                if (ticketFilterStatus !== 'all') {
+                // Exclude void by default on 'all' status
+                if (ticketFilterStatus === 'all') {
+                  filtered = filtered.filter(t => t.status !== 'void');
+                } else {
                   filtered = filtered.filter(t => t.status === ticketFilterStatus);
                 }
 
