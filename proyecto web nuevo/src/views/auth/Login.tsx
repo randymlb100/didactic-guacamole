@@ -139,17 +139,21 @@ export const Login: React.FC<LoginProps> = ({ onSuccess }) => {
       }}>
         {/* LOGO AREA */}
         <div style={{ textAlign: 'center', marginBottom: '32px' }}>
-          <div style={{
-            width: '96px',
-            height: '96px',
-            borderRadius: '50%',
-            backgroundColor: 'transparent',
-            display: 'inline-flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            marginBottom: '16px',
-            boxShadow: '0 8px 30px hsl(var(--primary) / 0.15)'
-          }}>
+          <div 
+            onClick={() => window.location.href = '/'}
+            style={{
+              width: '96px',
+              height: '96px',
+              borderRadius: '50%',
+              backgroundColor: 'transparent',
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              marginBottom: '16px',
+              boxShadow: '0 8px 30px hsl(var(--primary) / 0.15)',
+              cursor: 'pointer'
+            }}
+          >
             <svg width="96" height="96" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
               {/* Circular Teal Background */}
               <circle cx="50" cy="50" r="48" fill="#2A859A" stroke="#ffffff" strokeWidth="2"/>
@@ -196,7 +200,7 @@ export const Login: React.FC<LoginProps> = ({ onSuccess }) => {
             textTransform: 'uppercase',
             margin: '0 0 8px 0'
           }}>
-            LOTTERYNET PRO
+            RLR SYSTEM UP
           </h2>
           
           <div style={{
@@ -208,26 +212,26 @@ export const Login: React.FC<LoginProps> = ({ onSuccess }) => {
             marginBottom: '10px'
           }}>
             <p style={{ 
-              fontSize: '0.725rem', 
+              fontSize: '0.675rem', 
               fontWeight: 700, 
               color: 'hsl(var(--text-secondary))', 
               textTransform: 'uppercase',
-              letterSpacing: '0.08em',
+              letterSpacing: '0.05em',
               lineHeight: '1.4',
               margin: 0
             }}>
-              La tecnología que organiza tu mundo.
+              LA TECNOLOGÍA QUE ORGANIZA TU MUNDO,
             </p>
             <p style={{ 
-              fontSize: '0.725rem', 
+              fontSize: '0.675rem', 
               fontWeight: 700, 
               color: 'hsl(var(--primary))', 
               textTransform: 'uppercase',
-              letterSpacing: '0.08em',
+              letterSpacing: '0.05em',
               lineHeight: '1.4',
               margin: 0
             }}>
-              La grandeza que impulsa tu éxito.
+              LA GRANDEZA QUE IMPULSA TU ÉXITO
             </p>
           </div>
 

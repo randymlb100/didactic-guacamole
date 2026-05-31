@@ -162,10 +162,10 @@ export const AppShell: React.FC<AppShellProps> = ({ children, activeTab, setActi
             </div>
             <div>
               <span style={{ fontSize: '1.15rem', fontWeight: 800, fontFamily: 'var(--font-display)', letterSpacing: '0.02em', display: 'block', textTransform: 'uppercase', color: 'hsl(var(--text-primary))' }}>
-                LotteryNet Pro
+                RLR SYSTEM UP
               </span>
               <span style={{ fontSize: '0.625rem', color: 'hsl(var(--primary))', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.03em', display: 'block', lineHeight: '1.2' }}>
-                Impulsa tu éxito
+                Organiza tu mundo
               </span>
             </div>
           </div>

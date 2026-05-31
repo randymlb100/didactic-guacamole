@@ -774,11 +774,11 @@ export const processRecharge = async (
 
 // TICKETS AND PERFORMANCE REPORTS
 // Reads real tickets from relational database 'tickets' directly, falling back to KV cache
-export const fetchTickets = async (adminId?: string): Promise<TicketRecord[]> => {
+export const fetchTickets = async (adminId?: string, cachedUsers?: UserAccount[]): Promise<TicketRecord[]> => {
   if (isSupabaseConfigured && supabase) {
     try {
       // 1. Fetch users first to map usernames
-      const users = await fetchUsers();
+      const users = cachedUsers || await fetchUsers();
 
       // 2. Query from relational 'tickets' table directly (source of truth for Android wagers)
       let ticketsQuery = supabase.from('tickets').select('*');

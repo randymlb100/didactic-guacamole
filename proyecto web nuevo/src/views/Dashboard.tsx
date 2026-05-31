@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { 
   fetchUsers, 
@@ -1073,7 +1073,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeTab }) => {
         : users;
 
       const t = (activeTab === 'dashboard' || activeTab === 'cajeros' || activeTab === 'monitoreo' || activeTab === 'tickets' || activeTab === 'ganadores' || activeTab === 'cuadre')
-        ? await fetchTickets(adminScopeId)
+        ? await fetchTickets(adminScopeId, u)
         : tickets;
 
       const st = (activeTab === 'dashboard' || activeTab === 'cajeros' || activeTab === 'deportiva' || activeTab === 'cuadre')
@@ -1161,11 +1161,22 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeTab }) => {
       loadSportsLimits();
     }
   }, [activeTab, selectedScope, selectedCashierUsername, user]);
-
+  const loadDataRef = useRef(loadData);
+  useEffect(() => {
+    loadDataRef.current = loadData;
+  });
 
   useEffect(() => {
     if (!supabase) return;
     const client = supabase;
+    let debounceTimer: any = null;
+
+    const debouncedLoadData = () => {
+      if (debounceTimer) clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(() => {
+        loadDataRef.current();
+      }, 3000); // 3-second debounce to merge rapid cashier writes
+    };
 
     // Listen to changes in lotterynet_kv and lotterynet_users_state in real time
     const kvChannel = client
@@ -1179,7 +1190,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeTab }) => {
         },
         (payload) => {
           console.log('Realtime change in lotterynet_kv:', payload);
-          loadData();
+          debouncedLoadData();
         }
       )
       .on(
@@ -1191,12 +1202,13 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeTab }) => {
         },
         (payload) => {
           console.log('Realtime change in lotterynet_users_state:', payload);
-          loadData();
+          debouncedLoadData();
         }
       )
       .subscribe();
 
     return () => {
+      if (debounceTimer) clearTimeout(debounceTimer);
       client.removeChannel(kvChannel);
     };
   }, []);
