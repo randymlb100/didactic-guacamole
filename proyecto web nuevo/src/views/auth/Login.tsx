@@ -155,39 +155,52 @@ export const Login: React.FC<LoginProps> = ({ onSuccess }) => {
             }}
           >
             <svg width="96" height="96" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-              {/* Circular Teal Background */}
-              <circle cx="50" cy="50" r="48" fill="#2A859A" stroke="#ffffff" strokeWidth="2"/>
-              
-              {/* Face/Head */}
-              <circle cx="50" cy="54" r="22" fill="#FFE0B2"/>
-              
-              {/* Curly Hair (Clustered Circles) */}
-              <circle cx="50" cy="32" r="10" fill="#263238"/>
-              <circle cx="40" cy="34" r="9" fill="#263238"/>
-              <circle cx="60" cy="34" r="9" fill="#263238"/>
-              <circle cx="33" cy="40" r="8" fill="#263238"/>
-              <circle cx="67" cy="40" r="8" fill="#263238"/>
-              <circle cx="31" cy="48" r="7" fill="#263238"/>
-              <circle cx="69" cy="48" r="7" fill="#263238"/>
-              
-              {/* Forehead curls */}
-              <circle cx="45" cy="38" r="6" fill="#263238"/>
-              <circle cx="55" cy="38" r="6" fill="#263238"/>
-              
-              {/* Smile */}
-              <path d="M44 62C44 65.3 46.7 68 50 68C53.3 68 56 65.3 56 62" stroke="#263238" strokeWidth="2.5" strokeLinecap="round"/>
-              
-              {/* Glasses */}
-              <circle cx="41" cy="52" r="7.5" fill="#B2EBF2" stroke="#263238" strokeWidth="2.5"/>
-              <circle cx="41" cy="52" r="2" fill="#263238"/>
-              
-              <circle cx="59" cy="52" r="7.5" fill="#B2EBF2" stroke="#263238" strokeWidth="2.5"/>
-              <circle cx="59" cy="52" r="2" fill="#263238"/>
-              
-              <path d="M48.5 52H51.5" stroke="#263238" strokeWidth="2.5" strokeLinecap="round"/>
-              
-              <path d="M33.5 52H30.5" stroke="#263238" strokeWidth="2" strokeLinecap="round"/>
-              <path d="M66.5 52H69.5" stroke="#263238" strokeWidth="2" strokeLinecap="round"/>
+              {/* Circular Teal/Steel-Blue Background */}
+              <circle cx="50" cy="50" r="47" fill="#297286" stroke="#ffffff" strokeWidth="2"/>
+
+              {/* Character Group shifted slightly down for centering */}
+              <g transform="translate(0, 2)">
+                {/* Back Curly Hair Contour (Deep Charcoal) */}
+                <path d="M 28,50 C 24,44 25,36 30,32 C 32,26 39,24 44,26 C 48,22 54,22 58,26 C 63,24 70,26 72,32 C 77,36 78,44 74,50 C 76,56 74,62 70,64 L 32,64 C 28,62 26,56 28,50 Z" fill="#1A2124"/>
+
+                {/* Left Ear */}
+                <circle cx="28" cy="49" r="6.5" fill="#FFE1C4" stroke="#1A2124" strokeWidth="1.8"/>
+                <path d="M 27,47 C 26,48 26,50 28,51" stroke="#1A2124" strokeWidth="1.2" strokeLinecap="round" fill="none"/>
+
+                {/* Right Ear */}
+                <circle cx="72" cy="49" r="6.5" fill="#FFE1C4" stroke="#1A2124" strokeWidth="1.8"/>
+                <path d="M 73,47 C 74,48 74,50 72,51" stroke="#1A2124" strokeWidth="1.2" strokeLinecap="round" fill="none"/>
+
+                {/* Main Face Shape (Soft Peach/Cream) */}
+                <path d="M 31,42 C 31,32 69,32 69,42 C 69,54 68,64 50,65 C 32,64 31,54 31,42 Z" fill="#FFE1C4" stroke="#1A2124" strokeWidth="2"/>
+
+                {/* Forehead Curls / Hairline Overlay (Deep Charcoal) */}
+                <path d="M 31,38 Q 36,34 41,38 Q 45,30 50,34 Q 55,30 59,38 Q 64,34 69,38 L 69,32 C 69,32 31,32 31,32 Z" fill="#1A2124"/>
+
+                {/* Nose */}
+                <path d="M 48.5,50 Q 50,52.5 51.5,50" stroke="#1A2124" strokeWidth="1.8" strokeLinecap="round" fill="none"/>
+
+                {/* Friendly Smile */}
+                <path d="M 42,57 Q 50,63 58,57" stroke="#1A2124" strokeWidth="2.2" strokeLinecap="round" fill="none"/>
+
+                {/* Round Opaque Glasses Frame */}
+                {/* Left Frame */}
+                <circle cx="41" cy="44" r="9" fill="#152630" stroke="#1A2124" strokeWidth="2.2"/>
+                {/* Left Lens Reflection (Diagonal White Bar) */}
+                <path d="M 36,47 L 44,39" stroke="#ffffff" strokeWidth="2.2" strokeLinecap="round" opacity="0.35"/>
+                
+                {/* Right Frame */}
+                <circle cx="59" cy="44" r="9" fill="#152630" stroke="#1A2124" strokeWidth="2.2"/>
+                {/* Right Lens Reflection */}
+                <path d="M 54,47 L 62,39" stroke="#ffffff" strokeWidth="2.2" strokeLinecap="round" opacity="0.35"/>
+
+                {/* Glasses Bridge Link */}
+                <path d="M 49.5,44 H 50.5" stroke="#1A2124" strokeWidth="2.2" strokeLinecap="round"/>
+                
+                {/* Glasses Temples (Sides) */}
+                <path d="M 32,44 H 29" stroke="#1A2124" strokeWidth="2.2" strokeLinecap="round"/>
+                <path d="M 68,44 H 71" stroke="#1A2124" strokeWidth="2.2" strokeLinecap="round"/>
+              </g>
             </svg>
           </div>
           
