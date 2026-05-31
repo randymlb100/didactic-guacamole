@@ -231,7 +231,7 @@ export const Login: React.FC<LoginProps> = ({ onSuccess }) => {
               lineHeight: '1.4',
               margin: 0
             }}>
-              LA GRANDEZA QUE IMPULSA TU ÉXITO
+              LA GRANDEZA QUE IMPUSA TU ÉXITO
             </p>
           </div>
 
