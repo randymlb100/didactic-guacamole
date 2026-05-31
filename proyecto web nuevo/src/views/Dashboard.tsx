@@ -239,6 +239,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeTab }) => {
   const [ticketFilterStatus, setTicketFilterStatus] = useState('all');
   const [ticketFilterCashier, setTicketFilterCashier] = useState('all');
   const [ticketDateFilter, setTicketDateFilter] = useState<'today' | 'yesterday' | 'all'>('today');
+  const [dashboardDateFilter, setDashboardDateFilter] = useState<'today' | 'yesterday' | 'all'>('today');
+  const [finanzasDateFilter, setFinanzasDateFilter] = useState<'today' | 'yesterday' | 'all'>('today');
   const [annulModalOpen, setAnnulModalOpen] = useState(false);
   const [selectedTicketForAnnul, setSelectedTicketForAnnul] = useState<TicketRecord | null>(null);
   const [selectedTicketForDetail, setSelectedTicketForDetail] = useState<TicketRecord | null>(null);
@@ -1530,24 +1532,47 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeTab }) => {
       const totalAdmins = users.filter(u => u.role === 'ADMIN').length;
       const activeCashiers = users.filter(u => u.role === 'CASHIER' && u.active).length;
       
-      let salesTotal = 0;
-      let prizesTotal = 0;
+      let salesTotalDaily = 0;
+      let prizesTotalDaily = 0;
+      let salesTotalGlobal = 0;
+      let prizesTotalGlobal = 0;
 
+      // Global sales (accumulated)
       if (dashboardViewContext === 'lottery' || dashboardViewContext === 'combined') {
-        salesTotal += tickets.filter(t => t.status !== 'cancelled' && t.status !== 'voided').reduce((acc, t) => acc + t.total, 0);
-        prizesTotal += tickets.filter(t => t.status === 'paid' || t.status === 'winner').reduce((acc, t) => acc + t.totalPrize, 0);
+        salesTotalGlobal += tickets.filter(t => t.status !== 'cancelled' && t.status !== 'voided').reduce((acc, t) => acc + t.total, 0);
+        prizesTotalGlobal += tickets.filter(t => t.status === 'paid' || t.status === 'winner').reduce((acc, t) => acc + t.totalPrize, 0);
       }
       
       if (dashboardViewContext === 'sports' || dashboardViewContext === 'combined') {
-        salesTotal += sportsTickets.filter(t => t.status !== 'void').reduce((acc, t) => acc + t.stake, 0);
-        prizesTotal += sportsTickets.filter(t => t.status === 'paid' || t.status === 'won').reduce((acc, t) => acc + t.potentialPayout, 0);
+        salesTotalGlobal += sportsTickets.filter(t => t.status !== 'void').reduce((acc, t) => acc + t.stake, 0);
+        prizesTotalGlobal += sportsTickets.filter(t => t.status === 'paid' || t.status === 'won').reduce((acc, t) => acc + t.potentialPayout, 0);
+      }
+
+      // Daily filtered sales
+      const filterDays = dashboardDateFilter === 'today' ? 0 : dashboardDateFilter === 'yesterday' ? 1 : null;
+      if (dashboardViewContext === 'lottery' || dashboardViewContext === 'combined') {
+        const filteredTickets = filterDays !== null 
+          ? tickets.filter(t => isSameLocalDate(t.createdAtEpochMs, filterDays))
+          : tickets;
+        salesTotalDaily += filteredTickets.filter(t => t.status !== 'cancelled' && t.status !== 'voided').reduce((acc, t) => acc + t.total, 0);
+        prizesTotalDaily += filteredTickets.filter(t => t.status === 'paid' || t.status === 'winner').reduce((acc, t) => acc + t.totalPrize, 0);
       }
       
+      if (dashboardViewContext === 'sports' || dashboardViewContext === 'combined') {
+        const filteredSports = filterDays !== null
+          ? sportsTickets.filter(t => isSameLocalDate(new Date(t.soldAt).getTime(), filterDays))
+          : sportsTickets;
+        salesTotalDaily += filteredSports.filter(t => t.status !== 'void').reduce((acc, t) => acc + t.stake, 0);
+        prizesTotalDaily += filteredSports.filter(t => t.status === 'paid' || t.status === 'won').reduce((acc, t) => acc + t.potentialPayout, 0);
+      }
+      
+      const titleSuffix = dashboardDateFilter === 'today' ? ' (Hoy)' : dashboardDateFilter === 'yesterday' ? ' (Ayer)' : ' (Global)';
       return {
         card1: { title: 'Bancas Activas', value: `${activeAdmins}/${totalAdmins}`, icon: Layers, color: 'var(--primary)' },
         card2: { title: 'Cajeros de Red', value: activeCashiers.toString(), icon: Users, color: 'var(--success)' },
-        card3: { title: 'Ventas Totales (Hoy)', value: `$${salesTotal.toLocaleString('en-US', { minimumFractionDigits: 2 })}`, icon: DollarSign, color: 'var(--info)' },
-        card4: { title: 'Premios Totales', value: `$${prizesTotal.toLocaleString('en-US', { minimumFractionDigits: 2 })}`, icon: AlertTriangle, color: 'var(--danger)' },
+        card3: { title: `Ventas${titleSuffix}`, value: `$${salesTotalDaily.toLocaleString('en-US', { minimumFractionDigits: 2 })}`, icon: DollarSign, color: 'var(--info)' },
+        card4: { title: `Premios${titleSuffix}`, value: `$${prizesTotalDaily.toLocaleString('en-US', { minimumFractionDigits: 2 })}`, icon: AlertTriangle, color: 'var(--danger)' },
+        cardGlobal: { title: 'Negocio Global (Ventas)', value: `$${salesTotalGlobal.toLocaleString('en-US', { minimumFractionDigits: 2 })}`, icon: TrendingUp, color: 'var(--primary)' }
       };
     } else {
       // ADMIN or SUPERVISOR red stats
@@ -1559,14 +1584,35 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeTab }) => {
       
       const cashierUsernames = myCashiers.map(c => c.user);
       
-      let salesTotal = 0;
+      let salesTotalDaily = 0;
+      let salesTotalGlobal = 0;
+
+      const filterDays = dashboardDateFilter === 'today' ? 0 : dashboardDateFilter === 'yesterday' ? 1 : null;
+
+      // Daily sales
       if (dashboardViewContext === 'lottery' || dashboardViewContext === 'combined') {
         const myTickets = tickets.filter(t => cashierUsernames.includes(t.sellerUser || ''));
-        salesTotal += myTickets.filter(t => t.status !== 'cancelled' && t.status !== 'voided').reduce((acc, t) => acc + t.total, 0);
+        const filteredTickets = filterDays !== null
+          ? myTickets.filter(t => isSameLocalDate(t.createdAtEpochMs, filterDays))
+          : myTickets;
+        salesTotalDaily += filteredTickets.filter(t => t.status !== 'cancelled' && t.status !== 'voided').reduce((acc, t) => acc + t.total, 0);
       }
       if (dashboardViewContext === 'sports' || dashboardViewContext === 'combined') {
         const mySportsTickets = sportsTickets.filter(t => cashierUsernames.includes(t.sellerUsername || ''));
-        salesTotal += mySportsTickets.filter(t => t.status !== 'void').reduce((acc, t) => acc + t.stake, 0);
+        const filteredSports = filterDays !== null
+          ? mySportsTickets.filter(t => isSameLocalDate(new Date(t.soldAt).getTime(), filterDays))
+          : mySportsTickets;
+        salesTotalDaily += filteredSports.filter(t => t.status !== 'void').reduce((acc, t) => acc + t.stake, 0);
+      }
+
+      // Global sales
+      if (dashboardViewContext === 'lottery' || dashboardViewContext === 'combined') {
+        const myTickets = tickets.filter(t => cashierUsernames.includes(t.sellerUser || ''));
+        salesTotalGlobal += myTickets.filter(t => t.status !== 'cancelled' && t.status !== 'voided').reduce((acc, t) => acc + t.total, 0);
+      }
+      if (dashboardViewContext === 'sports' || dashboardViewContext === 'combined') {
+        const mySportsTickets = sportsTickets.filter(t => cashierUsernames.includes(t.sellerUsername || ''));
+        salesTotalGlobal += mySportsTickets.filter(t => t.status !== 'void').reduce((acc, t) => acc + t.stake, 0);
       }
       
       let balance = user?.balance ?? 0;
@@ -1616,11 +1662,13 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeTab }) => {
         rechargesBalance = calculatedRecharges;
       }
 
+      const titleSuffix = dashboardDateFilter === 'today' ? ' Hoy' : dashboardDateFilter === 'yesterday' ? ' Ayer' : ' Global';
       return {
         card1: { title: user.role === 'SUPERVISOR' ? 'Mis Cajeros Activos' : 'Cajeros Activos', value: `${activeMyCashiers}/${myCashiers.length}`, icon: Users, color: 'var(--primary)' },
         card2: { title: user.role === 'SUPERVISOR' ? 'Mi Balance' : 'Balance de Bancas', value: `$${balance.toLocaleString('en-US', { minimumFractionDigits: 2 })}`, icon: DollarSign, color: 'var(--success)' },
-        card3: { title: user.role === 'SUPERVISOR' ? 'Mis Ventas Hoy' : 'Ventas Hoy', value: `$${salesTotal.toLocaleString('en-US', { minimumFractionDigits: 2 })}`, icon: TrendingUp, color: 'var(--info)' },
+        card3: { title: user.role === 'SUPERVISOR' ? `Mis Ventas${titleSuffix}` : `Ventas${titleSuffix}`, value: `$${salesTotalDaily.toLocaleString('en-US', { minimumFractionDigits: 2 })}`, icon: TrendingUp, color: 'var(--info)' },
         card4: { title: user.role === 'SUPERVISOR' ? 'Mi Cupo Recargas' : 'Cupo Recargas FF', value: `$${rechargesBalance.toLocaleString('en-US', { minimumFractionDigits: 2 })}`, icon: ArrowRightLeft, color: 'var(--warning)' },
+        cardGlobal: { title: 'Negocio Global (Ventas)', value: `$${salesTotalGlobal.toLocaleString('en-US', { minimumFractionDigits: 2 })}`, icon: TrendingUp, color: 'var(--primary)' }
       };
     }
   };
@@ -1633,9 +1681,18 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeTab }) => {
     : (user.role === 'ADMIN' ? users.filter(u => (u.role === 'CASHIER' || u.role === 'ADMIN') && (u.adminId === user.id || u.id === user.id)) : []);
 
   const cashierUsernamesForDashboard = myCashiersForDashboard.map(c => c.user);
-  const dashboardTicketsToShow = user.role === 'MASTER'
+  const allDashboardTickets = user.role === 'MASTER'
     ? tickets
     : tickets.filter(t => cashierUsernamesForDashboard.includes(t.sellerUser || ''));
+
+  const dashboardTicketsToShow = allDashboardTickets.filter(t => {
+    if (dashboardDateFilter === 'today') {
+      return isSameLocalDate(t.createdAtEpochMs, 0);
+    } else if (dashboardDateFilter === 'yesterday') {
+      return isSameLocalDate(t.createdAtEpochMs, 1);
+    }
+    return true; // 'all'
+  });
 
   // Filter list of users based on search and selection
   const filteredUsers = users.filter((u) => {
@@ -1671,6 +1728,47 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeTab }) => {
           {activeTab === 'dashboard' && (
             <div className="fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
               
+              {/* Filtro Temporal de Ventas */}
+              <div className="glass-panel" style={{
+                padding: '12px 20px',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                backgroundColor: 'hsl(var(--surface) / 0.6)',
+                gap: '12px',
+                flexWrap: 'wrap'
+              }}>
+                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                  <span style={{ fontSize: '0.9rem', fontWeight: 600, color: 'hsl(var(--text-primary))' }}>
+                    Filtro Temporal de Ventas
+                  </span>
+                  <span style={{ fontSize: '0.75rem', color: 'hsl(var(--text-muted))' }}>
+                    Visualizar transacciones y métricas por período
+                  </span>
+                </div>
+                <div style={{ display: 'flex', gap: '6px' }}>
+                  {(['today', 'yesterday', 'all'] as const).map((filter) => (
+                    <button
+                      key={filter}
+                      onClick={() => setDashboardDateFilter(filter)}
+                      style={{
+                        padding: '8px 14px',
+                        borderRadius: 'var(--radius-sm)',
+                        border: '1px solid hsl(var(--border))',
+                        backgroundColor: dashboardDateFilter === filter ? 'hsl(var(--primary))' : 'hsl(var(--surface-hover))',
+                        color: dashboardDateFilter === filter ? '#ffffff' : 'hsl(var(--text-secondary))',
+                        fontSize: '0.8rem',
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                        transition: 'all 0.2s ease'
+                      }}
+                    >
+                      {filter === 'today' ? 'Hoy (Limpio)' : filter === 'yesterday' ? 'Ayer' : 'Todos los días'}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
               {/* Context Selector (Lotería / Deportes / Combinado) */}
               {user.role !== 'MASTER' && (
                 <div className="glass-panel" style={{
@@ -1715,10 +1813,10 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeTab }) => {
               )}
 
               {/* METRIC CARDS GRID */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '20px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '20px' }}>
 
                 
-                {[stats.card1, stats.card2, stats.card3, stats.card4].map((c, i) => {
+                {[stats.card1, stats.card2, stats.card3, stats.card4, stats.cardGlobal].filter(Boolean).map((c: any, i) => {
                   const Icon = c.icon;
                   return (
                     <div key={i} className="glass-panel-premium" style={{
@@ -4694,6 +4792,47 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeTab }) => {
           {activeTab === 'finanzas' && (user.role === 'ADMIN' || user.role === 'MASTER') && (
             <div className="fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
               
+              {/* Filtro de Recargas */}
+              <div className="glass-panel" style={{
+                padding: '12px 20px',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                backgroundColor: 'hsl(var(--surface) / 0.6)',
+                gap: '12px',
+                flexWrap: 'wrap'
+              }}>
+                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                  <span style={{ fontSize: '0.9rem', fontWeight: 600, color: 'hsl(var(--text-primary))' }}>
+                    Filtro de Recargas
+                  </span>
+                  <span style={{ fontSize: '0.75rem', color: 'hsl(var(--text-muted))' }}>
+                    Visualizar historial de recargas por día
+                  </span>
+                </div>
+                <div style={{ display: 'flex', gap: '6px' }}>
+                  {(['today', 'yesterday', 'all'] as const).map((filter) => (
+                    <button
+                      key={filter}
+                      onClick={() => setFinanzasDateFilter(filter)}
+                      style={{
+                        padding: '8px 14px',
+                        borderRadius: 'var(--radius-sm)',
+                        border: '1px solid hsl(var(--border))',
+                        backgroundColor: finanzasDateFilter === filter ? 'hsl(var(--primary))' : 'hsl(var(--surface-hover))',
+                        color: finanzasDateFilter === filter ? '#ffffff' : 'hsl(var(--text-secondary))',
+                        fontSize: '0.8rem',
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                        transition: 'all 0.2s ease'
+                      }}
+                    >
+                      {filter === 'today' ? 'Hoy (Limpio)' : filter === 'yesterday' ? 'Ayer' : 'Todos los días'}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
               {/* Cupos summary */}
               <div className="glass-panel" style={{ padding: '24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
@@ -4726,14 +4865,28 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeTab }) => {
                       </tr>
                     </thead>
                     <tbody>
-                      {audits.filter(a => a.action === 'PROCESS_RECHARGE').length === 0 ? (
-                        <tr>
-                          <td colSpan={5} style={{ textAlign: 'center', color: 'hsl(var(--text-secondary))' }}>
-                            No hay recargas financieras procesadas recientemente.
-                          </td>
-                        </tr>
-                      ) : (
-                        audits.filter(a => a.action === 'PROCESS_RECHARGE').map((a) => (
+                      {(() => {
+                        const allRecharges = audits.filter(a => a.action === 'PROCESS_RECHARGE');
+                        const filteredRecharges = allRecharges.filter(a => {
+                          if (finanzasDateFilter === 'today') {
+                            return isSameLocalDate(a.timestampMs, 0);
+                          } else if (finanzasDateFilter === 'yesterday') {
+                            return isSameLocalDate(a.timestampMs, 1);
+                          }
+                          return true; // 'all'
+                        });
+
+                        if (filteredRecharges.length === 0) {
+                          return (
+                            <tr>
+                              <td colSpan={5} style={{ textAlign: 'center', color: 'hsl(var(--text-secondary))' }}>
+                                No hay recargas financieras procesadas recientemente.
+                              </td>
+                            </tr>
+                          );
+                        }
+
+                        return filteredRecharges.map((a) => (
                           <tr key={a.id}>
                             <td>{new Date(a.timestampMs).toLocaleString()}</td>
                             <td style={{ fontWeight: 600 }}>{a.details.split('a ')[1] || 'Cajero'}</td>
@@ -4745,8 +4898,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeTab }) => {
                               <span className="badge badge-success">COMPLETADA</span>
                             </td>
                           </tr>
-                        ))
-                      )}
+                        ));
+                      })()}
                     </tbody>
                   </table>
                 </div>
