@@ -2,8 +2,8 @@ services:
   - type: web
     name: didactic-guacamole
     runtime: python
-    buildCommand: pip install -r requirements.txt
-    startCommand: gunicorn app:app --config gunicorn.conf.py
+    buildCommand: pip install -r requirements.txt gevent==26.4.0
+    startCommand: gunicorn app:app --bind 0.0.0.0:$PORT --workers 1 --worker-class gevent --worker-connections 100 --timeout 120 --max-requests 1000 --max-requests-jitter 100
   - type: cron
     name: didactic-guacamole-results-cron
     runtime: python
@@ -17,3 +17,18 @@ services:
         sync: false
       - key: SUPABASE_SECRET_KEY
         sync: false
+  - type: cron
+    name: lotterynet-sports-odds-sync
+    runtime: python
+    schedule: "*/5 8-23 * * *"
+    buildCommand: pip install -r requirements.txt
+    startCommand: python tools/render/sync_sports_odds.py
+    envVars:
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_KEY
+        sync: false
+      - key: LOTTERYNET_ADMIN_SHARED_SECRET
+        sync: false
+      - key: SPORTS_ODDS_SYNC_LIMIT
+        value: "25"
