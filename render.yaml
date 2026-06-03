@@ -4,7 +4,7 @@ services:
     env: python
     plan: free
     buildCommand: pip install -r requirements.txt
-    startCommand: gunicorn app:app --bind 0.0.0.0:$PORT --workers 1 --threads 4 --timeout 120
+    startCommand: gunicorn app:app --bind 0.0.0.0:$PORT --workers 1 --worker-class gevent --worker-connections 100 --timeout 120 --max-requests 1000 --max-requests-jitter 100
     autoDeploy: true
 
   - type: cron
@@ -15,4 +15,22 @@ services:
     buildCommand: pip install -r requirements.txt
     startCommand: python scraper/scrape_and_save.py
     autoDeploy: true
+
+  - type: cron
+    name: lotterynet-sports-odds-sync
+    env: python
+    plan: starter
+    schedule: "*/5 8-23 * * *"
+    buildCommand: pip install -r requirements.txt
+    startCommand: python tools/render/sync_sports_odds.py
+    autoDeploy: true
+    envVars:
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_KEY
+        sync: false
+      - key: LOTTERYNET_ADMIN_SHARED_SECRET
+        sync: false
+      - key: SPORTS_ODDS_SYNC_LIMIT
+        value: "25"
 
