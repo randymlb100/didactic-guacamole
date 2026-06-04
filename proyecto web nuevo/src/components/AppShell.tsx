@@ -3,7 +3,6 @@ import { useAuth } from '../context/AuthContext';
 import { 
   LayoutDashboard, 
   Users, 
-  TrendingUp, 
   Sliders, 
   History, 
   LogOut, 
@@ -19,6 +18,20 @@ import {
   DollarSign,
   Trophy
 } from 'lucide-react';
+
+interface NavSubItem {
+  id: string;
+  label: string;
+}
+
+interface NavItem {
+  id: string;
+  label: string;
+  icon: any;
+  roles?: string[];
+  defaultTab?: string;
+  subItems?: NavSubItem[];
+}
 
 interface AppShellProps {
   children: React.ReactNode;
@@ -55,25 +68,67 @@ export const AppShell: React.FC<AppShellProps> = ({ children, activeTab, setActi
   const role = (user.role || 'UNKNOWN').toUpperCase();
 
   // Define navigation based on role
-  const getNavItems = () => {
+  const getNavItems = (): NavItem[] => {
+    if (role === 'ADMIN') {
+      return [
+        { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+        { 
+          id: 'gestion_red', 
+          label: 'Gestión de Red', 
+          icon: Users, 
+          defaultTab: 'cajeros',
+          subItems: [
+            { id: 'cajeros', label: 'Cajeros' },
+            { id: 'supervisores', label: 'Supervisores' }
+          ] 
+        },
+        { id: 'monitoreo', label: 'Monitoreo Red', icon: Activity },
+        { 
+          id: 'control_ventas', 
+          label: 'Control de Ventas', 
+          icon: Trophy, 
+          defaultTab: 'tickets',
+          subItems: [
+            { id: 'deportiva', label: 'Venta Deportiva' },
+            { id: 'tickets', label: 'Tickets Emitidos' },
+            { id: 'ganadores', label: 'Cobro de Premios' }
+          ] 
+        },
+        { 
+          id: 'finanzas_grupo', 
+          label: 'Finanzas', 
+          icon: DollarSign, 
+          defaultTab: 'finanzas',
+          subItems: [
+            { id: 'finanzas', label: 'Balances & Recargas' },
+            { id: 'cuadre', label: 'Cuadre de Caja' }
+          ] 
+        },
+        { 
+          id: 'configuracion', 
+          label: 'Configuración', 
+          icon: Settings, 
+          defaultTab: 'limites',
+          subItems: [
+            { id: 'limites', label: 'Límites de Juego' },
+            { id: 'resultados', label: 'Resultados Sorteos' }
+          ] 
+        }
+      ];
+    }
+
     const items = [
-      { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, roles: ['MASTER', 'ADMIN', 'SUPERVISOR'] },
+      { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, roles: ['MASTER', 'SUPERVISOR'] },
       { id: 'admins', label: 'Bancas y Admins', icon: Layers, roles: ['MASTER'] },
-      { id: 'cajeros', label: 'Cajeros & Red', icon: Users, roles: ['ADMIN'] },
-      { id: 'supervisores', label: 'Supervisores', icon: Users, roles: ['ADMIN'] },
-      { id: 'monitoreo', label: 'Monitoreo Red', icon: Activity, roles: ['ADMIN', 'SUPERVISOR'] },
-      { id: 'deportiva', label: 'Venta Deportiva', icon: Trophy, roles: ['ADMIN', 'MASTER'] },
-      { id: 'tickets', label: 'Tickets Emitidos', icon: History, roles: ['ADMIN', 'SUPERVISOR'] },
-      { id: 'ganadores', label: 'Cobro de Premios', icon: TrendingUp, roles: ['ADMIN'] },
-      { id: 'resultados', label: 'Resultados Sorteos', icon: Sliders, roles: ['MASTER', 'ADMIN', 'SUPERVISOR'] },
-      { id: 'limites', label: 'Límites de Juego', icon: Sliders, roles: ['ADMIN'] },
-      { id: 'finanzas', label: 'Balances y Recargas', icon: DollarSign, roles: ['ADMIN'] },
-      { id: 'cuadre', label: 'Cuadre de Caja', icon: DollarSign, roles: ['ADMIN', 'SUPERVISOR'] },
+      { id: 'monitoreo', label: 'Monitoreo Red', icon: Activity, roles: ['SUPERVISOR'] },
+      { id: 'deportiva', label: 'Venta Deportiva', icon: Trophy, roles: ['MASTER'] },
+      { id: 'tickets', label: 'Tickets Emitidos', icon: History, roles: ['SUPERVISOR'] },
+      { id: 'resultados', label: 'Resultados Sorteos', icon: Sliders, roles: ['MASTER', 'SUPERVISOR'] },
+      { id: 'cuadre', label: 'Cuadre de Caja', icon: DollarSign, roles: ['SUPERVISOR'] },
       { id: 'auditoria', label: 'Auditoría', icon: History, roles: ['MASTER', 'SUPERVISOR'] },
     ];
     return items.filter(item => item.roles.map(r => r.toUpperCase()).includes(role));
   };
-
 
   const navItems = getNavItems();
 
@@ -82,7 +137,9 @@ export const AppShell: React.FC<AppShellProps> = ({ children, activeTab, setActi
     setSidebarOpen(false);
   };
 
-  const activeItem = navItems.find(item => item.id === activeTab) || navItems[0] || { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard };
+  const activeItem = navItems.find(item => 
+    item.id === activeTab || (item.subItems && item.subItems.some(sub => sub.id === activeTab))
+  ) || navItems[0] || { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard };
 
   return (
     <div style={{ display: 'flex', minHeight: '100vh', backgroundColor: 'hsl(var(--background))', position: 'relative', overflow: 'hidden' }}>
@@ -200,11 +257,12 @@ export const AppShell: React.FC<AppShellProps> = ({ children, activeTab, setActi
         <nav style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '6px' }}>
           {navItems.map((item) => {
             const Icon = item.icon;
-            const isActive = item.id === activeTab;
+            const isActive = item.id === activeTab || 
+              (item.subItems && item.subItems.some(sub => sub.id === activeTab));
             return (
               <button
                 key={item.id}
-                onClick={() => handleNavClick(item.id)}
+                onClick={() => handleNavClick(item.defaultTab || item.id)}
                 style={{
                   display: 'flex',
                   alignItems: 'center',
@@ -485,6 +543,50 @@ export const AppShell: React.FC<AppShellProps> = ({ children, activeTab, setActi
 
           </div>
         </header>
+
+        {/* SUB-TABS HEADER BAR FOR GROUPED SECTIONS (ADMIN ONLY) */}
+        {(() => {
+          const currentGroup = navItems.find(item => 
+            item.subItems && item.subItems.some(sub => sub.id === activeTab)
+          );
+          if (!currentGroup || !currentGroup.subItems) return null;
+          
+          return (
+            <div style={{
+              display: 'flex',
+              backgroundColor: 'hsl(var(--surface) / 0.5)',
+              borderBottom: '1px solid hsl(var(--border))',
+              padding: '8px 24px',
+              gap: '12px',
+              backdropFilter: 'blur(10px)',
+              zIndex: 20
+            }}>
+              {currentGroup.subItems.map((sub) => {
+                const isSubActive = sub.id === activeTab;
+                return (
+                  <button
+                    key={sub.id}
+                    onClick={() => setActiveTab(sub.id)}
+                    style={{
+                      padding: '8px 16px',
+                      borderRadius: 'var(--radius-sm)',
+                      border: 'none',
+                      background: isSubActive ? 'hsl(var(--primary) / 0.12)' : 'transparent',
+                      color: isSubActive ? 'hsl(var(--primary))' : 'hsl(var(--text-secondary))',
+                      fontWeight: isSubActive ? 600 : 500,
+                      fontSize: '0.85rem',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s ease',
+                      borderBottom: isSubActive ? '2.5px solid hsl(var(--primary))' : '2.5px solid transparent'
+                    }}
+                  >
+                    {sub.label}
+                  </button>
+                );
+              })}
+            </div>
+          );
+        })()}
 
         {/* MAIN BODY SCROLLABLE */}
         <main className="fade-in" style={{

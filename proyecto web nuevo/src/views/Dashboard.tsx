@@ -34,7 +34,7 @@ import type { UserAccount, TicketRecord, LotteryCatalogItem, AuditLog, DrawResul
 import { 
   Users, Layers, TrendingUp, DollarSign, Activity, 
   Plus, Search, RefreshCw, CheckCircle, AlertTriangle, 
-  ArrowRightLeft, FileSpreadsheet, Lock, Unlock, Trash2, Key, Info, Settings, Edit2, Trophy, X
+  ArrowRightLeft, FileSpreadsheet, Lock, Unlock, Trash2, Key, Info, Settings, Edit2, Trophy, X, Sliders
 } from 'lucide-react';
 
 interface DashboardProps {
@@ -420,6 +420,33 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeTab }) => {
     enabled_markets: ['moneyline', 'runline', 'spread', 'total', 'first_half', 'first_five'] as string[]
   });
 
+  // Draws tab state
+  const [drawsSubTab, setDrawsSubTab] = useState<'lottery' | 'pick_sports'>('lottery');
+
+  // Cashier Limits Modal States
+  const [editingCashierLimits, setEditingCashierLimits] = useState<UserAccount | null>(null);
+  const [modalLimitsTab, setModalLimitsTab] = useState<'limits' | 'payouts'>('limits');
+  const [modalLimitsForm, setModalLimitsForm] = useState<any>({
+    daySale: 10000,
+    payout: 0,
+    q: 10000,
+    pale: 500,
+    sp: 500,
+    t: 75,
+    p3: 500,
+    p3box: 500,
+    p4: 500,
+    p4box: 500,
+    systemModeOverride: ''
+  });
+  const [modalPayoutsForm, setModalPayoutsForm] = useState<any>({
+    q1: 60, q2: 12, q3: 4,
+    pale: 1000, pale12: 1000, pale13: 1000, pale23: 1000,
+    tripleta: 20000, tripleta3: 20000, tripleta2: 1000,
+    superPale: 3000,
+    pick3Straight: 500, pick3Box3: 160, pick3Box6: 80, pick3BackPair: 50,
+    pick4Straight: 5000, pick4Box4: 1200, pick4Box6: 800, pick4Box12: 400, pick4Box24: 200, pick4BackPair: 50
+  });
 
   // Search & Filter states
   const [searchQuery, setSearchQuery] = useState('');
@@ -830,6 +857,143 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeTab }) => {
       supervisorId: c.supervisorIds[0] || '',
     });
     setCajeroModalOpen(true);
+  };
+
+  const handleOpenCashierLimitsModal = (caj: UserAccount) => {
+    setEditingCashierLimits(caj);
+    
+    const targetLimits = (limitsPayload?.byUser && limitsPayload.byUser[caj.user]) || limitsPayload?.defaults || { daySale: 10000, payout: 0, q: 10000, pale: 500, sp: 500, t: 75, p3: 500, p3box: 500, p4: 500, p4box: 500 };
+    
+    setModalLimitsForm({
+      daySale: targetLimits.daySale ?? 0,
+      payout: targetLimits.payout ?? 0,
+      q: targetLimits.q ?? 0,
+      pale: targetLimits.pale ?? 0,
+      sp: targetLimits.sp ?? 0,
+      t: targetLimits.t ?? 0,
+      p3: targetLimits.p3 ?? 0,
+      p3box: targetLimits.p3box ?? 0,
+      p4: targetLimits.p4 ?? 0,
+      p4box: targetLimits.p4box ?? 0,
+      systemModeOverride: caj.systemModeOverride || ''
+    });
+
+    const targetPayouts = (payoutsPayload?.byUser && payoutsPayload.byUser[caj.user]) || payoutsPayload?.defaults || {
+      q1: 60, q2: 12, q3: 4,
+      pale: 1000, pale12: 1000, pale13: 1000, pale23: 1000,
+      tripleta: 20000, tripleta3: 20000, tripleta2: 1000,
+      superPale: 3000,
+      pick3Straight: 500, pick3Box3: 160, pick3Box6: 80, pick3BackPair: 50,
+      pick4Straight: 5000, pick4Box4: 1200, pick4Box6: 800, pick4Box12: 400, pick4Box24: 200, pick4BackPair: 50
+    };
+
+    setModalPayoutsForm({
+      q1: targetPayouts.q1 ?? 60,
+      q2: targetPayouts.q2 ?? 12,
+      q3: targetPayouts.q3 ?? 4,
+      pale: targetPayouts.pale ?? 1000,
+      pale12: targetPayouts.pale12 ?? 1000,
+      pale13: targetPayouts.pale13 ?? 1000,
+      pale23: targetPayouts.pale23 ?? 1000,
+      tripleta: targetPayouts.tripleta ?? 20000,
+      tripleta3: targetPayouts.tripleta3 ?? 20000,
+      tripleta2: targetPayouts.tripleta2 ?? 1000,
+      superPale: targetPayouts.superPale ?? 3000,
+      pick3Straight: targetPayouts.pick3Straight ?? 500,
+      pick3Box3: targetPayouts.pick3Box3 ?? 160,
+      pick3Box6: targetPayouts.pick3Box6 ?? 80,
+      pick3BackPair: targetPayouts.pick3BackPair ?? 50,
+      pick4Straight: targetPayouts.pick4Straight ?? 5000,
+      pick4Box4: targetPayouts.pick4Box4 ?? 1200,
+      pick4Box6: targetPayouts.pick4Box6 ?? 800,
+      pick4Box12: targetPayouts.pick4Box12 ?? 400,
+      pick4Box24: targetPayouts.pick4Box24 ?? 200,
+      pick4BackPair: targetPayouts.pick4BackPair ?? 50
+    });
+
+    setModalLimitsTab('limits');
+  };
+
+  const handleSaveModalCashierLimits = async () => {
+    if (!user || !editingCashierLimits) return;
+    setLimitsSaving(true);
+    try {
+      const updatedPayload = { ...limitsPayload };
+      
+      const newLimitsObj = {
+        daySale: Number(modalLimitsForm.daySale),
+        payout: Number(modalLimitsForm.payout),
+        q: Number(modalLimitsForm.q),
+        pale: Number(modalLimitsForm.pale),
+        sp: Number(modalLimitsForm.sp),
+        t: Number(modalLimitsForm.t),
+        p3: Number(modalLimitsForm.p3),
+        p3box: Number(modalLimitsForm.p3box),
+        p4: Number(modalLimitsForm.p4),
+        p4box: Number(modalLimitsForm.p4box),
+      };
+
+      if (!updatedPayload.byUser) updatedPayload.byUser = {};
+      updatedPayload.byUser[editingCashierLimits.user] = newLimitsObj;
+
+      await saveAdminLimitsPayload(user.id, JSON.stringify(updatedPayload));
+      setLimitsPayload(updatedPayload);
+
+      const updatedPayouts = { ...payoutsPayload };
+      const newPayoutsObj = {
+        q1: Number(modalPayoutsForm.q1),
+        q2: Number(modalPayoutsForm.q2),
+        q3: Number(modalPayoutsForm.q3),
+        pale: Number(modalPayoutsForm.pale),
+        pale12: Number(modalPayoutsForm.pale12),
+        pale13: Number(modalPayoutsForm.pale13),
+        pale23: Number(modalPayoutsForm.pale23),
+        tripleta: Number(modalPayoutsForm.tripleta),
+        tripleta3: Number(modalPayoutsForm.tripleta3),
+        tripleta2: Number(modalPayoutsForm.tripleta2),
+        superPale: Number(modalPayoutsForm.superPale),
+        pick3Straight: Number(modalPayoutsForm.pick3Straight),
+        pick3Box3: Number(modalPayoutsForm.pick3Box3),
+        pick3Box6: Number(modalPayoutsForm.pick3Box6),
+        pick3BackPair: Number(modalPayoutsForm.pick3BackPair),
+        pick4Straight: Number(modalPayoutsForm.pick4Straight),
+        pick4Box4: Number(modalPayoutsForm.pick4Box4),
+        pick4Box6: Number(modalPayoutsForm.pick4Box6),
+        pick4Box12: Number(modalPayoutsForm.pick4Box12),
+        pick4Box24: Number(modalPayoutsForm.pick4Box24),
+        pick4BackPair: Number(modalPayoutsForm.pick4BackPair),
+      };
+
+      if (!updatedPayouts.byUser) updatedPayouts.byUser = {};
+      updatedPayouts.byUser[editingCashierLimits.user] = newPayoutsObj;
+
+      await saveAdminPayoutsPayload(user.id, JSON.stringify(updatedPayouts));
+      setPayoutsPayload(updatedPayouts);
+
+      const cashierAcc = users.find(u => u.id === editingCashierLimits.id);
+      if (cashierAcc && cashierAcc.systemModeOverride !== modalLimitsForm.systemModeOverride) {
+        cashierAcc.systemModeOverride = modalLimitsForm.systemModeOverride || null;
+        await updateUserAccount(cashierAcc);
+      }
+
+      await addAuditLog(
+        { id: user.id, user: user.user, role: user.role },
+        'UPDATE_LIMITS',
+        `Actualizados límites directo para cajero: @${editingCashierLimits.user}`,
+        'success'
+      );
+
+      await new Promise(resolve => setTimeout(resolve, 800));
+
+      await loadData();
+      setEditingCashierLimits(null);
+      alert('Límites actualizados correctamente.');
+    } catch (e) {
+      console.error("Error saving modal cashier limits", e);
+      alert('Error al guardar límites.');
+    } finally {
+      setLimitsSaving(false);
+    }
   };
 
   const handleAnnulTicket = async (ticket: TicketRecord) => {
@@ -2387,10 +2551,51 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeTab }) => {
                       Horarios y Control Loterías
                     </h3>
                     
+                    {/* Draws Card Sub-tabs */}
+                    <div style={{ display: 'flex', borderBottom: '1px solid hsl(var(--border))', gap: '8px', marginBottom: '8px' }}>
+                      <button 
+                        onClick={() => setDrawsSubTab('lottery')}
+                        style={{
+                          padding: '8px 12px',
+                          border: 'none',
+                          borderBottom: drawsSubTab === 'lottery' ? '2px solid hsl(var(--primary))' : '2px solid transparent',
+                          background: 'transparent',
+                          color: drawsSubTab === 'lottery' ? 'hsl(var(--primary))' : 'hsl(var(--text-secondary))',
+                          fontWeight: 600,
+                          cursor: 'pointer',
+                          fontSize: '0.8rem',
+                          transition: 'all 0.2s ease'
+                        }}
+                      >
+                        Lotería Tradicional
+                      </button>
+                      <button 
+                        onClick={() => setDrawsSubTab('pick_sports')}
+                        style={{
+                          padding: '8px 12px',
+                          border: 'none',
+                          borderBottom: drawsSubTab === 'pick_sports' ? '2px solid hsl(var(--primary))' : '2px solid transparent',
+                          background: 'transparent',
+                          color: drawsSubTab === 'pick_sports' ? 'hsl(var(--primary))' : 'hsl(var(--text-secondary))',
+                          fontWeight: 600,
+                          cursor: 'pointer',
+                          fontSize: '0.8rem',
+                          transition: 'all 0.2s ease'
+                        }}
+                      >
+                        Picks y Deportes
+                      </button>
+                    </div>
+
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                       {lotteries
                         .filter((l) => {
                           const isPick = l.type === 'Pick3' || l.type === 'Pick4' || l.name.startsWith('US-P') || l.id.startsWith('US-P');
+                          
+                          // Filter by drawsSubTab first
+                          if (drawsSubTab === 'lottery' && isPick) return false;
+                          if (drawsSubTab === 'pick_sports' && !isPick) return false;
+
                           if (isPick) {
                             return systemModeConfig.pickModeEnabled !== false;
                           } else {
@@ -2398,75 +2603,109 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeTab }) => {
                           }
                         })
                         .map((l) => {
-                        const catalogEntry = STATIC_LOTTERIES.find(sl => sl.id === l.id);
-                        const logoUrl = catalogEntry?.logoAssetPath || l.logoAssetPath || '/favicon.svg';
-                        
-                        const currentMinutes = getCurrentDRMinutesSinceMidnight();
-                        const closeMinutes = parseTimeToMinutes(l.baseCloseTime);
-                        const isTimeClosed = currentMinutes >= closeMinutes;
-                        const isManuallyBlocked = manualDisabledLotteryIds.includes(l.id);
-                        const isClosed = isTimeClosed || isManuallyBlocked;
+                          const catalogEntry = STATIC_LOTTERIES.find(sl => sl.id === l.id);
+                          const logoUrl = catalogEntry?.logoAssetPath || l.logoAssetPath || '/favicon.svg';
+                          
+                          const currentMinutes = getCurrentDRMinutesSinceMidnight();
+                          const closeMinutes = parseTimeToMinutes(l.baseCloseTime);
+                          const isTimeClosed = currentMinutes >= closeMinutes;
+                          const isManuallyBlocked = manualDisabledLotteryIds.includes(l.id);
+                          const isClosed = isTimeClosed || isManuallyBlocked;
 
-                        return (
-                          <div key={l.id} style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'space-between',
-                            padding: '12px',
-                            borderRadius: 'var(--radius-md)',
-                            backgroundColor: 'hsl(var(--background))',
-                            borderLeft: `4px solid ${l.colorHex}`
-                          }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                              <img 
-                                src={logoUrl} 
-                                alt={l.name} 
-                                style={{ width: '32px', height: '32px', borderRadius: '4px', objectFit: 'contain', backgroundColor: 'rgba(255,255,255,0.05)', padding: '2px' }}
-                                onError={(e) => { (e.target as HTMLImageElement).src = '/favicon.svg'; }}
-                              />
-                              <div>
-                                <strong style={{ fontSize: '0.875rem', display: 'block' }}>{l.name}</strong>
-                                <span style={{ fontSize: '0.75rem', color: 'hsl(var(--text-secondary))' }}>
-                                  Cierre: {l.baseCloseTime} | Sorteo: {l.baseDrawTime}
-                                </span>
+                          return (
+                            <div key={l.id} style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'space-between',
+                              padding: '12px',
+                              borderRadius: 'var(--radius-md)',
+                              backgroundColor: 'hsl(var(--background))',
+                              borderLeft: `4px solid ${l.colorHex}`
+                            }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                <img 
+                                  src={logoUrl} 
+                                  alt={l.name} 
+                                  style={{ width: '32px', height: '32px', borderRadius: '4px', objectFit: 'contain', backgroundColor: 'rgba(255,255,255,0.05)', padding: '2px' }}
+                                  onError={(e) => { (e.target as HTMLImageElement).src = '/favicon.svg'; }}
+                                />
+                                <div>
+                                  <strong style={{ fontSize: '0.875rem', display: 'block' }}>{l.name}</strong>
+                                  <span style={{ fontSize: '0.75rem', color: 'hsl(var(--text-secondary))' }}>
+                                    Cierre: {l.baseCloseTime} | Sorteo: {l.baseDrawTime}
+                                  </span>
+                                </div>
+                              </div>
+                              
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                {isClosed ? (
+                                  <span className="badge" style={{ fontSize: '0.625rem', backgroundColor: 'hsl(var(--danger) / 0.1)', color: 'hsl(var(--danger))', border: '1px solid hsl(var(--danger) / 0.2)' }}>
+                                    {isManuallyBlocked ? 'Bloqueado Admin' : 'Cerrado'}
+                                  </span>
+                                ) : (
+                                  <span className="badge badge-success" style={{ fontSize: '0.625rem' }}>
+                                    Abierto
+                                  </span>
+                                )}
+                                
+                                {(user.role === 'ADMIN' || user.role === 'SUPERVISOR') && (
+                                  <button
+                                    onClick={() => handleToggleManualDisabledLottery(l.id)}
+                                    className="btn"
+                                    style={{
+                                      padding: '4px 8px',
+                                      fontSize: '0.7rem',
+                                      borderRadius: 'var(--radius-sm)',
+                                      cursor: 'pointer',
+                                      backgroundColor: isManuallyBlocked ? 'hsl(var(--success) / 0.1)' : 'hsl(var(--danger) / 0.1)',
+                                      color: isManuallyBlocked ? 'hsl(var(--success))' : 'hsl(var(--danger))',
+                                      border: `1px solid ${isManuallyBlocked ? 'hsl(var(--success) / 0.2)' : 'hsl(var(--danger) / 0.2)'}`,
+                                      fontWeight: 600,
+                                      transition: 'all 0.2s ease'
+                                    }}
+                                    title={isManuallyBlocked ? 'Habilitar Lotería' : 'Bloquear Lotería'}
+                                  >
+                                    {isManuallyBlocked ? 'Habilitar' : 'Bloquear'}
+                                  </button>
+                                )}
                               </div>
                             </div>
-                            
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                              {isClosed ? (
-                                <span className="badge" style={{ fontSize: '0.625rem', backgroundColor: 'hsl(var(--danger) / 0.1)', color: 'hsl(var(--danger))', border: '1px solid hsl(var(--danger) / 0.2)' }}>
-                                  {isManuallyBlocked ? 'Bloqueado Admin' : 'Cerrado'}
-                                </span>
-                              ) : (
-                                <span className="badge badge-success" style={{ fontSize: '0.625rem' }}>
-                                  Abierto
-                                </span>
-                              )}
-                              
-                              {(user.role === 'ADMIN' || user.role === 'SUPERVISOR') && (
-                                <button
-                                  onClick={() => handleToggleManualDisabledLottery(l.id)}
-                                  className="btn"
-                                  style={{
-                                    padding: '4px 8px',
-                                    fontSize: '0.7rem',
-                                    borderRadius: 'var(--radius-sm)',
-                                    cursor: 'pointer',
-                                    backgroundColor: isManuallyBlocked ? 'hsl(var(--success) / 0.1)' : 'hsl(var(--danger) / 0.1)',
-                                    color: isManuallyBlocked ? 'hsl(var(--success))' : 'hsl(var(--danger))',
-                                    border: `1px solid ${isManuallyBlocked ? 'hsl(var(--success) / 0.2)' : 'hsl(var(--danger) / 0.2)'}`,
-                                    fontWeight: 600,
-                                    transition: 'all 0.2s ease'
-                                  }}
-                                  title={isManuallyBlocked ? 'Habilitar Lotería' : 'Bloquear Lotería'}
-                                >
-                                  {isManuallyBlocked ? 'Habilitar' : 'Bloquear'}
-                                </button>
-                              )}
+                          );
+                        })}
+
+                      {drawsSubTab === 'pick_sports' && (
+                        <div className="glass-panel-premium table-row-stagger" style={{ 
+                          padding: '16px', 
+                          marginTop: '4px', 
+                          display: 'flex', 
+                          flexDirection: 'column', 
+                          gap: '10px',
+                          border: '1px solid hsl(var(--primary) / 0.2)' 
+                        }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <div>
+                              <strong style={{ fontSize: '0.875rem', display: 'block', color: 'hsl(var(--text-primary))' }}>Banca Deportiva (Sportsbook)</strong>
+                              <span style={{ fontSize: '0.725rem', color: 'hsl(var(--text-secondary))' }}>Límites globales configurados en la red</span>
+                            </div>
+                            <span className={`badge ${
+                              systemModeConfig.sportsbookEnabled !== false ? 'badge-success badge-glow-success' : 'badge-danger badge-glow-danger'
+                            }`} style={{ fontSize: '0.65rem' }}>
+                              {systemModeConfig.sportsbookEnabled !== false ? 'Activo' : 'Desactivado'}
+                            </span>
+                          </div>
+                          
+                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', fontSize: '0.75rem', backgroundColor: 'hsl(var(--background) / 0.6)', padding: '10px', borderRadius: 'var(--radius-md)', border: '1px solid hsl(var(--border) / 0.5)' }}>
+                            <div>
+                              <span style={{ color: 'hsl(var(--text-secondary))', display: 'block', fontSize: '0.65rem' }}>Riesgo Máx por Apuesta</span>
+                              <strong>${sportsLimitsForm.max_ticket_stake.toLocaleString()}</strong>
+                            </div>
+                            <div>
+                              <span style={{ color: 'hsl(var(--text-secondary))', display: 'block', fontSize: '0.65rem' }}>Ganancia Máx Potencial</span>
+                              <strong>${sportsLimitsForm.max_potential_payout.toLocaleString()}</strong>
                             </div>
                           </div>
-                        );
-                      })}
+                        </div>
+                      )}
                     </div>
                   </div>
                 )}
@@ -2793,48 +3032,84 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeTab }) => {
                         {/* Actions buttons */}
                         <div style={{ 
                           display: 'flex', 
-                          gap: '8px', 
+                          gap: '6px', 
                           marginTop: 'auto', 
                           paddingTop: '12px', 
-                          borderTop: '1px solid hsl(var(--border) / 0.5)' 
+                          borderTop: '1px solid hsl(var(--border) / 0.5)',
+                          flexWrap: 'wrap'
                         }}>
                           <button 
                             className="btn btn-secondary" 
                             style={{ 
-                              flex: 1, 
-                              fontSize: '0.8rem', 
-                              padding: '8px',
+                              flex: '1 1 45%', 
+                              fontSize: '0.75rem', 
+                              padding: '6px 8px',
                               color: c.active ? 'hsl(var(--danger))' : 'hsl(var(--success))',
                               borderColor: c.active ? 'hsl(var(--danger) / 0.2)' : 'hsl(var(--success) / 0.2)',
                               backgroundColor: c.active ? 'hsl(var(--danger) / 0.05)' : 'hsl(var(--success) / 0.05)',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              gap: '4px'
                             }}
                             onClick={() => handleToggleCashier(c.id)}
                           >
-                            {c.active ? <Lock size={14} /> : <Unlock size={14} />}
+                            {c.active ? <Lock size={12} /> : <Unlock size={12} />}
                             {c.active ? 'Suspender' : 'Activar'}
                           </button>
 
                           <button 
                             className="btn btn-secondary" 
-                            style={{ flex: 1, fontSize: '0.8rem', padding: '8px', gap: '6px' }}
+                            style={{ 
+                              flex: '1 1 45%', 
+                              fontSize: '0.75rem', 
+                              padding: '6px 8px', 
+                              display: 'flex', 
+                              alignItems: 'center', 
+                              justifyContent: 'center', 
+                              gap: '4px' 
+                            }}
                             onClick={() => handleOpenEditCajero(c)}
                           >
-                            <Edit2 size={14} />
+                            <Edit2 size={12} />
                             Editar
                           </button>
 
                           <button 
                             className="btn btn-secondary" 
                             style={{ 
-                              padding: '8px', 
+                              flex: '1 1 70%', 
+                              fontSize: '0.75rem', 
+                              padding: '6px 8px', 
+                              display: 'flex', 
+                              alignItems: 'center', 
+                              justifyContent: 'center', 
+                              gap: '4px',
+                              color: 'hsl(var(--primary))',
+                              borderColor: 'hsl(var(--primary) / 0.2)'
+                            }}
+                            onClick={() => handleOpenCashierLimitsModal(c)}
+                          >
+                            <Sliders size={12} />
+                            Límites
+                          </button>
+
+                          <button 
+                            className="btn btn-secondary" 
+                            style={{ 
+                              flex: '1 1 20%',
+                              padding: '6px 8px', 
                               color: 'hsl(var(--danger))', 
                               borderColor: 'hsl(var(--danger) / 0.2)',
-                              backgroundColor: 'hsl(var(--danger) / 0.05)' 
+                              backgroundColor: 'hsl(var(--danger) / 0.05)',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center'
                             }}
                             onClick={() => handleDeleteCashier(c.id)}
                             title="Eliminar Cajero"
                           >
-                            <Trash2 size={14} />
+                            <Trash2 size={12} />
                           </button>
                         </div>
                       </div>
@@ -3471,7 +3746,18 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeTab }) => {
                             <td>@{t.sellerUser}</td>
                             <td>{new Date(t.createdAtEpochMs).toLocaleString()}</td>
                             <td>
-                              <div style={{ fontSize: '0.8rem', color: 'hsl(var(--text-secondary))' }}>
+                              <div style={{ 
+                                fontSize: '0.75rem', 
+                                color: 'hsl(var(--text-secondary))',
+                                maxHeight: '60px',
+                                overflowY: 'auto',
+                                wordBreak: 'break-word',
+                                maxWidth: '280px',
+                                padding: '4px 8px',
+                                backgroundColor: 'rgba(255, 255, 255, 0.02)',
+                                borderRadius: '4px',
+                                border: '1px solid hsl(var(--border) / 0.3)'
+                              }}>
                                 {t.plays.map(p => `${p.playType.toUpperCase()} ${p.number} ($${p.amount})`).join(' · ')}
                               </div>
                             </td>
@@ -3992,11 +4278,22 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeTab }) => {
                               <td style={{ fontWeight: 600 }}>{t.serial || t.id}</td>
                               <td>@{t.sellerUser}</td>
                               <td>{new Date(t.createdAtEpochMs).toLocaleTimeString()}</td>
-                              <td>
-                                <div style={{ fontSize: '0.8rem', color: 'hsl(var(--text-secondary))' }}>
-                                  {t.plays.map(p => `${p.playType.toUpperCase()} ${p.number}`).join(' · ')}
-                                </div>
-                              </td>
+                               <td>
+                                 <div style={{ 
+                                   fontSize: '0.75rem', 
+                                   color: 'hsl(var(--text-secondary))',
+                                   maxHeight: '60px',
+                                   overflowY: 'auto',
+                                   wordBreak: 'break-word',
+                                   maxWidth: '280px',
+                                   padding: '4px 8px',
+                                   backgroundColor: 'rgba(255, 255, 255, 0.02)',
+                                   borderRadius: '4px',
+                                   border: '1px solid hsl(var(--border) / 0.3)'
+                                 }}>
+                                   {t.plays.map(p => `${p.playType.toUpperCase()} ${p.number}`).join(' · ')}
+                                 </div>
+                               </td>
                               <td style={{ fontWeight: 700, color: 'hsl(var(--danger))', fontSize: '1.05rem' }}>
                                 ${t.totalPrize.toFixed(2)}
                               </td>
@@ -6248,17 +6545,20 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeTab }) => {
 
       {/* --- MODAL: SNAPSHOT VISOR TICKET PREMIUM (RECIBO TÉRMICO) --- */}
       {selectedTicketForDetail && (
-        <div style={{
-          position: 'fixed',
-          inset: 0,
-          backgroundColor: 'rgba(0,0,0,0.7)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 102,
-          backdropFilter: 'blur(6px)'
-        }}>
-          <div className="fade-in" style={{
+        <div 
+          className="ticket-detail-modal-overlay"
+          style={{
+            position: 'fixed',
+            inset: 0,
+            backgroundColor: 'rgba(0,0,0,0.7)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 102,
+            backdropFilter: 'blur(6px)'
+          }}
+        >
+          <div className="ticket-detail-modal-card fade-in" style={{
             maxWidth: '380px',
             width: '100%',
             backgroundColor: '#ffffff',
@@ -6267,8 +6567,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeTab }) => {
             padding: '24px',
             boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.3), 0 8px 10px -6px rgb(0 0 0 / 0.3)',
             borderRadius: '8px',
-            display: 'flex',
-            flexDirection: 'column',
+            display: 'block',
             position: 'relative',
             maxHeight: '90vh',
             overflowY: 'auto'
@@ -6400,17 +6699,20 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeTab }) => {
 
       {/* --- MODAL: SNAPSHOT VISOR SPORTS TICKET PREMIUM (RECIBO TÉRMICO) --- */}
       {selectedSportsTicketForDetail && (
-        <div style={{
-          position: 'fixed',
-          inset: 0,
-          backgroundColor: 'rgba(0,0,0,0.7)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 102,
-          backdropFilter: 'blur(6px)'
-        }}>
-          <div className="fade-in" style={{
+        <div 
+          className="ticket-detail-modal-overlay"
+          style={{
+            position: 'fixed',
+            inset: 0,
+            backgroundColor: 'rgba(0,0,0,0.7)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 102,
+            backdropFilter: 'blur(6px)'
+          }}
+        >
+          <div className="ticket-detail-modal-card fade-in" style={{
             maxWidth: '380px',
             width: '100%',
             backgroundColor: '#ffffff',
@@ -6419,8 +6721,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeTab }) => {
             padding: '24px',
             boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.3), 0 8px 10px -6px rgb(0 0 0 / 0.3)',
             borderRadius: '8px',
-            display: 'flex',
-            flexDirection: 'column',
+            display: 'block',
             position: 'relative',
             maxHeight: '90vh',
             overflowY: 'auto'
@@ -6579,6 +6880,307 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeTab }) => {
               </button>
               <button className="btn btn-secondary" onClick={() => setCredsShareOpen(false)}>
                 Cerrar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* --- MODAL: CONFIGURAR LÍMITES DIRECTOS DE CAJERO --- */}
+      {editingCashierLimits && (
+        <div style={{
+          position: 'fixed',
+          inset: 0,
+          backgroundColor: 'rgba(0,0,0,0.6)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 105,
+          backdropFilter: 'blur(8px)'
+        }}>
+          <div className="glass-panel fade-in" style={{
+            maxWidth: '640px',
+            width: '100%',
+            padding: '28px',
+            backgroundColor: 'hsl(var(--surface))',
+            maxHeight: '90vh',
+            overflowY: 'auto',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '16px',
+            boxShadow: '0 20px 25px -5px rgba(0,0,0,0.3)'
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid hsl(var(--border))', paddingBottom: '12px' }}>
+              <div>
+                <h3 style={{ fontSize: '1.25rem', margin: 0, fontWeight: 700, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <Settings size={20} color="var(--primary)" />
+                  Límites de Cajero: @{editingCashierLimits.user}
+                </h3>
+                <span style={{ fontSize: '0.75rem', color: 'hsl(var(--text-muted))' }}>{editingCashierLimits.displayName} • Banca: {editingCashierLimits.banca}</span>
+              </div>
+              <button 
+                onClick={() => setEditingCashierLimits(null)}
+                style={{ border: 'none', background: 'transparent', fontSize: '1.5rem', cursor: 'pointer', color: 'hsl(var(--text-muted))' }}
+              >
+                &times;
+              </button>
+            </div>
+
+            {/* Modal Sub-tabs */}
+            <div style={{ display: 'flex', gap: '8px', borderBottom: '1px solid hsl(var(--border))', paddingBottom: '8px' }}>
+              <button
+                className={`btn ${modalLimitsTab === 'limits' ? 'btn-primary' : 'btn-secondary'}`}
+                style={{ padding: '6px 12px', fontSize: '0.8rem' }}
+                onClick={() => setModalLimitsTab('limits')}
+              >
+                Topes y Límites Diarios
+              </button>
+              <button
+                className={`btn ${modalLimitsTab === 'payouts' ? 'btn-primary' : 'btn-secondary'}`}
+                style={{ padding: '6px 12px', fontSize: '0.8rem' }}
+                onClick={() => setModalLimitsTab('payouts')}
+              >
+                Premios y Multiplicadores
+              </button>
+            </div>
+
+            {modalLimitsTab === 'limits' ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                  <div className="form-group">
+                    <label className="form-label">Tope de Venta Diaria ($)</label>
+                    <input
+                      type="number"
+                      className="form-input"
+                      value={modalLimitsForm.daySale}
+                      onChange={(e) => setModalLimitsForm({ ...modalLimitsForm, daySale: e.target.value })}
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Tope Pago Premios ($)</label>
+                    <input
+                      type="number"
+                      className="form-input"
+                      value={modalLimitsForm.payout}
+                      onChange={(e) => setModalLimitsForm({ ...modalLimitsForm, payout: e.target.value })}
+                    />
+                  </div>
+                </div>
+
+                <div style={{ borderTop: '1px solid hsl(var(--border))', paddingTop: '12px' }}>
+                  <h4 style={{ fontSize: '0.9rem', marginBottom: '10px', color: 'hsl(var(--primary))' }}>Límites de Lotería Tradicional ($)</h4>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                    <div className="form-group">
+                      <label className="form-label">Quiniela</label>
+                      <input
+                        type="number"
+                        className="form-input"
+                        value={modalLimitsForm.q}
+                        onChange={(e) => setModalLimitsForm({ ...modalLimitsForm, q: e.target.value })}
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label className="form-label">Palé</label>
+                      <input
+                        type="number"
+                        className="form-input"
+                        value={modalLimitsForm.pale}
+                        onChange={(e) => setModalLimitsForm({ ...modalLimitsForm, pale: e.target.value })}
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label className="form-label">Super Palé</label>
+                      <input
+                        type="number"
+                        className="form-input"
+                        value={modalLimitsForm.sp}
+                        onChange={(e) => setModalLimitsForm({ ...modalLimitsForm, sp: e.target.value })}
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label className="form-label">Tripleta</label>
+                      <input
+                        type="number"
+                        className="form-input"
+                        value={modalLimitsForm.t}
+                        onChange={(e) => setModalLimitsForm({ ...modalLimitsForm, t: e.target.value })}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div style={{ borderTop: '1px solid hsl(var(--border))', paddingTop: '12px' }}>
+                  <h4 style={{ fontSize: '0.9rem', marginBottom: '10px', color: 'hsl(var(--primary))' }}>Límites de Picks (USA) ($)</h4>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                    <div className="form-group">
+                      <label className="form-label">Pick 3 Straight</label>
+                      <input
+                        type="number"
+                        className="form-input"
+                        value={modalLimitsForm.p3}
+                        onChange={(e) => setModalLimitsForm({ ...modalLimitsForm, p3: e.target.value })}
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label className="form-label">Pick 3 Box</label>
+                      <input
+                        type="number"
+                        className="form-input"
+                        value={modalLimitsForm.p3box}
+                        onChange={(e) => setModalLimitsForm({ ...modalLimitsForm, p3box: e.target.value })}
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label className="form-label">Pick 4 Straight</label>
+                      <input
+                        type="number"
+                        className="form-input"
+                        value={modalLimitsForm.p4}
+                        onChange={(e) => setModalLimitsForm({ ...modalLimitsForm, p4: e.target.value })}
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label className="form-label">Pick 4 Box</label>
+                      <input
+                        type="number"
+                        className="form-input"
+                        value={modalLimitsForm.p4box}
+                        onChange={(e) => setModalLimitsForm({ ...modalLimitsForm, p4box: e.target.value })}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div style={{ borderTop: '1px solid hsl(var(--border))', paddingTop: '12px' }}>
+                  <div className="form-group">
+                    <label className="form-label">Modo Visual de Terminal (POS)</label>
+                    <select
+                      className="form-input"
+                      value={modalLimitsForm.systemModeOverride || ''}
+                      onChange={(e) => setModalLimitsForm({ ...modalLimitsForm, systemModeOverride: e.target.value })}
+                    >
+                      <option value="">Por Defecto (Heredado)</option>
+                      <option value="standard">Estándar (Completo)</option>
+                      <option value="compact">Compacto (POS Térmica)</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                <div>
+                  <h4 style={{ fontSize: '0.9rem', marginBottom: '10px', color: 'hsl(var(--primary))' }}>Premios Lotería Tradicional</h4>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px' }}>
+                    <div className="form-group">
+                      <label className="form-label">1ra ($ por $1)</label>
+                      <input
+                        type="number"
+                        className="form-input"
+                        value={modalPayoutsForm.q1}
+                        onChange={(e) => setModalPayoutsForm({ ...modalPayoutsForm, q1: e.target.value })}
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label className="form-label">2da ($ por $1)</label>
+                      <input
+                        type="number"
+                        className="form-input"
+                        value={modalPayoutsForm.q2}
+                        onChange={(e) => setModalPayoutsForm({ ...modalPayoutsForm, q2: e.target.value })}
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label className="form-label">3ra ($ por $1)</label>
+                      <input
+                        type="number"
+                        className="form-input"
+                        value={modalPayoutsForm.q3}
+                        onChange={(e) => setModalPayoutsForm({ ...modalPayoutsForm, q3: e.target.value })}
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label className="form-label">Palé 1ra y 2da</label>
+                      <input
+                        type="number"
+                        className="form-input"
+                        value={modalPayoutsForm.pale}
+                        onChange={(e) => setModalPayoutsForm({ ...modalPayoutsForm, pale: e.target.value })}
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label className="form-label">Tripleta (3 aciertos)</label>
+                      <input
+                        type="number"
+                        className="form-input"
+                        value={modalPayoutsForm.tripleta}
+                        onChange={(e) => setModalPayoutsForm({ ...modalPayoutsForm, tripleta: e.target.value })}
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label className="form-label">Super Palé</label>
+                      <input
+                        type="number"
+                        className="form-input"
+                        value={modalPayoutsForm.superPale}
+                        onChange={(e) => setModalPayoutsForm({ ...modalPayoutsForm, superPale: e.target.value })}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div style={{ borderTop: '1px solid hsl(var(--border))', paddingTop: '12px' }}>
+                  <h4 style={{ fontSize: '0.9rem', marginBottom: '10px', color: 'hsl(var(--primary))' }}>Premios Picks (USA)</h4>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                    <div className="form-group">
+                      <label className="form-label">Pick 3 Straight</label>
+                      <input
+                        type="number"
+                        className="form-input"
+                        value={modalPayoutsForm.pick3Straight}
+                        onChange={(e) => setModalPayoutsForm({ ...modalPayoutsForm, pick3Straight: e.target.value })}
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label className="form-label">Pick 4 Straight</label>
+                      <input
+                        type="number"
+                        className="form-input"
+                        value={modalPayoutsForm.pick4Straight}
+                        onChange={(e) => setModalPayoutsForm({ ...modalPayoutsForm, pick4Straight: e.target.value })}
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Actions footer */}
+            <div style={{ display: 'flex', gap: '12px', marginTop: '16px', borderTop: '1px solid hsl(var(--border))', paddingTop: '16px' }}>
+              <button 
+                className="btn btn-primary" 
+                style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
+                onClick={handleSaveModalCashierLimits}
+                disabled={limitsSaving}
+              >
+                {limitsSaving ? (
+                  <>
+                    <RefreshCw size={16} className="animate-spin" />
+                    Guardando...
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle size={16} />
+                    Guardar Límites
+                  </>
+                )}
+              </button>
+              <button 
+                className="btn btn-secondary" 
+                style={{ flex: 1 }}
+                onClick={() => setEditingCashierLimits(null)}
+                disabled={limitsSaving}
+              >
+                Cancelar
               </button>
             </div>
           </div>
