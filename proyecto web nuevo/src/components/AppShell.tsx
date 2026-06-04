@@ -27,7 +27,7 @@ interface AppShellProps {
 }
 
 export const AppShell: React.FC<AppShellProps> = ({ children, activeTab, setActiveTab }) => {
-  const { user, logout, switchUserByRole } = useAuth();
+  const { user, logout } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [theme, setTheme] = useState<'light' | 'dark'>('dark');
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
@@ -354,39 +354,7 @@ export const AppShell: React.FC<AppShellProps> = ({ children, activeTab, setActi
           {/* Topbar Right Quick Actions */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
             
-            {/* Test Profile Quick Switcher Dropdown */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginRight: '8px' }}>
-              <span className="desktop-only" style={{ fontSize: '0.75rem', color: 'hsl(var(--text-secondary))', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                Perfil de Prueba:
-              </span>
-              <select
-                value={role || ''}
-                onChange={async (e) => {
-                  const targetRole = e.target.value as any;
-                  if (targetRole) {
-                    await switchUserByRole(targetRole);
-                    setActiveTab('dashboard');
-                  }
-                }}
-                style={{
-                  padding: '6px 12px',
-                  borderRadius: 'var(--radius-sm)',
-                  backgroundColor: 'hsl(var(--surface-hover))',
-                  border: '1px solid hsl(var(--border))',
-                  color: 'hsl(var(--text-primary))',
-                  fontSize: '0.8rem',
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                  outline: 'none',
-                  boxShadow: 'var(--shadow-sm)',
-                  transition: 'all 0.2s ease'
-                }}
-              >
-                <option value="ADMIN">Administrador (Juan Pérez)</option>
-                <option value="MASTER">Master (Randy Cordero)</option>
-                <option value="SUPERVISOR">Supervisor (Carlos Gómez)</option>
-              </select>
-            </div>
+            {/* Perfil Switcher removed for production parity */}
 
             {/* Theme Toggle */}
             <button className="btn-icon" onClick={toggleTheme} title="Cambiar tema">

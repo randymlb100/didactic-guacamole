@@ -34,7 +34,7 @@ import type { UserAccount, TicketRecord, LotteryCatalogItem, AuditLog, DrawResul
 import { 
   Users, Layers, TrendingUp, DollarSign, Activity, 
   Plus, Search, RefreshCw, CheckCircle, AlertTriangle, 
-  ArrowRightLeft, FileSpreadsheet, Lock, Trash2, Key, Info, Settings, Edit2, Trophy
+  ArrowRightLeft, FileSpreadsheet, Lock, Unlock, Trash2, Key, Info, Settings, Edit2, Trophy
 } from 'lucide-react';
 
 interface DashboardProps {
@@ -2312,94 +2312,143 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeTab }) => {
                 </div>
               </div>
 
-              {/* LIST TABLE OF CAJEROS UNDER THIS ADMIN */}
-              <div className="table-container">
-                <table className="table-el">
-                  <thead>
-                    <tr>
-                      <th>Cajero / ID</th>
-                      <th>Usuario</th>
-                      <th>Territorio</th>
-                      <th>Balance Ventas</th>
-                      <th>Cupo Recargas (FF)</th>
-                      <th>Creado el</th>
-                      <th>Estado</th>
-                      <th>Acciones</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {users.filter(u => u.role === 'CASHIER' && (user.role === 'MASTER' ? true : u.adminId === user.id)).length === 0 ? (
-                      <tr>
-                        <td colSpan={8} style={{ textAlign: 'center', color: 'hsl(var(--text-secondary))', padding: '24px' }}>
-                          No hay cajeros asignados a tu banca todavía.
-                        </td>
-                      </tr>
-                    ) : (
-                      users.filter(u => u.role === 'CASHIER' && (user.role === 'MASTER' ? true : u.adminId === user.id)).map((c) => (
-                        <tr key={c.id}>
-                          <td style={{ fontWeight: 600 }}>{c.displayName}</td>
-                          <td>@{c.user}</td>
-                          <td>
-                            <span className="badge badge-primary">{c.territory}</span>
-                          </td>
-                          {(() => {
-                            const cashierTickets = tickets.filter(t => t.sellerUser === c.user && t.status !== 'cancelled' && t.status !== 'voided');
-                            const salesTotalToday = cashierTickets.filter(t => {
-                              const todayStr = new Intl.DateTimeFormat('fr-CA', { timeZone: 'America/Santo_Domingo' }).format(new Date()); // yyyy-mm-dd
-                              return t.drawDateKey === todayStr || (Date.now() - t.createdAtEpochMs) <= 86400000;
-                            }).reduce((acc, t) => acc + t.total, 0);
-                            
-                            return (
-                              <td style={{ fontWeight: 600 }}>${salesTotalToday.toLocaleString('en-US', { minimumFractionDigits: 2 })}</td>
-                            );
-                          })()}
-                          <td style={{ fontWeight: 600 }}>
-                            ${c.rechargesBalance.toFixed(2)}
-                            {c.rechargesEnabled ? (
-                              <span style={{ fontSize: '0.7rem', color: 'hsl(var(--success))', display: 'block' }}>Habilitado</span>
-                            ) : (
-                              <span style={{ fontSize: '0.7rem', color: 'hsl(var(--text-muted))', display: 'block' }}>Deshabilitado</span>
-                            )}
-                          </td>
-                          <td>{c.createdLabel || '14/05/2026'}</td>
-                          <td>
-                            <span className={`badge ${c.active ? 'badge-success' : 'badge-danger'}`}>
+              {/* FIGMA-STYLE BENTO GRID OF CASHIER CARDS */}
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))',
+                gap: '20px',
+                marginTop: '10px'
+              }}>
+                {users.filter(u => u.role === 'CASHIER' && (user.role === 'MASTER' ? true : u.adminId === user.id)).length === 0 ? (
+                  <div className="glass-panel-premium" style={{ gridColumn: '1 / -1', padding: '48px', textAlign: 'center', color: 'hsl(var(--text-secondary))' }}>
+                    No hay cajeros asignados a tu banca todavía.
+                  </div>
+                ) : (
+                  users.filter(u => u.role === 'CASHIER' && (user.role === 'MASTER' ? true : u.adminId === user.id)).map((c) => {
+                    const cashierTickets = tickets.filter(t => t.sellerUser === c.user && t.status !== 'cancelled' && t.status !== 'voided');
+                    const salesTotalToday = cashierTickets.filter(t => {
+                      const todayStr = new Intl.DateTimeFormat('fr-CA', { timeZone: 'America/Santo_Domingo' }).format(new Date());
+                      return t.drawDateKey === todayStr || (Date.now() - t.createdAtEpochMs) <= 86400000;
+                    }).reduce((acc, t) => acc + t.total, 0);
+
+                    return (
+                      <div 
+                        key={c.id} 
+                        className="glass-panel-premium table-row-stagger" 
+                        style={{ 
+                          padding: '24px', 
+                          display: 'flex', 
+                          flexDirection: 'column', 
+                          gap: '16px',
+                          border: '1px solid ' + (c.active ? 'hsl(var(--border) / 0.6)' : 'hsl(var(--danger) / 0.3)'),
+                          boxShadow: c.active ? 'var(--shadow-md)' : '0 8px 32px 0 hsl(var(--danger) / 0.08)'
+                        }}
+                      >
+                        {/* Header Info */}
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                          <div>
+                            <span style={{ fontSize: '0.7rem', color: 'hsl(var(--text-muted))', fontWeight: 600, display: 'block', textTransform: 'uppercase' }}>ID: {c.id}</span>
+                            <strong style={{ fontSize: '1.15rem', display: 'block', color: 'hsl(var(--text-primary))', marginTop: '2px' }}>{c.displayName}</strong>
+                            <span style={{ fontSize: '0.85rem', color: 'hsl(var(--text-secondary))', display: 'block', marginTop: '2px' }}>@{c.user}</span>
+                          </div>
+                          
+                          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '6px' }}>
+                            <span className={`badge ${c.active ? 'badge-success badge-glow-success' : 'badge-danger badge-glow-danger'}`}>
                               {c.active ? 'Activo' : 'Bloqueado'}
                             </span>
-                          </td>
-                          <td>
-                            <div style={{ display: 'flex', gap: '8px' }}>
-                              <button 
-                                className="btn-icon" 
-                                style={{ color: c.active ? 'hsl(var(--danger))' : 'hsl(var(--success))', border: 'none' }}
-                                onClick={() => handleToggleCashier(c.id)}
-                                title={c.active ? 'Suspender Cajero' : 'Activar Cajero'}
-                              >
-                                {c.active ? <Lock size={16} /> : <Key size={16} />}
-                              </button>
-                              <button 
-                                className="btn-icon" 
-                                style={{ color: 'hsl(var(--primary))', border: 'none' }}
-                                onClick={() => handleOpenEditCajero(c)}
-                                title="Editar Cajero"
-                              >
-                                <Edit2 size={16} />
-                              </button>
-                              <button 
-                                className="btn-icon" 
-                                style={{ color: 'hsl(var(--danger))', border: 'none' }}
-                                onClick={() => handleDeleteCashier(c.id)}
-                                title="Eliminar Cajero"
-                              >
-                                <Trash2 size={16} />
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                      ))
-                    )}
-                  </tbody>
-                </table>
+                            <span className="badge badge-primary">{c.territory}</span>
+                          </div>
+                        </div>
+
+                        {/* Financial Metrics */}
+                        <div style={{ 
+                          display: 'grid', 
+                          gridTemplateColumns: '1fr 1fr', 
+                          gap: '12px', 
+                          backgroundColor: 'hsl(var(--background) / 0.6)', 
+                          padding: '12px', 
+                          borderRadius: 'var(--radius-md)', 
+                          border: '1px solid hsl(var(--border) / 0.5)' 
+                        }}>
+                          <div>
+                            <span style={{ fontSize: '0.7rem', color: 'hsl(var(--text-secondary))', display: 'block' }}>Ventas del Día</span>
+                            <strong style={{ fontSize: '1.1rem', color: 'hsl(var(--text-primary))', display: 'block', marginTop: '2px' }}>
+                              ${salesTotalToday.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                            </strong>
+                          </div>
+                          <div>
+                            <span style={{ fontSize: '0.7rem', color: 'hsl(var(--text-secondary))', display: 'block' }}>Cupo Recargas (FF)</span>
+                            <strong style={{ fontSize: '1.1rem', color: 'hsl(var(--text-primary))', display: 'block', marginTop: '2px' }}>
+                              ${c.rechargesBalance.toFixed(2)}
+                            </strong>
+                            <span style={{ 
+                              fontSize: '0.65rem', 
+                              color: c.rechargesEnabled ? 'hsl(var(--success))' : 'hsl(var(--text-muted))',
+                              fontWeight: 600,
+                              display: 'block',
+                              marginTop: '2px'
+                            }}>
+                              {c.rechargesEnabled ? '● Habilitado' : '○ Deshabilitado'}
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Additional Info footer */}
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.75rem', color: 'hsl(var(--text-muted))' }}>
+                          <span>Registrado: {c.createdLabel || '14/05/2026'}</span>
+                        </div>
+
+                        {/* Actions buttons */}
+                        <div style={{ 
+                          display: 'flex', 
+                          gap: '8px', 
+                          marginTop: 'auto', 
+                          paddingTop: '12px', 
+                          borderTop: '1px solid hsl(var(--border) / 0.5)' 
+                        }}>
+                          <button 
+                            className="btn btn-secondary" 
+                            style={{ 
+                              flex: 1, 
+                              fontSize: '0.8rem', 
+                              padding: '8px',
+                              color: c.active ? 'hsl(var(--danger))' : 'hsl(var(--success))',
+                              borderColor: c.active ? 'hsl(var(--danger) / 0.2)' : 'hsl(var(--success) / 0.2)',
+                              backgroundColor: c.active ? 'hsl(var(--danger) / 0.05)' : 'hsl(var(--success) / 0.05)',
+                            }}
+                            onClick={() => handleToggleCashier(c.id)}
+                          >
+                            {c.active ? <Lock size={14} /> : <Unlock size={14} />}
+                            {c.active ? 'Suspender' : 'Activar'}
+                          </button>
+
+                          <button 
+                            className="btn btn-secondary" 
+                            style={{ flex: 1, fontSize: '0.8rem', padding: '8px', gap: '6px' }}
+                            onClick={() => handleOpenEditCajero(c)}
+                          >
+                            <Edit2 size={14} />
+                            Editar
+                          </button>
+
+                          <button 
+                            className="btn btn-secondary" 
+                            style={{ 
+                              padding: '8px', 
+                              color: 'hsl(var(--danger))', 
+                              borderColor: 'hsl(var(--danger) / 0.2)',
+                              backgroundColor: 'hsl(var(--danger) / 0.05)' 
+                            }}
+                            onClick={() => handleDeleteCashier(c.id)}
+                            title="Eliminar Cajero"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
               </div>
 
             </div>
