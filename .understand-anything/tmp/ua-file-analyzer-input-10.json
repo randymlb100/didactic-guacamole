@@ -1,0 +1,84 @@
+{
+  "projectRoot": "C:\\Users\\Randy Cordero\\Desktop\\lotterynet_android",
+  "batchFiles": [
+    {
+      "path": "proyecto web nuevo/src/App.tsx",
+      "language": "typescript",
+      "sizeLines": 65,
+      "fileCategory": "code"
+    },
+    {
+      "path": "proyecto web nuevo/src/components/AppShell.tsx",
+      "language": "typescript",
+      "sizeLines": 494,
+      "fileCategory": "code"
+    },
+    {
+      "path": "proyecto web nuevo/src/context/AuthContext.tsx",
+      "language": "typescript",
+      "sizeLines": 230,
+      "fileCategory": "code"
+    },
+    {
+      "path": "proyecto web nuevo/src/main.tsx",
+      "language": "typescript",
+      "sizeLines": 10,
+      "fileCategory": "code"
+    },
+    {
+      "path": "proyecto web nuevo/src/types.ts",
+      "language": "typescript",
+      "sizeLines": 145,
+      "fileCategory": "code"
+    },
+    {
+      "path": "proyecto web nuevo/src/utils/supabase.ts",
+      "language": "typescript",
+      "sizeLines": 1330,
+      "fileCategory": "code"
+    },
+    {
+      "path": "proyecto web nuevo/src/views/Dashboard.tsx",
+      "language": "typescript",
+      "sizeLines": 4720,
+      "fileCategory": "code"
+    },
+    {
+      "path": "proyecto web nuevo/src/views/auth/Login.tsx",
+      "language": "typescript",
+      "sizeLines": 352,
+      "fileCategory": "code"
+    }
+  ],
+  "batchImportData": {
+    "proyecto web nuevo/src/App.tsx": [
+      "proyecto web nuevo/src/components/AppShell.tsx",
+      "proyecto web nuevo/src/context/AuthContext.tsx",
+      "proyecto web nuevo/src/views/auth/Login.tsx",
+      "proyecto web nuevo/src/views/Dashboard.tsx"
+    ],
+    "proyecto web nuevo/src/components/AppShell.tsx": [
+      "proyecto web nuevo/src/context/AuthContext.tsx"
+    ],
+    "proyecto web nuevo/src/context/AuthContext.tsx": [
+      "proyecto web nuevo/src/types.ts",
+      "proyecto web nuevo/src/utils/supabase.ts"
+    ],
+    "proyecto web nuevo/src/main.tsx": [
+      "proyecto web nuevo/src/App.tsx",
+      "proyecto web nuevo/src/index.css"
+    ],
+    "proyecto web nuevo/src/types.ts": [],
+    "proyecto web nuevo/src/utils/supabase.ts": [
+      "proyecto web nuevo/src/types.ts"
+    ],
+    "proyecto web nuevo/src/views/Dashboard.tsx": [
+      "proyecto web nuevo/src/context/AuthContext.tsx",
+      "proyecto web nuevo/src/types.ts",
+      "proyecto web nuevo/src/utils/supabase.ts"
+    ],
+    "proyecto web nuevo/src/views/auth/Login.tsx": [
+      "proyecto web nuevo/src/context/AuthContext.tsx"
+    ]
+  }
+}

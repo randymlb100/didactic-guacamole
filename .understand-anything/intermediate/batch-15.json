@@ -1,0 +1,243 @@
+{
+  "nodes": [
+    {
+      "id": "file:.agents/skills/supabase-postgres-best-practices/references/query-composite-indexes.md",
+      "type": "document",
+      "name": "query-composite-indexes.md",
+      "summary": "Supabase integration file used by the app/server for remote data, ticket, result, or configuration workflows.",
+      "tags": [
+        "docs",
+        "supabase",
+        "documentation"
+      ],
+      "complexity": "simple",
+      "filePath": ".agents/skills/supabase-postgres-best-practices/references/query-composite-indexes.md",
+      "lineRange": [
+        1,
+        44
+      ]
+    },
+    {
+      "id": "file:.agents/skills/supabase-postgres-best-practices/references/query-covering-indexes.md",
+      "type": "document",
+      "name": "query-covering-indexes.md",
+      "summary": "Supabase integration file used by the app/server for remote data, ticket, result, or configuration workflows.",
+      "tags": [
+        "docs",
+        "supabase",
+        "documentation"
+      ],
+      "complexity": "simple",
+      "filePath": ".agents/skills/supabase-postgres-best-practices/references/query-covering-indexes.md",
+      "lineRange": [
+        1,
+        40
+      ]
+    },
+    {
+      "id": "file:.agents/skills/supabase-postgres-best-practices/references/query-index-types.md",
+      "type": "document",
+      "name": "query-index-types.md",
+      "summary": "Supabase integration file used by the app/server for remote data, ticket, result, or configuration workflows.",
+      "tags": [
+        "docs",
+        "supabase",
+        "documentation"
+      ],
+      "complexity": "simple",
+      "filePath": ".agents/skills/supabase-postgres-best-practices/references/query-index-types.md",
+      "lineRange": [
+        1,
+        48
+      ]
+    },
+    {
+      "id": "file:.agents/skills/supabase-postgres-best-practices/references/query-missing-indexes.md",
+      "type": "document",
+      "name": "query-missing-indexes.md",
+      "summary": "Supabase integration file used by the app/server for remote data, ticket, result, or configuration workflows.",
+      "tags": [
+        "docs",
+        "supabase",
+        "documentation"
+      ],
+      "complexity": "simple",
+      "filePath": ".agents/skills/supabase-postgres-best-practices/references/query-missing-indexes.md",
+      "lineRange": [
+        1,
+        43
+      ]
+    },
+    {
+      "id": "file:.agents/skills/supabase-postgres-best-practices/references/query-partial-indexes.md",
+      "type": "document",
+      "name": "query-partial-indexes.md",
+      "summary": "Supabase integration file used by the app/server for remote data, ticket, result, or configuration workflows.",
+      "tags": [
+        "docs",
+        "supabase",
+        "documentation"
+      ],
+      "complexity": "simple",
+      "filePath": ".agents/skills/supabase-postgres-best-practices/references/query-partial-indexes.md",
+      "lineRange": [
+        1,
+        45
+      ]
+    },
+    {
+      "id": "file:.agents/skills/supabase-postgres-best-practices/references/schema-constraints.md",
+      "type": "document",
+      "name": "schema-constraints.md",
+      "summary": "Supabase integration file used by the app/server for remote data, ticket, result, or configuration workflows.",
+      "tags": [
+        "docs",
+        "supabase",
+        "documentation"
+      ],
+      "complexity": "moderate",
+      "filePath": ".agents/skills/supabase-postgres-best-practices/references/schema-constraints.md",
+      "lineRange": [
+        1,
+        80
+      ]
+    },
+    {
+      "id": "file:.agents/skills/supabase-postgres-best-practices/references/schema-data-types.md",
+      "type": "document",
+      "name": "schema-data-types.md",
+      "summary": "Supabase integration file used by the app/server for remote data, ticket, result, or configuration workflows.",
+      "tags": [
+        "docs",
+        "supabase",
+        "documentation"
+      ],
+      "complexity": "simple",
+      "filePath": ".agents/skills/supabase-postgres-best-practices/references/schema-data-types.md",
+      "lineRange": [
+        1,
+        46
+      ]
+    },
+    {
+      "id": "file:.agents/skills/supabase-postgres-best-practices/references/schema-foreign-key-indexes.md",
+      "type": "document",
+      "name": "schema-foreign-key-indexes.md",
+      "summary": "Supabase integration file used by the app/server for remote data, ticket, result, or configuration workflows.",
+      "tags": [
+        "docs",
+        "supabase",
+        "documentation"
+      ],
+      "complexity": "simple",
+      "filePath": ".agents/skills/supabase-postgres-best-practices/references/schema-foreign-key-indexes.md",
+      "lineRange": [
+        1,
+        59
+      ]
+    },
+    {
+      "id": "file:.agents/skills/supabase-postgres-best-practices/references/schema-lowercase-identifiers.md",
+      "type": "document",
+      "name": "schema-lowercase-identifiers.md",
+      "summary": "Supabase integration file used by the app/server for remote data, ticket, result, or configuration workflows.",
+      "tags": [
+        "docs",
+        "supabase",
+        "documentation"
+      ],
+      "complexity": "simple",
+      "filePath": ".agents/skills/supabase-postgres-best-practices/references/schema-lowercase-identifiers.md",
+      "lineRange": [
+        1,
+        55
+      ]
+    },
+    {
+      "id": "file:.agents/skills/supabase-postgres-best-practices/references/schema-partitioning.md",
+      "type": "document",
+      "name": "schema-partitioning.md",
+      "summary": "Supabase integration file used by the app/server for remote data, ticket, result, or configuration workflows.",
+      "tags": [
+        "docs",
+        "supabase",
+        "documentation"
+      ],
+      "complexity": "simple",
+      "filePath": ".agents/skills/supabase-postgres-best-practices/references/schema-partitioning.md",
+      "lineRange": [
+        1,
+        55
+      ]
+    },
+    {
+      "id": "file:.agents/skills/supabase-postgres-best-practices/references/schema-primary-keys.md",
+      "type": "document",
+      "name": "schema-primary-keys.md",
+      "summary": "Supabase integration file used by the app/server for remote data, ticket, result, or configuration workflows.",
+      "tags": [
+        "docs",
+        "supabase",
+        "documentation"
+      ],
+      "complexity": "simple",
+      "filePath": ".agents/skills/supabase-postgres-best-practices/references/schema-primary-keys.md",
+      "lineRange": [
+        1,
+        61
+      ]
+    },
+    {
+      "id": "file:.agents/skills/supabase-postgres-best-practices/references/security-privileges.md",
+      "type": "document",
+      "name": "security-privileges.md",
+      "summary": "Supabase integration file used by the app/server for remote data, ticket, result, or configuration workflows.",
+      "tags": [
+        "docs",
+        "supabase",
+        "documentation"
+      ],
+      "complexity": "simple",
+      "filePath": ".agents/skills/supabase-postgres-best-practices/references/security-privileges.md",
+      "lineRange": [
+        1,
+        54
+      ]
+    },
+    {
+      "id": "file:.agents/skills/supabase-postgres-best-practices/references/security-rls-basics.md",
+      "type": "document",
+      "name": "security-rls-basics.md",
+      "summary": "Supabase integration file used by the app/server for remote data, ticket, result, or configuration workflows.",
+      "tags": [
+        "docs",
+        "supabase",
+        "documentation"
+      ],
+      "complexity": "simple",
+      "filePath": ".agents/skills/supabase-postgres-best-practices/references/security-rls-basics.md",
+      "lineRange": [
+        1,
+        50
+      ]
+    },
+    {
+      "id": "file:.agents/skills/supabase-postgres-best-practices/references/security-rls-performance.md",
+      "type": "document",
+      "name": "security-rls-performance.md",
+      "summary": "Supabase integration file used by the app/server for remote data, ticket, result, or configuration workflows.",
+      "tags": [
+        "docs",
+        "supabase",
+        "documentation"
+      ],
+      "complexity": "simple",
+      "filePath": ".agents/skills/supabase-postgres-best-practices/references/security-rls-performance.md",
+      "lineRange": [
+        1,
+        63
+      ]
+    }
+  ],
+  "edges": []
+}

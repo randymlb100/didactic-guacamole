@@ -1,0 +1,1929 @@
+{
+  "nodes": [
+    {
+      "id": "file:proyecto web nuevo/scratch/list_users.js",
+      "type": "file",
+      "name": "list_users.js",
+      "summary": "Source file proyecto web nuevo/scratch/list_users.js containing 2 function(s).",
+      "tags": [
+        "code"
+      ],
+      "complexity": "simple",
+      "filePath": "proyecto web nuevo/scratch/list_users.js",
+      "lineRange": [
+        1,
+        43
+      ]
+    },
+    {
+      "id": "function:proyecto web nuevo/scratch/list_users.js:listUsers",
+      "type": "function",
+      "name": "listUsers",
+      "summary": "Function listUsers in list_users.js.",
+      "tags": [
+        "function",
+        "javascript"
+      ],
+      "complexity": "moderate",
+      "filePath": "proyecto web nuevo/scratch/list_users.js",
+      "lineRange": [
+        19,
+        41
+      ]
+    },
+    {
+      "id": "file:proyecto web nuevo/scratch/test_browser.cjs",
+      "type": "file",
+      "name": "test_browser.cjs",
+      "summary": "Source file proyecto web nuevo/scratch/test_browser.cjs in the LotteryNetPro project.",
+      "tags": [
+        "code"
+      ],
+      "complexity": "simple",
+      "filePath": "proyecto web nuevo/scratch/test_browser.cjs",
+      "lineRange": [
+        1,
+        24
+      ]
+    },
+    {
+      "id": "file:proyecto web nuevo/scratch/test_browser.js",
+      "type": "file",
+      "name": "test_browser.js",
+      "summary": "Source file proyecto web nuevo/scratch/test_browser.js in the LotteryNetPro project.",
+      "tags": [
+        "code"
+      ],
+      "complexity": "simple",
+      "filePath": "proyecto web nuevo/scratch/test_browser.js",
+      "lineRange": [
+        1,
+        24
+      ]
+    },
+    {
+      "id": "file:proyecto web nuevo/scratch/test_or_query.js",
+      "type": "file",
+      "name": "test_or_query.js",
+      "summary": "Source file proyecto web nuevo/scratch/test_or_query.js containing 2 function(s).",
+      "tags": [
+        "code"
+      ],
+      "complexity": "simple",
+      "filePath": "proyecto web nuevo/scratch/test_or_query.js",
+      "lineRange": [
+        1,
+        46
+      ]
+    },
+    {
+      "id": "function:proyecto web nuevo/scratch/test_or_query.js:testOrQuery",
+      "type": "function",
+      "name": "testOrQuery",
+      "summary": "Function testOrQuery in test_or_query.js.",
+      "tags": [
+        "function",
+        "javascript"
+      ],
+      "complexity": "moderate",
+      "filePath": "proyecto web nuevo/scratch/test_or_query.js",
+      "lineRange": [
+        19,
+        44
+      ]
+    },
+    {
+      "id": "file:proyecto web nuevo/src/App.css",
+      "type": "file",
+      "name": "App.css",
+      "summary": "Source file proyecto web nuevo/src/App.css in the LotteryNetPro project.",
+      "tags": [
+        "markup"
+      ],
+      "complexity": "moderate",
+      "filePath": "proyecto web nuevo/src/App.css",
+      "lineRange": [
+        1,
+        184
+      ]
+    },
+    {
+      "id": "file:proyecto web nuevo/src/index.css",
+      "type": "file",
+      "name": "index.css",
+      "summary": "Source file proyecto web nuevo/src/index.css in the LotteryNetPro project.",
+      "tags": [
+        "markup"
+      ],
+      "complexity": "complex",
+      "filePath": "proyecto web nuevo/src/index.css",
+      "lineRange": [
+        1,
+        358
+      ]
+    },
+    {
+      "id": "file:proyecto web nuevo/vite.config.ts",
+      "type": "file",
+      "name": "vite.config.ts",
+      "summary": "Source file proyecto web nuevo/vite.config.ts in the LotteryNetPro project.",
+      "tags": [
+        "code"
+      ],
+      "complexity": "simple",
+      "filePath": "proyecto web nuevo/vite.config.ts",
+      "lineRange": [
+        1,
+        7
+      ]
+    },
+    {
+      "id": "file:sentry.properties.example",
+      "type": "file",
+      "name": "sentry.properties.example",
+      "summary": "Source file sentry.properties.example in the LotteryNetPro project.",
+      "tags": [
+        "code"
+      ],
+      "complexity": "simple",
+      "filePath": "sentry.properties.example",
+      "lineRange": [
+        1,
+        4
+      ]
+    },
+    {
+      "id": "file:settings.gradle.kts",
+      "type": "file",
+      "name": "settings.gradle.kts",
+      "summary": "Source file settings.gradle.kts in the LotteryNetPro project.",
+      "tags": [
+        "code"
+      ],
+      "complexity": "simple",
+      "filePath": "settings.gradle.kts",
+      "lineRange": [
+        1,
+        21
+      ]
+    },
+    {
+      "id": "file:supabase/config.toml",
+      "type": "config",
+      "name": "config.toml",
+      "summary": "Supabase integration file used by the app/server for remote data, ticket, result, or configuration workflows.",
+      "tags": [
+        "config",
+        "supabase",
+        "configuration"
+      ],
+      "complexity": "simple",
+      "filePath": "supabase/config.toml",
+      "lineRange": [
+        1,
+        67
+      ]
+    },
+    {
+      "id": "file:supabase/deploy-admin-functions.ps1",
+      "type": "file",
+      "name": "deploy-admin-functions.ps1",
+      "summary": "Supabase integration file used by the app/server for remote data, ticket, result, or configuration workflows.",
+      "tags": [
+        "script",
+        "supabase"
+      ],
+      "complexity": "simple",
+      "filePath": "supabase/deploy-admin-functions.ps1",
+      "lineRange": [
+        1,
+        24
+      ]
+    },
+    {
+      "id": "file:supabase/functions/auth-legacy-login/index.ts",
+      "type": "file",
+      "name": "index.ts",
+      "summary": "Supabase integration file used by the app/server for remote data, ticket, result, or configuration workflows.",
+      "tags": [
+        "code",
+        "server-function",
+        "supabase",
+        "large-module"
+      ],
+      "complexity": "complex",
+      "filePath": "supabase/functions/auth-legacy-login/index.ts",
+      "lineRange": [
+        1,
+        310
+      ]
+    },
+    {
+      "id": "function:supabase/functions/auth-legacy-login/index.ts:authEmailFor",
+      "type": "function",
+      "name": "authEmailFor",
+      "summary": "Function authEmailFor in index.ts.",
+      "tags": [
+        "function",
+        "typescript"
+      ],
+      "complexity": "moderate",
+      "filePath": "supabase/functions/auth-legacy-login/index.ts",
+      "lineRange": [
+        56,
+        64
+      ]
+    },
+    {
+      "id": "function:supabase/functions/auth-legacy-login/index.ts:allAccounts",
+      "type": "function",
+      "name": "allAccounts",
+      "summary": "Function allAccounts in index.ts.",
+      "tags": [
+        "function",
+        "typescript"
+      ],
+      "complexity": "moderate",
+      "filePath": "supabase/functions/auth-legacy-login/index.ts",
+      "lineRange": [
+        72,
+        84
+      ]
+    },
+    {
+      "id": "function:supabase/functions/auth-legacy-login/index.ts:masterAccount",
+      "type": "function",
+      "name": "masterAccount",
+      "summary": "Function masterAccount in index.ts.",
+      "tags": [
+        "function",
+        "typescript"
+      ],
+      "complexity": "moderate",
+      "filePath": "supabase/functions/auth-legacy-login/index.ts",
+      "lineRange": [
+        86,
+        97
+      ]
+    },
+    {
+      "id": "function:supabase/functions/auth-legacy-login/index.ts:findAuthUserByEmail",
+      "type": "function",
+      "name": "findAuthUserByEmail",
+      "summary": "Function findAuthUserByEmail in index.ts.",
+      "tags": [
+        "function",
+        "typescript"
+      ],
+      "complexity": "moderate",
+      "filePath": "supabase/functions/auth-legacy-login/index.ts",
+      "lineRange": [
+        112,
+        122
+      ]
+    },
+    {
+      "id": "function:supabase/functions/auth-legacy-login/index.ts:ensureAuthUser",
+      "type": "function",
+      "name": "ensureAuthUser",
+      "summary": "Function ensureAuthUser in index.ts.",
+      "tags": [
+        "function",
+        "typescript"
+      ],
+      "complexity": "moderate",
+      "filePath": "supabase/functions/auth-legacy-login/index.ts",
+      "lineRange": [
+        124,
+        164
+      ]
+    },
+    {
+      "id": "function:supabase/functions/auth-legacy-login/index.ts:updateAuthUserPassword",
+      "type": "function",
+      "name": "updateAuthUserPassword",
+      "summary": "Function updateAuthUserPassword in index.ts.",
+      "tags": [
+        "function",
+        "typescript"
+      ],
+      "complexity": "moderate",
+      "filePath": "supabase/functions/auth-legacy-login/index.ts",
+      "lineRange": [
+        166,
+        187
+      ]
+    },
+    {
+      "id": "function:supabase/functions/auth-legacy-login/index.ts:upsertProfile",
+      "type": "function",
+      "name": "upsertProfile",
+      "summary": "Function upsertProfile in index.ts.",
+      "tags": [
+        "function",
+        "typescript"
+      ],
+      "complexity": "moderate",
+      "filePath": "supabase/functions/auth-legacy-login/index.ts",
+      "lineRange": [
+        196,
+        213
+      ]
+    },
+    {
+      "id": "function:supabase/functions/auth-legacy-login/index.ts:replaceAccountWithAuth",
+      "type": "function",
+      "name": "replaceAccountWithAuth",
+      "summary": "Function replaceAccountWithAuth in index.ts.",
+      "tags": [
+        "function",
+        "typescript"
+      ],
+      "complexity": "moderate",
+      "filePath": "supabase/functions/auth-legacy-login/index.ts",
+      "lineRange": [
+        215,
+        224
+      ]
+    },
+    {
+      "id": "function:supabase/functions/auth-legacy-login/index.ts:saveAuthLink",
+      "type": "function",
+      "name": "saveAuthLink",
+      "summary": "Function saveAuthLink in index.ts.",
+      "tags": [
+        "function",
+        "typescript"
+      ],
+      "complexity": "moderate",
+      "filePath": "supabase/functions/auth-legacy-login/index.ts",
+      "lineRange": [
+        226,
+        252
+      ]
+    },
+    {
+      "id": "file:supabase/functions/change-user-password/index.ts",
+      "type": "file",
+      "name": "index.ts",
+      "summary": "Supabase integration file used by the app/server for remote data, ticket, result, or configuration workflows.",
+      "tags": [
+        "code",
+        "server-function",
+        "supabase",
+        "large-module"
+      ],
+      "complexity": "moderate",
+      "filePath": "supabase/functions/change-user-password/index.ts",
+      "lineRange": [
+        1,
+        170
+      ]
+    },
+    {
+      "id": "function:supabase/functions/change-user-password/index.ts:canChangePassword",
+      "type": "function",
+      "name": "canChangePassword",
+      "summary": "Function canChangePassword in index.ts.",
+      "tags": [
+        "function",
+        "typescript"
+      ],
+      "complexity": "moderate",
+      "filePath": "supabase/functions/change-user-password/index.ts",
+      "lineRange": [
+        51,
+        63
+      ]
+    },
+    {
+      "id": "function:supabase/functions/change-user-password/index.ts:passwordSecret",
+      "type": "function",
+      "name": "passwordSecret",
+      "summary": "Function passwordSecret in index.ts.",
+      "tags": [
+        "function",
+        "typescript"
+      ],
+      "complexity": "moderate",
+      "filePath": "supabase/functions/change-user-password/index.ts",
+      "lineRange": [
+        76,
+        85
+      ]
+    },
+    {
+      "id": "function:supabase/functions/change-user-password/index.ts:replaceAccount",
+      "type": "function",
+      "name": "replaceAccount",
+      "summary": "Function replaceAccount in index.ts.",
+      "tags": [
+        "function",
+        "typescript"
+      ],
+      "complexity": "moderate",
+      "filePath": "supabase/functions/change-user-password/index.ts",
+      "lineRange": [
+        87,
+        96
+      ]
+    },
+    {
+      "id": "file:supabase/functions/create-ticket-v2/index.ts",
+      "type": "file",
+      "name": "index.ts",
+      "summary": "Supabase integration file used by the app/server for remote data, ticket, result, or configuration workflows.",
+      "tags": [
+        "code",
+        "server-function",
+        "ticket",
+        "supabase",
+        "large-module"
+      ],
+      "complexity": "complex",
+      "filePath": "supabase/functions/create-ticket-v2/index.ts",
+      "lineRange": [
+        1,
+        388
+      ]
+    },
+    {
+      "id": "function:supabase/functions/create-ticket-v2/index.ts:allAccounts",
+      "type": "function",
+      "name": "allAccounts",
+      "summary": "Function allAccounts in index.ts.",
+      "tags": [
+        "function",
+        "typescript"
+      ],
+      "complexity": "moderate",
+      "filePath": "supabase/functions/create-ticket-v2/index.ts",
+      "lineRange": [
+        47,
+        56
+      ]
+    },
+    {
+      "id": "function:supabase/functions/create-ticket-v2/index.ts:accountMatches",
+      "type": "function",
+      "name": "accountMatches",
+      "summary": "Function accountMatches in index.ts.",
+      "tags": [
+        "function",
+        "typescript"
+      ],
+      "complexity": "moderate",
+      "filePath": "supabase/functions/create-ticket-v2/index.ts",
+      "lineRange": [
+        58,
+        70
+      ]
+    },
+    {
+      "id": "function:supabase/functions/create-ticket-v2/index.ts:authenticatedActor",
+      "type": "function",
+      "name": "authenticatedActor",
+      "summary": "Function authenticatedActor in index.ts.",
+      "tags": [
+        "function",
+        "typescript"
+      ],
+      "complexity": "moderate",
+      "filePath": "supabase/functions/create-ticket-v2/index.ts",
+      "lineRange": [
+        72,
+        109
+      ]
+    },
+    {
+      "id": "function:supabase/functions/create-ticket-v2/index.ts:validatePhoneClock",
+      "type": "function",
+      "name": "validatePhoneClock",
+      "summary": "Function validatePhoneClock in index.ts.",
+      "tags": [
+        "function",
+        "typescript"
+      ],
+      "complexity": "moderate",
+      "filePath": "supabase/functions/create-ticket-v2/index.ts",
+      "lineRange": [
+        120,
+        149
+      ]
+    },
+    {
+      "id": "function:supabase/functions/create-ticket-v2/index.ts:validateTicketPlays",
+      "type": "function",
+      "name": "validateTicketPlays",
+      "summary": "Function validateTicketPlays in index.ts.",
+      "tags": [
+        "function",
+        "typescript"
+      ],
+      "complexity": "moderate",
+      "filePath": "supabase/functions/create-ticket-v2/index.ts",
+      "lineRange": [
+        151,
+        168
+      ]
+    },
+    {
+      "id": "function:supabase/functions/create-ticket-v2/index.ts:fetchMasterPayload",
+      "type": "function",
+      "name": "fetchMasterPayload",
+      "summary": "Function fetchMasterPayload in index.ts.",
+      "tags": [
+        "function",
+        "typescript"
+      ],
+      "complexity": "moderate",
+      "filePath": "supabase/functions/create-ticket-v2/index.ts",
+      "lineRange": [
+        170,
+        179
+      ]
+    },
+    {
+      "id": "function:supabase/functions/create-ticket-v2/index.ts:normalizedPlayType",
+      "type": "function",
+      "name": "normalizedPlayType",
+      "summary": "Function normalizedPlayType in index.ts.",
+      "tags": [
+        "function",
+        "typescript"
+      ],
+      "complexity": "moderate",
+      "filePath": "supabase/functions/create-ticket-v2/index.ts",
+      "lineRange": [
+        190,
+        227
+      ]
+    },
+    {
+      "id": "function:supabase/functions/create-ticket-v2/index.ts:normalizedBlockedNumber",
+      "type": "function",
+      "name": "normalizedBlockedNumber",
+      "summary": "Function normalizedBlockedNumber in index.ts.",
+      "tags": [
+        "function",
+        "typescript"
+      ],
+      "complexity": "moderate",
+      "filePath": "supabase/functions/create-ticket-v2/index.ts",
+      "lineRange": [
+        229,
+        249
+      ]
+    },
+    {
+      "id": "function:supabase/functions/create-ticket-v2/index.ts:playLabel",
+      "type": "function",
+      "name": "playLabel",
+      "summary": "Function playLabel in index.ts.",
+      "tags": [
+        "function",
+        "typescript"
+      ],
+      "complexity": "moderate",
+      "filePath": "supabase/functions/create-ticket-v2/index.ts",
+      "lineRange": [
+        251,
+        263
+      ]
+    },
+    {
+      "id": "function:supabase/functions/create-ticket-v2/index.ts:blockedPlaySet",
+      "type": "function",
+      "name": "blockedPlaySet",
+      "summary": "Function blockedPlaySet in index.ts.",
+      "tags": [
+        "function",
+        "typescript"
+      ],
+      "complexity": "moderate",
+      "filePath": "supabase/functions/create-ticket-v2/index.ts",
+      "lineRange": [
+        265,
+        275
+      ]
+    },
+    {
+      "id": "function:supabase/functions/create-ticket-v2/index.ts:validateAdministrativeControls",
+      "type": "function",
+      "name": "validateAdministrativeControls",
+      "summary": "Function validateAdministrativeControls in index.ts.",
+      "tags": [
+        "function",
+        "typescript"
+      ],
+      "complexity": "moderate",
+      "filePath": "supabase/functions/create-ticket-v2/index.ts",
+      "lineRange": [
+        290,
+        331
+      ]
+    },
+    {
+      "id": "file:supabase/functions/get-admin-report/index.ts",
+      "type": "file",
+      "name": "index.ts",
+      "summary": "Supabase integration file used by the app/server for remote data, ticket, result, or configuration workflows.",
+      "tags": [
+        "code",
+        "server-function",
+        "supabase"
+      ],
+      "complexity": "moderate",
+      "filePath": "supabase/functions/get-admin-report/index.ts",
+      "lineRange": [
+        1,
+        121
+      ]
+    },
+    {
+      "id": "function:supabase/functions/get-admin-report/index.ts:allAccounts",
+      "type": "function",
+      "name": "allAccounts",
+      "summary": "Function allAccounts in index.ts.",
+      "tags": [
+        "function",
+        "typescript"
+      ],
+      "complexity": "moderate",
+      "filePath": "supabase/functions/get-admin-report/index.ts",
+      "lineRange": [
+        39,
+        48
+      ]
+    },
+    {
+      "id": "function:supabase/functions/get-admin-report/index.ts:accountMatches",
+      "type": "function",
+      "name": "accountMatches",
+      "summary": "Function accountMatches in index.ts.",
+      "tags": [
+        "function",
+        "typescript"
+      ],
+      "complexity": "moderate",
+      "filePath": "supabase/functions/get-admin-report/index.ts",
+      "lineRange": [
+        50,
+        62
+      ]
+    },
+    {
+      "id": "function:supabase/functions/get-admin-report/index.ts:authenticatedActor",
+      "type": "function",
+      "name": "authenticatedActor",
+      "summary": "Function authenticatedActor in index.ts.",
+      "tags": [
+        "function",
+        "typescript"
+      ],
+      "complexity": "moderate",
+      "filePath": "supabase/functions/get-admin-report/index.ts",
+      "lineRange": [
+        64,
+        96
+      ]
+    },
+    {
+      "id": "file:supabase/functions/get-cashier-report/index.ts",
+      "type": "file",
+      "name": "index.ts",
+      "summary": "Supabase integration file used by the app/server for remote data, ticket, result, or configuration workflows.",
+      "tags": [
+        "code",
+        "server-function",
+        "supabase"
+      ],
+      "complexity": "moderate",
+      "filePath": "supabase/functions/get-cashier-report/index.ts",
+      "lineRange": [
+        1,
+        121
+      ]
+    },
+    {
+      "id": "function:supabase/functions/get-cashier-report/index.ts:allAccounts",
+      "type": "function",
+      "name": "allAccounts",
+      "summary": "Function allAccounts in index.ts.",
+      "tags": [
+        "function",
+        "typescript"
+      ],
+      "complexity": "moderate",
+      "filePath": "supabase/functions/get-cashier-report/index.ts",
+      "lineRange": [
+        39,
+        48
+      ]
+    },
+    {
+      "id": "function:supabase/functions/get-cashier-report/index.ts:accountMatches",
+      "type": "function",
+      "name": "accountMatches",
+      "summary": "Function accountMatches in index.ts.",
+      "tags": [
+        "function",
+        "typescript"
+      ],
+      "complexity": "moderate",
+      "filePath": "supabase/functions/get-cashier-report/index.ts",
+      "lineRange": [
+        50,
+        62
+      ]
+    },
+    {
+      "id": "function:supabase/functions/get-cashier-report/index.ts:authenticatedActor",
+      "type": "function",
+      "name": "authenticatedActor",
+      "summary": "Function authenticatedActor in index.ts.",
+      "tags": [
+        "function",
+        "typescript"
+      ],
+      "complexity": "moderate",
+      "filePath": "supabase/functions/get-cashier-report/index.ts",
+      "lineRange": [
+        64,
+        96
+      ]
+    },
+    {
+      "id": "file:supabase/functions/get-supervisor-report/index.ts",
+      "type": "file",
+      "name": "index.ts",
+      "summary": "Supabase integration file used by the app/server for remote data, ticket, result, or configuration workflows.",
+      "tags": [
+        "code",
+        "server-function",
+        "supabase"
+      ],
+      "complexity": "moderate",
+      "filePath": "supabase/functions/get-supervisor-report/index.ts",
+      "lineRange": [
+        1,
+        121
+      ]
+    },
+    {
+      "id": "function:supabase/functions/get-supervisor-report/index.ts:allAccounts",
+      "type": "function",
+      "name": "allAccounts",
+      "summary": "Function allAccounts in index.ts.",
+      "tags": [
+        "function",
+        "typescript"
+      ],
+      "complexity": "moderate",
+      "filePath": "supabase/functions/get-supervisor-report/index.ts",
+      "lineRange": [
+        39,
+        48
+      ]
+    },
+    {
+      "id": "function:supabase/functions/get-supervisor-report/index.ts:accountMatches",
+      "type": "function",
+      "name": "accountMatches",
+      "summary": "Function accountMatches in index.ts.",
+      "tags": [
+        "function",
+        "typescript"
+      ],
+      "complexity": "moderate",
+      "filePath": "supabase/functions/get-supervisor-report/index.ts",
+      "lineRange": [
+        50,
+        62
+      ]
+    },
+    {
+      "id": "function:supabase/functions/get-supervisor-report/index.ts:authenticatedActor",
+      "type": "function",
+      "name": "authenticatedActor",
+      "summary": "Function authenticatedActor in index.ts.",
+      "tags": [
+        "function",
+        "typescript"
+      ],
+      "complexity": "moderate",
+      "filePath": "supabase/functions/get-supervisor-report/index.ts",
+      "lineRange": [
+        64,
+        96
+      ]
+    },
+    {
+      "id": "file:supabase/functions/get-ticket-list/index.ts",
+      "type": "file",
+      "name": "index.ts",
+      "summary": "Supabase integration file used by the app/server for remote data, ticket, result, or configuration workflows.",
+      "tags": [
+        "code",
+        "server-function",
+        "ticket",
+        "supabase",
+        "large-module"
+      ],
+      "complexity": "complex",
+      "filePath": "supabase/functions/get-ticket-list/index.ts",
+      "lineRange": [
+        1,
+        361
+      ]
+    },
+    {
+      "id": "function:supabase/functions/get-ticket-list/index.ts:statusForApp",
+      "type": "function",
+      "name": "statusForApp",
+      "summary": "Function statusForApp in index.ts.",
+      "tags": [
+        "function",
+        "typescript"
+      ],
+      "complexity": "moderate",
+      "filePath": "supabase/functions/get-ticket-list/index.ts",
+      "lineRange": [
+        32,
+        41
+      ]
+    },
+    {
+      "id": "function:supabase/functions/get-ticket-list/index.ts:timeLabel",
+      "type": "function",
+      "name": "timeLabel",
+      "summary": "Function timeLabel in index.ts.",
+      "tags": [
+        "function",
+        "typescript"
+      ],
+      "complexity": "moderate",
+      "filePath": "supabase/functions/get-ticket-list/index.ts",
+      "lineRange": [
+        52,
+        60
+      ]
+    },
+    {
+      "id": "function:supabase/functions/get-ticket-list/index.ts:mergeTickets",
+      "type": "function",
+      "name": "mergeTickets",
+      "summary": "Function mergeTickets in index.ts.",
+      "tags": [
+        "function",
+        "typescript"
+      ],
+      "complexity": "moderate",
+      "filePath": "supabase/functions/get-ticket-list/index.ts",
+      "lineRange": [
+        102,
+        116
+      ]
+    },
+    {
+      "id": "function:supabase/functions/get-ticket-list/index.ts:appTicketFromOfficial",
+      "type": "function",
+      "name": "appTicketFromOfficial",
+      "summary": "Function appTicketFromOfficial in index.ts.",
+      "tags": [
+        "function",
+        "typescript"
+      ],
+      "complexity": "moderate",
+      "filePath": "supabase/functions/get-ticket-list/index.ts",
+      "lineRange": [
+        118,
+        181
+      ]
+    },
+    {
+      "id": "function:supabase/functions/get-ticket-list/index.ts:ownerLookupKeys",
+      "type": "function",
+      "name": "ownerLookupKeys",
+      "summary": "Function ownerLookupKeys in index.ts.",
+      "tags": [
+        "function",
+        "typescript"
+      ],
+      "complexity": "moderate",
+      "filePath": "supabase/functions/get-ticket-list/index.ts",
+      "lineRange": [
+        183,
+        199
+      ]
+    },
+    {
+      "id": "function:supabase/functions/get-ticket-list/index.ts:latestUpdatedAtForOwner",
+      "type": "function",
+      "name": "latestUpdatedAtForOwner",
+      "summary": "Function latestUpdatedAtForOwner in index.ts.",
+      "tags": [
+        "function",
+        "typescript"
+      ],
+      "complexity": "moderate",
+      "filePath": "supabase/functions/get-ticket-list/index.ts",
+      "lineRange": [
+        201,
+        245
+      ]
+    },
+    {
+      "id": "function:supabase/functions/get-ticket-list/index.ts:officialItemsByTicket",
+      "type": "function",
+      "name": "officialItemsByTicket",
+      "summary": "Function officialItemsByTicket in index.ts.",
+      "tags": [
+        "function",
+        "typescript"
+      ],
+      "complexity": "moderate",
+      "filePath": "supabase/functions/get-ticket-list/index.ts",
+      "lineRange": [
+        255,
+        272
+      ]
+    },
+    {
+      "id": "function:supabase/functions/get-ticket-list/index.ts:officialTicketsForOwner",
+      "type": "function",
+      "name": "officialTicketsForOwner",
+      "summary": "Function officialTicketsForOwner in index.ts.",
+      "tags": [
+        "function",
+        "typescript"
+      ],
+      "complexity": "moderate",
+      "filePath": "supabase/functions/get-ticket-list/index.ts",
+      "lineRange": [
+        274,
+        302
+      ]
+    },
+    {
+      "id": "file:supabase/functions/ota-check-update/index.ts",
+      "type": "file",
+      "name": "index.ts",
+      "summary": "Supabase integration file used by the app/server for remote data, ticket, result, or configuration workflows.",
+      "tags": [
+        "code",
+        "server-function",
+        "supabase"
+      ],
+      "complexity": "moderate",
+      "filePath": "supabase/functions/ota-check-update/index.ts",
+      "lineRange": [
+        1,
+        156
+      ]
+    },
+    {
+      "id": "function:supabase/functions/ota-check-update/index.ts:json",
+      "type": "function",
+      "name": "json",
+      "summary": "Function json in index.ts.",
+      "tags": [
+        "function",
+        "typescript"
+      ],
+      "complexity": "moderate",
+      "filePath": "supabase/functions/ota-check-update/index.ts",
+      "lineRange": [
+        23,
+        33
+      ]
+    },
+    {
+      "id": "function:supabase/functions/ota-check-update/index.ts:validateRelease",
+      "type": "function",
+      "name": "validateRelease",
+      "summary": "Function validateRelease in index.ts.",
+      "tags": [
+        "function",
+        "typescript"
+      ],
+      "complexity": "moderate",
+      "filePath": "supabase/functions/ota-check-update/index.ts",
+      "lineRange": [
+        54,
+        67
+      ]
+    },
+    {
+      "id": "function:supabase/functions/ota-check-update/index.ts:logEvent",
+      "type": "function",
+      "name": "logEvent",
+      "summary": "Function logEvent in index.ts.",
+      "tags": [
+        "function",
+        "typescript"
+      ],
+      "complexity": "moderate",
+      "filePath": "supabase/functions/ota-check-update/index.ts",
+      "lineRange": [
+        69,
+        84
+      ]
+    },
+    {
+      "id": "file:supabase/functions/ota-log-event/index.ts",
+      "type": "file",
+      "name": "index.ts",
+      "summary": "Supabase integration file used by the app/server for remote data, ticket, result, or configuration workflows.",
+      "tags": [
+        "code",
+        "server-function",
+        "supabase"
+      ],
+      "complexity": "moderate",
+      "filePath": "supabase/functions/ota-log-event/index.ts",
+      "lineRange": [
+        1,
+        78
+      ]
+    },
+    {
+      "id": "file:supabase/functions/pay-ticket/index.ts",
+      "type": "file",
+      "name": "index.ts",
+      "summary": "Supabase integration file used by the app/server for remote data, ticket, result, or configuration workflows.",
+      "tags": [
+        "code",
+        "server-function",
+        "ticket",
+        "supabase",
+        "large-module"
+      ],
+      "complexity": "complex",
+      "filePath": "supabase/functions/pay-ticket/index.ts",
+      "lineRange": [
+        1,
+        267
+      ]
+    },
+    {
+      "id": "function:supabase/functions/pay-ticket/index.ts:allAccounts",
+      "type": "function",
+      "name": "allAccounts",
+      "summary": "Function allAccounts in index.ts.",
+      "tags": [
+        "function",
+        "typescript"
+      ],
+      "complexity": "moderate",
+      "filePath": "supabase/functions/pay-ticket/index.ts",
+      "lineRange": [
+        61,
+        70
+      ]
+    },
+    {
+      "id": "function:supabase/functions/pay-ticket/index.ts:accountMatches",
+      "type": "function",
+      "name": "accountMatches",
+      "summary": "Function accountMatches in index.ts.",
+      "tags": [
+        "function",
+        "typescript"
+      ],
+      "complexity": "moderate",
+      "filePath": "supabase/functions/pay-ticket/index.ts",
+      "lineRange": [
+        72,
+        83
+      ]
+    },
+    {
+      "id": "function:supabase/functions/pay-ticket/index.ts:accountAliases",
+      "type": "function",
+      "name": "accountAliases",
+      "summary": "Function accountAliases in index.ts.",
+      "tags": [
+        "function",
+        "typescript"
+      ],
+      "complexity": "moderate",
+      "filePath": "supabase/functions/pay-ticket/index.ts",
+      "lineRange": [
+        89,
+        103
+      ]
+    },
+    {
+      "id": "function:supabase/functions/pay-ticket/index.ts:authenticatedActor",
+      "type": "function",
+      "name": "authenticatedActor",
+      "summary": "Function authenticatedActor in index.ts.",
+      "tags": [
+        "function",
+        "typescript"
+      ],
+      "complexity": "moderate",
+      "filePath": "supabase/functions/pay-ticket/index.ts",
+      "lineRange": [
+        131,
+        175
+      ]
+    },
+    {
+      "id": "file:supabase/functions/void-ticket/index.ts",
+      "type": "file",
+      "name": "index.ts",
+      "summary": "Supabase integration file used by the app/server for remote data, ticket, result, or configuration workflows.",
+      "tags": [
+        "code",
+        "server-function",
+        "ticket",
+        "supabase"
+      ],
+      "complexity": "moderate",
+      "filePath": "supabase/functions/void-ticket/index.ts",
+      "lineRange": [
+        1,
+        126
+      ]
+    },
+    {
+      "id": "function:supabase/functions/void-ticket/index.ts:allAccounts",
+      "type": "function",
+      "name": "allAccounts",
+      "summary": "Function allAccounts in index.ts.",
+      "tags": [
+        "function",
+        "typescript"
+      ],
+      "complexity": "moderate",
+      "filePath": "supabase/functions/void-ticket/index.ts",
+      "lineRange": [
+        39,
+        48
+      ]
+    },
+    {
+      "id": "function:supabase/functions/void-ticket/index.ts:accountMatches",
+      "type": "function",
+      "name": "accountMatches",
+      "summary": "Function accountMatches in index.ts.",
+      "tags": [
+        "function",
+        "typescript"
+      ],
+      "complexity": "moderate",
+      "filePath": "supabase/functions/void-ticket/index.ts",
+      "lineRange": [
+        50,
+        62
+      ]
+    },
+    {
+      "id": "function:supabase/functions/void-ticket/index.ts:authenticatedActor",
+      "type": "function",
+      "name": "authenticatedActor",
+      "summary": "Function authenticatedActor in index.ts.",
+      "tags": [
+        "function",
+        "typescript"
+      ],
+      "complexity": "moderate",
+      "filePath": "supabase/functions/void-ticket/index.ts",
+      "lineRange": [
+        64,
+        101
+      ]
+    },
+    {
+      "id": "file:tools/check_supabase_lotterynet_tables.ps1",
+      "type": "file",
+      "name": "check_supabase_lotterynet_tables.ps1",
+      "summary": "Supabase integration file used by the app/server for remote data, ticket, result, or configuration workflows.",
+      "tags": [
+        "script",
+        "supabase"
+      ],
+      "complexity": "simple",
+      "filePath": "tools/check_supabase_lotterynet_tables.ps1",
+      "lineRange": [
+        1,
+        33
+      ]
+    },
+    {
+      "id": "file:tools/check-project.mjs",
+      "type": "file",
+      "name": "check-project.mjs",
+      "summary": "Source file tools/check-project.mjs containing 17 function(s).",
+      "tags": [
+        "code",
+        "large-module"
+      ],
+      "complexity": "complex",
+      "filePath": "tools/check-project.mjs",
+      "lineRange": [
+        1,
+        323
+      ]
+    },
+    {
+      "id": "function:tools/check-project.mjs:compileJavaScript",
+      "type": "function",
+      "name": "compileJavaScript",
+      "summary": "Function compileJavaScript in check-project.mjs.",
+      "tags": [
+        "function",
+        "javascript"
+      ],
+      "complexity": "moderate",
+      "filePath": "tools/check-project.mjs",
+      "lineRange": [
+        41,
+        50
+      ]
+    },
+    {
+      "id": "function:tools/check-project.mjs:extractInlineScripts",
+      "type": "function",
+      "name": "extractInlineScripts",
+      "summary": "Function extractInlineScripts in check-project.mjs.",
+      "tags": [
+        "function",
+        "javascript"
+      ],
+      "complexity": "moderate",
+      "filePath": "tools/check-project.mjs",
+      "lineRange": [
+        52,
+        60
+      ]
+    },
+    {
+      "id": "function:tools/check-project.mjs:checkHtmlAsset",
+      "type": "function",
+      "name": "checkHtmlAsset",
+      "summary": "Function checkHtmlAsset in check-project.mjs.",
+      "tags": [
+        "function",
+        "javascript"
+      ],
+      "complexity": "moderate",
+      "filePath": "tools/check-project.mjs",
+      "lineRange": [
+        94,
+        111
+      ]
+    },
+    {
+      "id": "function:tools/check-project.mjs:checkManifest",
+      "type": "function",
+      "name": "checkManifest",
+      "summary": "Function checkManifest in check-project.mjs.",
+      "tags": [
+        "function",
+        "javascript"
+      ],
+      "complexity": "moderate",
+      "filePath": "tools/check-project.mjs",
+      "lineRange": [
+        118,
+        150
+      ]
+    },
+    {
+      "id": "function:tools/check-project.mjs:checkBusinessRules",
+      "type": "function",
+      "name": "checkBusinessRules",
+      "summary": "Function checkBusinessRules in check-project.mjs.",
+      "tags": [
+        "function",
+        "javascript"
+      ],
+      "complexity": "moderate",
+      "filePath": "tools/check-project.mjs",
+      "lineRange": [
+        152,
+        267
+      ]
+    },
+    {
+      "id": "function:tools/check-project.mjs:run",
+      "type": "function",
+      "name": "run",
+      "summary": "Function run in check-project.mjs.",
+      "tags": [
+        "function",
+        "javascript"
+      ],
+      "complexity": "moderate",
+      "filePath": "tools/check-project.mjs",
+      "lineRange": [
+        269,
+        321
+      ]
+    },
+    {
+      "id": "file:tools/generate-store-assets.py",
+      "type": "file",
+      "name": "generate-store-assets.py",
+      "summary": "Source file tools/generate-store-assets.py containing 5 function(s).",
+      "tags": [
+        "code"
+      ],
+      "complexity": "complex",
+      "filePath": "tools/generate-store-assets.py",
+      "lineRange": [
+        1,
+        248
+      ]
+    },
+    {
+      "id": "function:tools/generate-store-assets.py:font",
+      "type": "function",
+      "name": "font",
+      "summary": "Function font in generate-store-assets.py.",
+      "tags": [
+        "function",
+        "python"
+      ],
+      "complexity": "moderate",
+      "filePath": "tools/generate-store-assets.py",
+      "lineRange": [
+        11,
+        15
+      ]
+    },
+    {
+      "id": "function:tools/generate-store-assets.py:draw_logo",
+      "type": "function",
+      "name": "draw_logo",
+      "summary": "Function draw_logo in generate-store-assets.py.",
+      "tags": [
+        "function",
+        "python"
+      ],
+      "complexity": "moderate",
+      "filePath": "tools/generate-store-assets.py",
+      "lineRange": [
+        25,
+        67
+      ]
+    },
+    {
+      "id": "function:tools/generate-store-assets.py:draw_feature_graphic",
+      "type": "function",
+      "name": "draw_feature_graphic",
+      "summary": "Function draw_feature_graphic in generate-store-assets.py.",
+      "tags": [
+        "function",
+        "python"
+      ],
+      "complexity": "moderate",
+      "filePath": "tools/generate-store-assets.py",
+      "lineRange": [
+        70,
+        118
+      ]
+    },
+    {
+      "id": "function:tools/generate-store-assets.py:draw_store_screenshot",
+      "type": "function",
+      "name": "draw_store_screenshot",
+      "summary": "Function draw_store_screenshot in generate-store-assets.py.",
+      "tags": [
+        "function",
+        "python"
+      ],
+      "complexity": "moderate",
+      "filePath": "tools/generate-store-assets.py",
+      "lineRange": [
+        121,
+        183
+      ]
+    },
+    {
+      "id": "function:tools/generate-store-assets.py:draw_store_screenshot_results",
+      "type": "function",
+      "name": "draw_store_screenshot_results",
+      "summary": "Function draw_store_screenshot_results in generate-store-assets.py.",
+      "tags": [
+        "function",
+        "python"
+      ],
+      "complexity": "moderate",
+      "filePath": "tools/generate-store-assets.py",
+      "lineRange": [
+        186,
+        240
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "source": "file:proyecto web nuevo/scratch/list_users.js",
+      "target": "function:proyecto web nuevo/scratch/list_users.js:listUsers",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "list_users.js contains listUsers"
+    },
+    {
+      "source": "file:proyecto web nuevo/scratch/test_or_query.js",
+      "target": "function:proyecto web nuevo/scratch/test_or_query.js:testOrQuery",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "test_or_query.js contains testOrQuery"
+    },
+    {
+      "source": "file:supabase/functions/auth-legacy-login/index.ts",
+      "target": "function:supabase/functions/auth-legacy-login/index.ts:authEmailFor",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "index.ts contains authEmailFor"
+    },
+    {
+      "source": "file:supabase/functions/auth-legacy-login/index.ts",
+      "target": "function:supabase/functions/auth-legacy-login/index.ts:allAccounts",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "index.ts contains allAccounts"
+    },
+    {
+      "source": "file:supabase/functions/auth-legacy-login/index.ts",
+      "target": "function:supabase/functions/auth-legacy-login/index.ts:masterAccount",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "index.ts contains masterAccount"
+    },
+    {
+      "source": "file:supabase/functions/auth-legacy-login/index.ts",
+      "target": "function:supabase/functions/auth-legacy-login/index.ts:findAuthUserByEmail",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "index.ts contains findAuthUserByEmail"
+    },
+    {
+      "source": "file:supabase/functions/auth-legacy-login/index.ts",
+      "target": "function:supabase/functions/auth-legacy-login/index.ts:ensureAuthUser",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "index.ts contains ensureAuthUser"
+    },
+    {
+      "source": "file:supabase/functions/auth-legacy-login/index.ts",
+      "target": "function:supabase/functions/auth-legacy-login/index.ts:updateAuthUserPassword",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "index.ts contains updateAuthUserPassword"
+    },
+    {
+      "source": "file:supabase/functions/auth-legacy-login/index.ts",
+      "target": "function:supabase/functions/auth-legacy-login/index.ts:upsertProfile",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "index.ts contains upsertProfile"
+    },
+    {
+      "source": "file:supabase/functions/auth-legacy-login/index.ts",
+      "target": "function:supabase/functions/auth-legacy-login/index.ts:replaceAccountWithAuth",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "index.ts contains replaceAccountWithAuth"
+    },
+    {
+      "source": "file:supabase/functions/auth-legacy-login/index.ts",
+      "target": "function:supabase/functions/auth-legacy-login/index.ts:saveAuthLink",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "index.ts contains saveAuthLink"
+    },
+    {
+      "source": "file:supabase/functions/change-user-password/index.ts",
+      "target": "function:supabase/functions/change-user-password/index.ts:canChangePassword",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "index.ts contains canChangePassword"
+    },
+    {
+      "source": "file:supabase/functions/change-user-password/index.ts",
+      "target": "function:supabase/functions/change-user-password/index.ts:passwordSecret",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "index.ts contains passwordSecret"
+    },
+    {
+      "source": "file:supabase/functions/change-user-password/index.ts",
+      "target": "function:supabase/functions/change-user-password/index.ts:replaceAccount",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "index.ts contains replaceAccount"
+    },
+    {
+      "source": "file:supabase/functions/create-ticket-v2/index.ts",
+      "target": "function:supabase/functions/create-ticket-v2/index.ts:allAccounts",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "index.ts contains allAccounts"
+    },
+    {
+      "source": "file:supabase/functions/create-ticket-v2/index.ts",
+      "target": "function:supabase/functions/create-ticket-v2/index.ts:accountMatches",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "index.ts contains accountMatches"
+    },
+    {
+      "source": "file:supabase/functions/create-ticket-v2/index.ts",
+      "target": "function:supabase/functions/create-ticket-v2/index.ts:authenticatedActor",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "index.ts contains authenticatedActor"
+    },
+    {
+      "source": "file:supabase/functions/create-ticket-v2/index.ts",
+      "target": "function:supabase/functions/create-ticket-v2/index.ts:validatePhoneClock",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "index.ts contains validatePhoneClock"
+    },
+    {
+      "source": "file:supabase/functions/create-ticket-v2/index.ts",
+      "target": "function:supabase/functions/create-ticket-v2/index.ts:validateTicketPlays",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "index.ts contains validateTicketPlays"
+    },
+    {
+      "source": "file:supabase/functions/create-ticket-v2/index.ts",
+      "target": "function:supabase/functions/create-ticket-v2/index.ts:fetchMasterPayload",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "index.ts contains fetchMasterPayload"
+    },
+    {
+      "source": "file:supabase/functions/create-ticket-v2/index.ts",
+      "target": "function:supabase/functions/create-ticket-v2/index.ts:normalizedPlayType",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "index.ts contains normalizedPlayType"
+    },
+    {
+      "source": "file:supabase/functions/create-ticket-v2/index.ts",
+      "target": "function:supabase/functions/create-ticket-v2/index.ts:normalizedBlockedNumber",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "index.ts contains normalizedBlockedNumber"
+    },
+    {
+      "source": "file:supabase/functions/create-ticket-v2/index.ts",
+      "target": "function:supabase/functions/create-ticket-v2/index.ts:playLabel",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "index.ts contains playLabel"
+    },
+    {
+      "source": "file:supabase/functions/create-ticket-v2/index.ts",
+      "target": "function:supabase/functions/create-ticket-v2/index.ts:blockedPlaySet",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "index.ts contains blockedPlaySet"
+    },
+    {
+      "source": "file:supabase/functions/create-ticket-v2/index.ts",
+      "target": "function:supabase/functions/create-ticket-v2/index.ts:validateAdministrativeControls",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "index.ts contains validateAdministrativeControls"
+    },
+    {
+      "source": "file:supabase/functions/get-admin-report/index.ts",
+      "target": "function:supabase/functions/get-admin-report/index.ts:allAccounts",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "index.ts contains allAccounts"
+    },
+    {
+      "source": "file:supabase/functions/get-admin-report/index.ts",
+      "target": "function:supabase/functions/get-admin-report/index.ts:accountMatches",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "index.ts contains accountMatches"
+    },
+    {
+      "source": "file:supabase/functions/get-admin-report/index.ts",
+      "target": "function:supabase/functions/get-admin-report/index.ts:authenticatedActor",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "index.ts contains authenticatedActor"
+    },
+    {
+      "source": "file:supabase/functions/get-cashier-report/index.ts",
+      "target": "function:supabase/functions/get-cashier-report/index.ts:allAccounts",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "index.ts contains allAccounts"
+    },
+    {
+      "source": "file:supabase/functions/get-cashier-report/index.ts",
+      "target": "function:supabase/functions/get-cashier-report/index.ts:accountMatches",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "index.ts contains accountMatches"
+    },
+    {
+      "source": "file:supabase/functions/get-cashier-report/index.ts",
+      "target": "function:supabase/functions/get-cashier-report/index.ts:authenticatedActor",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "index.ts contains authenticatedActor"
+    },
+    {
+      "source": "file:supabase/functions/get-supervisor-report/index.ts",
+      "target": "function:supabase/functions/get-supervisor-report/index.ts:allAccounts",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "index.ts contains allAccounts"
+    },
+    {
+      "source": "file:supabase/functions/get-supervisor-report/index.ts",
+      "target": "function:supabase/functions/get-supervisor-report/index.ts:accountMatches",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "index.ts contains accountMatches"
+    },
+    {
+      "source": "file:supabase/functions/get-supervisor-report/index.ts",
+      "target": "function:supabase/functions/get-supervisor-report/index.ts:authenticatedActor",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "index.ts contains authenticatedActor"
+    },
+    {
+      "source": "file:supabase/functions/get-ticket-list/index.ts",
+      "target": "function:supabase/functions/get-ticket-list/index.ts:statusForApp",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "index.ts contains statusForApp"
+    },
+    {
+      "source": "file:supabase/functions/get-ticket-list/index.ts",
+      "target": "function:supabase/functions/get-ticket-list/index.ts:timeLabel",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "index.ts contains timeLabel"
+    },
+    {
+      "source": "file:supabase/functions/get-ticket-list/index.ts",
+      "target": "function:supabase/functions/get-ticket-list/index.ts:mergeTickets",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "index.ts contains mergeTickets"
+    },
+    {
+      "source": "file:supabase/functions/get-ticket-list/index.ts",
+      "target": "function:supabase/functions/get-ticket-list/index.ts:appTicketFromOfficial",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "index.ts contains appTicketFromOfficial"
+    },
+    {
+      "source": "file:supabase/functions/get-ticket-list/index.ts",
+      "target": "function:supabase/functions/get-ticket-list/index.ts:ownerLookupKeys",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "index.ts contains ownerLookupKeys"
+    },
+    {
+      "source": "file:supabase/functions/get-ticket-list/index.ts",
+      "target": "function:supabase/functions/get-ticket-list/index.ts:latestUpdatedAtForOwner",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "index.ts contains latestUpdatedAtForOwner"
+    },
+    {
+      "source": "file:supabase/functions/get-ticket-list/index.ts",
+      "target": "function:supabase/functions/get-ticket-list/index.ts:officialItemsByTicket",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "index.ts contains officialItemsByTicket"
+    },
+    {
+      "source": "file:supabase/functions/get-ticket-list/index.ts",
+      "target": "function:supabase/functions/get-ticket-list/index.ts:officialTicketsForOwner",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "index.ts contains officialTicketsForOwner"
+    },
+    {
+      "source": "file:supabase/functions/ota-check-update/index.ts",
+      "target": "function:supabase/functions/ota-check-update/index.ts:json",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "index.ts contains json"
+    },
+    {
+      "source": "file:supabase/functions/ota-check-update/index.ts",
+      "target": "function:supabase/functions/ota-check-update/index.ts:validateRelease",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "index.ts contains validateRelease"
+    },
+    {
+      "source": "file:supabase/functions/ota-check-update/index.ts",
+      "target": "function:supabase/functions/ota-check-update/index.ts:logEvent",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "index.ts contains logEvent"
+    },
+    {
+      "source": "file:supabase/functions/pay-ticket/index.ts",
+      "target": "function:supabase/functions/pay-ticket/index.ts:allAccounts",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "index.ts contains allAccounts"
+    },
+    {
+      "source": "file:supabase/functions/pay-ticket/index.ts",
+      "target": "function:supabase/functions/pay-ticket/index.ts:accountMatches",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "index.ts contains accountMatches"
+    },
+    {
+      "source": "file:supabase/functions/pay-ticket/index.ts",
+      "target": "function:supabase/functions/pay-ticket/index.ts:accountAliases",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "index.ts contains accountAliases"
+    },
+    {
+      "source": "file:supabase/functions/pay-ticket/index.ts",
+      "target": "function:supabase/functions/pay-ticket/index.ts:authenticatedActor",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "index.ts contains authenticatedActor"
+    },
+    {
+      "source": "file:supabase/functions/void-ticket/index.ts",
+      "target": "function:supabase/functions/void-ticket/index.ts:allAccounts",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "index.ts contains allAccounts"
+    },
+    {
+      "source": "file:supabase/functions/void-ticket/index.ts",
+      "target": "function:supabase/functions/void-ticket/index.ts:accountMatches",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "index.ts contains accountMatches"
+    },
+    {
+      "source": "file:supabase/functions/void-ticket/index.ts",
+      "target": "function:supabase/functions/void-ticket/index.ts:authenticatedActor",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "index.ts contains authenticatedActor"
+    },
+    {
+      "source": "file:tools/check-project.mjs",
+      "target": "function:tools/check-project.mjs:compileJavaScript",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "check-project.mjs contains compileJavaScript"
+    },
+    {
+      "source": "file:tools/check-project.mjs",
+      "target": "function:tools/check-project.mjs:extractInlineScripts",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "check-project.mjs contains extractInlineScripts"
+    },
+    {
+      "source": "file:tools/check-project.mjs",
+      "target": "function:tools/check-project.mjs:checkHtmlAsset",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "check-project.mjs contains checkHtmlAsset"
+    },
+    {
+      "source": "file:tools/check-project.mjs",
+      "target": "function:tools/check-project.mjs:checkManifest",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "check-project.mjs contains checkManifest"
+    },
+    {
+      "source": "file:tools/check-project.mjs",
+      "target": "function:tools/check-project.mjs:checkBusinessRules",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "check-project.mjs contains checkBusinessRules"
+    },
+    {
+      "source": "file:tools/check-project.mjs",
+      "target": "function:tools/check-project.mjs:run",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "check-project.mjs contains run"
+    },
+    {
+      "source": "file:tools/generate-store-assets.py",
+      "target": "function:tools/generate-store-assets.py:font",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "generate-store-assets.py contains font"
+    },
+    {
+      "source": "file:tools/generate-store-assets.py",
+      "target": "function:tools/generate-store-assets.py:draw_logo",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "generate-store-assets.py contains draw_logo"
+    },
+    {
+      "source": "file:tools/generate-store-assets.py",
+      "target": "function:tools/generate-store-assets.py:draw_feature_graphic",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "generate-store-assets.py contains draw_feature_graphic"
+    },
+    {
+      "source": "file:tools/generate-store-assets.py",
+      "target": "function:tools/generate-store-assets.py:draw_store_screenshot",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "generate-store-assets.py contains draw_store_screenshot"
+    },
+    {
+      "source": "file:tools/generate-store-assets.py",
+      "target": "function:tools/generate-store-assets.py:draw_store_screenshot_results",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "generate-store-assets.py contains draw_store_screenshot_results"
+    }
+  ]
+}

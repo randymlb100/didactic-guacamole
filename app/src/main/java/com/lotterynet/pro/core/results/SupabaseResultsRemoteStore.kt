@@ -17,58 +17,43 @@ class SupabaseResultsRemoteStore(
     private val baseUrl: String = SupabaseConfig.URL,
     private val apiKey: String = SupabaseConfig.KEY,
     private val edgeClient: SupabaseEdgeClient = SupabaseEdgeClient(baseUrl, apiKey),
-    private val cacheClient: SupabaseResultsCacheClient = SupabaseResultsCacheClient(baseUrl, apiKey),
     private val renderClient: RenderResultsRemoteClient = RenderResultsRemoteClient(),
     private val adminClient: ResultsAdminRemoteClient = ResultsAdminRemoteClient(),
     private val edgePayloadFetcher: ((String) -> Any?)? = null,
     private val renderPayloadFetcher: ((String, Boolean) -> Any?)? = null,
-    private val cachePayloadFetcher: ((String) -> Any?)? = null,
 ) {
     fun fetchResultsPayload(
         date: String,
         expectedResultIds: Set<String> = emptySet(),
         forceLive: Boolean = false,
     ): Any? {
-        val cachedPayload = fetchCachePayload(date)
-        if (payloadHasRows(cachedPayload) && payloadHasExpectedCoverage(cachedPayload, expectedResultIds)) {
-            return cachedPayload
-        }
-
         if (forceLive) {
             val renderPayload = fetchRenderPayload(date, forceLive = true)
-            val mergedPayload = mergeResultPayloads(cachedPayload, renderPayload)
-            if (payloadHasRows(mergedPayload) && payloadHasExpectedCoverage(mergedPayload, expectedResultIds)) {
-                return mergedPayload
-            }
             if (payloadHasRows(renderPayload) && payloadHasExpectedCoverage(renderPayload, expectedResultIds)) {
                 return renderPayload
             }
-            if (payloadHasRows(cachedPayload)) return cachedPayload
-            return mergedPayload ?: renderPayload ?: cachedPayload
-        }
-
-        val renderPayload = fetchRenderPayload(date, forceLive = false)
-        if (payloadHasRows(renderPayload) && payloadHasExpectedCoverage(renderPayload, expectedResultIds)) {
             return renderPayload
-        }
-
-        if (payloadHasRows(cachedPayload) && payloadHasExpectedCoverage(cachedPayload, expectedResultIds)) {
-            return mergeResultPayloads(cachedPayload, renderPayload) ?: cachedPayload
         }
 
         val edgePayload = runCatching {
             fetchEdgePayload(date)
         }.getOrNull()
-        val cachedAndEdgePayload = mergeResultPayloads(cachedPayload, edgePayload)
-        if (payloadHasRows(cachedAndEdgePayload) && payloadHasExpectedCoverage(cachedAndEdgePayload, expectedResultIds)) {
-            return cachedAndEdgePayload
+        if (payloadHasRows(edgePayload) && payloadHasExpectedCoverage(edgePayload, expectedResultIds)) {
+            return edgePayload
         }
 
-        return mergeResultPayloads(cachedAndEdgePayload ?: cachedPayload, renderPayload)
+        val renderPayload = fetchRenderPayload(date, forceLive = false)
+        val mergedPayload = mergeResultPayloads(edgePayload, renderPayload)
+        if (payloadHasRows(mergedPayload) && payloadHasExpectedCoverage(mergedPayload, expectedResultIds)) {
+            return mergedPayload
+        }
+        if (payloadHasRows(renderPayload) && payloadHasExpectedCoverage(renderPayload, expectedResultIds)) {
+            return renderPayload
+        }
+
+        return mergedPayload
             ?: renderPayload
-            ?: cachedAndEdgePayload
             ?: edgePayload
-            ?: cachedPayload
     }
 
     private fun fetchEdgePayload(date: String): Any? {
@@ -76,20 +61,11 @@ class SupabaseResultsRemoteStore(
             edgePayloadFetcher.invoke(date)
         } else {
             val response = edgeClient.invoke(
-                "fetch-results",
+                "get-results-v2",
                 JSONObject()
-                    .put("date", date)
-                    .put("source", "render"),
+                    .put("date", date),
             )
             extractResultPayload(response)
-        }
-    }
-
-    private fun fetchCachePayload(date: String): Any? {
-        return if (cachePayloadFetcher != null) {
-            cachePayloadFetcher.invoke(date)
-        } else {
-            cacheClient.fetchResultsPayload(date)
         }
     }
 
@@ -405,42 +381,6 @@ class RenderResultsRemoteClient(
 
     internal fun toRenderDateKey(date: String): String {
         return toScraperDateKey(date)
-    }
-}
-
-class SupabaseResultsCacheClient(
-    private val baseUrl: String = SupabaseConfig.URL,
-    private val apiKey: String = SupabaseConfig.KEY,
-) {
-    fun fetchResultsPayload(date: String): Any? {
-        val dateKey = toScraperDateKey(date)
-        val lotteryPayload = fetchCachePayload("lot_results_cache_by_day:$dateKey")
-        val pickPayload = fetchCachePayload("pick_results_cache_by_day:$dateKey")
-        return SupabaseResultsRemoteStore.mergeResultPayloads(lotteryPayload, pickPayload)
-            ?: lotteryPayload
-            ?: pickPayload
-    }
-
-    private fun fetchCachePayload(cacheKey: String): Any? {
-        return runCatching {
-            val requestUrl = "${baseUrl.trimEnd('/')}/rest/v1/lotterynet_kv" +
-                "?key=eq.${URLEncoder.encode(cacheKey, "UTF-8")}&select=value"
-            val connection = (URL(requestUrl).openConnection() as HttpURLConnection).apply {
-                requestMethod = "GET"
-                connectTimeout = 5000
-                readTimeout = 5000
-                setRequestProperty("Accept", "application/json")
-                setRequestProperty("apikey", apiKey)
-                setRequestProperty("Authorization", "Bearer $apiKey")
-            }
-            val code = connection.responseCode
-            val stream = if (code in 200..299) connection.inputStream else connection.errorStream
-            val body = stream?.bufferedReader(Charsets.UTF_8)?.use { it.readText() }.orEmpty()
-            if (code !in 200..299 || body.isBlank()) return@runCatching null
-            val rows = JSONArray(body)
-            val value = rows.optJSONObject(0)?.opt("value") ?: return@runCatching null
-            SupabaseResultsRemoteStore.extractResultPayload(value)
-        }.getOrNull()
     }
 }
 

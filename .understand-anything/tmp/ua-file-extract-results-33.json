@@ -1,0 +1,1026 @@
+{
+  "scriptCompleted": true,
+  "filesAnalyzed": 3,
+  "filesSkipped": [],
+  "results": [
+    {
+      "path": "tools/real-transaction-smoke.mjs",
+      "language": "javascript",
+      "fileCategory": "code",
+      "totalLines": 258,
+      "nonEmptyLines": 237,
+      "functions": [
+        {
+          "name": "headers",
+          "startLine": 9,
+          "endLine": 16,
+          "params": []
+        },
+        {
+          "name": "cleanToken",
+          "startLine": 18,
+          "endLine": 20,
+          "params": [
+            "value"
+          ]
+        },
+        {
+          "name": "words",
+          "startLine": 22,
+          "endLine": 24,
+          "params": [
+            "line"
+          ]
+        },
+        {
+          "name": "readLooseField",
+          "startLine": 26,
+          "endLine": 30,
+          "params": [
+            "line",
+            "names"
+          ]
+        },
+        {
+          "name": "readSentenceUsername",
+          "startLine": 32,
+          "endLine": 36,
+          "params": [
+            "line"
+          ]
+        },
+        {
+          "name": "readField",
+          "startLine": 38,
+          "endLine": 45,
+          "params": [
+            "line",
+            "names"
+          ]
+        },
+        {
+          "name": "normalizeRole",
+          "startLine": 47,
+          "endLine": 53,
+          "params": [
+            "value"
+          ]
+        },
+        {
+          "name": "parseCredentialLine",
+          "startLine": 55,
+          "endLine": 66,
+          "params": [
+            "line"
+          ]
+        },
+        {
+          "name": "readCredentials",
+          "startLine": 68,
+          "endLine": 80,
+          "params": []
+        },
+        {
+          "name": "redact",
+          "startLine": 82,
+          "endLine": 87,
+          "params": [
+            "value"
+          ]
+        },
+        {
+          "name": "callFunction",
+          "startLine": 89,
+          "endLine": 111,
+          "params": [
+            "slug",
+            "body"
+          ]
+        },
+        {
+          "name": "login",
+          "startLine": 113,
+          "endLine": 133,
+          "params": [
+            "account"
+          ]
+        },
+        {
+          "name": "ticketPayload",
+          "startLine": 135,
+          "endLine": 170,
+          "params": [
+            "session",
+            "label"
+          ]
+        },
+        {
+          "name": "actionPayload",
+          "startLine": 172,
+          "endLine": 185,
+          "params": [
+            "session",
+            "createPayload",
+            "ticketResponse",
+            "action"
+          ]
+        },
+        {
+          "name": "runTicketFlow",
+          "startLine": 187,
+          "endLine": 210,
+          "params": [
+            "loginResult"
+          ]
+        },
+        {
+          "name": "summarizeTicketCreate",
+          "startLine": 212,
+          "endLine": 221,
+          "params": [
+            "res"
+          ]
+        },
+        {
+          "name": "summarize",
+          "startLine": 223,
+          "endLine": 233,
+          "params": [
+            "res"
+          ]
+        }
+      ],
+      "callGraph": [
+        {
+          "caller": "cleanToken",
+          "callee": "String(value || \"\").trim().replace",
+          "lineNumber": 19
+        },
+        {
+          "caller": "cleanToken",
+          "callee": "String(value || \"\").trim",
+          "lineNumber": 19
+        },
+        {
+          "caller": "cleanToken",
+          "callee": "String",
+          "lineNumber": 19
+        },
+        {
+          "caller": "words",
+          "callee": "line.split(/\\s+/).map(cleanToken).filter",
+          "lineNumber": 23
+        },
+        {
+          "caller": "words",
+          "callee": "line.split(/\\s+/).map",
+          "lineNumber": 23
+        },
+        {
+          "caller": "words",
+          "callee": "line.split",
+          "lineNumber": 23
+        },
+        {
+          "caller": "readLooseField",
+          "callee": "words",
+          "lineNumber": 27
+        },
+        {
+          "caller": "readLooseField",
+          "callee": "tokens.findIndex",
+          "lineNumber": 28
+        },
+        {
+          "caller": "readLooseField",
+          "callee": "names.some",
+          "lineNumber": 28
+        },
+        {
+          "caller": "readLooseField",
+          "callee": "token.toLowerCase",
+          "lineNumber": 28
+        },
+        {
+          "caller": "readLooseField",
+          "callee": "name.toLowerCase",
+          "lineNumber": 28
+        },
+        {
+          "caller": "readSentenceUsername",
+          "callee": "words",
+          "lineNumber": 33
+        },
+        {
+          "caller": "readSentenceUsername",
+          "callee": "tokens.findIndex",
+          "lineNumber": 34
+        },
+        {
+          "caller": "readSentenceUsername",
+          "callee": "[\"contraseña\", \"contrasena\", \"clave\", \"password\", \"pass\"].includes",
+          "lineNumber": 34
+        },
+        {
+          "caller": "readSentenceUsername",
+          "callee": "token.toLowerCase",
+          "lineNumber": 34
+        },
+        {
+          "caller": "readField",
+          "callee": "name.replace",
+          "lineNumber": 40
+        },
+        {
+          "caller": "readField",
+          "callee": "line.match",
+          "lineNumber": 41
+        },
+        {
+          "caller": "readField",
+          "callee": "cleanToken",
+          "lineNumber": 42
+        },
+        {
+          "caller": "normalizeRole",
+          "callee": "String(value || \"\").toLowerCase",
+          "lineNumber": 48
+        },
+        {
+          "caller": "normalizeRole",
+          "callee": "String",
+          "lineNumber": 48
+        },
+        {
+          "caller": "normalizeRole",
+          "callee": "[\"master\", \"admin\", \"supervisor\", \"cajero\"].includes",
+          "lineNumber": 51
+        },
+        {
+          "caller": "parseCredentialLine",
+          "callee": "line.match",
+          "lineNumber": 56
+        },
+        {
+          "caller": "parseCredentialLine",
+          "callee": "readField",
+          "lineNumber": 57
+        },
+        {
+          "caller": "parseCredentialLine",
+          "callee": "readSentenceUsername",
+          "lineNumber": 57
+        },
+        {
+          "caller": "parseCredentialLine",
+          "callee": "readField",
+          "lineNumber": 58
+        },
+        {
+          "caller": "parseCredentialLine",
+          "callee": "readLooseField",
+          "lineNumber": 59
+        },
+        {
+          "caller": "parseCredentialLine",
+          "callee": "normalizeRole",
+          "lineNumber": 62
+        },
+        {
+          "caller": "readCredentials",
+          "callee": "fs.readFileSync(textCredentialsPath, \"utf8\").trim",
+          "lineNumber": 69
+        },
+        {
+          "caller": "readCredentials",
+          "callee": "fs.readFileSync",
+          "lineNumber": 69
+        },
+        {
+          "caller": "readCredentials",
+          "callee": "[...raw.matchAll(/Usuario:\\s*([^\\r\\n]+)\\s*[\\r\\n]+Clave:\\s*([^\\r\\n]+)/gi)].map",
+          "lineNumber": 70
+        },
+        {
+          "caller": "readCredentials",
+          "callee": "raw.matchAll",
+          "lineNumber": 70
+        },
+        {
+          "caller": "readCredentials",
+          "callee": "cleanToken",
+          "lineNumber": 71
+        },
+        {
+          "caller": "readCredentials",
+          "callee": "normalizeRole",
+          "lineNumber": 73
+        },
+        {
+          "caller": "readCredentials",
+          "callee": "username.startsWith",
+          "lineNumber": 73
+        },
+        {
+          "caller": "readCredentials",
+          "callee": "cleanToken",
+          "lineNumber": 75
+        },
+        {
+          "caller": "readCredentials",
+          "callee": "raw.split(/\\r?\\n/).map((line) => line.trim()).filter(Boolean).map(parseCredentialLine).filter",
+          "lineNumber": 79
+        },
+        {
+          "caller": "readCredentials",
+          "callee": "raw.split(/\\r?\\n/).map((line) => line.trim()).filter(Boolean).map",
+          "lineNumber": 79
+        },
+        {
+          "caller": "readCredentials",
+          "callee": "raw.split(/\\r?\\n/).map((line) => line.trim()).filter",
+          "lineNumber": 79
+        },
+        {
+          "caller": "readCredentials",
+          "callee": "raw.split(/\\r?\\n/).map",
+          "lineNumber": 79
+        },
+        {
+          "caller": "readCredentials",
+          "callee": "raw.split",
+          "lineNumber": 79
+        },
+        {
+          "caller": "readCredentials",
+          "callee": "line.trim",
+          "lineNumber": 79
+        },
+        {
+          "caller": "redact",
+          "callee": "String(value || \"\")\n    .replace(/\"(accessToken|refreshToken|access_token|refresh_token)\"\\s*:\\s*\"[^\"]+\"/gi, \"\\\"$1\\\":\\\"[redacted]\\\"\")\n    .replace(/eyJ[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]+/g, \"[redacted-jwt]\")\n    .slice",
+          "lineNumber": 83
+        },
+        {
+          "caller": "redact",
+          "callee": "String(value || \"\")\n    .replace(/\"(accessToken|refreshToken|access_token|refresh_token)\"\\s*:\\s*\"[^\"]+\"/gi, \"\\\"$1\\\":\\\"[redacted]\\\"\")\n    .replace",
+          "lineNumber": 83
+        },
+        {
+          "caller": "redact",
+          "callee": "String(value || \"\")\n    .replace",
+          "lineNumber": 83
+        },
+        {
+          "caller": "redact",
+          "callee": "String",
+          "lineNumber": 83
+        },
+        {
+          "caller": "callFunction",
+          "callee": "Date.now",
+          "lineNumber": 90
+        },
+        {
+          "caller": "callFunction",
+          "callee": "fetch",
+          "lineNumber": 91
+        },
+        {
+          "caller": "callFunction",
+          "callee": "headers",
+          "lineNumber": 93
+        },
+        {
+          "caller": "callFunction",
+          "callee": "JSON.stringify",
+          "lineNumber": 94
+        },
+        {
+          "caller": "callFunction",
+          "callee": "res.text",
+          "lineNumber": 96
+        },
+        {
+          "caller": "callFunction",
+          "callee": "JSON.parse",
+          "lineNumber": 99
+        },
+        {
+          "caller": "callFunction",
+          "callee": "Date.now",
+          "lineNumber": 106
+        },
+        {
+          "caller": "callFunction",
+          "callee": "redact",
+          "lineNumber": 108
+        },
+        {
+          "caller": "login",
+          "callee": "callFunction",
+          "lineNumber": 114
+        },
+        {
+          "caller": "login",
+          "callee": "Boolean",
+          "lineNumber": 130
+        },
+        {
+          "caller": "ticketPayload",
+          "callee": "Date.now",
+          "lineNumber": 136
+        },
+        {
+          "caller": "ticketPayload",
+          "callee": "new Intl.DateTimeFormat(\"en-CA\", {\n    timeZone: \"America/Santo_Domingo\",\n    year: \"numeric\",\n    month: \"2-digit\",\n    day: \"2-digit\",\n  }).format",
+          "lineNumber": 137
+        },
+        {
+          "caller": "ticketPayload",
+          "callee": "new Date(now).toISOString",
+          "lineNumber": 161
+        },
+        {
+          "caller": "runTicketFlow",
+          "callee": "ticketPayload",
+          "lineNumber": 189
+        },
+        {
+          "caller": "runTicketFlow",
+          "callee": "callFunction",
+          "lineNumber": 190
+        },
+        {
+          "caller": "runTicketFlow",
+          "callee": "callFunction",
+          "lineNumber": 192
+        },
+        {
+          "caller": "runTicketFlow",
+          "callee": "actionPayload",
+          "lineNumber": 192
+        },
+        {
+          "caller": "runTicketFlow",
+          "callee": "callFunction",
+          "lineNumber": 195
+        },
+        {
+          "caller": "runTicketFlow",
+          "callee": "actionPayload",
+          "lineNumber": 195
+        },
+        {
+          "caller": "runTicketFlow",
+          "callee": "callFunction",
+          "lineNumber": 198
+        },
+        {
+          "caller": "runTicketFlow",
+          "callee": "actionPayload",
+          "lineNumber": 198
+        },
+        {
+          "caller": "runTicketFlow",
+          "callee": "summarizeTicketCreate",
+          "lineNumber": 204
+        },
+        {
+          "caller": "runTicketFlow",
+          "callee": "summarize",
+          "lineNumber": 206
+        },
+        {
+          "caller": "runTicketFlow",
+          "callee": "summarize",
+          "lineNumber": 207
+        },
+        {
+          "caller": "runTicketFlow",
+          "callee": "summarize",
+          "lineNumber": 208
+        },
+        {
+          "caller": "summarizeTicketCreate",
+          "callee": "Boolean",
+          "lineNumber": 216
+        },
+        {
+          "caller": "summarize",
+          "callee": "Boolean",
+          "lineNumber": 227
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 17,
+        "classCount": 0
+      }
+    },
+    {
+      "path": "tools/results-monitor.mjs",
+      "language": "javascript",
+      "fileCategory": "code",
+      "totalLines": 66,
+      "nonEmptyLines": 58,
+      "functions": [
+        {
+          "name": "toDrDate",
+          "startLine": 6,
+          "endLine": 14,
+          "params": [
+            "value"
+          ]
+        },
+        {
+          "name": "fetchJson",
+          "startLine": 16,
+          "endLine": 31,
+          "params": [
+            "url"
+          ]
+        },
+        {
+          "name": "sectionCount",
+          "startLine": 33,
+          "endLine": 35,
+          "params": [
+            "payload",
+            "section"
+          ]
+        },
+        {
+          "name": "buildReport",
+          "startLine": 37,
+          "endLine": 57,
+          "params": [
+            "payload",
+            "durationMs"
+          ]
+        }
+      ],
+      "callGraph": [
+        {
+          "caller": "toDrDate",
+          "callee": "formatter.format(value).replaceAll",
+          "lineNumber": 13
+        },
+        {
+          "caller": "toDrDate",
+          "callee": "formatter.format",
+          "lineNumber": 13
+        },
+        {
+          "caller": "fetchJson",
+          "callee": "Date.now",
+          "lineNumber": 17
+        },
+        {
+          "caller": "fetchJson",
+          "callee": "fetch",
+          "lineNumber": 18
+        },
+        {
+          "caller": "fetchJson",
+          "callee": "response.text",
+          "lineNumber": 19
+        },
+        {
+          "caller": "fetchJson",
+          "callee": "Date.now",
+          "lineNumber": 20
+        },
+        {
+          "caller": "fetchJson",
+          "callee": "JSON.parse",
+          "lineNumber": 23
+        },
+        {
+          "caller": "fetchJson",
+          "callee": "body.slice",
+          "lineNumber": 25
+        },
+        {
+          "caller": "fetchJson",
+          "callee": "body.slice",
+          "lineNumber": 28
+        },
+        {
+          "caller": "sectionCount",
+          "callee": "Number",
+          "lineNumber": 34
+        },
+        {
+          "caller": "buildReport",
+          "callee": "sectionCount",
+          "lineNumber": 38
+        },
+        {
+          "caller": "buildReport",
+          "callee": "sectionCount",
+          "lineNumber": 39
+        },
+        {
+          "caller": "buildReport",
+          "callee": "problems.push",
+          "lineNumber": 41
+        },
+        {
+          "caller": "buildReport",
+          "callee": "problems.push",
+          "lineNumber": 42
+        },
+        {
+          "caller": "buildReport",
+          "callee": "problems.push",
+          "lineNumber": 43
+        },
+        {
+          "caller": "buildReport",
+          "callee": "problems.push",
+          "lineNumber": 44
+        },
+        {
+          "caller": "buildReport",
+          "callee": "new Date().toISOString",
+          "lineNumber": 55
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 4,
+        "classCount": 0
+      }
+    },
+    {
+      "path": "tools/verify-pick-result-gate.mjs",
+      "language": "javascript",
+      "fileCategory": "code",
+      "totalLines": 299,
+      "nonEmptyLines": 274,
+      "functions": [
+        {
+          "name": "test",
+          "startLine": 98,
+          "endLine": 98,
+          "params": [
+            "name",
+            "fn"
+          ]
+        },
+        {
+          "name": "parseDateKey",
+          "startLine": 100,
+          "endLine": 103,
+          "params": [
+            "dateKey"
+          ]
+        },
+        {
+          "name": "parseClock",
+          "startLine": 105,
+          "endLine": 111,
+          "params": [
+            "clock"
+          ]
+        },
+        {
+          "name": "zonedTimeToUtc",
+          "startLine": 113,
+          "endLine": 133,
+          "params": []
+        },
+        {
+          "name": "resolvePeriod",
+          "startLine": 135,
+          "endLine": 144,
+          "params": [
+            "row"
+          ]
+        },
+        {
+          "name": "drawUtc",
+          "startLine": 146,
+          "endLine": 161,
+          "params": [
+            "row",
+            "dateKey"
+          ]
+        },
+        {
+          "name": "suppressEarly",
+          "startLine": 163,
+          "endLine": 175,
+          "params": [
+            "row",
+            "dateKey",
+            "nowUtc"
+          ]
+        },
+        {
+          "name": "blocksSale",
+          "startLine": 177,
+          "endLine": 180,
+          "params": [
+            "row",
+            "dateKey",
+            "nowUtc"
+          ]
+        },
+        {
+          "name": "assertSuppressed",
+          "startLine": 182,
+          "endLine": 188,
+          "params": [
+            "name",
+            "row",
+            "dateKey",
+            "nowUtcIso"
+          ]
+        },
+        {
+          "name": "assertPublished",
+          "startLine": 190,
+          "endLine": 195,
+          "params": [
+            "name",
+            "row",
+            "dateKey",
+            "nowUtcIso"
+          ]
+        }
+      ],
+      "callGraph": [
+        {
+          "caller": "test",
+          "callee": "tests.push",
+          "lineNumber": 98
+        },
+        {
+          "caller": "parseDateKey",
+          "callee": "dateKey.split(\"-\").map",
+          "lineNumber": 101
+        },
+        {
+          "caller": "parseDateKey",
+          "callee": "dateKey.split",
+          "lineNumber": 101
+        },
+        {
+          "caller": "parseClock",
+          "callee": "/^(\\d{1,2}):(\\d{2})\\s*(AM|PM)$/i.exec",
+          "lineNumber": 106
+        },
+        {
+          "caller": "parseClock",
+          "callee": "assert.ok",
+          "lineNumber": 107
+        },
+        {
+          "caller": "parseClock",
+          "callee": "Number",
+          "lineNumber": 108
+        },
+        {
+          "caller": "parseClock",
+          "callee": "match[3].toUpperCase",
+          "lineNumber": 109
+        },
+        {
+          "caller": "parseClock",
+          "callee": "Number",
+          "lineNumber": 110
+        },
+        {
+          "caller": "zonedTimeToUtc",
+          "callee": "Date.UTC",
+          "lineNumber": 114
+        },
+        {
+          "caller": "zonedTimeToUtc",
+          "callee": "Object.fromEntries",
+          "lineNumber": 125
+        },
+        {
+          "caller": "zonedTimeToUtc",
+          "callee": "formatter.formatToParts(new Date(utcMs)).map",
+          "lineNumber": 125
+        },
+        {
+          "caller": "zonedTimeToUtc",
+          "callee": "formatter.formatToParts",
+          "lineNumber": 125
+        },
+        {
+          "caller": "zonedTimeToUtc",
+          "callee": "Date.UTC",
+          "lineNumber": 126
+        },
+        {
+          "caller": "zonedTimeToUtc",
+          "callee": "Number",
+          "lineNumber": 126
+        },
+        {
+          "caller": "zonedTimeToUtc",
+          "callee": "Number",
+          "lineNumber": 126
+        },
+        {
+          "caller": "zonedTimeToUtc",
+          "callee": "Number",
+          "lineNumber": 126
+        },
+        {
+          "caller": "zonedTimeToUtc",
+          "callee": "Number",
+          "lineNumber": 126
+        },
+        {
+          "caller": "zonedTimeToUtc",
+          "callee": "Number",
+          "lineNumber": 126
+        },
+        {
+          "caller": "zonedTimeToUtc",
+          "callee": "Date.UTC",
+          "lineNumber": 127
+        },
+        {
+          "caller": "resolvePeriod",
+          "callee": "`${row.id ?? \"\"} ${row.name ?? \"\"} ${row.draw ?? \"\"}`.toUpperCase",
+          "lineNumber": 136
+        },
+        {
+          "caller": "resolvePeriod",
+          "callee": "text.includes",
+          "lineNumber": 137
+        },
+        {
+          "caller": "resolvePeriod",
+          "callee": "text.includes",
+          "lineNumber": 138
+        },
+        {
+          "caller": "resolvePeriod",
+          "callee": "text.includes",
+          "lineNumber": 138
+        },
+        {
+          "caller": "resolvePeriod",
+          "callee": "text.includes",
+          "lineNumber": 139
+        },
+        {
+          "caller": "resolvePeriod",
+          "callee": "text.includes",
+          "lineNumber": 139
+        },
+        {
+          "caller": "resolvePeriod",
+          "callee": "text.includes",
+          "lineNumber": 140
+        },
+        {
+          "caller": "resolvePeriod",
+          "callee": "text.includes",
+          "lineNumber": 140
+        },
+        {
+          "caller": "resolvePeriod",
+          "callee": "text.split(/[-_ :/.,()]+/).includes",
+          "lineNumber": 141
+        },
+        {
+          "caller": "resolvePeriod",
+          "callee": "text.split",
+          "lineNumber": 141
+        },
+        {
+          "caller": "resolvePeriod",
+          "callee": "text.includes",
+          "lineNumber": 142
+        },
+        {
+          "caller": "drawUtc",
+          "callee": "resolvePeriod",
+          "lineNumber": 148
+        },
+        {
+          "caller": "drawUtc",
+          "callee": "assert.ok",
+          "lineNumber": 150
+        },
+        {
+          "caller": "drawUtc",
+          "callee": "parseDateKey",
+          "lineNumber": 151
+        },
+        {
+          "caller": "drawUtc",
+          "callee": "parseClock",
+          "lineNumber": 152
+        },
+        {
+          "caller": "drawUtc",
+          "callee": "zonedTimeToUtc",
+          "lineNumber": 153
+        },
+        {
+          "caller": "suppressEarly",
+          "callee": "drawUtc",
+          "lineNumber": 164
+        },
+        {
+          "caller": "suppressEarly",
+          "callee": "releaseUtc.toISOString().replace",
+          "lineNumber": 173
+        },
+        {
+          "caller": "suppressEarly",
+          "callee": "releaseUtc.toISOString",
+          "lineNumber": 173
+        },
+        {
+          "caller": "blocksSale",
+          "callee": "suppressEarly",
+          "lineNumber": 178
+        },
+        {
+          "caller": "blocksSale",
+          "callee": "Boolean",
+          "lineNumber": 179
+        },
+        {
+          "caller": "blocksSale",
+          "callee": "drawUtc",
+          "lineNumber": 179
+        },
+        {
+          "caller": "assertSuppressed",
+          "callee": "suppressEarly",
+          "lineNumber": 183
+        },
+        {
+          "caller": "assertSuppressed",
+          "callee": "assert.equal",
+          "lineNumber": 184
+        },
+        {
+          "caller": "assertSuppressed",
+          "callee": "assert.equal",
+          "lineNumber": 185
+        },
+        {
+          "caller": "assertSuppressed",
+          "callee": "assert.equal",
+          "lineNumber": 186
+        },
+        {
+          "caller": "assertSuppressed",
+          "callee": "assert.equal",
+          "lineNumber": 187
+        },
+        {
+          "caller": "assertSuppressed",
+          "callee": "blocksSale",
+          "lineNumber": 187
+        },
+        {
+          "caller": "assertPublished",
+          "callee": "suppressEarly",
+          "lineNumber": 191
+        },
+        {
+          "caller": "assertPublished",
+          "callee": "assert.equal",
+          "lineNumber": 192
+        },
+        {
+          "caller": "assertPublished",
+          "callee": "assert.notEqual",
+          "lineNumber": 193
+        },
+        {
+          "caller": "assertPublished",
+          "callee": "assert.equal",
+          "lineNumber": 194
+        },
+        {
+          "caller": "assertPublished",
+          "callee": "blocksSale",
+          "lineNumber": 194
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 10,
+        "classCount": 0
+      }
+    }
+  ]
+}

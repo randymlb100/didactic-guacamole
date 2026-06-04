@@ -152,8 +152,8 @@ class ShellUiContractsTest {
     fun `master shell actions exclude business operations`() {
         val actions = resolveShellMenuActionTitles(UserRole.MASTER)
 
-        assertEquals(listOf("Panel master", "Crear banca", "Auditoría", "Actualizar sistema", "Cerrar sesión"), actions)
-        assertEquals(listOf("Panel master", "Crear banca", "Auditoría"), resolveShellRolePriorityActionTitles(UserRole.MASTER))
+        assertEquals(listOf("Panel master", "Deportes", "Crear banca", "Auditoría", "Actualizar sistema", "Cerrar sesión"), actions)
+        assertEquals(listOf("Panel master", "Deportes", "Crear banca", "Auditoría"), resolveShellRolePriorityActionTitles(UserRole.MASTER))
         assertFalse(actions.contains("Cuadre"))
         assertFalse(actions.contains("Recargas"))
         assertFalse(actions.contains("Vender"))

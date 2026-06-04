@@ -4,6 +4,8 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import { Login } from './views/auth/Login';
 import { Dashboard } from './views/Dashboard';
 import { AppShell } from './components/AppShell';
+import { getSafeAdminTab } from './utils/navigationPermissions';
+import { clearAuthSession } from './utils/authSession';
 
 interface Props {
   children: ReactNode;
@@ -26,6 +28,7 @@ class ErrorBoundary extends Component<Props, State> {
     console.error("Uncaught rendering error caught by Boundary:", error, errorInfo);
     // Securely clear cached user session to break boot loops/blank screens
     localStorage.removeItem('lotterynet_session_user');
+    clearAuthSession();
   }
 
   public render() {
@@ -94,24 +97,14 @@ const MainApp: React.FC = () => {
 
   // Set default tabs based on role if the current tab is invalid
   const getSafeActiveTab = (): string => {
-    const roleUpper = (user?.role || 'UNKNOWN').toUpperCase();
-    if (roleUpper === 'MASTER' && ['cajeros', 'supervisores', 'monitoreo', 'tickets', 'ganadores', 'limites', 'finanzas', 'cuadre'].includes(activeTab)) {
-      return 'dashboard';
-    }
-    if (roleUpper === 'ADMIN' && ['admins', 'auditoria'].includes(activeTab)) {
-      return 'dashboard';
-    }
-    if (roleUpper === 'SUPERVISOR' && ['admins', 'cajeros', 'supervisores', 'limites', 'finanzas'].includes(activeTab)) {
-      return 'dashboard';
-    }
-    return activeTab;
+    return getSafeAdminTab(user?.role, activeTab);
   };
 
   const safeTab = getSafeActiveTab();
 
   return (
     <AppShell activeTab={safeTab} setActiveTab={setActiveTab}>
-      <Dashboard activeTab={safeTab} />
+      <Dashboard activeTab={safeTab} setActiveTab={setActiveTab} />
     </AppShell>
   );
 };

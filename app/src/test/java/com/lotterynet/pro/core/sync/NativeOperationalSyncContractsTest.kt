@@ -1,6 +1,7 @@
 package com.lotterynet.pro.core.sync
 
 import com.lotterynet.pro.core.model.ActiveSession
+import com.lotterynet.pro.core.model.TicketRecord
 import com.lotterynet.pro.core.model.UserRole
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -258,6 +259,23 @@ class NativeOperationalSyncContractsTest {
         assertEquals("admin-1", state.ownerKey)
         assertEquals(3, state.pushedCount)
         assertEquals(1, tickets.flushOwnerLocalSnapshotCalls)
+    }
+
+    @Test
+    fun `authoritative owner snapshot keeps remote and pending but drops stale local-only tickets`() {
+        val remoteTicket = TicketRecord(id = "server-ticket", total = 1.0)
+        val pendingTicket = TicketRecord(id = "pending-ticket", total = 2.0)
+        val deletedTicket = TicketRecord(id = "deleted-ticket", total = 3.0)
+
+        val merged = reconcileAuthoritativeOwnerSnapshot(
+            remoteTickets = listOf(remoteTicket, deletedTicket),
+            pendingTickets = listOf(pendingTicket),
+            deletedIds = setOf("deleted-ticket"),
+        )
+
+        val mergedIds = merged.map { it.id }.toSet()
+        assertEquals(setOf("pending-ticket", "server-ticket"), mergedIds)
+        assertFalse(mergedIds.contains("deleted-ticket"))
     }
 
     private class FakeTicketGateway(

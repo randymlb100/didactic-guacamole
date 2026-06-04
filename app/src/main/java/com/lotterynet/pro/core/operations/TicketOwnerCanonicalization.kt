@@ -41,11 +41,23 @@ private fun resolveCanonicalSeller(
     if (sellerKeys.any { key -> sameActorKey(admin.id, key) || sameActorKey(admin.user, key) }) {
         return admin
     }
-    return users.firstOrNull { account ->
+    val adminCashiers = users.filter { account ->
         account.role == UserRole.CASHIER &&
-            (sameActorKey(account.adminId, admin.id) || sameActorKey(account.adminUser, admin.user)) &&
-            sellerKeys.any { key -> sameActorKey(account.id, key) || sameActorKey(account.user, key) || sameActorKey(account.displayName, key) }
+            (sameActorKey(account.adminId, admin.id) || sameActorKey(account.adminUser, admin.user))
     }
+    return adminCashiers.firstOrNull { account ->
+        sellerKeys.any { key -> sameActorKey(account.id, key) || sameActorKey(account.user, key) }
+    } ?: sellerKeys.firstNotNullOfOrNull { key ->
+        resolveUniqueCashierByDisplayName(adminCashiers, key)
+    }
+}
+
+private fun resolveUniqueCashierByDisplayName(
+    cashiers: List<UserAccount>,
+    sellerKey: String?,
+): UserAccount? {
+    val matches = cashiers.filter { account -> sameActorKey(account.displayName, sellerKey) }
+    return matches.singleOrNull()
 }
 
 private fun sameActorKey(left: String?, right: String?): Boolean {

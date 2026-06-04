@@ -1,0 +1,307 @@
+{
+  "nodes": [
+    {
+      "id": "file:BUSQUEDA_BUGS_EXHAUSTIVA.md",
+      "type": "document",
+      "name": "BUSQUEDA_BUGS_EXHAUSTIVA.md",
+      "summary": "Documentation file covering BUSQUEDA_BUGS_EXHAUSTIVA.md.",
+      "tags": [
+        "docs",
+        "documentation"
+      ],
+      "complexity": "complex",
+      "filePath": "BUSQUEDA_BUGS_EXHAUSTIVA.md",
+      "lineRange": [
+        1,
+        327
+      ]
+    },
+    {
+      "id": "file:MIGRACION_ASSETS_INVENTARIO.md",
+      "type": "document",
+      "name": "MIGRACION_ASSETS_INVENTARIO.md",
+      "summary": "Documentation file covering MIGRACION_ASSETS_INVENTARIO.md.",
+      "tags": [
+        "docs",
+        "sales",
+        "documentation"
+      ],
+      "complexity": "moderate",
+      "filePath": "MIGRACION_ASSETS_INVENTARIO.md",
+      "lineRange": [
+        1,
+        138
+      ]
+    },
+    {
+      "id": "file:MIGRACION_KOTLIN_EJECUCION_TOTAL.md",
+      "type": "document",
+      "name": "MIGRACION_KOTLIN_EJECUCION_TOTAL.md",
+      "summary": "Documentation file covering MIGRACION_KOTLIN_EJECUCION_TOTAL.md.",
+      "tags": [
+        "docs",
+        "documentation"
+      ],
+      "complexity": "complex",
+      "filePath": "MIGRACION_KOTLIN_EJECUCION_TOTAL.md",
+      "lineRange": [
+        1,
+        1437
+      ]
+    },
+    {
+      "id": "file:MIGRACION_KOTLIN_PLAN.md",
+      "type": "document",
+      "name": "MIGRACION_KOTLIN_PLAN.md",
+      "summary": "Documentation file covering MIGRACION_KOTLIN_PLAN.md.",
+      "tags": [
+        "docs",
+        "documentation"
+      ],
+      "complexity": "moderate",
+      "filePath": "MIGRACION_KOTLIN_PLAN.md",
+      "lineRange": [
+        1,
+        193
+      ]
+    },
+    {
+      "id": "file:MIGRACION_KOTLIN_TECNICO_01.md",
+      "type": "document",
+      "name": "MIGRACION_KOTLIN_TECNICO_01.md",
+      "summary": "Documentation file covering MIGRACION_KOTLIN_TECNICO_01.md.",
+      "tags": [
+        "docs",
+        "documentation"
+      ],
+      "complexity": "complex",
+      "filePath": "MIGRACION_KOTLIN_TECNICO_01.md",
+      "lineRange": [
+        1,
+        304
+      ]
+    },
+    {
+      "id": "file:MIGRACION_KOTLIN_TECNICO_02.md",
+      "type": "document",
+      "name": "MIGRACION_KOTLIN_TECNICO_02.md",
+      "summary": "Documentation file covering MIGRACION_KOTLIN_TECNICO_02.md.",
+      "tags": [
+        "docs",
+        "documentation"
+      ],
+      "complexity": "moderate",
+      "filePath": "MIGRACION_KOTLIN_TECNICO_02.md",
+      "lineRange": [
+        1,
+        189
+      ]
+    },
+    {
+      "id": "file:PLAN_VERIFICACION_BUGS.md",
+      "type": "document",
+      "name": "PLAN_VERIFICACION_BUGS.md",
+      "summary": "Documentation file covering PLAN_VERIFICACION_BUGS.md.",
+      "tags": [
+        "docs",
+        "documentation"
+      ],
+      "complexity": "complex",
+      "filePath": "PLAN_VERIFICACION_BUGS.md",
+      "lineRange": [
+        1,
+        281
+      ]
+    },
+    {
+      "id": "file:README.md",
+      "type": "document",
+      "name": "README.md",
+      "summary": "Documentation file covering README.md.",
+      "tags": [
+        "docs",
+        "documentation"
+      ],
+      "complexity": "simple",
+      "filePath": "README.md",
+      "lineRange": [
+        1,
+        2
+      ]
+    },
+    {
+      "id": "file:README.txt",
+      "type": "document",
+      "name": "README.txt",
+      "summary": "Documentation file covering README.txt.",
+      "tags": [
+        "docs",
+        "documentation"
+      ],
+      "complexity": "moderate",
+      "filePath": "README.txt",
+      "lineRange": [
+        1,
+        156
+      ]
+    },
+    {
+      "id": "file:REPORTE_FINAL_BUGS.md",
+      "type": "document",
+      "name": "REPORTE_FINAL_BUGS.md",
+      "summary": "Documentation file covering REPORTE_FINAL_BUGS.md.",
+      "tags": [
+        "docs",
+        "documentation"
+      ],
+      "complexity": "complex",
+      "filePath": "REPORTE_FINAL_BUGS.md",
+      "lineRange": [
+        1,
+        347
+      ]
+    },
+    {
+      "id": "file:VERIFICACION_ESTATICA_BUGS.md",
+      "type": "document",
+      "name": "VERIFICACION_ESTATICA_BUGS.md",
+      "summary": "Documentation file covering VERIFICACION_ESTATICA_BUGS.md.",
+      "tags": [
+        "docs",
+        "documentation"
+      ],
+      "complexity": "complex",
+      "filePath": "VERIFICACION_ESTATICA_BUGS.md",
+      "lineRange": [
+        1,
+        447
+      ]
+    },
+    {
+      "id": "file:build.bat",
+      "type": "file",
+      "name": "build.bat",
+      "summary": "Source file build.bat in the LotteryNetPro project.",
+      "tags": [
+        "script"
+      ],
+      "complexity": "simple",
+      "filePath": "build.bat",
+      "lineRange": [
+        1,
+        58
+      ]
+    },
+    {
+      "id": "file:buildWrap.bat",
+      "type": "file",
+      "name": "buildWrap.bat",
+      "summary": "Source file buildWrap.bat in the LotteryNetPro project.",
+      "tags": [
+        "script"
+      ],
+      "complexity": "simple",
+      "filePath": "buildWrap.bat",
+      "lineRange": [
+        1,
+        20
+      ]
+    },
+    {
+      "id": "file:gradle.properties",
+      "type": "config",
+      "name": "gradle.properties",
+      "summary": "Configuration file for gradle.properties.",
+      "tags": [
+        "config",
+        "configuration"
+      ],
+      "complexity": "simple",
+      "filePath": "gradle.properties",
+      "lineRange": [
+        1,
+        16
+      ]
+    },
+    {
+      "id": "file:gradlew.bat",
+      "type": "file",
+      "name": "gradlew.bat",
+      "summary": "Source file gradlew.bat in the LotteryNetPro project.",
+      "tags": [
+        "script"
+      ],
+      "complexity": "moderate",
+      "filePath": "gradlew.bat",
+      "lineRange": [
+        1,
+        117
+      ]
+    },
+    {
+      "id": "file:package.json",
+      "type": "config",
+      "name": "package.json",
+      "summary": "Configuration file for package.json.",
+      "tags": [
+        "config",
+        "configuration"
+      ],
+      "complexity": "simple",
+      "filePath": "package.json",
+      "lineRange": [
+        1,
+        34
+      ]
+    },
+    {
+      "id": "file:render.yaml",
+      "type": "config",
+      "name": "render.yaml",
+      "summary": "Configuration file for render.yaml.",
+      "tags": [
+        "config",
+        "configuration"
+      ],
+      "complexity": "simple",
+      "filePath": "render.yaml",
+      "lineRange": [
+        1,
+        18
+      ]
+    },
+    {
+      "id": "file:requirements.txt",
+      "type": "document",
+      "name": "requirements.txt",
+      "summary": "Documentation file covering requirements.txt.",
+      "tags": [
+        "docs",
+        "documentation"
+      ],
+      "complexity": "simple",
+      "filePath": "requirements.txt",
+      "lineRange": [
+        1,
+        6
+      ]
+    },
+    {
+      "id": "file:skills-lock.json",
+      "type": "config",
+      "name": "skills-lock.json",
+      "summary": "Configuration file for skills-lock.json.",
+      "tags": [
+        "config",
+        "configuration"
+      ],
+      "complexity": "simple",
+      "filePath": "skills-lock.json",
+      "lineRange": [
+        1,
+        17
+      ]
+    }
+  ],
+  "edges": []
+}

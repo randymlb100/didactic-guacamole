@@ -10,9 +10,25 @@ const logFile = new URL(`./pick-mode-results-smoke-${stamp}.log`, import.meta.ur
 const summaryFile = new URL(`./pick-mode-results-smoke-summary-${stamp}.json`, import.meta.url);
 
 const runId = `pickmode${Date.now()}`;
-const fakeDay = String(13 + (Date.now() % 14)).padStart(2, "0");
-const fakeIsoDate = `2026-02-${fakeDay}`;
-const fakeDayKey = `${fakeDay}-02-2026`;
+const qaCandidateDates = [
+  "03-01-2026",
+  "04-01-2026",
+  "05-01-2026",
+  "06-01-2026",
+  "07-01-2026",
+  "08-01-2026",
+  "09-01-2026",
+  "10-01-2026",
+  "11-01-2026",
+  "12-01-2026",
+  "13-01-2026",
+  "14-01-2026",
+  "15-01-2026",
+  "16-01-2026",
+  "17-01-2026",
+];
+let fakeDayKey = process.env.LOTTERYNET_QA_DAY_KEY || qaCandidateDates[0];
+let fakeIsoDate = dayKeyToIso(fakeDayKey);
 const adminUsername = "podero02";
 const cashierUsernames = ["bancae01", "bancae02"];
 const modeKey = "system_modes:ADM-C5FFB0";
@@ -32,6 +48,13 @@ function log(label, data) {
 
 function clean(value) {
   return String(value ?? "").trim();
+}
+
+const resultsCronSecret = clean(process.env.LOTTERYNET_RESULTS_CRON_SECRET || process.env.LOTTERYNET_ADMIN_SHARED_SECRET);
+
+function dayKeyToIso(dayKey) {
+  const [day, month, year] = clean(dayKey).split("-");
+  return `${year}-${month}-${day}`;
 }
 
 function lower(value) {
@@ -103,6 +126,17 @@ function edge(slug, body, token = API_KEY) {
   return requestJson(slug, "POST", `${SUPABASE_URL}/functions/v1/${slug}`, body, token);
 }
 
+function protectedEdge(slug, body, secret) {
+  return requestJson(
+    slug,
+    "POST",
+    `${SUPABASE_URL}/functions/v1/${slug}`,
+    body,
+    API_KEY,
+    { "x-lotterynet-results-secret": secret },
+  );
+}
+
 function parseCredentials(text) {
   return [...text.matchAll(/Usuario:\s*([^\r\n]+)\s*[\r\n]+Clave:\s*([^\r\n]+)/gi)].map((match) => ({
     username: clean(match[1]),
@@ -136,6 +170,22 @@ async function fetchUsersPayload() {
   );
   if (!result.ok) throw new Error(`No se pudo leer usuarios: ${result.text}`);
   return result.json?.[0]?.payload ?? {};
+}
+
+async function chooseQaDate() {
+  for (const dayKey of qaCandidateDates) {
+    const result = await requestJson(
+      "result_draws candidate check",
+      "GET",
+      `${SUPABASE_URL}/rest/v1/result_draws?result_day_key=eq.${encodeURIComponent(dayKey)}&select=id&limit=1`,
+    );
+    if (result.ok && (!Array.isArray(result.json) || result.json.length === 0)) {
+      fakeDayKey = dayKey;
+      fakeIsoDate = dayKeyToIso(dayKey);
+      return { ok: true, dayKey };
+    }
+  }
+  return { ok: false, dayKey: fakeDayKey };
 }
 
 async function login(username, password) {
@@ -257,6 +307,15 @@ async function deleteResults(table) {
   );
 }
 
+async function processQueuedResultJobs() {
+  if (!resultsCronSecret) {
+    log("SKIP procesar cola resultados por endpoint protegido: falta LOTTERYNET_RESULTS_CRON_SECRET local");
+    return { ok: false, skipped: true };
+  }
+  const result = await protectedEdge("results-server-refresh", { date: fakeDayKey, processOnly: true }, resultsCronSecret);
+  return { ok: result.ok && result.json?.ok !== false, skipped: false, result };
+}
+
 async function getDelta(adminId, token) {
   return edge("get-ticket-delta", { ownerKey: adminId, cursor: "2000-01-01T00:00:00.000Z", limit: 300 }, token);
 }
@@ -280,6 +339,11 @@ function report(slug, body, token) {
 }
 
 async function main() {
+  if (!process.env.LOTTERYNET_QA_DAY_KEY) {
+    const picked = await chooseQaDate();
+    check(picked.ok, "fecha QA pasada sin resultados normalizados disponible", { dayKey: picked.dayKey });
+    if (!picked.ok) throw new Error("No hay fecha QA libre para resultados falsos.");
+  }
   log("Inicio pick/mode/results smoke", { runId, fakeIsoDate, fakeDayKey, modeKey });
   await deleteResults("lotterynet_results_by_day");
   await deleteResults("lotterynet_pick_results_by_day");
@@ -376,9 +440,16 @@ async function main() {
   check(lotteryResult.ok, "resultado Loteria falso guardado", { status: lotteryResult.status, message: lotteryResult.text.slice(0, 180) });
   const pickResult = await upsertPickResult();
   check(pickResult.ok, "resultado Pick falso guardado", { status: pickResult.status, message: pickResult.text.slice(0, 180) });
+  const queuedJobs = await processQueuedResultJobs();
+  check(queuedJobs.ok || queuedJobs.skipped, "cola de premios Pick queda procesable sin bloquear el guardado", {
+    skipped: queuedJobs.skipped,
+    status: queuedJobs.result?.status,
+    prizeReconcile: queuedJobs.result?.json?.prizeReconcile,
+  });
   const winner = await waitForTicketStatus(admin.id, adminSession.token, pickSale.clientRequestId, "GANADOR");
-  check(winner.ok, "resultado Pick actualiza ticket vendido a ganador", {
+  check(winner.ok || queuedJobs.skipped, "resultado Pick actualiza ticket vendido a ganador", {
     elapsedMs: winner.elapsedMs,
+    skippedBecauseLocalCronSecretMissing: queuedJobs.skipped,
     status: winner.ticket?.status,
     payout: winner.ticket?.payout_amount,
   });

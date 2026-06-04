@@ -1,0 +1,84 @@
+{
+  "projectRoot": "C:\\Users\\Randy Cordero\\Desktop\\lotterynet_android",
+  "batchFiles": [
+    {
+      "path": "docs/FIGMA_LOTTERYNET_COLORIDO_PRO.md",
+      "language": "markdown",
+      "sizeLines": 94,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "docs/american-picks-source-architecture.md",
+      "language": "markdown",
+      "sizeLines": 128,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "docs/bug-sweep-no-emulator-2026-05-12.md",
+      "language": "markdown",
+      "sizeLines": 94,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "docs/native-results-sync-recovery.md",
+      "language": "markdown",
+      "sizeLines": 38,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "docs/results-operations-runbook.md",
+      "language": "markdown",
+      "sizeLines": 56,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "docs/sentry-android-setup.md",
+      "language": "markdown",
+      "sizeLines": 38,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "docs/supabase_advisor_warnings_hardening.sql",
+      "language": "sql",
+      "sizeLines": 69,
+      "fileCategory": "data"
+    },
+    {
+      "path": "docs/supabase_legacy_public_tables_rls_options.sql",
+      "language": "sql",
+      "sizeLines": 111,
+      "fileCategory": "data"
+    },
+    {
+      "path": "docs/supabase_lock_legacy_public_tables.sql",
+      "language": "sql",
+      "sizeLines": 42,
+      "fileCategory": "data"
+    },
+    {
+      "path": "docs/supabase_native_schema.sql",
+      "language": "sql",
+      "sizeLines": 55,
+      "fileCategory": "data"
+    },
+    {
+      "path": "docs/supabase_production_rls_compat.sql",
+      "language": "sql",
+      "sizeLines": 253,
+      "fileCategory": "data"
+    }
+  ],
+  "batchImportData": {
+    "docs/FIGMA_LOTTERYNET_COLORIDO_PRO.md": [],
+    "docs/american-picks-source-architecture.md": [],
+    "docs/bug-sweep-no-emulator-2026-05-12.md": [],
+    "docs/native-results-sync-recovery.md": [],
+    "docs/results-operations-runbook.md": [],
+    "docs/sentry-android-setup.md": [],
+    "docs/supabase_advisor_warnings_hardening.sql": [],
+    "docs/supabase_legacy_public_tables_rls_options.sql": [],
+    "docs/supabase_lock_legacy_public_tables.sql": [],
+    "docs/supabase_native_schema.sql": [],
+    "docs/supabase_production_rls_compat.sql": []
+  }
+}

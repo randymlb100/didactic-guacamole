@@ -1,4 +1,4 @@
-import { corsHeaders, json, clean, requireSharedSecret, supabaseAdmin } from "../_shared/lotterynet-admin.ts";
+import { bearerToken, corsHeaders, json, clean, lower, supabaseAdmin } from "../_shared/lotterynet-admin.ts";
 
 type JsonMap = Record<string, unknown>;
 
@@ -15,6 +15,33 @@ function asArray(value: unknown): unknown[] {
 
 function asObject(value: unknown): JsonMap {
   return value && typeof value === "object" && !Array.isArray(value) ? value as JsonMap : {};
+}
+
+function sharedSecretMatches(req: Request): boolean {
+  const expected = Deno.env.get("LOTTERYNET_ADMIN_SHARED_SECRET") ?? "";
+  if (!expected) return false;
+  const provided = req.headers.get("x-lotterynet-admin-secret") ?? "";
+  return provided === expected;
+}
+
+async function adminJwtMatches(req: Request, body: JsonMap): Promise<boolean> {
+  const token = bearerToken(req);
+  if (!token) return false;
+  const { data, error } = await supabaseAdmin().auth.getUser(token);
+  if (error || !data.user) return false;
+  const metadata = asObject(data.user.app_metadata);
+  const role = lower(metadata.role || body.actorRole);
+  if (role !== "admin" && role !== "master") return false;
+  const actorKey = lower(body.actorKey || body.adminKey);
+  if (!actorKey) return true;
+  const accepted = [
+    metadata.legacy_id,
+    metadata.username,
+    metadata.user,
+    metadata.admin_id,
+    metadata.admin_user,
+  ].map(lower).filter(Boolean);
+  return accepted.length === 0 || accepted.includes(actorKey);
 }
 
 function normalizeTeamName(value: unknown): string {
@@ -66,14 +93,15 @@ async function handle(req: Request): Promise<Response> {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (req.method !== "POST") return json({ ok: false, message: "Metodo no permitido." }, 405);
 
-  const secretError = requireSharedSecret(req);
-  if (secretError) return secretError;
-
   let body: JsonMap = {};
   try {
     body = await req.json();
   } catch {
     body = {};
+  }
+
+  if (!sharedSecretMatches(req) && !(await adminJwtMatches(req, body))) {
+    return json({ ok: false, message: "Admin deportivo requerido." }, 403);
   }
 
   const apiKey = Deno.env.get("THESPORTSDB_API_KEY") ?? "";

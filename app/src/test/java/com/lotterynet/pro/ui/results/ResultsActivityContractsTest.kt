@@ -83,12 +83,19 @@ class ResultsActivityContractsTest {
     }
 
     @Test
-    fun `results auto refresh asks server only after draw is due`() {
+    fun `results auto refresh is fallback only when realtime is unavailable`() {
         assertFalse(shouldAutoRefreshResultsFromServer(selectedDateIsToday = true, hasWaitingResult = false, hasRecoverableNoDrawResult = false, realtimeEnabled = false))
         assertTrue(shouldAutoRefreshResultsFromServer(selectedDateIsToday = true, hasWaitingResult = true, hasRecoverableNoDrawResult = false, realtimeEnabled = false))
         assertFalse(shouldAutoRefreshResultsFromServer(selectedDateIsToday = false, hasWaitingResult = true, hasRecoverableNoDrawResult = false, realtimeEnabled = false))
-        assertTrue(shouldAutoRefreshResultsFromServer(selectedDateIsToday = true, hasWaitingResult = true, hasRecoverableNoDrawResult = false, realtimeEnabled = true))
-        assertTrue(shouldAutoRefreshResultsFromServer(selectedDateIsToday = true, hasWaitingResult = false, hasRecoverableNoDrawResult = true, realtimeEnabled = true))
+        assertFalse(shouldAutoRefreshResultsFromServer(selectedDateIsToday = true, hasWaitingResult = true, hasRecoverableNoDrawResult = false, realtimeEnabled = true))
+        assertFalse(shouldAutoRefreshResultsFromServer(selectedDateIsToday = true, hasWaitingResult = false, hasRecoverableNoDrawResult = true, realtimeEnabled = true))
+    }
+
+    @Test
+    fun `results auto refresh only forces server when a draw needs recovery`() {
+        assertFalse(shouldForceRemoteForResultsAutoRefresh(hasWaitingResult = false, hasRecoverableNoDrawResult = false))
+        assertTrue(shouldForceRemoteForResultsAutoRefresh(hasWaitingResult = true, hasRecoverableNoDrawResult = false))
+        assertTrue(shouldForceRemoteForResultsAutoRefresh(hasWaitingResult = false, hasRecoverableNoDrawResult = true))
     }
 
     @Test
@@ -985,27 +992,34 @@ class ResultsActivityContractsTest {
     }
 
     @Test
-    fun `initial results refresh lets local cache decide before asking server`() {
-        assertFalse(shouldForceRemoteOnInitialResultsLoad(selectedDate = "27-04-2026", today = "27-04-2026"))
+    fun `initial results refresh catches up today from server`() {
+        assertTrue(shouldForceRemoteOnInitialResultsLoad(selectedDate = "27-04-2026", today = "27-04-2026"))
         assertFalse(shouldForceRemoteOnInitialResultsLoad(selectedDate = "26-04-2026", today = "27-04-2026"))
         assertFalse(shouldForceRemoteOnInitialResultsLoad(selectedDate = "25-04-2026", today = "27-04-2026"))
     }
 
     @Test
-    fun `today yesterday and anteayer still hydrate remote once on open`() {
+    fun `complete past result dates stay local when switching dates`() {
         assertFalse(shouldSkipInitialResultsHydration(selectedDate = "27-04-2026", today = "27-04-2026", hasCompleteLocalResults = true))
-        assertFalse(shouldSkipInitialResultsHydration(selectedDate = "26-04-2026", today = "27-04-2026", hasCompleteLocalResults = true))
-        assertFalse(shouldSkipInitialResultsHydration(selectedDate = "25-04-2026", today = "27-04-2026", hasCompleteLocalResults = true))
+        assertTrue(shouldSkipInitialResultsHydration(selectedDate = "26-04-2026", today = "27-04-2026", hasCompleteLocalResults = true))
+        assertTrue(shouldSkipInitialResultsHydration(selectedDate = "25-04-2026", today = "27-04-2026", hasCompleteLocalResults = true))
         assertTrue(shouldSkipInitialResultsHydration(selectedDate = "24-04-2026", today = "27-04-2026", hasCompleteLocalResults = true))
         assertFalse(shouldSkipInitialResultsHydration(selectedDate = "24-04-2026", today = "27-04-2026", hasCompleteLocalResults = false))
     }
 
     @Test
-    fun `initial load does not force remote before painting local cache`() {
-        assertFalse(shouldForceRemoteOnInitialResultsLoad(selectedDate = "27-04-2026", today = "27-04-2026"))
+    fun `foreground catch-up only runs for today`() {
+        assertTrue(shouldForceRemoteOnInitialResultsLoad(selectedDate = "27-04-2026", today = "27-04-2026"))
         assertFalse(shouldForceRemoteOnInitialResultsLoad(selectedDate = "26-04-2026", today = "27-04-2026"))
         assertFalse(shouldForceRemoteOnInitialResultsLoad(selectedDate = "25-04-2026", today = "27-04-2026"))
         assertFalse(shouldForceRemoteOnInitialResultsLoad(selectedDate = "24-04-2026", today = "27-04-2026"))
+        assertTrue(shouldRunResultsForegroundCatchUp(selectedDate = "27-04-2026", today = "27-04-2026"))
+        assertFalse(shouldRunResultsForegroundCatchUp(selectedDate = "26-04-2026", today = "27-04-2026"))
+    }
+
+    @Test
+    fun `realtime result event bypasses local freshness cache`() {
+        assertTrue(shouldForceRemoteOnResultsRealtime())
     }
 
     @Test

@@ -1,0 +1,4457 @@
+{
+  "nodes": [
+    {
+      "id": "file:app/src/main/java/com/lotterynet/pro/core/storage/LocalUsersRepository.kt",
+      "type": "file",
+      "name": "LocalUsersRepository.kt",
+      "summary": "Source file app/src/main/java/com/lotterynet/pro/core/storage/LocalUsersRepository.kt containing 1 class(es) and 18 function(s).",
+      "tags": [
+        "code",
+        "large-module"
+      ],
+      "complexity": "complex",
+      "filePath": "app/src/main/java/com/lotterynet/pro/core/storage/LocalUsersRepository.kt",
+      "lineRange": [
+        1,
+        333
+      ]
+    },
+    {
+      "id": "function:app/src/main/java/com/lotterynet/pro/core/storage/LocalUsersRepository.kt:cacheRawPayload",
+      "type": "function",
+      "name": "cacheRawPayload",
+      "summary": "Function cacheRawPayload in LocalUsersRepository.kt.",
+      "tags": [
+        "function",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/core/storage/LocalUsersRepository.kt",
+      "lineRange": [
+        18,
+        37
+      ]
+    },
+    {
+      "id": "function:app/src/main/java/com/lotterynet/pro/core/storage/LocalUsersRepository.kt:exportPayloadJson",
+      "type": "function",
+      "name": "exportPayloadJson",
+      "summary": "Function exportPayloadJson in LocalUsersRepository.kt.",
+      "tags": [
+        "function",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/core/storage/LocalUsersRepository.kt",
+      "lineRange": [
+        25,
+        44
+      ]
+    },
+    {
+      "id": "function:app/src/main/java/com/lotterynet/pro/core/storage/LocalUsersRepository.kt:hasCachedUsers",
+      "type": "function",
+      "name": "hasCachedUsers",
+      "summary": "Function hasCachedUsers in LocalUsersRepository.kt.",
+      "tags": [
+        "function",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/core/storage/LocalUsersRepository.kt",
+      "lineRange": [
+        33,
+        52
+      ]
+    },
+    {
+      "id": "function:app/src/main/java/com/lotterynet/pro/core/storage/LocalUsersRepository.kt:getAdmins",
+      "type": "function",
+      "name": "getAdmins",
+      "summary": "Function getAdmins in LocalUsersRepository.kt.",
+      "tags": [
+        "function",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/core/storage/LocalUsersRepository.kt",
+      "lineRange": [
+        38,
+        57
+      ]
+    },
+    {
+      "id": "function:app/src/main/java/com/lotterynet/pro/core/storage/LocalUsersRepository.kt:getSupervisors",
+      "type": "function",
+      "name": "getSupervisors",
+      "summary": "Function getSupervisors in LocalUsersRepository.kt.",
+      "tags": [
+        "function",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/core/storage/LocalUsersRepository.kt",
+      "lineRange": [
+        40,
+        59
+      ]
+    },
+    {
+      "id": "function:app/src/main/java/com/lotterynet/pro/core/storage/LocalUsersRepository.kt:getCashiers",
+      "type": "function",
+      "name": "getCashiers",
+      "summary": "Function getCashiers in LocalUsersRepository.kt.",
+      "tags": [
+        "function",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/core/storage/LocalUsersRepository.kt",
+      "lineRange": [
+        42,
+        61
+      ]
+    },
+    {
+      "id": "function:app/src/main/java/com/lotterynet/pro/core/storage/LocalUsersRepository.kt:findByIdOrUser",
+      "type": "function",
+      "name": "findByIdOrUser",
+      "summary": "Function findByIdOrUser in LocalUsersRepository.kt.",
+      "tags": [
+        "function",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/core/storage/LocalUsersRepository.kt",
+      "lineRange": [
+        44,
+        63
+      ]
+    },
+    {
+      "id": "function:app/src/main/java/com/lotterynet/pro/core/storage/LocalUsersRepository.kt:saveUsers",
+      "type": "function",
+      "name": "saveUsers",
+      "summary": "Function saveUsers in LocalUsersRepository.kt.",
+      "tags": [
+        "function",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/core/storage/LocalUsersRepository.kt",
+      "lineRange": [
+        54,
+        73
+      ]
+    },
+    {
+      "id": "function:app/src/main/java/com/lotterynet/pro/core/storage/LocalUsersRepository.kt:saveUsers",
+      "type": "function",
+      "name": "saveUsers",
+      "summary": "Function saveUsers in LocalUsersRepository.kt.",
+      "tags": [
+        "function",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/core/storage/LocalUsersRepository.kt",
+      "lineRange": [
+        58,
+        77
+      ]
+    },
+    {
+      "id": "function:app/src/main/java/com/lotterynet/pro/core/storage/LocalUsersRepository.kt:buildPayloadWithAccount",
+      "type": "function",
+      "name": "buildPayloadWithAccount",
+      "summary": "Function buildPayloadWithAccount in LocalUsersRepository.kt.",
+      "tags": [
+        "function",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/core/storage/LocalUsersRepository.kt",
+      "lineRange": [
+        66,
+        85
+      ]
+    },
+    {
+      "id": "function:app/src/main/java/com/lotterynet/pro/core/storage/LocalUsersRepository.kt:updateAccount",
+      "type": "function",
+      "name": "updateAccount",
+      "summary": "Function updateAccount in LocalUsersRepository.kt.",
+      "tags": [
+        "function",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/core/storage/LocalUsersRepository.kt",
+      "lineRange": [
+        74,
+        93
+      ]
+    },
+    {
+      "id": "function:app/src/main/java/com/lotterynet/pro/core/storage/LocalUsersRepository.kt:touchLastSeen",
+      "type": "function",
+      "name": "touchLastSeen",
+      "summary": "Function touchLastSeen in LocalUsersRepository.kt.",
+      "tags": [
+        "function",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/core/storage/LocalUsersRepository.kt",
+      "lineRange": [
+        78,
+        97
+      ]
+    },
+    {
+      "id": "function:app/src/main/java/com/lotterynet/pro/core/storage/LocalUsersRepository.kt:touchSession",
+      "type": "function",
+      "name": "touchSession",
+      "summary": "Function touchSession in LocalUsersRepository.kt.",
+      "tags": [
+        "function",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/core/storage/LocalUsersRepository.kt",
+      "lineRange": [
+        86,
+        105
+      ]
+    },
+    {
+      "id": "function:app/src/main/java/com/lotterynet/pro/core/storage/LocalUsersRepository.kt:getUsersPayload",
+      "type": "function",
+      "name": "getUsersPayload",
+      "summary": "Function getUsersPayload in LocalUsersRepository.kt.",
+      "tags": [
+        "function",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/core/storage/LocalUsersRepository.kt",
+      "lineRange": [
+        92,
+        111
+      ]
+    },
+    {
+      "id": "function:app/src/main/java/com/lotterynet/pro/core/storage/LocalUsersRepository.kt:parseUsersPayload",
+      "type": "function",
+      "name": "parseUsersPayload",
+      "summary": "Function parseUsersPayload in LocalUsersRepository.kt.",
+      "tags": [
+        "function",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/core/storage/LocalUsersRepository.kt",
+      "lineRange": [
+        97,
+        116
+      ]
+    },
+    {
+      "id": "function:app/src/main/java/com/lotterynet/pro/core/storage/LocalUsersRepository.kt:buildUsersPayload",
+      "type": "function",
+      "name": "buildUsersPayload",
+      "summary": "Function buildUsersPayload in LocalUsersRepository.kt.",
+      "tags": [
+        "function",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/core/storage/LocalUsersRepository.kt",
+      "lineRange": [
+        237,
+        256
+      ]
+    },
+    {
+      "id": "function:app/src/main/java/com/lotterynet/pro/core/storage/LocalUsersRepository.kt:commissionRateFromJson",
+      "type": "function",
+      "name": "commissionRateFromJson",
+      "summary": "Function commissionRateFromJson in LocalUsersRepository.kt.",
+      "tags": [
+        "function",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/core/storage/LocalUsersRepository.kt",
+      "lineRange": [
+        281,
+        300
+      ]
+    },
+    {
+      "id": "function:app/src/main/java/com/lotterynet/pro/core/storage/LocalUsersRepository.kt:rechargeTxLimitFromJson",
+      "type": "function",
+      "name": "rechargeTxLimitFromJson",
+      "summary": "Function rechargeTxLimitFromJson in LocalUsersRepository.kt.",
+      "tags": [
+        "function",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/core/storage/LocalUsersRepository.kt",
+      "lineRange": [
+        295,
+        314
+      ]
+    },
+    {
+      "id": "class:app/src/main/java/com/lotterynet/pro/core/storage/LocalUsersRepository.kt:LocalUsersRepository",
+      "type": "class",
+      "name": "LocalUsersRepository",
+      "summary": "Class LocalUsersRepository in LocalUsersRepository.kt.",
+      "tags": [
+        "class",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/core/storage/LocalUsersRepository.kt",
+      "lineRange": [
+        12,
+        91
+      ]
+    },
+    {
+      "id": "file:app/src/main/java/com/lotterynet/pro/core/storage/UsersStorageKeys.kt",
+      "type": "file",
+      "name": "UsersStorageKeys.kt",
+      "summary": "Source file app/src/main/java/com/lotterynet/pro/core/storage/UsersStorageKeys.kt containing 1 class(es).",
+      "tags": [
+        "code"
+      ],
+      "complexity": "simple",
+      "filePath": "app/src/main/java/com/lotterynet/pro/core/storage/UsersStorageKeys.kt",
+      "lineRange": [
+        1,
+        7
+      ]
+    },
+    {
+      "id": "file:app/src/main/java/com/lotterynet/pro/core/sync/NativeBootstrapRepositoryImpl.kt",
+      "type": "file",
+      "name": "NativeBootstrapRepositoryImpl.kt",
+      "summary": "Source file app/src/main/java/com/lotterynet/pro/core/sync/NativeBootstrapRepositoryImpl.kt containing 1 class(es) and 1 function(s).",
+      "tags": [
+        "code",
+        "sync"
+      ],
+      "complexity": "simple",
+      "filePath": "app/src/main/java/com/lotterynet/pro/core/sync/NativeBootstrapRepositoryImpl.kt",
+      "lineRange": [
+        1,
+        9
+      ]
+    },
+    {
+      "id": "file:app/src/main/java/com/lotterynet/pro/core/sync/NativeUsersBootstrapper.kt",
+      "type": "file",
+      "name": "NativeUsersBootstrapper.kt",
+      "summary": "Source file app/src/main/java/com/lotterynet/pro/core/sync/NativeUsersBootstrapper.kt containing 2 class(es) and 2 function(s).",
+      "tags": [
+        "code",
+        "sync"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/core/sync/NativeUsersBootstrapper.kt",
+      "lineRange": [
+        1,
+        72
+      ]
+    },
+    {
+      "id": "function:app/src/main/java/com/lotterynet/pro/core/sync/NativeUsersBootstrapper.kt:bootstrap",
+      "type": "function",
+      "name": "bootstrap",
+      "summary": "Function bootstrap in NativeUsersBootstrapper.kt.",
+      "tags": [
+        "function",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/core/sync/NativeUsersBootstrapper.kt",
+      "lineRange": [
+        12,
+        31
+      ]
+    },
+    {
+      "id": "function:app/src/main/java/com/lotterynet/pro/core/sync/NativeUsersBootstrapper.kt:fetchRemoteUsersPayload",
+      "type": "function",
+      "name": "fetchRemoteUsersPayload",
+      "summary": "Function fetchRemoteUsersPayload in NativeUsersBootstrapper.kt.",
+      "tags": [
+        "function",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/core/sync/NativeUsersBootstrapper.kt",
+      "lineRange": [
+        56,
+        73
+      ]
+    },
+    {
+      "id": "class:app/src/main/java/com/lotterynet/pro/core/sync/NativeUsersBootstrapper.kt:NativeUsersBootstrapper",
+      "type": "class",
+      "name": "NativeUsersBootstrapper",
+      "summary": "Class NativeUsersBootstrapper in NativeUsersBootstrapper.kt.",
+      "tags": [
+        "class",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/core/sync/NativeUsersBootstrapper.kt",
+      "lineRange": [
+        8,
+        73
+      ]
+    },
+    {
+      "id": "file:app/src/main/java/com/lotterynet/pro/core/update/UpdateManager.kt",
+      "type": "file",
+      "name": "UpdateManager.kt",
+      "summary": "Source file app/src/main/java/com/lotterynet/pro/core/update/UpdateManager.kt containing 1 class(es) and 9 function(s).",
+      "tags": [
+        "code"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/core/update/UpdateManager.kt",
+      "lineRange": [
+        1,
+        65
+      ]
+    },
+    {
+      "id": "function:app/src/main/java/com/lotterynet/pro/core/update/UpdateManager.kt:register",
+      "type": "function",
+      "name": "register",
+      "summary": "Function register in UpdateManager.kt.",
+      "tags": [
+        "function",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/core/update/UpdateManager.kt",
+      "lineRange": [
+        25,
+        44
+      ]
+    },
+    {
+      "id": "function:app/src/main/java/com/lotterynet/pro/core/update/UpdateManager.kt:onActivityCreated",
+      "type": "function",
+      "name": "onActivityCreated",
+      "summary": "Function onActivityCreated in UpdateManager.kt.",
+      "tags": [
+        "function",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/core/update/UpdateManager.kt",
+      "lineRange": [
+        28,
+        47
+      ]
+    },
+    {
+      "id": "function:app/src/main/java/com/lotterynet/pro/core/update/UpdateManager.kt:onActivityStarted",
+      "type": "function",
+      "name": "onActivityStarted",
+      "summary": "Function onActivityStarted in UpdateManager.kt.",
+      "tags": [
+        "function",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/core/update/UpdateManager.kt",
+      "lineRange": [
+        29,
+        48
+      ]
+    },
+    {
+      "id": "function:app/src/main/java/com/lotterynet/pro/core/update/UpdateManager.kt:onActivityPaused",
+      "type": "function",
+      "name": "onActivityPaused",
+      "summary": "Function onActivityPaused in UpdateManager.kt.",
+      "tags": [
+        "function",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/core/update/UpdateManager.kt",
+      "lineRange": [
+        30,
+        49
+      ]
+    },
+    {
+      "id": "function:app/src/main/java/com/lotterynet/pro/core/update/UpdateManager.kt:onActivityStopped",
+      "type": "function",
+      "name": "onActivityStopped",
+      "summary": "Function onActivityStopped in UpdateManager.kt.",
+      "tags": [
+        "function",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/core/update/UpdateManager.kt",
+      "lineRange": [
+        31,
+        50
+      ]
+    },
+    {
+      "id": "function:app/src/main/java/com/lotterynet/pro/core/update/UpdateManager.kt:onActivitySaveInstanceState",
+      "type": "function",
+      "name": "onActivitySaveInstanceState",
+      "summary": "Function onActivitySaveInstanceState in UpdateManager.kt.",
+      "tags": [
+        "function",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/core/update/UpdateManager.kt",
+      "lineRange": [
+        32,
+        51
+      ]
+    },
+    {
+      "id": "function:app/src/main/java/com/lotterynet/pro/core/update/UpdateManager.kt:onActivityDestroyed",
+      "type": "function",
+      "name": "onActivityDestroyed",
+      "summary": "Function onActivityDestroyed in UpdateManager.kt.",
+      "tags": [
+        "function",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/core/update/UpdateManager.kt",
+      "lineRange": [
+        33,
+        52
+      ]
+    },
+    {
+      "id": "function:app/src/main/java/com/lotterynet/pro/core/update/UpdateManager.kt:onActivityResumed",
+      "type": "function",
+      "name": "onActivityResumed",
+      "summary": "Function onActivityResumed in UpdateManager.kt.",
+      "tags": [
+        "function",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/core/update/UpdateManager.kt",
+      "lineRange": [
+        35,
+        54
+      ]
+    },
+    {
+      "id": "function:app/src/main/java/com/lotterynet/pro/core/update/UpdateManager.kt:checkFromForeground",
+      "type": "function",
+      "name": "checkFromForeground",
+      "summary": "Function checkFromForeground in UpdateManager.kt.",
+      "tags": [
+        "function",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/core/update/UpdateManager.kt",
+      "lineRange": [
+        42,
+        61
+      ]
+    },
+    {
+      "id": "class:app/src/main/java/com/lotterynet/pro/core/update/UpdateManager.kt:UpdateManager",
+      "type": "class",
+      "name": "UpdateManager",
+      "summary": "Class UpdateManager in UpdateManager.kt.",
+      "tags": [
+        "class",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/core/update/UpdateManager.kt",
+      "lineRange": [
+        15,
+        66
+      ]
+    },
+    {
+      "id": "file:app/src/main/java/com/lotterynet/pro/core/users/SupabaseUsersRemoteStore.kt",
+      "type": "file",
+      "name": "SupabaseUsersRemoteStore.kt",
+      "summary": "Supabase integration file used by the app/server for remote data, ticket, result, or configuration workflows.",
+      "tags": [
+        "code",
+        "supabase",
+        "large-module"
+      ],
+      "complexity": "complex",
+      "filePath": "app/src/main/java/com/lotterynet/pro/core/users/SupabaseUsersRemoteStore.kt",
+      "lineRange": [
+        1,
+        256
+      ]
+    },
+    {
+      "id": "function:app/src/main/java/com/lotterynet/pro/core/users/SupabaseUsersRemoteStore.kt:refreshUsersPayload",
+      "type": "function",
+      "name": "refreshUsersPayload",
+      "summary": "Function refreshUsersPayload in SupabaseUsersRemoteStore.kt.",
+      "tags": [
+        "function",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/core/users/SupabaseUsersRemoteStore.kt",
+      "lineRange": [
+        20,
+        39
+      ]
+    },
+    {
+      "id": "function:app/src/main/java/com/lotterynet/pro/core/users/SupabaseUsersRemoteStore.kt:fetchUsersPayload",
+      "type": "function",
+      "name": "fetchUsersPayload",
+      "summary": "Function fetchUsersPayload in SupabaseUsersRemoteStore.kt.",
+      "tags": [
+        "function",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/core/users/SupabaseUsersRemoteStore.kt",
+      "lineRange": [
+        22,
+        41
+      ]
+    },
+    {
+      "id": "function:app/src/main/java/com/lotterynet/pro/core/users/SupabaseUsersRemoteStore.kt:upsertUsersPayload",
+      "type": "function",
+      "name": "upsertUsersPayload",
+      "summary": "Function upsertUsersPayload in SupabaseUsersRemoteStore.kt.",
+      "tags": [
+        "function",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/core/users/SupabaseUsersRemoteStore.kt",
+      "lineRange": [
+        40,
+        59
+      ]
+    },
+    {
+      "id": "function:app/src/main/java/com/lotterynet/pro/core/users/SupabaseUsersRemoteStore.kt:fetchUsersPayload",
+      "type": "function",
+      "name": "fetchUsersPayload",
+      "summary": "Function fetchUsersPayload in SupabaseUsersRemoteStore.kt.",
+      "tags": [
+        "function",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/core/users/SupabaseUsersRemoteStore.kt",
+      "lineRange": [
+        66,
+        85
+      ]
+    },
+    {
+      "id": "function:app/src/main/java/com/lotterynet/pro/core/users/SupabaseUsersRemoteStore.kt:upsertUsersPayload",
+      "type": "function",
+      "name": "upsertUsersPayload",
+      "summary": "Function upsertUsersPayload in SupabaseUsersRemoteStore.kt.",
+      "tags": [
+        "function",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/core/users/SupabaseUsersRemoteStore.kt",
+      "lineRange": [
+        77,
+        96
+      ]
+    },
+    {
+      "id": "function:app/src/main/java/com/lotterynet/pro/core/users/SupabaseUsersRemoteStore.kt:send",
+      "type": "function",
+      "name": "send",
+      "summary": "Function send in SupabaseUsersRemoteStore.kt.",
+      "tags": [
+        "function",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/core/users/SupabaseUsersRemoteStore.kt",
+      "lineRange": [
+        85,
+        104
+      ]
+    },
+    {
+      "id": "function:app/src/main/java/com/lotterynet/pro/core/users/SupabaseUsersRemoteStore.kt:fetchUsersPayload",
+      "type": "function",
+      "name": "fetchUsersPayload",
+      "summary": "Function fetchUsersPayload in SupabaseUsersRemoteStore.kt.",
+      "tags": [
+        "function",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/core/users/SupabaseUsersRemoteStore.kt",
+      "lineRange": [
+        119,
+        138
+      ]
+    },
+    {
+      "id": "function:app/src/main/java/com/lotterynet/pro/core/users/SupabaseUsersRemoteStore.kt:upsertUsersPayload",
+      "type": "function",
+      "name": "upsertUsersPayload",
+      "summary": "Function upsertUsersPayload in SupabaseUsersRemoteStore.kt.",
+      "tags": [
+        "function",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/core/users/SupabaseUsersRemoteStore.kt",
+      "lineRange": [
+        133,
+        152
+      ]
+    },
+    {
+      "id": "function:app/src/main/java/com/lotterynet/pro/core/users/SupabaseUsersRemoteStore.kt:send",
+      "type": "function",
+      "name": "send",
+      "summary": "Function send in SupabaseUsersRemoteStore.kt.",
+      "tags": [
+        "function",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/core/users/SupabaseUsersRemoteStore.kt",
+      "lineRange": [
+        151,
+        170
+      ]
+    },
+    {
+      "id": "function:app/src/main/java/com/lotterynet/pro/core/users/SupabaseUsersRemoteStore.kt:clearUsersPayloadMemoryCache",
+      "type": "function",
+      "name": "clearUsersPayloadMemoryCache",
+      "summary": "Function clearUsersPayloadMemoryCache in SupabaseUsersRemoteStore.kt.",
+      "tags": [
+        "function",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/core/users/SupabaseUsersRemoteStore.kt",
+      "lineRange": [
+        206,
+        225
+      ]
+    },
+    {
+      "id": "function:app/src/main/java/com/lotterynet/pro/core/users/SupabaseUsersRemoteStore.kt:cacheUsersPayloadMemory",
+      "type": "function",
+      "name": "cacheUsersPayloadMemory",
+      "summary": "Function cacheUsersPayloadMemory in SupabaseUsersRemoteStore.kt.",
+      "tags": [
+        "function",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/core/users/SupabaseUsersRemoteStore.kt",
+      "lineRange": [
+        210,
+        229
+      ]
+    },
+    {
+      "id": "function:app/src/main/java/com/lotterynet/pro/core/users/SupabaseUsersRemoteStore.kt:readUsersPayloadMemoryCache",
+      "type": "function",
+      "name": "readUsersPayloadMemoryCache",
+      "summary": "Function readUsersPayloadMemoryCache in SupabaseUsersRemoteStore.kt.",
+      "tags": [
+        "function",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/core/users/SupabaseUsersRemoteStore.kt",
+      "lineRange": [
+        214,
+        233
+      ]
+    },
+    {
+      "id": "function:app/src/main/java/com/lotterynet/pro/core/users/SupabaseUsersRemoteStore.kt:buildUsersStateFunctionPayload",
+      "type": "function",
+      "name": "buildUsersStateFunctionPayload",
+      "summary": "Function buildUsersStateFunctionPayload in SupabaseUsersRemoteStore.kt.",
+      "tags": [
+        "function",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/core/users/SupabaseUsersRemoteStore.kt",
+      "lineRange": [
+        247,
+        257
+      ]
+    },
+    {
+      "id": "class:app/src/main/java/com/lotterynet/pro/core/users/SupabaseUsersRemoteStore.kt:SupabaseUsersRemoteStore",
+      "type": "class",
+      "name": "SupabaseUsersRemoteStore",
+      "summary": "Class SupabaseUsersRemoteStore in SupabaseUsersRemoteStore.kt.",
+      "tags": [
+        "class",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/core/users/SupabaseUsersRemoteStore.kt",
+      "lineRange": [
+        12,
+        91
+      ]
+    },
+    {
+      "id": "class:app/src/main/java/com/lotterynet/pro/core/users/SupabaseUsersRemoteStore.kt:RenderUsersRemoteClient",
+      "type": "class",
+      "name": "RenderUsersRemoteClient",
+      "summary": "Class RenderUsersRemoteClient in SupabaseUsersRemoteStore.kt.",
+      "tags": [
+        "class",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/core/users/SupabaseUsersRemoteStore.kt",
+      "lineRange": [
+        60,
+        139
+      ]
+    },
+    {
+      "id": "class:app/src/main/java/com/lotterynet/pro/core/users/SupabaseUsersRemoteStore.kt:SupabaseUsersStateClient",
+      "type": "class",
+      "name": "SupabaseUsersStateClient",
+      "summary": "Class SupabaseUsersStateClient in SupabaseUsersRemoteStore.kt.",
+      "tags": [
+        "class",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/core/users/SupabaseUsersRemoteStore.kt",
+      "lineRange": [
+        112,
+        191
+      ]
+    },
+    {
+      "id": "file:app/src/main/java/com/lotterynet/pro/core/users/UsersRemoteStore.kt",
+      "type": "file",
+      "name": "UsersRemoteStore.kt",
+      "summary": "Source file app/src/main/java/com/lotterynet/pro/core/users/UsersRemoteStore.kt containing 2 function(s).",
+      "tags": [
+        "code"
+      ],
+      "complexity": "simple",
+      "filePath": "app/src/main/java/com/lotterynet/pro/core/users/UsersRemoteStore.kt",
+      "lineRange": [
+        1,
+        6
+      ]
+    },
+    {
+      "id": "file:app/src/main/java/com/lotterynet/pro/ui/admin/AdminAlertsActivity.kt",
+      "type": "file",
+      "name": "AdminAlertsActivity.kt",
+      "summary": "Source file app/src/main/java/com/lotterynet/pro/ui/admin/AdminAlertsActivity.kt containing 1 class(es) and 2 function(s).",
+      "tags": [
+        "code",
+        "ui"
+      ],
+      "complexity": "complex",
+      "filePath": "app/src/main/java/com/lotterynet/pro/ui/admin/AdminAlertsActivity.kt",
+      "lineRange": [
+        1,
+        242
+      ]
+    },
+    {
+      "id": "function:app/src/main/java/com/lotterynet/pro/ui/admin/AdminAlertsActivity.kt:onCreate",
+      "type": "function",
+      "name": "onCreate",
+      "summary": "Function onCreate in AdminAlertsActivity.kt.",
+      "tags": [
+        "function",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/ui/admin/AdminAlertsActivity.kt",
+      "lineRange": [
+        63,
+        82
+      ]
+    },
+    {
+      "id": "class:app/src/main/java/com/lotterynet/pro/ui/admin/AdminAlertsActivity.kt:AdminAlertsActivity",
+      "type": "class",
+      "name": "AdminAlertsActivity",
+      "summary": "Class AdminAlertsActivity in AdminAlertsActivity.kt.",
+      "tags": [
+        "class",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/ui/admin/AdminAlertsActivity.kt",
+      "lineRange": [
+        62,
+        141
+      ]
+    },
+    {
+      "id": "file:app/src/main/java/com/lotterynet/pro/ui/admin/AdminAuditActivity.kt",
+      "type": "file",
+      "name": "AdminAuditActivity.kt",
+      "summary": "Source file app/src/main/java/com/lotterynet/pro/ui/admin/AdminAuditActivity.kt containing 1 class(es) and 3 function(s).",
+      "tags": [
+        "code",
+        "ui"
+      ],
+      "complexity": "complex",
+      "filePath": "app/src/main/java/com/lotterynet/pro/ui/admin/AdminAuditActivity.kt",
+      "lineRange": [
+        1,
+        253
+      ]
+    },
+    {
+      "id": "function:app/src/main/java/com/lotterynet/pro/ui/admin/AdminAuditActivity.kt:onCreate",
+      "type": "function",
+      "name": "onCreate",
+      "summary": "Function onCreate in AdminAuditActivity.kt.",
+      "tags": [
+        "function",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/ui/admin/AdminAuditActivity.kt",
+      "lineRange": [
+        59,
+        78
+      ]
+    },
+    {
+      "id": "function:app/src/main/java/com/lotterynet/pro/ui/admin/AdminAuditActivity.kt:AuditEntryRow",
+      "type": "function",
+      "name": "AuditEntryRow",
+      "summary": "Function AuditEntryRow in AdminAuditActivity.kt.",
+      "tags": [
+        "function",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/ui/admin/AdminAuditActivity.kt",
+      "lineRange": [
+        199,
+        218
+      ]
+    },
+    {
+      "id": "function:app/src/main/java/com/lotterynet/pro/ui/admin/AdminAuditActivity.kt:actionColor",
+      "type": "function",
+      "name": "actionColor",
+      "summary": "Function actionColor in AdminAuditActivity.kt.",
+      "tags": [
+        "function",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/ui/admin/AdminAuditActivity.kt",
+      "lineRange": [
+        235,
+        254
+      ]
+    },
+    {
+      "id": "class:app/src/main/java/com/lotterynet/pro/ui/admin/AdminAuditActivity.kt:AdminAuditActivity",
+      "type": "class",
+      "name": "AdminAuditActivity",
+      "summary": "Class AdminAuditActivity in AdminAuditActivity.kt.",
+      "tags": [
+        "class",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/ui/admin/AdminAuditActivity.kt",
+      "lineRange": [
+        58,
+        137
+      ]
+    },
+    {
+      "id": "file:app/src/main/java/com/lotterynet/pro/ui/login/LoginActivity.kt",
+      "type": "file",
+      "name": "LoginActivity.kt",
+      "summary": "Source file app/src/main/java/com/lotterynet/pro/ui/login/LoginActivity.kt containing 1 class(es) and 10 function(s).",
+      "tags": [
+        "code",
+        "ui",
+        "large-module"
+      ],
+      "complexity": "complex",
+      "filePath": "app/src/main/java/com/lotterynet/pro/ui/login/LoginActivity.kt",
+      "lineRange": [
+        1,
+        656
+      ]
+    },
+    {
+      "id": "function:app/src/main/java/com/lotterynet/pro/ui/login/LoginActivity.kt:resolveLoginCopyContract",
+      "type": "function",
+      "name": "resolveLoginCopyContract",
+      "summary": "Function resolveLoginCopyContract in LoginActivity.kt.",
+      "tags": [
+        "function",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/ui/login/LoginActivity.kt",
+      "lineRange": [
+        129,
+        148
+      ]
+    },
+    {
+      "id": "function:app/src/main/java/com/lotterynet/pro/ui/login/LoginActivity.kt:resolvePasswordVisibilityContract",
+      "type": "function",
+      "name": "resolvePasswordVisibilityContract",
+      "summary": "Function resolvePasswordVisibilityContract in LoginActivity.kt.",
+      "tags": [
+        "function",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/ui/login/LoginActivity.kt",
+      "lineRange": [
+        136,
+        155
+      ]
+    },
+    {
+      "id": "function:app/src/main/java/com/lotterynet/pro/ui/login/LoginActivity.kt:resolveInitialLoginPassword",
+      "type": "function",
+      "name": "resolveInitialLoginPassword",
+      "summary": "Function resolveInitialLoginPassword in LoginActivity.kt.",
+      "tags": [
+        "function",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/ui/login/LoginActivity.kt",
+      "lineRange": [
+        143,
+        162
+      ]
+    },
+    {
+      "id": "function:app/src/main/java/com/lotterynet/pro/ui/login/LoginActivity.kt:resolveLoginBootstrapGate",
+      "type": "function",
+      "name": "resolveLoginBootstrapGate",
+      "summary": "Function resolveLoginBootstrapGate in LoginActivity.kt.",
+      "tags": [
+        "function",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/ui/login/LoginActivity.kt",
+      "lineRange": [
+        169,
+        188
+      ]
+    },
+    {
+      "id": "function:app/src/main/java/com/lotterynet/pro/ui/login/LoginActivity.kt:resolveLoginLayoutContract",
+      "type": "function",
+      "name": "resolveLoginLayoutContract",
+      "summary": "Function resolveLoginLayoutContract in LoginActivity.kt.",
+      "tags": [
+        "function",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/ui/login/LoginActivity.kt",
+      "lineRange": [
+        185,
+        204
+      ]
+    },
+    {
+      "id": "function:app/src/main/java/com/lotterynet/pro/ui/login/LoginActivity.kt:onCreate",
+      "type": "function",
+      "name": "onCreate",
+      "summary": "Function onCreate in LoginActivity.kt.",
+      "tags": [
+        "function",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/ui/login/LoginActivity.kt",
+      "lineRange": [
+        218,
+        237
+      ]
+    },
+    {
+      "id": "function:app/src/main/java/com/lotterynet/pro/ui/login/LoginActivity.kt:authenticateAndEnter",
+      "type": "function",
+      "name": "authenticateAndEnter",
+      "summary": "Function authenticateAndEnter in LoginActivity.kt.",
+      "tags": [
+        "function",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/ui/login/LoginActivity.kt",
+      "lineRange": [
+        276,
+        295
+      ]
+    },
+    {
+      "id": "function:app/src/main/java/com/lotterynet/pro/ui/login/LoginActivity.kt:homeIntentFor",
+      "type": "function",
+      "name": "homeIntentFor",
+      "summary": "Function homeIntentFor in LoginActivity.kt.",
+      "tags": [
+        "function",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/ui/login/LoginActivity.kt",
+      "lineRange": [
+        297,
+        316
+      ]
+    },
+    {
+      "id": "function:app/src/main/java/com/lotterynet/pro/ui/login/LoginActivity.kt:requestStartupRuntimePermissions",
+      "type": "function",
+      "name": "requestStartupRuntimePermissions",
+      "summary": "Function requestStartupRuntimePermissions in LoginActivity.kt.",
+      "tags": [
+        "function",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/ui/login/LoginActivity.kt",
+      "lineRange": [
+        310,
+        329
+      ]
+    },
+    {
+      "id": "function:app/src/main/java/com/lotterynet/pro/ui/login/LoginActivity.kt:shouldShowCrashStatusOnLogin",
+      "type": "function",
+      "name": "shouldShowCrashStatusOnLogin",
+      "summary": "Function shouldShowCrashStatusOnLogin in LoginActivity.kt.",
+      "tags": [
+        "function",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/ui/login/LoginActivity.kt",
+      "lineRange": [
+        324,
+        343
+      ]
+    },
+    {
+      "id": "class:app/src/main/java/com/lotterynet/pro/ui/login/LoginActivity.kt:LoginActivity",
+      "type": "class",
+      "name": "LoginActivity",
+      "summary": "Class LoginActivity in LoginActivity.kt.",
+      "tags": [
+        "class",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/ui/login/LoginActivity.kt",
+      "lineRange": [
+        205,
+        284
+      ]
+    },
+    {
+      "id": "file:app/src/main/java/com/lotterynet/pro/ui/master/MasterCreateBankActivity.kt",
+      "type": "file",
+      "name": "MasterCreateBankActivity.kt",
+      "summary": "Source file app/src/main/java/com/lotterynet/pro/ui/master/MasterCreateBankActivity.kt containing 1 class(es) and 5 function(s).",
+      "tags": [
+        "code",
+        "ui"
+      ],
+      "complexity": "complex",
+      "filePath": "app/src/main/java/com/lotterynet/pro/ui/master/MasterCreateBankActivity.kt",
+      "lineRange": [
+        1,
+        410
+      ]
+    },
+    {
+      "id": "function:app/src/main/java/com/lotterynet/pro/ui/master/MasterCreateBankActivity.kt:resolveMasterCreateBankLayout",
+      "type": "function",
+      "name": "resolveMasterCreateBankLayout",
+      "summary": "Function resolveMasterCreateBankLayout in MasterCreateBankActivity.kt.",
+      "tags": [
+        "function",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/ui/master/MasterCreateBankActivity.kt",
+      "lineRange": [
+        85,
+        104
+      ]
+    },
+    {
+      "id": "function:app/src/main/java/com/lotterynet/pro/ui/master/MasterCreateBankActivity.kt:masterCreateBankSegmentOptions",
+      "type": "function",
+      "name": "masterCreateBankSegmentOptions",
+      "summary": "Function masterCreateBankSegmentOptions in MasterCreateBankActivity.kt.",
+      "tags": [
+        "function",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/ui/master/MasterCreateBankActivity.kt",
+      "lineRange": [
+        106,
+        125
+      ]
+    },
+    {
+      "id": "function:app/src/main/java/com/lotterynet/pro/ui/master/MasterCreateBankActivity.kt:masterCreateBankTerritoryOptions",
+      "type": "function",
+      "name": "masterCreateBankTerritoryOptions",
+      "summary": "Function masterCreateBankTerritoryOptions in MasterCreateBankActivity.kt.",
+      "tags": [
+        "function",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/ui/master/MasterCreateBankActivity.kt",
+      "lineRange": [
+        110,
+        129
+      ]
+    },
+    {
+      "id": "function:app/src/main/java/com/lotterynet/pro/ui/master/MasterCreateBankActivity.kt:masterCreateBankStatusLabel",
+      "type": "function",
+      "name": "masterCreateBankStatusLabel",
+      "summary": "Function masterCreateBankStatusLabel in MasterCreateBankActivity.kt.",
+      "tags": [
+        "function",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/ui/master/MasterCreateBankActivity.kt",
+      "lineRange": [
+        117,
+        136
+      ]
+    },
+    {
+      "id": "function:app/src/main/java/com/lotterynet/pro/ui/master/MasterCreateBankActivity.kt:onCreate",
+      "type": "function",
+      "name": "onCreate",
+      "summary": "Function onCreate in MasterCreateBankActivity.kt.",
+      "tags": [
+        "function",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/ui/master/MasterCreateBankActivity.kt",
+      "lineRange": [
+        122,
+        141
+      ]
+    },
+    {
+      "id": "class:app/src/main/java/com/lotterynet/pro/ui/master/MasterCreateBankActivity.kt:MasterCreateBankActivity",
+      "type": "class",
+      "name": "MasterCreateBankActivity",
+      "summary": "Class MasterCreateBankActivity in MasterCreateBankActivity.kt.",
+      "tags": [
+        "class",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/ui/master/MasterCreateBankActivity.kt",
+      "lineRange": [
+        121,
+        200
+      ]
+    },
+    {
+      "id": "file:app/src/main/java/com/lotterynet/pro/ui/master/MasterDashboardActivity.kt",
+      "type": "file",
+      "name": "MasterDashboardActivity.kt",
+      "summary": "Source file app/src/main/java/com/lotterynet/pro/ui/master/MasterDashboardActivity.kt containing 1 class(es) and 21 function(s).",
+      "tags": [
+        "code",
+        "ui",
+        "large-module"
+      ],
+      "complexity": "complex",
+      "filePath": "app/src/main/java/com/lotterynet/pro/ui/master/MasterDashboardActivity.kt",
+      "lineRange": [
+        1,
+        1967
+      ]
+    },
+    {
+      "id": "function:app/src/main/java/com/lotterynet/pro/ui/master/MasterDashboardActivity.kt:resolveMasterDashboardLayout",
+      "type": "function",
+      "name": "resolveMasterDashboardLayout",
+      "summary": "Function resolveMasterDashboardLayout in MasterDashboardActivity.kt.",
+      "tags": [
+        "function",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/ui/master/MasterDashboardActivity.kt",
+      "lineRange": [
+        132,
+        151
+      ]
+    },
+    {
+      "id": "function:app/src/main/java/com/lotterynet/pro/ui/master/MasterDashboardActivity.kt:masterCredentialResetActionLabel",
+      "type": "function",
+      "name": "masterCredentialResetActionLabel",
+      "summary": "Function masterCredentialResetActionLabel in MasterDashboardActivity.kt.",
+      "tags": [
+        "function",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/ui/master/MasterDashboardActivity.kt",
+      "lineRange": [
+        160,
+        179
+      ]
+    },
+    {
+      "id": "function:app/src/main/java/com/lotterynet/pro/ui/master/MasterDashboardActivity.kt:masterCashierDropdownActionLabel",
+      "type": "function",
+      "name": "masterCashierDropdownActionLabel",
+      "summary": "Function masterCashierDropdownActionLabel in MasterDashboardActivity.kt.",
+      "tags": [
+        "function",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/ui/master/MasterDashboardActivity.kt",
+      "lineRange": [
+        164,
+        183
+      ]
+    },
+    {
+      "id": "function:app/src/main/java/com/lotterynet/pro/ui/master/MasterDashboardActivity.kt:masterCashierGroupPasswordActionLabel",
+      "type": "function",
+      "name": "masterCashierGroupPasswordActionLabel",
+      "summary": "Function masterCashierGroupPasswordActionLabel in MasterDashboardActivity.kt.",
+      "tags": [
+        "function",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/ui/master/MasterDashboardActivity.kt",
+      "lineRange": [
+        168,
+        187
+      ]
+    },
+    {
+      "id": "function:app/src/main/java/com/lotterynet/pro/ui/master/MasterDashboardActivity.kt:masterDashboardSectionTitles",
+      "type": "function",
+      "name": "masterDashboardSectionTitles",
+      "summary": "Function masterDashboardSectionTitles in MasterDashboardActivity.kt.",
+      "tags": [
+        "function",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/ui/master/MasterDashboardActivity.kt",
+      "lineRange": [
+        179,
+        198
+      ]
+    },
+    {
+      "id": "function:app/src/main/java/com/lotterynet/pro/ui/master/MasterDashboardActivity.kt:masterDashboardSectionOptions",
+      "type": "function",
+      "name": "masterDashboardSectionOptions",
+      "summary": "Function masterDashboardSectionOptions in MasterDashboardActivity.kt.",
+      "tags": [
+        "function",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/ui/master/MasterDashboardActivity.kt",
+      "lineRange": [
+        191,
+        210
+      ]
+    },
+    {
+      "id": "function:app/src/main/java/com/lotterynet/pro/ui/master/MasterDashboardActivity.kt:masterBankFilterOptions",
+      "type": "function",
+      "name": "masterBankFilterOptions",
+      "summary": "Function masterBankFilterOptions in MasterDashboardActivity.kt.",
+      "tags": [
+        "function",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/ui/master/MasterDashboardActivity.kt",
+      "lineRange": [
+        194,
+        213
+      ]
+    },
+    {
+      "id": "function:app/src/main/java/com/lotterynet/pro/ui/master/MasterDashboardActivity.kt:masterDangerActionLabels",
+      "type": "function",
+      "name": "masterDangerActionLabels",
+      "summary": "Function masterDangerActionLabels in MasterDashboardActivity.kt.",
+      "tags": [
+        "function",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/ui/master/MasterDashboardActivity.kt",
+      "lineRange": [
+        198,
+        217
+      ]
+    },
+    {
+      "id": "function:app/src/main/java/com/lotterynet/pro/ui/master/MasterDashboardActivity.kt:onCreate",
+      "type": "function",
+      "name": "onCreate",
+      "summary": "Function onCreate in MasterDashboardActivity.kt.",
+      "tags": [
+        "function",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/ui/master/MasterDashboardActivity.kt",
+      "lineRange": [
+        224,
+        243
+      ]
+    },
+    {
+      "id": "function:app/src/main/java/com/lotterynet/pro/ui/master/MasterDashboardActivity.kt:queueMasterAutoSync",
+      "type": "function",
+      "name": "queueMasterAutoSync",
+      "summary": "Function queueMasterAutoSync in MasterDashboardActivity.kt.",
+      "tags": [
+        "function",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/ui/master/MasterDashboardActivity.kt",
+      "lineRange": [
+        260,
+        279
+      ]
+    },
+    {
+      "id": "function:app/src/main/java/com/lotterynet/pro/ui/master/MasterDashboardActivity.kt:syncCredentialChangeOrRollback",
+      "type": "function",
+      "name": "syncCredentialChangeOrRollback",
+      "summary": "Function syncCredentialChangeOrRollback in MasterDashboardActivity.kt.",
+      "tags": [
+        "function",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/ui/master/MasterDashboardActivity.kt",
+      "lineRange": [
+        281,
+        300
+      ]
+    },
+    {
+      "id": "function:app/src/main/java/com/lotterynet/pro/ui/master/MasterDashboardActivity.kt:ensureCredentialJwtOrRollback",
+      "type": "function",
+      "name": "ensureCredentialJwtOrRollback",
+      "summary": "Function ensureCredentialJwtOrRollback in MasterDashboardActivity.kt.",
+      "tags": [
+        "function",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/ui/master/MasterDashboardActivity.kt",
+      "lineRange": [
+        293,
+        312
+      ]
+    },
+    {
+      "id": "function:app/src/main/java/com/lotterynet/pro/ui/master/MasterDashboardActivity.kt:auditTimestamp",
+      "type": "function",
+      "name": "auditTimestamp",
+      "summary": "Function auditTimestamp in MasterDashboardActivity.kt.",
+      "tags": [
+        "function",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/ui/master/MasterDashboardActivity.kt",
+      "lineRange": [
+        788,
+        807
+      ]
+    },
+    {
+      "id": "function:app/src/main/java/com/lotterynet/pro/ui/master/MasterDashboardActivity.kt:sortMasterAdminsByCreation",
+      "type": "function",
+      "name": "sortMasterAdminsByCreation",
+      "summary": "Function sortMasterAdminsByCreation in MasterDashboardActivity.kt.",
+      "tags": [
+        "function",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/ui/master/MasterDashboardActivity.kt",
+      "lineRange": [
+        790,
+        809
+      ]
+    },
+    {
+      "id": "function:app/src/main/java/com/lotterynet/pro/ui/master/MasterDashboardActivity.kt:masterCreatedEpoch",
+      "type": "function",
+      "name": "masterCreatedEpoch",
+      "summary": "Function masterCreatedEpoch in MasterDashboardActivity.kt.",
+      "tags": [
+        "function",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/ui/master/MasterDashboardActivity.kt",
+      "lineRange": [
+        838,
+        857
+      ]
+    },
+    {
+      "id": "function:app/src/main/java/com/lotterynet/pro/ui/master/MasterDashboardActivity.kt:applyMutation",
+      "type": "function",
+      "name": "applyMutation",
+      "summary": "Function applyMutation in MasterDashboardActivity.kt.",
+      "tags": [
+        "function",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/ui/master/MasterDashboardActivity.kt",
+      "lineRange": [
+        919,
+        938
+      ]
+    },
+    {
+      "id": "function:app/src/main/java/com/lotterynet/pro/ui/master/MasterDashboardActivity.kt:formatPlainAmount",
+      "type": "function",
+      "name": "formatPlainAmount",
+      "summary": "Function formatPlainAmount in MasterDashboardActivity.kt.",
+      "tags": [
+        "function",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/ui/master/MasterDashboardActivity.kt",
+      "lineRange": [
+        1881,
+        1900
+      ]
+    },
+    {
+      "id": "function:app/src/main/java/com/lotterynet/pro/ui/master/MasterDashboardActivity.kt:masterRechargeProviderLabel",
+      "type": "function",
+      "name": "masterRechargeProviderLabel",
+      "summary": "Function masterRechargeProviderLabel in MasterDashboardActivity.kt.",
+      "tags": [
+        "function",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/ui/master/MasterDashboardActivity.kt",
+      "lineRange": [
+        1911,
+        1930
+      ]
+    },
+    {
+      "id": "class:app/src/main/java/com/lotterynet/pro/ui/master/MasterDashboardActivity.kt:MasterDashboardActivity",
+      "type": "class",
+      "name": "MasterDashboardActivity",
+      "summary": "Class MasterDashboardActivity in MasterDashboardActivity.kt.",
+      "tags": [
+        "class",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/ui/master/MasterDashboardActivity.kt",
+      "lineRange": [
+        223,
+        302
+      ]
+    },
+    {
+      "id": "file:app/src/main/java/com/lotterynet/pro/ui/navigation/NativeRouting.kt",
+      "type": "file",
+      "name": "NativeRouting.kt",
+      "summary": "Source file app/src/main/java/com/lotterynet/pro/ui/navigation/NativeRouting.kt containing 1 class(es) and 3 function(s).",
+      "tags": [
+        "code",
+        "ui"
+      ],
+      "complexity": "simple",
+      "filePath": "app/src/main/java/com/lotterynet/pro/ui/navigation/NativeRouting.kt",
+      "lineRange": [
+        1,
+        44
+      ]
+    },
+    {
+      "id": "function:app/src/main/java/com/lotterynet/pro/ui/navigation/NativeRouting.kt:resolveNativeHomeRoute",
+      "type": "function",
+      "name": "resolveNativeHomeRoute",
+      "summary": "Function resolveNativeHomeRoute in NativeRouting.kt.",
+      "tags": [
+        "function",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/ui/navigation/NativeRouting.kt",
+      "lineRange": [
+        18,
+        37
+      ]
+    },
+    {
+      "id": "function:app/src/main/java/com/lotterynet/pro/ui/navigation/NativeRouting.kt:resolveNativeHomeActivityClassName",
+      "type": "function",
+      "name": "resolveNativeHomeActivityClassName",
+      "summary": "Function resolveNativeHomeActivityClassName in NativeRouting.kt.",
+      "tags": [
+        "function",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/ui/navigation/NativeRouting.kt",
+      "lineRange": [
+        28,
+        45
+      ]
+    },
+    {
+      "id": "function:app/src/main/java/com/lotterynet/pro/ui/navigation/NativeRouting.kt:nativeHomeIntent",
+      "type": "function",
+      "name": "nativeHomeIntent",
+      "summary": "Function nativeHomeIntent in NativeRouting.kt.",
+      "tags": [
+        "function",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/ui/navigation/NativeRouting.kt",
+      "lineRange": [
+        37,
+        45
+      ]
+    },
+    {
+      "id": "class:app/src/main/java/com/lotterynet/pro/ui/navigation/NativeRouting.kt:NativeHomeRoute",
+      "type": "class",
+      "name": "NativeHomeRoute",
+      "summary": "Class NativeHomeRoute in NativeRouting.kt.",
+      "tags": [
+        "class",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/ui/navigation/NativeRouting.kt",
+      "lineRange": [
+        11,
+        45
+      ]
+    },
+    {
+      "id": "file:app/src/main/java/com/lotterynet/pro/ui/navigation/NavigationSafety.kt",
+      "type": "file",
+      "name": "NavigationSafety.kt",
+      "summary": "Source file app/src/main/java/com/lotterynet/pro/ui/navigation/NavigationSafety.kt containing 1 class(es) and 7 function(s).",
+      "tags": [
+        "code",
+        "ui"
+      ],
+      "complexity": "complex",
+      "filePath": "app/src/main/java/com/lotterynet/pro/ui/navigation/NavigationSafety.kt",
+      "lineRange": [
+        1,
+        224
+      ]
+    },
+    {
+      "id": "function:app/src/main/java/com/lotterynet/pro/ui/navigation/NavigationSafety.kt:allowedNativeDestinations",
+      "type": "function",
+      "name": "allowedNativeDestinations",
+      "summary": "Function allowedNativeDestinations in NavigationSafety.kt.",
+      "tags": [
+        "function",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/ui/navigation/NavigationSafety.kt",
+      "lineRange": [
+        61,
+        80
+      ]
+    },
+    {
+      "id": "function:app/src/main/java/com/lotterynet/pro/ui/navigation/NavigationSafety.kt:canOpenNativeDestination",
+      "type": "function",
+      "name": "canOpenNativeDestination",
+      "summary": "Function canOpenNativeDestination in NavigationSafety.kt.",
+      "tags": [
+        "function",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/ui/navigation/NavigationSafety.kt",
+      "lineRange": [
+        103,
+        122
+      ]
+    },
+    {
+      "id": "function:app/src/main/java/com/lotterynet/pro/ui/navigation/NavigationSafety.kt:resolveNativeDestinationByActivity",
+      "type": "function",
+      "name": "resolveNativeDestinationByActivity",
+      "summary": "Function resolveNativeDestinationByActivity in NavigationSafety.kt.",
+      "tags": [
+        "function",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/ui/navigation/NavigationSafety.kt",
+      "lineRange": [
+        119,
+        138
+      ]
+    },
+    {
+      "id": "function:app/src/main/java/com/lotterynet/pro/ui/navigation/NavigationSafety.kt:normalizeTicketLookupMode",
+      "type": "function",
+      "name": "normalizeTicketLookupMode",
+      "summary": "Function normalizeTicketLookupMode in NavigationSafety.kt.",
+      "tags": [
+        "function",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/ui/navigation/NavigationSafety.kt",
+      "lineRange": [
+        123,
+        142
+      ]
+    },
+    {
+      "id": "function:app/src/main/java/com/lotterynet/pro/ui/navigation/NavigationSafety.kt:normalizeTicketLookupModeForRole",
+      "type": "function",
+      "name": "normalizeTicketLookupModeForRole",
+      "summary": "Function normalizeTicketLookupModeForRole in NavigationSafety.kt.",
+      "tags": [
+        "function",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/ui/navigation/NavigationSafety.kt",
+      "lineRange": [
+        132,
+        151
+      ]
+    },
+    {
+      "id": "function:app/src/main/java/com/lotterynet/pro/ui/navigation/NavigationSafety.kt:safeNativeHomeActivityClassName",
+      "type": "function",
+      "name": "safeNativeHomeActivityClassName",
+      "summary": "Function safeNativeHomeActivityClassName in NavigationSafety.kt.",
+      "tags": [
+        "function",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/ui/navigation/NavigationSafety.kt",
+      "lineRange": [
+        141,
+        160
+      ]
+    },
+    {
+      "id": "function:app/src/main/java/com/lotterynet/pro/ui/navigation/NavigationSafety.kt:intentForDestination",
+      "type": "function",
+      "name": "intentForDestination",
+      "summary": "Function intentForDestination in NavigationSafety.kt.",
+      "tags": [
+        "function",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/ui/navigation/NavigationSafety.kt",
+      "lineRange": [
+        199,
+        218
+      ]
+    },
+    {
+      "id": "class:app/src/main/java/com/lotterynet/pro/ui/navigation/NavigationSafety.kt:NativeDestination",
+      "type": "class",
+      "name": "NativeDestination",
+      "summary": "Class NativeDestination in NavigationSafety.kt.",
+      "tags": [
+        "class",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/ui/navigation/NavigationSafety.kt",
+      "lineRange": [
+        34,
+        113
+      ]
+    },
+    {
+      "id": "file:app/src/main/java/com/lotterynet/pro/ui/recharge/RecargasActivity.kt",
+      "type": "file",
+      "name": "RecargasActivity.kt",
+      "summary": "Source file app/src/main/java/com/lotterynet/pro/ui/recharge/RecargasActivity.kt containing 1 class(es) and 35 function(s).",
+      "tags": [
+        "code",
+        "ui",
+        "large-module"
+      ],
+      "complexity": "complex",
+      "filePath": "app/src/main/java/com/lotterynet/pro/ui/recharge/RecargasActivity.kt",
+      "lineRange": [
+        1,
+        1882
+      ]
+    },
+    {
+      "id": "function:app/src/main/java/com/lotterynet/pro/ui/recharge/RecargasActivity.kt:resolveRechargeHistoryLayout",
+      "type": "function",
+      "name": "resolveRechargeHistoryLayout",
+      "summary": "Function resolveRechargeHistoryLayout in RecargasActivity.kt.",
+      "tags": [
+        "function",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/ui/recharge/RecargasActivity.kt",
+      "lineRange": [
+        116,
+        135
+      ]
+    },
+    {
+      "id": "function:app/src/main/java/com/lotterynet/pro/ui/recharge/RecargasActivity.kt:resolveRechargeLayout",
+      "type": "function",
+      "name": "resolveRechargeLayout",
+      "summary": "Function resolveRechargeLayout in RecargasActivity.kt.",
+      "tags": [
+        "function",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/ui/recharge/RecargasActivity.kt",
+      "lineRange": [
+        149,
+        168
+      ]
+    },
+    {
+      "id": "function:app/src/main/java/com/lotterynet/pro/ui/recharge/RecargasActivity.kt:canOpenRechargeForRole",
+      "type": "function",
+      "name": "canOpenRechargeForRole",
+      "summary": "Function canOpenRechargeForRole in RecargasActivity.kt.",
+      "tags": [
+        "function",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/ui/recharge/RecargasActivity.kt",
+      "lineRange": [
+        192,
+        211
+      ]
+    },
+    {
+      "id": "function:app/src/main/java/com/lotterynet/pro/ui/recharge/RecargasActivity.kt:onCreate",
+      "type": "function",
+      "name": "onCreate",
+      "summary": "Function onCreate in RecargasActivity.kt.",
+      "tags": [
+        "function",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/ui/recharge/RecargasActivity.kt",
+      "lineRange": [
+        199,
+        218
+      ]
+    },
+    {
+      "id": "function:app/src/main/java/com/lotterynet/pro/ui/recharge/RecargasActivity.kt:submitRechargeSale",
+      "type": "function",
+      "name": "submitRechargeSale",
+      "summary": "Function submitRechargeSale in RecargasActivity.kt.",
+      "tags": [
+        "function",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/ui/recharge/RecargasActivity.kt",
+      "lineRange": [
+        480,
+        499
+      ]
+    },
+    {
+      "id": "function:app/src/main/java/com/lotterynet/pro/ui/recharge/RecargasActivity.kt:RechargeHistoryRow",
+      "type": "function",
+      "name": "RechargeHistoryRow",
+      "summary": "Function RechargeHistoryRow in RecargasActivity.kt.",
+      "tags": [
+        "function",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/ui/recharge/RecargasActivity.kt",
+      "lineRange": [
+        933,
+        952
+      ]
+    },
+    {
+      "id": "function:app/src/main/java/com/lotterynet/pro/ui/recharge/RecargasActivity.kt:StatusStrip",
+      "type": "function",
+      "name": "StatusStrip",
+      "summary": "Function StatusStrip in RecargasActivity.kt.",
+      "tags": [
+        "function",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/ui/recharge/RecargasActivity.kt",
+      "lineRange": [
+        1183,
+        1202
+      ]
+    },
+    {
+      "id": "function:app/src/main/java/com/lotterynet/pro/ui/recharge/RecargasActivity.kt:rechargeSellModes",
+      "type": "function",
+      "name": "rechargeSellModes",
+      "summary": "Function rechargeSellModes in RecargasActivity.kt.",
+      "tags": [
+        "function",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/ui/recharge/RecargasActivity.kt",
+      "lineRange": [
+        1288,
+        1307
+      ]
+    },
+    {
+      "id": "function:app/src/main/java/com/lotterynet/pro/ui/recharge/RecargasActivity.kt:rechargeProviderContracts",
+      "type": "function",
+      "name": "rechargeProviderContracts",
+      "summary": "Function rechargeProviderContracts in RecargasActivity.kt.",
+      "tags": [
+        "function",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/ui/recharge/RecargasActivity.kt",
+      "lineRange": [
+        1292,
+        1311
+      ]
+    },
+    {
+      "id": "function:app/src/main/java/com/lotterynet/pro/ui/recharge/RecargasActivity.kt:paqueticoProviderContracts",
+      "type": "function",
+      "name": "paqueticoProviderContracts",
+      "summary": "Function paqueticoProviderContracts in RecargasActivity.kt.",
+      "tags": [
+        "function",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/ui/recharge/RecargasActivity.kt",
+      "lineRange": [
+        1298,
+        1317
+      ]
+    },
+    {
+      "id": "function:app/src/main/java/com/lotterynet/pro/ui/recharge/RecargasActivity.kt:providersForMode",
+      "type": "function",
+      "name": "providersForMode",
+      "summary": "Function providersForMode in RecargasActivity.kt.",
+      "tags": [
+        "function",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/ui/recharge/RecargasActivity.kt",
+      "lineRange": [
+        1304,
+        1323
+      ]
+    },
+    {
+      "id": "function:app/src/main/java/com/lotterynet/pro/ui/recharge/RecargasActivity.kt:validateRechargeForm",
+      "type": "function",
+      "name": "validateRechargeForm",
+      "summary": "Function validateRechargeForm in RecargasActivity.kt.",
+      "tags": [
+        "function",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/ui/recharge/RecargasActivity.kt",
+      "lineRange": [
+        1351,
+        1370
+      ]
+    },
+    {
+      "id": "function:app/src/main/java/com/lotterynet/pro/ui/recharge/RecargasActivity.kt:resolveRechargeFormAmount",
+      "type": "function",
+      "name": "resolveRechargeFormAmount",
+      "summary": "Function resolveRechargeFormAmount in RecargasActivity.kt.",
+      "tags": [
+        "function",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/ui/recharge/RecargasActivity.kt",
+      "lineRange": [
+        1372,
+        1391
+      ]
+    },
+    {
+      "id": "function:app/src/main/java/com/lotterynet/pro/ui/recharge/RecargasActivity.kt:resolveRechargeQuickAmounts",
+      "type": "function",
+      "name": "resolveRechargeQuickAmounts",
+      "summary": "Function resolveRechargeQuickAmounts in RecargasActivity.kt.",
+      "tags": [
+        "function",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/ui/recharge/RecargasActivity.kt",
+      "lineRange": [
+        1379,
+        1398
+      ]
+    },
+    {
+      "id": "function:app/src/main/java/com/lotterynet/pro/ui/recharge/RecargasActivity.kt:resolveAdminId",
+      "type": "function",
+      "name": "resolveAdminId",
+      "summary": "Function resolveAdminId in RecargasActivity.kt.",
+      "tags": [
+        "function",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/ui/recharge/RecargasActivity.kt",
+      "lineRange": [
+        1439,
+        1458
+      ]
+    },
+    {
+      "id": "function:app/src/main/java/com/lotterynet/pro/ui/recharge/RecargasActivity.kt:resolveAdminUser",
+      "type": "function",
+      "name": "resolveAdminUser",
+      "summary": "Function resolveAdminUser in RecargasActivity.kt.",
+      "tags": [
+        "function",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/ui/recharge/RecargasActivity.kt",
+      "lineRange": [
+        1447,
+        1466
+      ]
+    },
+    {
+      "id": "function:app/src/main/java/com/lotterynet/pro/ui/recharge/RecargasActivity.kt:canShowRechargeAccess",
+      "type": "function",
+      "name": "canShowRechargeAccess",
+      "summary": "Function canShowRechargeAccess in RecargasActivity.kt.",
+      "tags": [
+        "function",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/ui/recharge/RecargasActivity.kt",
+      "lineRange": [
+        1468,
+        1487
+      ]
+    },
+    {
+      "id": "function:app/src/main/java/com/lotterynet/pro/ui/recharge/RecargasActivity.kt:extractRecargasRapidasReference",
+      "type": "function",
+      "name": "extractRecargasRapidasReference",
+      "summary": "Function extractRecargasRapidasReference in RecargasActivity.kt.",
+      "tags": [
+        "function",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/ui/recharge/RecargasActivity.kt",
+      "lineRange": [
+        1504,
+        1523
+      ]
+    },
+    {
+      "id": "class:app/src/main/java/com/lotterynet/pro/ui/recharge/RecargasActivity.kt:RecargasActivity",
+      "type": "class",
+      "name": "RecargasActivity",
+      "summary": "Class RecargasActivity in RecargasActivity.kt.",
+      "tags": [
+        "class",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/ui/recharge/RecargasActivity.kt",
+      "lineRange": [
+        198,
+        277
+      ]
+    },
+    {
+      "id": "file:app/src/main/java/com/lotterynet/pro/ui/update/UpdatePromptActivity.kt",
+      "type": "file",
+      "name": "UpdatePromptActivity.kt",
+      "summary": "Source file app/src/main/java/com/lotterynet/pro/ui/update/UpdatePromptActivity.kt containing 1 class(es) and 4 function(s).",
+      "tags": [
+        "code",
+        "ui"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/ui/update/UpdatePromptActivity.kt",
+      "lineRange": [
+        1,
+        72
+      ]
+    },
+    {
+      "id": "function:app/src/main/java/com/lotterynet/pro/ui/update/UpdatePromptActivity.kt:onCreate",
+      "type": "function",
+      "name": "onCreate",
+      "summary": "Function onCreate in UpdatePromptActivity.kt.",
+      "tags": [
+        "function",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/ui/update/UpdatePromptActivity.kt",
+      "lineRange": [
+        18,
+        37
+      ]
+    },
+    {
+      "id": "function:app/src/main/java/com/lotterynet/pro/ui/update/UpdatePromptActivity.kt:handleOnBackPressed",
+      "type": "function",
+      "name": "handleOnBackPressed",
+      "summary": "Function handleOnBackPressed in UpdatePromptActivity.kt.",
+      "tags": [
+        "function",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/ui/update/UpdatePromptActivity.kt",
+      "lineRange": [
+        29,
+        48
+      ]
+    },
+    {
+      "id": "function:app/src/main/java/com/lotterynet/pro/ui/update/UpdatePromptActivity.kt:onStart",
+      "type": "function",
+      "name": "onStart",
+      "summary": "Function onStart in UpdatePromptActivity.kt.",
+      "tags": [
+        "function",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/ui/update/UpdatePromptActivity.kt",
+      "lineRange": [
+        56,
+        73
+      ]
+    },
+    {
+      "id": "function:app/src/main/java/com/lotterynet/pro/ui/update/UpdatePromptActivity.kt:onStop",
+      "type": "function",
+      "name": "onStop",
+      "summary": "Function onStop in UpdatePromptActivity.kt.",
+      "tags": [
+        "function",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/ui/update/UpdatePromptActivity.kt",
+      "lineRange": [
+        61,
+        73
+      ]
+    },
+    {
+      "id": "class:app/src/main/java/com/lotterynet/pro/ui/update/UpdatePromptActivity.kt:UpdatePromptActivity",
+      "type": "class",
+      "name": "UpdatePromptActivity",
+      "summary": "Class UpdatePromptActivity in UpdatePromptActivity.kt.",
+      "tags": [
+        "class",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/ui/update/UpdatePromptActivity.kt",
+      "lineRange": [
+        15,
+        73
+      ]
+    },
+    {
+      "id": "file:app/src/test/java/com/lotterynet/pro/core/auth/SupabaseSessionTokenProviderTest.kt",
+      "type": "file",
+      "name": "SupabaseSessionTokenProviderTest.kt",
+      "summary": "Supabase integration file used by the app/server for remote data, ticket, result, or configuration workflows.",
+      "tags": [
+        "code",
+        "test",
+        "supabase"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/test/java/com/lotterynet/pro/core/auth/SupabaseSessionTokenProviderTest.kt",
+      "lineRange": [
+        1,
+        172
+      ]
+    },
+    {
+      "id": "function:app/src/test/java/com/lotterynet/pro/core/auth/SupabaseSessionTokenProviderTest.kt:refreshSession",
+      "type": "function",
+      "name": "refreshSession",
+      "summary": "Function refreshSession in SupabaseSessionTokenProviderTest.kt.",
+      "tags": [
+        "function",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/test/java/com/lotterynet/pro/core/auth/SupabaseSessionTokenProviderTest.kt",
+      "lineRange": [
+        135,
+        154
+      ]
+    },
+    {
+      "id": "function:app/src/test/java/com/lotterynet/pro/core/auth/SupabaseSessionTokenProviderTest.kt:getSavedLogin",
+      "type": "function",
+      "name": "getSavedLogin",
+      "summary": "Function getSavedLogin in SupabaseSessionTokenProviderTest.kt.",
+      "tags": [
+        "function",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/test/java/com/lotterynet/pro/core/auth/SupabaseSessionTokenProviderTest.kt",
+      "lineRange": [
+        145,
+        164
+      ]
+    },
+    {
+      "id": "function:app/src/test/java/com/lotterynet/pro/core/auth/SupabaseSessionTokenProviderTest.kt:saveSavedLogin",
+      "type": "function",
+      "name": "saveSavedLogin",
+      "summary": "Function saveSavedLogin in SupabaseSessionTokenProviderTest.kt.",
+      "tags": [
+        "function",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/test/java/com/lotterynet/pro/core/auth/SupabaseSessionTokenProviderTest.kt",
+      "lineRange": [
+        146,
+        165
+      ]
+    },
+    {
+      "id": "function:app/src/test/java/com/lotterynet/pro/core/auth/SupabaseSessionTokenProviderTest.kt:getActiveSession",
+      "type": "function",
+      "name": "getActiveSession",
+      "summary": "Function getActiveSession in SupabaseSessionTokenProviderTest.kt.",
+      "tags": [
+        "function",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/test/java/com/lotterynet/pro/core/auth/SupabaseSessionTokenProviderTest.kt",
+      "lineRange": [
+        147,
+        166
+      ]
+    },
+    {
+      "id": "function:app/src/test/java/com/lotterynet/pro/core/auth/SupabaseSessionTokenProviderTest.kt:saveActiveSession",
+      "type": "function",
+      "name": "saveActiveSession",
+      "summary": "Function saveActiveSession in SupabaseSessionTokenProviderTest.kt.",
+      "tags": [
+        "function",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/test/java/com/lotterynet/pro/core/auth/SupabaseSessionTokenProviderTest.kt",
+      "lineRange": [
+        148,
+        167
+      ]
+    },
+    {
+      "id": "function:app/src/test/java/com/lotterynet/pro/core/auth/SupabaseSessionTokenProviderTest.kt:getSessionSnapshot",
+      "type": "function",
+      "name": "getSessionSnapshot",
+      "summary": "Function getSessionSnapshot in SupabaseSessionTokenProviderTest.kt.",
+      "tags": [
+        "function",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/test/java/com/lotterynet/pro/core/auth/SupabaseSessionTokenProviderTest.kt",
+      "lineRange": [
+        151,
+        170
+      ]
+    },
+    {
+      "id": "function:app/src/test/java/com/lotterynet/pro/core/auth/SupabaseSessionTokenProviderTest.kt:saveSessionSnapshot",
+      "type": "function",
+      "name": "saveSessionSnapshot",
+      "summary": "Function saveSessionSnapshot in SupabaseSessionTokenProviderTest.kt.",
+      "tags": [
+        "function",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/test/java/com/lotterynet/pro/core/auth/SupabaseSessionTokenProviderTest.kt",
+      "lineRange": [
+        152,
+        171
+      ]
+    },
+    {
+      "id": "function:app/src/test/java/com/lotterynet/pro/core/auth/SupabaseSessionTokenProviderTest.kt:clearSession",
+      "type": "function",
+      "name": "clearSession",
+      "summary": "Function clearSession in SupabaseSessionTokenProviderTest.kt.",
+      "tags": [
+        "function",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/test/java/com/lotterynet/pro/core/auth/SupabaseSessionTokenProviderTest.kt",
+      "lineRange": [
+        153,
+        172
+      ]
+    },
+    {
+      "id": "class:app/src/test/java/com/lotterynet/pro/core/auth/SupabaseSessionTokenProviderTest.kt:SupabaseSessionTokenProviderTest",
+      "type": "class",
+      "name": "SupabaseSessionTokenProviderTest",
+      "summary": "Class SupabaseSessionTokenProviderTest in SupabaseSessionTokenProviderTest.kt.",
+      "tags": [
+        "class",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/test/java/com/lotterynet/pro/core/auth/SupabaseSessionTokenProviderTest.kt",
+      "lineRange": [
+        12,
+        91
+      ]
+    },
+    {
+      "id": "file:app/src/test/java/com/lotterynet/pro/core/sync/NativeUsersBootstrapperContractsTest.kt",
+      "type": "file",
+      "name": "NativeUsersBootstrapperContractsTest.kt",
+      "summary": "Source file app/src/test/java/com/lotterynet/pro/core/sync/NativeUsersBootstrapperContractsTest.kt containing 1 class(es) and 2 function(s).",
+      "tags": [
+        "code",
+        "test",
+        "sync"
+      ],
+      "complexity": "simple",
+      "filePath": "app/src/test/java/com/lotterynet/pro/core/sync/NativeUsersBootstrapperContractsTest.kt",
+      "lineRange": [
+        1,
+        45
+      ]
+    },
+    {
+      "id": "class:app/src/test/java/com/lotterynet/pro/core/sync/NativeUsersBootstrapperContractsTest.kt:NativeUsersBootstrapperContractsTest",
+      "type": "class",
+      "name": "NativeUsersBootstrapperContractsTest",
+      "summary": "Class NativeUsersBootstrapperContractsTest in NativeUsersBootstrapperContractsTest.kt.",
+      "tags": [
+        "class",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/test/java/com/lotterynet/pro/core/sync/NativeUsersBootstrapperContractsTest.kt",
+      "lineRange": [
+        9,
+        46
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/core/storage/LocalUsersRepository.kt",
+      "target": "function:app/src/main/java/com/lotterynet/pro/core/storage/LocalUsersRepository.kt:cacheRawPayload",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "LocalUsersRepository.kt contains cacheRawPayload"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/core/storage/LocalUsersRepository.kt",
+      "target": "function:app/src/main/java/com/lotterynet/pro/core/storage/LocalUsersRepository.kt:exportPayloadJson",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "LocalUsersRepository.kt contains exportPayloadJson"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/core/storage/LocalUsersRepository.kt",
+      "target": "function:app/src/main/java/com/lotterynet/pro/core/storage/LocalUsersRepository.kt:hasCachedUsers",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "LocalUsersRepository.kt contains hasCachedUsers"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/core/storage/LocalUsersRepository.kt",
+      "target": "function:app/src/main/java/com/lotterynet/pro/core/storage/LocalUsersRepository.kt:getAdmins",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "LocalUsersRepository.kt contains getAdmins"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/core/storage/LocalUsersRepository.kt",
+      "target": "function:app/src/main/java/com/lotterynet/pro/core/storage/LocalUsersRepository.kt:getSupervisors",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "LocalUsersRepository.kt contains getSupervisors"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/core/storage/LocalUsersRepository.kt",
+      "target": "function:app/src/main/java/com/lotterynet/pro/core/storage/LocalUsersRepository.kt:getCashiers",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "LocalUsersRepository.kt contains getCashiers"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/core/storage/LocalUsersRepository.kt",
+      "target": "function:app/src/main/java/com/lotterynet/pro/core/storage/LocalUsersRepository.kt:findByIdOrUser",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "LocalUsersRepository.kt contains findByIdOrUser"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/core/storage/LocalUsersRepository.kt",
+      "target": "function:app/src/main/java/com/lotterynet/pro/core/storage/LocalUsersRepository.kt:saveUsers",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "LocalUsersRepository.kt contains saveUsers"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/core/storage/LocalUsersRepository.kt",
+      "target": "function:app/src/main/java/com/lotterynet/pro/core/storage/LocalUsersRepository.kt:saveUsers",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "LocalUsersRepository.kt contains saveUsers"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/core/storage/LocalUsersRepository.kt",
+      "target": "function:app/src/main/java/com/lotterynet/pro/core/storage/LocalUsersRepository.kt:buildPayloadWithAccount",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "LocalUsersRepository.kt contains buildPayloadWithAccount"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/core/storage/LocalUsersRepository.kt",
+      "target": "function:app/src/main/java/com/lotterynet/pro/core/storage/LocalUsersRepository.kt:updateAccount",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "LocalUsersRepository.kt contains updateAccount"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/core/storage/LocalUsersRepository.kt",
+      "target": "function:app/src/main/java/com/lotterynet/pro/core/storage/LocalUsersRepository.kt:touchLastSeen",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "LocalUsersRepository.kt contains touchLastSeen"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/core/storage/LocalUsersRepository.kt",
+      "target": "function:app/src/main/java/com/lotterynet/pro/core/storage/LocalUsersRepository.kt:touchSession",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "LocalUsersRepository.kt contains touchSession"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/core/storage/LocalUsersRepository.kt",
+      "target": "function:app/src/main/java/com/lotterynet/pro/core/storage/LocalUsersRepository.kt:getUsersPayload",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "LocalUsersRepository.kt contains getUsersPayload"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/core/storage/LocalUsersRepository.kt",
+      "target": "function:app/src/main/java/com/lotterynet/pro/core/storage/LocalUsersRepository.kt:parseUsersPayload",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "LocalUsersRepository.kt contains parseUsersPayload"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/core/storage/LocalUsersRepository.kt",
+      "target": "function:app/src/main/java/com/lotterynet/pro/core/storage/LocalUsersRepository.kt:buildUsersPayload",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "LocalUsersRepository.kt contains buildUsersPayload"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/core/storage/LocalUsersRepository.kt",
+      "target": "function:app/src/main/java/com/lotterynet/pro/core/storage/LocalUsersRepository.kt:commissionRateFromJson",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "LocalUsersRepository.kt contains commissionRateFromJson"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/core/storage/LocalUsersRepository.kt",
+      "target": "function:app/src/main/java/com/lotterynet/pro/core/storage/LocalUsersRepository.kt:rechargeTxLimitFromJson",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "LocalUsersRepository.kt contains rechargeTxLimitFromJson"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/core/storage/LocalUsersRepository.kt",
+      "target": "class:app/src/main/java/com/lotterynet/pro/core/storage/LocalUsersRepository.kt:LocalUsersRepository",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "LocalUsersRepository.kt contains LocalUsersRepository"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/core/storage/LocalUsersRepository.kt",
+      "target": "file:app/src/main/java/com/lotterynet/pro/core/model/UserRole.kt",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7,
+      "description": "app/src/main/java/com/lotterynet/pro/core/storage/LocalUsersRepository.kt imports app/src/main/java/com/lotterynet/pro/core/model/UserRole.kt"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/core/storage/LocalUsersRepository.kt",
+      "target": "file:app/src/main/java/com/lotterynet/pro/core/repository/UsersRepository.kt",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7,
+      "description": "app/src/main/java/com/lotterynet/pro/core/storage/LocalUsersRepository.kt imports app/src/main/java/com/lotterynet/pro/core/repository/UsersRepository.kt"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/core/sync/NativeBootstrapRepositoryImpl.kt",
+      "target": "file:app/src/main/java/com/lotterynet/pro/core/repository/NativeBootstrapRepository.kt",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7,
+      "description": "app/src/main/java/com/lotterynet/pro/core/sync/NativeBootstrapRepositoryImpl.kt imports app/src/main/java/com/lotterynet/pro/core/repository/NativeBootstrapRepository.kt"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/core/sync/NativeUsersBootstrapper.kt",
+      "target": "function:app/src/main/java/com/lotterynet/pro/core/sync/NativeUsersBootstrapper.kt:bootstrap",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "NativeUsersBootstrapper.kt contains bootstrap"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/core/sync/NativeUsersBootstrapper.kt",
+      "target": "function:app/src/main/java/com/lotterynet/pro/core/sync/NativeUsersBootstrapper.kt:fetchRemoteUsersPayload",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "NativeUsersBootstrapper.kt contains fetchRemoteUsersPayload"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/core/sync/NativeUsersBootstrapper.kt",
+      "target": "class:app/src/main/java/com/lotterynet/pro/core/sync/NativeUsersBootstrapper.kt:NativeUsersBootstrapper",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "NativeUsersBootstrapper.kt contains NativeUsersBootstrapper"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/core/sync/NativeUsersBootstrapper.kt",
+      "target": "file:app/src/main/java/com/lotterynet/pro/core/storage/LocalUsersRepository.kt",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7,
+      "description": "app/src/main/java/com/lotterynet/pro/core/sync/NativeUsersBootstrapper.kt imports app/src/main/java/com/lotterynet/pro/core/storage/LocalUsersRepository.kt"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/core/sync/NativeUsersBootstrapper.kt",
+      "target": "file:app/src/main/java/com/lotterynet/pro/core/users/SupabaseUsersRemoteStore.kt",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7,
+      "description": "app/src/main/java/com/lotterynet/pro/core/sync/NativeUsersBootstrapper.kt imports app/src/main/java/com/lotterynet/pro/core/users/SupabaseUsersRemoteStore.kt"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/core/sync/NativeUsersBootstrapper.kt",
+      "target": "file:app/src/main/java/com/lotterynet/pro/core/users/UsersRemoteStore.kt",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7,
+      "description": "app/src/main/java/com/lotterynet/pro/core/sync/NativeUsersBootstrapper.kt imports app/src/main/java/com/lotterynet/pro/core/users/UsersRemoteStore.kt"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/core/update/UpdateManager.kt",
+      "target": "function:app/src/main/java/com/lotterynet/pro/core/update/UpdateManager.kt:register",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "UpdateManager.kt contains register"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/core/update/UpdateManager.kt",
+      "target": "function:app/src/main/java/com/lotterynet/pro/core/update/UpdateManager.kt:onActivityCreated",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "UpdateManager.kt contains onActivityCreated"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/core/update/UpdateManager.kt",
+      "target": "function:app/src/main/java/com/lotterynet/pro/core/update/UpdateManager.kt:onActivityStarted",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "UpdateManager.kt contains onActivityStarted"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/core/update/UpdateManager.kt",
+      "target": "function:app/src/main/java/com/lotterynet/pro/core/update/UpdateManager.kt:onActivityPaused",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "UpdateManager.kt contains onActivityPaused"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/core/update/UpdateManager.kt",
+      "target": "function:app/src/main/java/com/lotterynet/pro/core/update/UpdateManager.kt:onActivityStopped",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "UpdateManager.kt contains onActivityStopped"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/core/update/UpdateManager.kt",
+      "target": "function:app/src/main/java/com/lotterynet/pro/core/update/UpdateManager.kt:onActivitySaveInstanceState",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "UpdateManager.kt contains onActivitySaveInstanceState"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/core/update/UpdateManager.kt",
+      "target": "function:app/src/main/java/com/lotterynet/pro/core/update/UpdateManager.kt:onActivityDestroyed",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "UpdateManager.kt contains onActivityDestroyed"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/core/update/UpdateManager.kt",
+      "target": "function:app/src/main/java/com/lotterynet/pro/core/update/UpdateManager.kt:onActivityResumed",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "UpdateManager.kt contains onActivityResumed"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/core/update/UpdateManager.kt",
+      "target": "function:app/src/main/java/com/lotterynet/pro/core/update/UpdateManager.kt:checkFromForeground",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "UpdateManager.kt contains checkFromForeground"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/core/update/UpdateManager.kt",
+      "target": "class:app/src/main/java/com/lotterynet/pro/core/update/UpdateManager.kt:UpdateManager",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "UpdateManager.kt contains UpdateManager"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/core/update/UpdateManager.kt",
+      "target": "file:app/src/main/java/com/lotterynet/pro/core/storage/LocalSessionRepository.kt",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7,
+      "description": "app/src/main/java/com/lotterynet/pro/core/update/UpdateManager.kt imports app/src/main/java/com/lotterynet/pro/core/storage/LocalSessionRepository.kt"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/core/update/UpdateManager.kt",
+      "target": "file:app/src/main/java/com/lotterynet/pro/ui/login/LoginActivity.kt",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7,
+      "description": "app/src/main/java/com/lotterynet/pro/core/update/UpdateManager.kt imports app/src/main/java/com/lotterynet/pro/ui/login/LoginActivity.kt"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/core/update/UpdateManager.kt",
+      "target": "file:app/src/main/java/com/lotterynet/pro/ui/update/UpdatePromptActivity.kt",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7,
+      "description": "app/src/main/java/com/lotterynet/pro/core/update/UpdateManager.kt imports app/src/main/java/com/lotterynet/pro/ui/update/UpdatePromptActivity.kt"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/core/users/SupabaseUsersRemoteStore.kt",
+      "target": "function:app/src/main/java/com/lotterynet/pro/core/users/SupabaseUsersRemoteStore.kt:refreshUsersPayload",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "SupabaseUsersRemoteStore.kt contains refreshUsersPayload"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/core/users/SupabaseUsersRemoteStore.kt",
+      "target": "function:app/src/main/java/com/lotterynet/pro/core/users/SupabaseUsersRemoteStore.kt:fetchUsersPayload",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "SupabaseUsersRemoteStore.kt contains fetchUsersPayload"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/core/users/SupabaseUsersRemoteStore.kt",
+      "target": "function:app/src/main/java/com/lotterynet/pro/core/users/SupabaseUsersRemoteStore.kt:upsertUsersPayload",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "SupabaseUsersRemoteStore.kt contains upsertUsersPayload"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/core/users/SupabaseUsersRemoteStore.kt",
+      "target": "function:app/src/main/java/com/lotterynet/pro/core/users/SupabaseUsersRemoteStore.kt:fetchUsersPayload",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "SupabaseUsersRemoteStore.kt contains fetchUsersPayload"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/core/users/SupabaseUsersRemoteStore.kt",
+      "target": "function:app/src/main/java/com/lotterynet/pro/core/users/SupabaseUsersRemoteStore.kt:upsertUsersPayload",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "SupabaseUsersRemoteStore.kt contains upsertUsersPayload"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/core/users/SupabaseUsersRemoteStore.kt",
+      "target": "function:app/src/main/java/com/lotterynet/pro/core/users/SupabaseUsersRemoteStore.kt:send",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "SupabaseUsersRemoteStore.kt contains send"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/core/users/SupabaseUsersRemoteStore.kt",
+      "target": "function:app/src/main/java/com/lotterynet/pro/core/users/SupabaseUsersRemoteStore.kt:fetchUsersPayload",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "SupabaseUsersRemoteStore.kt contains fetchUsersPayload"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/core/users/SupabaseUsersRemoteStore.kt",
+      "target": "function:app/src/main/java/com/lotterynet/pro/core/users/SupabaseUsersRemoteStore.kt:upsertUsersPayload",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "SupabaseUsersRemoteStore.kt contains upsertUsersPayload"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/core/users/SupabaseUsersRemoteStore.kt",
+      "target": "function:app/src/main/java/com/lotterynet/pro/core/users/SupabaseUsersRemoteStore.kt:send",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "SupabaseUsersRemoteStore.kt contains send"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/core/users/SupabaseUsersRemoteStore.kt",
+      "target": "function:app/src/main/java/com/lotterynet/pro/core/users/SupabaseUsersRemoteStore.kt:clearUsersPayloadMemoryCache",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "SupabaseUsersRemoteStore.kt contains clearUsersPayloadMemoryCache"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/core/users/SupabaseUsersRemoteStore.kt",
+      "target": "function:app/src/main/java/com/lotterynet/pro/core/users/SupabaseUsersRemoteStore.kt:cacheUsersPayloadMemory",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "SupabaseUsersRemoteStore.kt contains cacheUsersPayloadMemory"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/core/users/SupabaseUsersRemoteStore.kt",
+      "target": "function:app/src/main/java/com/lotterynet/pro/core/users/SupabaseUsersRemoteStore.kt:readUsersPayloadMemoryCache",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "SupabaseUsersRemoteStore.kt contains readUsersPayloadMemoryCache"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/core/users/SupabaseUsersRemoteStore.kt",
+      "target": "function:app/src/main/java/com/lotterynet/pro/core/users/SupabaseUsersRemoteStore.kt:buildUsersStateFunctionPayload",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "SupabaseUsersRemoteStore.kt contains buildUsersStateFunctionPayload"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/core/users/SupabaseUsersRemoteStore.kt",
+      "target": "class:app/src/main/java/com/lotterynet/pro/core/users/SupabaseUsersRemoteStore.kt:SupabaseUsersRemoteStore",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "SupabaseUsersRemoteStore.kt contains SupabaseUsersRemoteStore"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/core/users/SupabaseUsersRemoteStore.kt",
+      "target": "class:app/src/main/java/com/lotterynet/pro/core/users/SupabaseUsersRemoteStore.kt:RenderUsersRemoteClient",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "SupabaseUsersRemoteStore.kt contains RenderUsersRemoteClient"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/core/users/SupabaseUsersRemoteStore.kt",
+      "target": "class:app/src/main/java/com/lotterynet/pro/core/users/SupabaseUsersRemoteStore.kt:SupabaseUsersStateClient",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "SupabaseUsersRemoteStore.kt contains SupabaseUsersStateClient"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/core/users/SupabaseUsersRemoteStore.kt",
+      "target": "file:app/src/main/java/com/lotterynet/pro/core/config/SupabaseConfig.kt",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7,
+      "description": "app/src/main/java/com/lotterynet/pro/core/users/SupabaseUsersRemoteStore.kt imports app/src/main/java/com/lotterynet/pro/core/config/SupabaseConfig.kt"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/core/users/SupabaseUsersRemoteStore.kt",
+      "target": "file:app/src/main/java/com/lotterynet/pro/core/remote/SupabaseEdgeClient.kt",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7,
+      "description": "app/src/main/java/com/lotterynet/pro/core/users/SupabaseUsersRemoteStore.kt imports app/src/main/java/com/lotterynet/pro/core/remote/SupabaseEdgeClient.kt"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/ui/admin/AdminAlertsActivity.kt",
+      "target": "function:app/src/main/java/com/lotterynet/pro/ui/admin/AdminAlertsActivity.kt:onCreate",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "AdminAlertsActivity.kt contains onCreate"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/ui/admin/AdminAlertsActivity.kt",
+      "target": "class:app/src/main/java/com/lotterynet/pro/ui/admin/AdminAlertsActivity.kt:AdminAlertsActivity",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "AdminAlertsActivity.kt contains AdminAlertsActivity"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/ui/admin/AdminAlertsActivity.kt",
+      "target": "file:app/src/main/java/com/lotterynet/pro/core/storage/LocalAlertsRepository.kt",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7,
+      "description": "app/src/main/java/com/lotterynet/pro/ui/admin/AdminAlertsActivity.kt imports app/src/main/java/com/lotterynet/pro/core/storage/LocalAlertsRepository.kt"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/ui/admin/AdminAlertsActivity.kt",
+      "target": "file:app/src/main/java/com/lotterynet/pro/core/storage/LocalSessionRepository.kt",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7,
+      "description": "app/src/main/java/com/lotterynet/pro/ui/admin/AdminAlertsActivity.kt imports app/src/main/java/com/lotterynet/pro/core/storage/LocalSessionRepository.kt"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/ui/admin/AdminAlertsActivity.kt",
+      "target": "file:app/src/main/java/com/lotterynet/pro/core/storage/LocalUsersRepository.kt",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7,
+      "description": "app/src/main/java/com/lotterynet/pro/ui/admin/AdminAlertsActivity.kt imports app/src/main/java/com/lotterynet/pro/core/storage/LocalUsersRepository.kt"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/ui/admin/AdminAuditActivity.kt",
+      "target": "function:app/src/main/java/com/lotterynet/pro/ui/admin/AdminAuditActivity.kt:onCreate",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "AdminAuditActivity.kt contains onCreate"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/ui/admin/AdminAuditActivity.kt",
+      "target": "function:app/src/main/java/com/lotterynet/pro/ui/admin/AdminAuditActivity.kt:AuditEntryRow",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "AdminAuditActivity.kt contains AuditEntryRow"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/ui/admin/AdminAuditActivity.kt",
+      "target": "function:app/src/main/java/com/lotterynet/pro/ui/admin/AdminAuditActivity.kt:actionColor",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "AdminAuditActivity.kt contains actionColor"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/ui/admin/AdminAuditActivity.kt",
+      "target": "class:app/src/main/java/com/lotterynet/pro/ui/admin/AdminAuditActivity.kt:AdminAuditActivity",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "AdminAuditActivity.kt contains AdminAuditActivity"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/ui/admin/AdminAuditActivity.kt",
+      "target": "file:app/src/main/java/com/lotterynet/pro/core/storage/LocalAuditRepository.kt",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7,
+      "description": "app/src/main/java/com/lotterynet/pro/ui/admin/AdminAuditActivity.kt imports app/src/main/java/com/lotterynet/pro/core/storage/LocalAuditRepository.kt"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/ui/admin/AdminAuditActivity.kt",
+      "target": "file:app/src/main/java/com/lotterynet/pro/core/storage/LocalSessionRepository.kt",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7,
+      "description": "app/src/main/java/com/lotterynet/pro/ui/admin/AdminAuditActivity.kt imports app/src/main/java/com/lotterynet/pro/core/storage/LocalSessionRepository.kt"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/ui/admin/AdminAuditActivity.kt",
+      "target": "file:app/src/main/java/com/lotterynet/pro/core/storage/LocalUsersRepository.kt",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7,
+      "description": "app/src/main/java/com/lotterynet/pro/ui/admin/AdminAuditActivity.kt imports app/src/main/java/com/lotterynet/pro/core/storage/LocalUsersRepository.kt"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/ui/login/LoginActivity.kt",
+      "target": "function:app/src/main/java/com/lotterynet/pro/ui/login/LoginActivity.kt:resolveLoginCopyContract",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "LoginActivity.kt contains resolveLoginCopyContract"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/ui/login/LoginActivity.kt",
+      "target": "function:app/src/main/java/com/lotterynet/pro/ui/login/LoginActivity.kt:resolvePasswordVisibilityContract",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "LoginActivity.kt contains resolvePasswordVisibilityContract"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/ui/login/LoginActivity.kt",
+      "target": "function:app/src/main/java/com/lotterynet/pro/ui/login/LoginActivity.kt:resolveInitialLoginPassword",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "LoginActivity.kt contains resolveInitialLoginPassword"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/ui/login/LoginActivity.kt",
+      "target": "function:app/src/main/java/com/lotterynet/pro/ui/login/LoginActivity.kt:resolveLoginBootstrapGate",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "LoginActivity.kt contains resolveLoginBootstrapGate"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/ui/login/LoginActivity.kt",
+      "target": "function:app/src/main/java/com/lotterynet/pro/ui/login/LoginActivity.kt:resolveLoginLayoutContract",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "LoginActivity.kt contains resolveLoginLayoutContract"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/ui/login/LoginActivity.kt",
+      "target": "function:app/src/main/java/com/lotterynet/pro/ui/login/LoginActivity.kt:onCreate",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "LoginActivity.kt contains onCreate"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/ui/login/LoginActivity.kt",
+      "target": "function:app/src/main/java/com/lotterynet/pro/ui/login/LoginActivity.kt:authenticateAndEnter",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "LoginActivity.kt contains authenticateAndEnter"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/ui/login/LoginActivity.kt",
+      "target": "function:app/src/main/java/com/lotterynet/pro/ui/login/LoginActivity.kt:homeIntentFor",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "LoginActivity.kt contains homeIntentFor"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/ui/login/LoginActivity.kt",
+      "target": "function:app/src/main/java/com/lotterynet/pro/ui/login/LoginActivity.kt:requestStartupRuntimePermissions",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "LoginActivity.kt contains requestStartupRuntimePermissions"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/ui/login/LoginActivity.kt",
+      "target": "function:app/src/main/java/com/lotterynet/pro/ui/login/LoginActivity.kt:shouldShowCrashStatusOnLogin",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "LoginActivity.kt contains shouldShowCrashStatusOnLogin"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/ui/login/LoginActivity.kt",
+      "target": "class:app/src/main/java/com/lotterynet/pro/ui/login/LoginActivity.kt:LoginActivity",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "LoginActivity.kt contains LoginActivity"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/ui/login/LoginActivity.kt",
+      "target": "file:app/src/main/java/com/lotterynet/pro/core/auth/LocalAuthenticator.kt",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7,
+      "description": "app/src/main/java/com/lotterynet/pro/ui/login/LoginActivity.kt imports app/src/main/java/com/lotterynet/pro/core/auth/LocalAuthenticator.kt"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/ui/login/LoginActivity.kt",
+      "target": "file:app/src/main/java/com/lotterynet/pro/core/auth/NativeSessionAuthRepository.kt",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7,
+      "description": "app/src/main/java/com/lotterynet/pro/ui/login/LoginActivity.kt imports app/src/main/java/com/lotterynet/pro/core/auth/NativeSessionAuthRepository.kt"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/ui/login/LoginActivity.kt",
+      "target": "file:app/src/main/java/com/lotterynet/pro/core/diagnostics/NativeCrashReporter.kt",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7,
+      "description": "app/src/main/java/com/lotterynet/pro/ui/login/LoginActivity.kt imports app/src/main/java/com/lotterynet/pro/core/diagnostics/NativeCrashReporter.kt"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/ui/login/LoginActivity.kt",
+      "target": "file:app/src/main/java/com/lotterynet/pro/core/model/UserRole.kt",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7,
+      "description": "app/src/main/java/com/lotterynet/pro/ui/login/LoginActivity.kt imports app/src/main/java/com/lotterynet/pro/core/model/UserRole.kt"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/ui/login/LoginActivity.kt",
+      "target": "file:app/src/main/java/com/lotterynet/pro/core/repository/NativeAuthRepository.kt",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7,
+      "description": "app/src/main/java/com/lotterynet/pro/ui/login/LoginActivity.kt imports app/src/main/java/com/lotterynet/pro/core/repository/NativeAuthRepository.kt"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/ui/login/LoginActivity.kt",
+      "target": "file:app/src/main/java/com/lotterynet/pro/core/repository/NativeBootstrapRepository.kt",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7,
+      "description": "app/src/main/java/com/lotterynet/pro/ui/login/LoginActivity.kt imports app/src/main/java/com/lotterynet/pro/core/repository/NativeBootstrapRepository.kt"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/ui/login/LoginActivity.kt",
+      "target": "file:app/src/main/java/com/lotterynet/pro/core/storage/LocalSessionRepository.kt",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7,
+      "description": "app/src/main/java/com/lotterynet/pro/ui/login/LoginActivity.kt imports app/src/main/java/com/lotterynet/pro/core/storage/LocalSessionRepository.kt"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/ui/login/LoginActivity.kt",
+      "target": "file:app/src/main/java/com/lotterynet/pro/core/storage/LocalUsersRepository.kt",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7,
+      "description": "app/src/main/java/com/lotterynet/pro/ui/login/LoginActivity.kt imports app/src/main/java/com/lotterynet/pro/core/storage/LocalUsersRepository.kt"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/ui/login/LoginActivity.kt",
+      "target": "file:app/src/main/java/com/lotterynet/pro/core/sync/NativeBootstrapRepositoryImpl.kt",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7,
+      "description": "app/src/main/java/com/lotterynet/pro/ui/login/LoginActivity.kt imports app/src/main/java/com/lotterynet/pro/core/sync/NativeBootstrapRepositoryImpl.kt"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/ui/login/LoginActivity.kt",
+      "target": "file:app/src/main/java/com/lotterynet/pro/core/sync/NativeUsersBootstrapper.kt",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7,
+      "description": "app/src/main/java/com/lotterynet/pro/ui/login/LoginActivity.kt imports app/src/main/java/com/lotterynet/pro/core/sync/NativeUsersBootstrapper.kt"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/ui/login/LoginActivity.kt",
+      "target": "file:app/src/main/java/com/lotterynet/pro/ui/shell/ShellActivity.kt",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7,
+      "description": "app/src/main/java/com/lotterynet/pro/ui/login/LoginActivity.kt imports app/src/main/java/com/lotterynet/pro/ui/shell/ShellActivity.kt"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/ui/master/MasterCreateBankActivity.kt",
+      "target": "function:app/src/main/java/com/lotterynet/pro/ui/master/MasterCreateBankActivity.kt:resolveMasterCreateBankLayout",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "MasterCreateBankActivity.kt contains resolveMasterCreateBankLayout"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/ui/master/MasterCreateBankActivity.kt",
+      "target": "function:app/src/main/java/com/lotterynet/pro/ui/master/MasterCreateBankActivity.kt:masterCreateBankSegmentOptions",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "MasterCreateBankActivity.kt contains masterCreateBankSegmentOptions"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/ui/master/MasterCreateBankActivity.kt",
+      "target": "function:app/src/main/java/com/lotterynet/pro/ui/master/MasterCreateBankActivity.kt:masterCreateBankTerritoryOptions",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "MasterCreateBankActivity.kt contains masterCreateBankTerritoryOptions"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/ui/master/MasterCreateBankActivity.kt",
+      "target": "function:app/src/main/java/com/lotterynet/pro/ui/master/MasterCreateBankActivity.kt:masterCreateBankStatusLabel",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "MasterCreateBankActivity.kt contains masterCreateBankStatusLabel"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/ui/master/MasterCreateBankActivity.kt",
+      "target": "function:app/src/main/java/com/lotterynet/pro/ui/master/MasterCreateBankActivity.kt:onCreate",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "MasterCreateBankActivity.kt contains onCreate"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/ui/master/MasterCreateBankActivity.kt",
+      "target": "class:app/src/main/java/com/lotterynet/pro/ui/master/MasterCreateBankActivity.kt:MasterCreateBankActivity",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "MasterCreateBankActivity.kt contains MasterCreateBankActivity"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/ui/master/MasterCreateBankActivity.kt",
+      "target": "file:app/src/main/java/com/lotterynet/pro/core/auth/SupabaseSessionTokenProvider.kt",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7,
+      "description": "app/src/main/java/com/lotterynet/pro/ui/master/MasterCreateBankActivity.kt imports app/src/main/java/com/lotterynet/pro/core/auth/SupabaseSessionTokenProvider.kt"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/ui/master/MasterCreateBankActivity.kt",
+      "target": "file:app/src/main/java/com/lotterynet/pro/core/diagnostics/NativeCrashReporter.kt",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7,
+      "description": "app/src/main/java/com/lotterynet/pro/ui/master/MasterCreateBankActivity.kt imports app/src/main/java/com/lotterynet/pro/core/diagnostics/NativeCrashReporter.kt"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/ui/master/MasterCreateBankActivity.kt",
+      "target": "file:app/src/main/java/com/lotterynet/pro/core/master/IssuedCredentialServerVerifier.kt",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7,
+      "description": "app/src/main/java/com/lotterynet/pro/ui/master/MasterCreateBankActivity.kt imports app/src/main/java/com/lotterynet/pro/core/master/IssuedCredentialServerVerifier.kt"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/ui/master/MasterCreateBankActivity.kt",
+      "target": "file:app/src/main/java/com/lotterynet/pro/core/master/MasterBankProvisioner.kt",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7,
+      "description": "app/src/main/java/com/lotterynet/pro/ui/master/MasterCreateBankActivity.kt imports app/src/main/java/com/lotterynet/pro/core/master/MasterBankProvisioner.kt"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/ui/master/MasterCreateBankActivity.kt",
+      "target": "file:app/src/main/java/com/lotterynet/pro/core/master/MasterCloudSyncCoordinator.kt",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7,
+      "description": "app/src/main/java/com/lotterynet/pro/ui/master/MasterCreateBankActivity.kt imports app/src/main/java/com/lotterynet/pro/core/master/MasterCloudSyncCoordinator.kt"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/ui/master/MasterCreateBankActivity.kt",
+      "target": "file:app/src/main/java/com/lotterynet/pro/core/model/UserRole.kt",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7,
+      "description": "app/src/main/java/com/lotterynet/pro/ui/master/MasterCreateBankActivity.kt imports app/src/main/java/com/lotterynet/pro/core/model/UserRole.kt"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/ui/master/MasterCreateBankActivity.kt",
+      "target": "file:app/src/main/java/com/lotterynet/pro/core/storage/LocalAlertsRepository.kt",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7,
+      "description": "app/src/main/java/com/lotterynet/pro/ui/master/MasterCreateBankActivity.kt imports app/src/main/java/com/lotterynet/pro/core/storage/LocalAlertsRepository.kt"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/ui/master/MasterCreateBankActivity.kt",
+      "target": "file:app/src/main/java/com/lotterynet/pro/core/storage/LocalAuditRepository.kt",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7,
+      "description": "app/src/main/java/com/lotterynet/pro/ui/master/MasterCreateBankActivity.kt imports app/src/main/java/com/lotterynet/pro/core/storage/LocalAuditRepository.kt"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/ui/master/MasterCreateBankActivity.kt",
+      "target": "file:app/src/main/java/com/lotterynet/pro/core/storage/LocalCashierSalesLimitRepository.kt",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7,
+      "description": "app/src/main/java/com/lotterynet/pro/ui/master/MasterCreateBankActivity.kt imports app/src/main/java/com/lotterynet/pro/core/storage/LocalCashierSalesLimitRepository.kt"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/ui/master/MasterCreateBankActivity.kt",
+      "target": "file:app/src/main/java/com/lotterynet/pro/core/storage/LocalMasterConfigRepository.kt",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7,
+      "description": "app/src/main/java/com/lotterynet/pro/ui/master/MasterCreateBankActivity.kt imports app/src/main/java/com/lotterynet/pro/core/storage/LocalMasterConfigRepository.kt"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/ui/master/MasterCreateBankActivity.kt",
+      "target": "file:app/src/main/java/com/lotterynet/pro/core/storage/LocalPresenceRepository.kt",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7,
+      "description": "app/src/main/java/com/lotterynet/pro/ui/master/MasterCreateBankActivity.kt imports app/src/main/java/com/lotterynet/pro/core/storage/LocalPresenceRepository.kt"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/ui/master/MasterCreateBankActivity.kt",
+      "target": "file:app/src/main/java/com/lotterynet/pro/core/storage/LocalRechargeLimitRepository.kt",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7,
+      "description": "app/src/main/java/com/lotterynet/pro/ui/master/MasterCreateBankActivity.kt imports app/src/main/java/com/lotterynet/pro/core/storage/LocalRechargeLimitRepository.kt"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/ui/master/MasterCreateBankActivity.kt",
+      "target": "file:app/src/main/java/com/lotterynet/pro/core/storage/LocalSessionRepository.kt",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7,
+      "description": "app/src/main/java/com/lotterynet/pro/ui/master/MasterCreateBankActivity.kt imports app/src/main/java/com/lotterynet/pro/core/storage/LocalSessionRepository.kt"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/ui/master/MasterCreateBankActivity.kt",
+      "target": "file:app/src/main/java/com/lotterynet/pro/core/storage/LocalUsersDeletedRepository.kt",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7,
+      "description": "app/src/main/java/com/lotterynet/pro/ui/master/MasterCreateBankActivity.kt imports app/src/main/java/com/lotterynet/pro/core/storage/LocalUsersDeletedRepository.kt"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/ui/master/MasterCreateBankActivity.kt",
+      "target": "file:app/src/main/java/com/lotterynet/pro/core/storage/LocalUsersRepository.kt",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7,
+      "description": "app/src/main/java/com/lotterynet/pro/ui/master/MasterCreateBankActivity.kt imports app/src/main/java/com/lotterynet/pro/core/storage/LocalUsersRepository.kt"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/ui/master/MasterCreateBankActivity.kt",
+      "target": "file:app/src/main/java/com/lotterynet/pro/core/users/SupabaseUsersRemoteStore.kt",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7,
+      "description": "app/src/main/java/com/lotterynet/pro/ui/master/MasterCreateBankActivity.kt imports app/src/main/java/com/lotterynet/pro/core/users/SupabaseUsersRemoteStore.kt"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/ui/master/MasterDashboardActivity.kt",
+      "target": "function:app/src/main/java/com/lotterynet/pro/ui/master/MasterDashboardActivity.kt:resolveMasterDashboardLayout",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "MasterDashboardActivity.kt contains resolveMasterDashboardLayout"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/ui/master/MasterDashboardActivity.kt",
+      "target": "function:app/src/main/java/com/lotterynet/pro/ui/master/MasterDashboardActivity.kt:masterCredentialResetActionLabel",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "MasterDashboardActivity.kt contains masterCredentialResetActionLabel"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/ui/master/MasterDashboardActivity.kt",
+      "target": "function:app/src/main/java/com/lotterynet/pro/ui/master/MasterDashboardActivity.kt:masterCashierDropdownActionLabel",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "MasterDashboardActivity.kt contains masterCashierDropdownActionLabel"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/ui/master/MasterDashboardActivity.kt",
+      "target": "function:app/src/main/java/com/lotterynet/pro/ui/master/MasterDashboardActivity.kt:masterCashierGroupPasswordActionLabel",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "MasterDashboardActivity.kt contains masterCashierGroupPasswordActionLabel"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/ui/master/MasterDashboardActivity.kt",
+      "target": "function:app/src/main/java/com/lotterynet/pro/ui/master/MasterDashboardActivity.kt:masterDashboardSectionTitles",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "MasterDashboardActivity.kt contains masterDashboardSectionTitles"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/ui/master/MasterDashboardActivity.kt",
+      "target": "function:app/src/main/java/com/lotterynet/pro/ui/master/MasterDashboardActivity.kt:masterDashboardSectionOptions",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "MasterDashboardActivity.kt contains masterDashboardSectionOptions"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/ui/master/MasterDashboardActivity.kt",
+      "target": "function:app/src/main/java/com/lotterynet/pro/ui/master/MasterDashboardActivity.kt:masterBankFilterOptions",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "MasterDashboardActivity.kt contains masterBankFilterOptions"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/ui/master/MasterDashboardActivity.kt",
+      "target": "function:app/src/main/java/com/lotterynet/pro/ui/master/MasterDashboardActivity.kt:masterDangerActionLabels",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "MasterDashboardActivity.kt contains masterDangerActionLabels"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/ui/master/MasterDashboardActivity.kt",
+      "target": "function:app/src/main/java/com/lotterynet/pro/ui/master/MasterDashboardActivity.kt:onCreate",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "MasterDashboardActivity.kt contains onCreate"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/ui/master/MasterDashboardActivity.kt",
+      "target": "function:app/src/main/java/com/lotterynet/pro/ui/master/MasterDashboardActivity.kt:queueMasterAutoSync",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "MasterDashboardActivity.kt contains queueMasterAutoSync"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/ui/master/MasterDashboardActivity.kt",
+      "target": "function:app/src/main/java/com/lotterynet/pro/ui/master/MasterDashboardActivity.kt:syncCredentialChangeOrRollback",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "MasterDashboardActivity.kt contains syncCredentialChangeOrRollback"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/ui/master/MasterDashboardActivity.kt",
+      "target": "function:app/src/main/java/com/lotterynet/pro/ui/master/MasterDashboardActivity.kt:ensureCredentialJwtOrRollback",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "MasterDashboardActivity.kt contains ensureCredentialJwtOrRollback"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/ui/master/MasterDashboardActivity.kt",
+      "target": "function:app/src/main/java/com/lotterynet/pro/ui/master/MasterDashboardActivity.kt:auditTimestamp",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "MasterDashboardActivity.kt contains auditTimestamp"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/ui/master/MasterDashboardActivity.kt",
+      "target": "function:app/src/main/java/com/lotterynet/pro/ui/master/MasterDashboardActivity.kt:sortMasterAdminsByCreation",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "MasterDashboardActivity.kt contains sortMasterAdminsByCreation"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/ui/master/MasterDashboardActivity.kt",
+      "target": "function:app/src/main/java/com/lotterynet/pro/ui/master/MasterDashboardActivity.kt:masterCreatedEpoch",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "MasterDashboardActivity.kt contains masterCreatedEpoch"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/ui/master/MasterDashboardActivity.kt",
+      "target": "function:app/src/main/java/com/lotterynet/pro/ui/master/MasterDashboardActivity.kt:applyMutation",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "MasterDashboardActivity.kt contains applyMutation"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/ui/master/MasterDashboardActivity.kt",
+      "target": "function:app/src/main/java/com/lotterynet/pro/ui/master/MasterDashboardActivity.kt:formatPlainAmount",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "MasterDashboardActivity.kt contains formatPlainAmount"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/ui/master/MasterDashboardActivity.kt",
+      "target": "function:app/src/main/java/com/lotterynet/pro/ui/master/MasterDashboardActivity.kt:masterRechargeProviderLabel",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "MasterDashboardActivity.kt contains masterRechargeProviderLabel"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/ui/master/MasterDashboardActivity.kt",
+      "target": "class:app/src/main/java/com/lotterynet/pro/ui/master/MasterDashboardActivity.kt:MasterDashboardActivity",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "MasterDashboardActivity.kt contains MasterDashboardActivity"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/ui/master/MasterDashboardActivity.kt",
+      "target": "file:app/src/main/java/com/lotterynet/pro/core/auth/SupabaseSessionTokenProvider.kt",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7,
+      "description": "app/src/main/java/com/lotterynet/pro/ui/master/MasterDashboardActivity.kt imports app/src/main/java/com/lotterynet/pro/core/auth/SupabaseSessionTokenProvider.kt"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/ui/master/MasterDashboardActivity.kt",
+      "target": "file:app/src/main/java/com/lotterynet/pro/core/diagnostics/NativeCrashReporter.kt",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7,
+      "description": "app/src/main/java/com/lotterynet/pro/ui/master/MasterDashboardActivity.kt imports app/src/main/java/com/lotterynet/pro/core/diagnostics/NativeCrashReporter.kt"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/ui/master/MasterDashboardActivity.kt",
+      "target": "file:app/src/main/java/com/lotterynet/pro/core/master/IssuedCredentialServerVerifier.kt",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7,
+      "description": "app/src/main/java/com/lotterynet/pro/ui/master/MasterDashboardActivity.kt imports app/src/main/java/com/lotterynet/pro/core/master/IssuedCredentialServerVerifier.kt"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/ui/master/MasterDashboardActivity.kt",
+      "target": "file:app/src/main/java/com/lotterynet/pro/core/master/MasterBankManager.kt",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7,
+      "description": "app/src/main/java/com/lotterynet/pro/ui/master/MasterDashboardActivity.kt imports app/src/main/java/com/lotterynet/pro/core/master/MasterBankManager.kt"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/ui/master/MasterDashboardActivity.kt",
+      "target": "file:app/src/main/java/com/lotterynet/pro/core/master/MasterCloudSyncCoordinator.kt",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7,
+      "description": "app/src/main/java/com/lotterynet/pro/ui/master/MasterDashboardActivity.kt imports app/src/main/java/com/lotterynet/pro/core/master/MasterCloudSyncCoordinator.kt"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/ui/master/MasterDashboardActivity.kt",
+      "target": "file:app/src/main/java/com/lotterynet/pro/core/master/MasterServerStatusChecker.kt",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7,
+      "description": "app/src/main/java/com/lotterynet/pro/ui/master/MasterDashboardActivity.kt imports app/src/main/java/com/lotterynet/pro/core/master/MasterServerStatusChecker.kt"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/ui/master/MasterDashboardActivity.kt",
+      "target": "file:app/src/main/java/com/lotterynet/pro/core/master/MasterUserManager.kt",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7,
+      "description": "app/src/main/java/com/lotterynet/pro/ui/master/MasterDashboardActivity.kt imports app/src/main/java/com/lotterynet/pro/core/master/MasterUserManager.kt"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/ui/master/MasterDashboardActivity.kt",
+      "target": "file:app/src/main/java/com/lotterynet/pro/core/model/UserRole.kt",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7,
+      "description": "app/src/main/java/com/lotterynet/pro/ui/master/MasterDashboardActivity.kt imports app/src/main/java/com/lotterynet/pro/core/model/UserRole.kt"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/ui/master/MasterDashboardActivity.kt",
+      "target": "file:app/src/main/java/com/lotterynet/pro/core/recharge/recargasrapidas/RecargasRapidasBackendClient.kt",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7,
+      "description": "app/src/main/java/com/lotterynet/pro/ui/master/MasterDashboardActivity.kt imports app/src/main/java/com/lotterynet/pro/core/recharge/recargasrapidas/RecargasRapidasBackendClient.kt"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/ui/master/MasterDashboardActivity.kt",
+      "target": "file:app/src/main/java/com/lotterynet/pro/core/storage/LocalAlertsRepository.kt",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7,
+      "description": "app/src/main/java/com/lotterynet/pro/ui/master/MasterDashboardActivity.kt imports app/src/main/java/com/lotterynet/pro/core/storage/LocalAlertsRepository.kt"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/ui/master/MasterDashboardActivity.kt",
+      "target": "file:app/src/main/java/com/lotterynet/pro/core/storage/LocalAuditRepository.kt",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7,
+      "description": "app/src/main/java/com/lotterynet/pro/ui/master/MasterDashboardActivity.kt imports app/src/main/java/com/lotterynet/pro/core/storage/LocalAuditRepository.kt"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/ui/master/MasterDashboardActivity.kt",
+      "target": "file:app/src/main/java/com/lotterynet/pro/core/storage/LocalCashierSalesLimitRepository.kt",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7,
+      "description": "app/src/main/java/com/lotterynet/pro/ui/master/MasterDashboardActivity.kt imports app/src/main/java/com/lotterynet/pro/core/storage/LocalCashierSalesLimitRepository.kt"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/ui/master/MasterDashboardActivity.kt",
+      "target": "file:app/src/main/java/com/lotterynet/pro/core/storage/LocalMasterConfigRepository.kt",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7,
+      "description": "app/src/main/java/com/lotterynet/pro/ui/master/MasterDashboardActivity.kt imports app/src/main/java/com/lotterynet/pro/core/storage/LocalMasterConfigRepository.kt"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/ui/master/MasterDashboardActivity.kt",
+      "target": "file:app/src/main/java/com/lotterynet/pro/core/storage/LocalPresenceRepository.kt",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7,
+      "description": "app/src/main/java/com/lotterynet/pro/ui/master/MasterDashboardActivity.kt imports app/src/main/java/com/lotterynet/pro/core/storage/LocalPresenceRepository.kt"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/ui/master/MasterDashboardActivity.kt",
+      "target": "file:app/src/main/java/com/lotterynet/pro/core/storage/LocalRechargeLimitRepository.kt",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7,
+      "description": "app/src/main/java/com/lotterynet/pro/ui/master/MasterDashboardActivity.kt imports app/src/main/java/com/lotterynet/pro/core/storage/LocalRechargeLimitRepository.kt"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/ui/master/MasterDashboardActivity.kt",
+      "target": "file:app/src/main/java/com/lotterynet/pro/core/storage/LocalSessionRepository.kt",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7,
+      "description": "app/src/main/java/com/lotterynet/pro/ui/master/MasterDashboardActivity.kt imports app/src/main/java/com/lotterynet/pro/core/storage/LocalSessionRepository.kt"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/ui/master/MasterDashboardActivity.kt",
+      "target": "file:app/src/main/java/com/lotterynet/pro/core/storage/LocalUsersDeletedRepository.kt",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7,
+      "description": "app/src/main/java/com/lotterynet/pro/ui/master/MasterDashboardActivity.kt imports app/src/main/java/com/lotterynet/pro/core/storage/LocalUsersDeletedRepository.kt"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/ui/master/MasterDashboardActivity.kt",
+      "target": "file:app/src/main/java/com/lotterynet/pro/core/storage/LocalUsersRepository.kt",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7,
+      "description": "app/src/main/java/com/lotterynet/pro/ui/master/MasterDashboardActivity.kt imports app/src/main/java/com/lotterynet/pro/core/storage/LocalUsersRepository.kt"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/ui/master/MasterDashboardActivity.kt",
+      "target": "file:app/src/main/java/com/lotterynet/pro/core/users/SupabaseUsersRemoteStore.kt",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7,
+      "description": "app/src/main/java/com/lotterynet/pro/ui/master/MasterDashboardActivity.kt imports app/src/main/java/com/lotterynet/pro/core/users/SupabaseUsersRemoteStore.kt"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/ui/master/MasterDashboardActivity.kt",
+      "target": "file:app/src/main/java/com/lotterynet/pro/core/users/UserPasswordBackendClient.kt",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7,
+      "description": "app/src/main/java/com/lotterynet/pro/ui/master/MasterDashboardActivity.kt imports app/src/main/java/com/lotterynet/pro/core/users/UserPasswordBackendClient.kt"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/ui/master/MasterDashboardActivity.kt",
+      "target": "file:app/src/main/java/com/lotterynet/pro/ui/admin/AdminAuditActivity.kt",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7,
+      "description": "app/src/main/java/com/lotterynet/pro/ui/master/MasterDashboardActivity.kt imports app/src/main/java/com/lotterynet/pro/ui/admin/AdminAuditActivity.kt"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/ui/navigation/NativeRouting.kt",
+      "target": "function:app/src/main/java/com/lotterynet/pro/ui/navigation/NativeRouting.kt:resolveNativeHomeRoute",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "NativeRouting.kt contains resolveNativeHomeRoute"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/ui/navigation/NativeRouting.kt",
+      "target": "function:app/src/main/java/com/lotterynet/pro/ui/navigation/NativeRouting.kt:resolveNativeHomeActivityClassName",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "NativeRouting.kt contains resolveNativeHomeActivityClassName"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/ui/navigation/NativeRouting.kt",
+      "target": "function:app/src/main/java/com/lotterynet/pro/ui/navigation/NativeRouting.kt:nativeHomeIntent",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "NativeRouting.kt contains nativeHomeIntent"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/ui/navigation/NativeRouting.kt",
+      "target": "class:app/src/main/java/com/lotterynet/pro/ui/navigation/NativeRouting.kt:NativeHomeRoute",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "NativeRouting.kt contains NativeHomeRoute"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/ui/navigation/NativeRouting.kt",
+      "target": "file:app/src/main/java/com/lotterynet/pro/core/model/UserRole.kt",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7,
+      "description": "app/src/main/java/com/lotterynet/pro/ui/navigation/NativeRouting.kt imports app/src/main/java/com/lotterynet/pro/core/model/UserRole.kt"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/ui/navigation/NativeRouting.kt",
+      "target": "file:app/src/main/java/com/lotterynet/pro/ui/login/LoginActivity.kt",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7,
+      "description": "app/src/main/java/com/lotterynet/pro/ui/navigation/NativeRouting.kt imports app/src/main/java/com/lotterynet/pro/ui/login/LoginActivity.kt"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/ui/navigation/NativeRouting.kt",
+      "target": "file:app/src/main/java/com/lotterynet/pro/ui/master/MasterDashboardActivity.kt",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7,
+      "description": "app/src/main/java/com/lotterynet/pro/ui/navigation/NativeRouting.kt imports app/src/main/java/com/lotterynet/pro/ui/master/MasterDashboardActivity.kt"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/ui/navigation/NativeRouting.kt",
+      "target": "file:app/src/main/java/com/lotterynet/pro/ui/sales/SalesActivity.kt",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7,
+      "description": "app/src/main/java/com/lotterynet/pro/ui/navigation/NativeRouting.kt imports app/src/main/java/com/lotterynet/pro/ui/sales/SalesActivity.kt"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/ui/navigation/NativeRouting.kt",
+      "target": "file:app/src/main/java/com/lotterynet/pro/ui/shell/ShellActivity.kt",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7,
+      "description": "app/src/main/java/com/lotterynet/pro/ui/navigation/NativeRouting.kt imports app/src/main/java/com/lotterynet/pro/ui/shell/ShellActivity.kt"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/ui/navigation/NavigationSafety.kt",
+      "target": "function:app/src/main/java/com/lotterynet/pro/ui/navigation/NavigationSafety.kt:allowedNativeDestinations",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "NavigationSafety.kt contains allowedNativeDestinations"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/ui/navigation/NavigationSafety.kt",
+      "target": "function:app/src/main/java/com/lotterynet/pro/ui/navigation/NavigationSafety.kt:canOpenNativeDestination",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "NavigationSafety.kt contains canOpenNativeDestination"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/ui/navigation/NavigationSafety.kt",
+      "target": "function:app/src/main/java/com/lotterynet/pro/ui/navigation/NavigationSafety.kt:resolveNativeDestinationByActivity",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "NavigationSafety.kt contains resolveNativeDestinationByActivity"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/ui/navigation/NavigationSafety.kt",
+      "target": "function:app/src/main/java/com/lotterynet/pro/ui/navigation/NavigationSafety.kt:normalizeTicketLookupMode",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "NavigationSafety.kt contains normalizeTicketLookupMode"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/ui/navigation/NavigationSafety.kt",
+      "target": "function:app/src/main/java/com/lotterynet/pro/ui/navigation/NavigationSafety.kt:normalizeTicketLookupModeForRole",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "NavigationSafety.kt contains normalizeTicketLookupModeForRole"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/ui/navigation/NavigationSafety.kt",
+      "target": "function:app/src/main/java/com/lotterynet/pro/ui/navigation/NavigationSafety.kt:safeNativeHomeActivityClassName",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "NavigationSafety.kt contains safeNativeHomeActivityClassName"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/ui/navigation/NavigationSafety.kt",
+      "target": "function:app/src/main/java/com/lotterynet/pro/ui/navigation/NavigationSafety.kt:intentForDestination",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "NavigationSafety.kt contains intentForDestination"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/ui/navigation/NavigationSafety.kt",
+      "target": "class:app/src/main/java/com/lotterynet/pro/ui/navigation/NavigationSafety.kt:NativeDestination",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "NavigationSafety.kt contains NativeDestination"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/ui/navigation/NavigationSafety.kt",
+      "target": "file:app/src/main/java/com/lotterynet/pro/core/diagnostics/NativeCrashReporter.kt",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7,
+      "description": "app/src/main/java/com/lotterynet/pro/ui/navigation/NavigationSafety.kt imports app/src/main/java/com/lotterynet/pro/core/diagnostics/NativeCrashReporter.kt"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/ui/navigation/NavigationSafety.kt",
+      "target": "file:app/src/main/java/com/lotterynet/pro/core/model/UserRole.kt",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7,
+      "description": "app/src/main/java/com/lotterynet/pro/ui/navigation/NavigationSafety.kt imports app/src/main/java/com/lotterynet/pro/core/model/UserRole.kt"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/ui/navigation/NavigationSafety.kt",
+      "target": "file:app/src/main/java/com/lotterynet/pro/ui/admin/AdminAlertsActivity.kt",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7,
+      "description": "app/src/main/java/com/lotterynet/pro/ui/navigation/NavigationSafety.kt imports app/src/main/java/com/lotterynet/pro/ui/admin/AdminAlertsActivity.kt"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/ui/navigation/NavigationSafety.kt",
+      "target": "file:app/src/main/java/com/lotterynet/pro/ui/admin/AdminAuditActivity.kt",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7,
+      "description": "app/src/main/java/com/lotterynet/pro/ui/navigation/NavigationSafety.kt imports app/src/main/java/com/lotterynet/pro/ui/admin/AdminAuditActivity.kt"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/ui/navigation/NavigationSafety.kt",
+      "target": "file:app/src/main/java/com/lotterynet/pro/ui/admin/AdminConfigActivity.kt",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7,
+      "description": "app/src/main/java/com/lotterynet/pro/ui/navigation/NavigationSafety.kt imports app/src/main/java/com/lotterynet/pro/ui/admin/AdminConfigActivity.kt"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/ui/navigation/NavigationSafety.kt",
+      "target": "file:app/src/main/java/com/lotterynet/pro/ui/admin/AdminDashboardActivity.kt",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7,
+      "description": "app/src/main/java/com/lotterynet/pro/ui/navigation/NavigationSafety.kt imports app/src/main/java/com/lotterynet/pro/ui/admin/AdminDashboardActivity.kt"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/ui/navigation/NavigationSafety.kt",
+      "target": "file:app/src/main/java/com/lotterynet/pro/ui/admin/AdminLimitsActivity.kt",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7,
+      "description": "app/src/main/java/com/lotterynet/pro/ui/navigation/NavigationSafety.kt imports app/src/main/java/com/lotterynet/pro/ui/admin/AdminLimitsActivity.kt"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/ui/navigation/NavigationSafety.kt",
+      "target": "file:app/src/main/java/com/lotterynet/pro/ui/admin/AdminLotteryMonitorActivity.kt",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7,
+      "description": "app/src/main/java/com/lotterynet/pro/ui/navigation/NavigationSafety.kt imports app/src/main/java/com/lotterynet/pro/ui/admin/AdminLotteryMonitorActivity.kt"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/ui/navigation/NavigationSafety.kt",
+      "target": "file:app/src/main/java/com/lotterynet/pro/ui/admin/AdminMonitorActivity.kt",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7,
+      "description": "app/src/main/java/com/lotterynet/pro/ui/navigation/NavigationSafety.kt imports app/src/main/java/com/lotterynet/pro/ui/admin/AdminMonitorActivity.kt"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/ui/navigation/NavigationSafety.kt",
+      "target": "file:app/src/main/java/com/lotterynet/pro/ui/admin/AdminWinnersActivity.kt",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7,
+      "description": "app/src/main/java/com/lotterynet/pro/ui/navigation/NavigationSafety.kt imports app/src/main/java/com/lotterynet/pro/ui/admin/AdminWinnersActivity.kt"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/ui/navigation/NavigationSafety.kt",
+      "target": "file:app/src/main/java/com/lotterynet/pro/ui/finance/FinanceActivity.kt",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7,
+      "description": "app/src/main/java/com/lotterynet/pro/ui/navigation/NavigationSafety.kt imports app/src/main/java/com/lotterynet/pro/ui/finance/FinanceActivity.kt"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/ui/navigation/NavigationSafety.kt",
+      "target": "file:app/src/main/java/com/lotterynet/pro/ui/login/LoginActivity.kt",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7,
+      "description": "app/src/main/java/com/lotterynet/pro/ui/navigation/NavigationSafety.kt imports app/src/main/java/com/lotterynet/pro/ui/login/LoginActivity.kt"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/ui/navigation/NavigationSafety.kt",
+      "target": "file:app/src/main/java/com/lotterynet/pro/ui/master/MasterCreateBankActivity.kt",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7,
+      "description": "app/src/main/java/com/lotterynet/pro/ui/navigation/NavigationSafety.kt imports app/src/main/java/com/lotterynet/pro/ui/master/MasterCreateBankActivity.kt"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/ui/navigation/NavigationSafety.kt",
+      "target": "file:app/src/main/java/com/lotterynet/pro/ui/master/MasterDashboardActivity.kt",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7,
+      "description": "app/src/main/java/com/lotterynet/pro/ui/navigation/NavigationSafety.kt imports app/src/main/java/com/lotterynet/pro/ui/master/MasterDashboardActivity.kt"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/ui/navigation/NavigationSafety.kt",
+      "target": "file:app/src/main/java/com/lotterynet/pro/ui/printer/PrinterActivity.kt",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7,
+      "description": "app/src/main/java/com/lotterynet/pro/ui/navigation/NavigationSafety.kt imports app/src/main/java/com/lotterynet/pro/ui/printer/PrinterActivity.kt"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/ui/navigation/NavigationSafety.kt",
+      "target": "file:app/src/main/java/com/lotterynet/pro/ui/recharge/RecargasActivity.kt",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7,
+      "description": "app/src/main/java/com/lotterynet/pro/ui/navigation/NavigationSafety.kt imports app/src/main/java/com/lotterynet/pro/ui/recharge/RecargasActivity.kt"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/ui/navigation/NavigationSafety.kt",
+      "target": "file:app/src/main/java/com/lotterynet/pro/ui/report/OperationalReportActivity.kt",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7,
+      "description": "app/src/main/java/com/lotterynet/pro/ui/navigation/NavigationSafety.kt imports app/src/main/java/com/lotterynet/pro/ui/report/OperationalReportActivity.kt"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/ui/navigation/NavigationSafety.kt",
+      "target": "file:app/src/main/java/com/lotterynet/pro/ui/results/ResultsActivity.kt",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7,
+      "description": "app/src/main/java/com/lotterynet/pro/ui/navigation/NavigationSafety.kt imports app/src/main/java/com/lotterynet/pro/ui/results/ResultsActivity.kt"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/ui/navigation/NavigationSafety.kt",
+      "target": "file:app/src/main/java/com/lotterynet/pro/ui/sales/SalesActivity.kt",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7,
+      "description": "app/src/main/java/com/lotterynet/pro/ui/navigation/NavigationSafety.kt imports app/src/main/java/com/lotterynet/pro/ui/sales/SalesActivity.kt"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/ui/navigation/NavigationSafety.kt",
+      "target": "file:app/src/main/java/com/lotterynet/pro/ui/shell/ShellActivity.kt",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7,
+      "description": "app/src/main/java/com/lotterynet/pro/ui/navigation/NavigationSafety.kt imports app/src/main/java/com/lotterynet/pro/ui/shell/ShellActivity.kt"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/ui/navigation/NavigationSafety.kt",
+      "target": "file:app/src/main/java/com/lotterynet/pro/ui/tickets/TicketLookupActivity.kt",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7,
+      "description": "app/src/main/java/com/lotterynet/pro/ui/navigation/NavigationSafety.kt imports app/src/main/java/com/lotterynet/pro/ui/tickets/TicketLookupActivity.kt"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/ui/navigation/NavigationSafety.kt",
+      "target": "file:app/src/main/java/com/lotterynet/pro/ui/tickets/TicketOfficialActivity.kt",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7,
+      "description": "app/src/main/java/com/lotterynet/pro/ui/navigation/NavigationSafety.kt imports app/src/main/java/com/lotterynet/pro/ui/tickets/TicketOfficialActivity.kt"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/ui/navigation/NavigationSafety.kt",
+      "target": "file:app/src/main/java/com/lotterynet/pro/ui/tickets/TicketSummaryActivity.kt",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7,
+      "description": "app/src/main/java/com/lotterynet/pro/ui/navigation/NavigationSafety.kt imports app/src/main/java/com/lotterynet/pro/ui/tickets/TicketSummaryActivity.kt"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/ui/navigation/NavigationSafety.kt",
+      "target": "file:app/src/main/java/com/lotterynet/pro/ui/users/UserAccountsActivity.kt",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7,
+      "description": "app/src/main/java/com/lotterynet/pro/ui/navigation/NavigationSafety.kt imports app/src/main/java/com/lotterynet/pro/ui/users/UserAccountsActivity.kt"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/ui/recharge/RecargasActivity.kt",
+      "target": "function:app/src/main/java/com/lotterynet/pro/ui/recharge/RecargasActivity.kt:resolveRechargeHistoryLayout",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "RecargasActivity.kt contains resolveRechargeHistoryLayout"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/ui/recharge/RecargasActivity.kt",
+      "target": "function:app/src/main/java/com/lotterynet/pro/ui/recharge/RecargasActivity.kt:resolveRechargeLayout",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "RecargasActivity.kt contains resolveRechargeLayout"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/ui/recharge/RecargasActivity.kt",
+      "target": "function:app/src/main/java/com/lotterynet/pro/ui/recharge/RecargasActivity.kt:canOpenRechargeForRole",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "RecargasActivity.kt contains canOpenRechargeForRole"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/ui/recharge/RecargasActivity.kt",
+      "target": "function:app/src/main/java/com/lotterynet/pro/ui/recharge/RecargasActivity.kt:onCreate",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "RecargasActivity.kt contains onCreate"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/ui/recharge/RecargasActivity.kt",
+      "target": "function:app/src/main/java/com/lotterynet/pro/ui/recharge/RecargasActivity.kt:submitRechargeSale",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "RecargasActivity.kt contains submitRechargeSale"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/ui/recharge/RecargasActivity.kt",
+      "target": "function:app/src/main/java/com/lotterynet/pro/ui/recharge/RecargasActivity.kt:RechargeHistoryRow",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "RecargasActivity.kt contains RechargeHistoryRow"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/ui/recharge/RecargasActivity.kt",
+      "target": "function:app/src/main/java/com/lotterynet/pro/ui/recharge/RecargasActivity.kt:StatusStrip",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "RecargasActivity.kt contains StatusStrip"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/ui/recharge/RecargasActivity.kt",
+      "target": "function:app/src/main/java/com/lotterynet/pro/ui/recharge/RecargasActivity.kt:rechargeSellModes",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "RecargasActivity.kt contains rechargeSellModes"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/ui/recharge/RecargasActivity.kt",
+      "target": "function:app/src/main/java/com/lotterynet/pro/ui/recharge/RecargasActivity.kt:rechargeProviderContracts",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "RecargasActivity.kt contains rechargeProviderContracts"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/ui/recharge/RecargasActivity.kt",
+      "target": "function:app/src/main/java/com/lotterynet/pro/ui/recharge/RecargasActivity.kt:paqueticoProviderContracts",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "RecargasActivity.kt contains paqueticoProviderContracts"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/ui/recharge/RecargasActivity.kt",
+      "target": "function:app/src/main/java/com/lotterynet/pro/ui/recharge/RecargasActivity.kt:providersForMode",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "RecargasActivity.kt contains providersForMode"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/ui/recharge/RecargasActivity.kt",
+      "target": "function:app/src/main/java/com/lotterynet/pro/ui/recharge/RecargasActivity.kt:validateRechargeForm",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "RecargasActivity.kt contains validateRechargeForm"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/ui/recharge/RecargasActivity.kt",
+      "target": "function:app/src/main/java/com/lotterynet/pro/ui/recharge/RecargasActivity.kt:resolveRechargeFormAmount",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "RecargasActivity.kt contains resolveRechargeFormAmount"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/ui/recharge/RecargasActivity.kt",
+      "target": "function:app/src/main/java/com/lotterynet/pro/ui/recharge/RecargasActivity.kt:resolveRechargeQuickAmounts",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "RecargasActivity.kt contains resolveRechargeQuickAmounts"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/ui/recharge/RecargasActivity.kt",
+      "target": "function:app/src/main/java/com/lotterynet/pro/ui/recharge/RecargasActivity.kt:resolveAdminId",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "RecargasActivity.kt contains resolveAdminId"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/ui/recharge/RecargasActivity.kt",
+      "target": "function:app/src/main/java/com/lotterynet/pro/ui/recharge/RecargasActivity.kt:resolveAdminUser",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "RecargasActivity.kt contains resolveAdminUser"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/ui/recharge/RecargasActivity.kt",
+      "target": "function:app/src/main/java/com/lotterynet/pro/ui/recharge/RecargasActivity.kt:canShowRechargeAccess",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "RecargasActivity.kt contains canShowRechargeAccess"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/ui/recharge/RecargasActivity.kt",
+      "target": "function:app/src/main/java/com/lotterynet/pro/ui/recharge/RecargasActivity.kt:extractRecargasRapidasReference",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "RecargasActivity.kt contains extractRecargasRapidasReference"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/ui/recharge/RecargasActivity.kt",
+      "target": "class:app/src/main/java/com/lotterynet/pro/ui/recharge/RecargasActivity.kt:RecargasActivity",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "RecargasActivity.kt contains RecargasActivity"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/ui/recharge/RecargasActivity.kt",
+      "target": "file:app/src/main/java/com/lotterynet/pro/core/auth/SupabaseSessionTokenProvider.kt",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7,
+      "description": "app/src/main/java/com/lotterynet/pro/ui/recharge/RecargasActivity.kt imports app/src/main/java/com/lotterynet/pro/core/auth/SupabaseSessionTokenProvider.kt"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/ui/recharge/RecargasActivity.kt",
+      "target": "file:app/src/main/java/com/lotterynet/pro/core/master/SupabaseMasterConfigRemoteStore.kt",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7,
+      "description": "app/src/main/java/com/lotterynet/pro/ui/recharge/RecargasActivity.kt imports app/src/main/java/com/lotterynet/pro/core/master/SupabaseMasterConfigRemoteStore.kt"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/ui/recharge/RecargasActivity.kt",
+      "target": "file:app/src/main/java/com/lotterynet/pro/core/model/OperationalFeedback.kt",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7,
+      "description": "app/src/main/java/com/lotterynet/pro/ui/recharge/RecargasActivity.kt imports app/src/main/java/com/lotterynet/pro/core/model/OperationalFeedback.kt"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/ui/recharge/RecargasActivity.kt",
+      "target": "file:app/src/main/java/com/lotterynet/pro/core/model/UserRole.kt",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7,
+      "description": "app/src/main/java/com/lotterynet/pro/ui/recharge/RecargasActivity.kt imports app/src/main/java/com/lotterynet/pro/core/model/UserRole.kt"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/ui/recharge/RecargasActivity.kt",
+      "target": "file:app/src/main/java/com/lotterynet/pro/core/printing/BluetoothThermalPrinter.kt",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7,
+      "description": "app/src/main/java/com/lotterynet/pro/ui/recharge/RecargasActivity.kt imports app/src/main/java/com/lotterynet/pro/core/printing/BluetoothThermalPrinter.kt"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/ui/recharge/RecargasActivity.kt",
+      "target": "file:app/src/main/java/com/lotterynet/pro/core/printing/IntegratedThermalPrinter.kt",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7,
+      "description": "app/src/main/java/com/lotterynet/pro/ui/recharge/RecargasActivity.kt imports app/src/main/java/com/lotterynet/pro/core/printing/IntegratedThermalPrinter.kt"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/ui/recharge/RecargasActivity.kt",
+      "target": "file:app/src/main/java/com/lotterynet/pro/core/recharge/recargasrapidas/RecargasRapidasBackendClient.kt",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7,
+      "description": "app/src/main/java/com/lotterynet/pro/ui/recharge/RecargasActivity.kt imports app/src/main/java/com/lotterynet/pro/core/recharge/recargasrapidas/RecargasRapidasBackendClient.kt"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/ui/recharge/RecargasActivity.kt",
+      "target": "file:app/src/main/java/com/lotterynet/pro/core/storage/LocalRechargeLimitRepository.kt",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7,
+      "description": "app/src/main/java/com/lotterynet/pro/ui/recharge/RecargasActivity.kt imports app/src/main/java/com/lotterynet/pro/core/storage/LocalRechargeLimitRepository.kt"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/ui/recharge/RecargasActivity.kt",
+      "target": "file:app/src/main/java/com/lotterynet/pro/core/storage/LocalRechargeRepository.kt",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7,
+      "description": "app/src/main/java/com/lotterynet/pro/ui/recharge/RecargasActivity.kt imports app/src/main/java/com/lotterynet/pro/core/storage/LocalRechargeRepository.kt"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/ui/recharge/RecargasActivity.kt",
+      "target": "file:app/src/main/java/com/lotterynet/pro/core/storage/LocalSessionRepository.kt",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7,
+      "description": "app/src/main/java/com/lotterynet/pro/ui/recharge/RecargasActivity.kt imports app/src/main/java/com/lotterynet/pro/core/storage/LocalSessionRepository.kt"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/ui/recharge/RecargasActivity.kt",
+      "target": "file:app/src/main/java/com/lotterynet/pro/core/storage/LocalThermalPrinterRepository.kt",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7,
+      "description": "app/src/main/java/com/lotterynet/pro/ui/recharge/RecargasActivity.kt imports app/src/main/java/com/lotterynet/pro/core/storage/LocalThermalPrinterRepository.kt"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/ui/recharge/RecargasActivity.kt",
+      "target": "file:app/src/main/java/com/lotterynet/pro/core/storage/LocalUsersRepository.kt",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7,
+      "description": "app/src/main/java/com/lotterynet/pro/ui/recharge/RecargasActivity.kt imports app/src/main/java/com/lotterynet/pro/core/storage/LocalUsersRepository.kt"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/ui/recharge/RecargasActivity.kt",
+      "target": "file:app/src/main/java/com/lotterynet/pro/core/sync/NativeRechargeCloudSyncCoordinator.kt",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7,
+      "description": "app/src/main/java/com/lotterynet/pro/ui/recharge/RecargasActivity.kt imports app/src/main/java/com/lotterynet/pro/core/sync/NativeRechargeCloudSyncCoordinator.kt"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/ui/recharge/RecargasActivity.kt",
+      "target": "file:app/src/main/java/com/lotterynet/pro/ui/master/MasterDashboardActivity.kt",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7,
+      "description": "app/src/main/java/com/lotterynet/pro/ui/recharge/RecargasActivity.kt imports app/src/main/java/com/lotterynet/pro/ui/master/MasterDashboardActivity.kt"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/ui/recharge/RecargasActivity.kt",
+      "target": "file:app/src/main/java/com/lotterynet/pro/ui/shell/ShellActivity.kt",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7,
+      "description": "app/src/main/java/com/lotterynet/pro/ui/recharge/RecargasActivity.kt imports app/src/main/java/com/lotterynet/pro/ui/shell/ShellActivity.kt"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/ui/update/UpdatePromptActivity.kt",
+      "target": "function:app/src/main/java/com/lotterynet/pro/ui/update/UpdatePromptActivity.kt:onCreate",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "UpdatePromptActivity.kt contains onCreate"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/ui/update/UpdatePromptActivity.kt",
+      "target": "function:app/src/main/java/com/lotterynet/pro/ui/update/UpdatePromptActivity.kt:handleOnBackPressed",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "UpdatePromptActivity.kt contains handleOnBackPressed"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/ui/update/UpdatePromptActivity.kt",
+      "target": "function:app/src/main/java/com/lotterynet/pro/ui/update/UpdatePromptActivity.kt:onStart",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "UpdatePromptActivity.kt contains onStart"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/ui/update/UpdatePromptActivity.kt",
+      "target": "function:app/src/main/java/com/lotterynet/pro/ui/update/UpdatePromptActivity.kt:onStop",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "UpdatePromptActivity.kt contains onStop"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/ui/update/UpdatePromptActivity.kt",
+      "target": "class:app/src/main/java/com/lotterynet/pro/ui/update/UpdatePromptActivity.kt:UpdatePromptActivity",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "UpdatePromptActivity.kt contains UpdatePromptActivity"
+    },
+    {
+      "source": "file:app/src/test/java/com/lotterynet/pro/core/auth/SupabaseSessionTokenProviderTest.kt",
+      "target": "function:app/src/test/java/com/lotterynet/pro/core/auth/SupabaseSessionTokenProviderTest.kt:refreshSession",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "SupabaseSessionTokenProviderTest.kt contains refreshSession"
+    },
+    {
+      "source": "file:app/src/test/java/com/lotterynet/pro/core/auth/SupabaseSessionTokenProviderTest.kt",
+      "target": "function:app/src/test/java/com/lotterynet/pro/core/auth/SupabaseSessionTokenProviderTest.kt:getSavedLogin",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "SupabaseSessionTokenProviderTest.kt contains getSavedLogin"
+    },
+    {
+      "source": "file:app/src/test/java/com/lotterynet/pro/core/auth/SupabaseSessionTokenProviderTest.kt",
+      "target": "function:app/src/test/java/com/lotterynet/pro/core/auth/SupabaseSessionTokenProviderTest.kt:saveSavedLogin",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "SupabaseSessionTokenProviderTest.kt contains saveSavedLogin"
+    },
+    {
+      "source": "file:app/src/test/java/com/lotterynet/pro/core/auth/SupabaseSessionTokenProviderTest.kt",
+      "target": "function:app/src/test/java/com/lotterynet/pro/core/auth/SupabaseSessionTokenProviderTest.kt:getActiveSession",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "SupabaseSessionTokenProviderTest.kt contains getActiveSession"
+    },
+    {
+      "source": "file:app/src/test/java/com/lotterynet/pro/core/auth/SupabaseSessionTokenProviderTest.kt",
+      "target": "function:app/src/test/java/com/lotterynet/pro/core/auth/SupabaseSessionTokenProviderTest.kt:saveActiveSession",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "SupabaseSessionTokenProviderTest.kt contains saveActiveSession"
+    },
+    {
+      "source": "file:app/src/test/java/com/lotterynet/pro/core/auth/SupabaseSessionTokenProviderTest.kt",
+      "target": "function:app/src/test/java/com/lotterynet/pro/core/auth/SupabaseSessionTokenProviderTest.kt:getSessionSnapshot",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "SupabaseSessionTokenProviderTest.kt contains getSessionSnapshot"
+    },
+    {
+      "source": "file:app/src/test/java/com/lotterynet/pro/core/auth/SupabaseSessionTokenProviderTest.kt",
+      "target": "function:app/src/test/java/com/lotterynet/pro/core/auth/SupabaseSessionTokenProviderTest.kt:saveSessionSnapshot",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "SupabaseSessionTokenProviderTest.kt contains saveSessionSnapshot"
+    },
+    {
+      "source": "file:app/src/test/java/com/lotterynet/pro/core/auth/SupabaseSessionTokenProviderTest.kt",
+      "target": "function:app/src/test/java/com/lotterynet/pro/core/auth/SupabaseSessionTokenProviderTest.kt:clearSession",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "SupabaseSessionTokenProviderTest.kt contains clearSession"
+    },
+    {
+      "source": "file:app/src/test/java/com/lotterynet/pro/core/auth/SupabaseSessionTokenProviderTest.kt",
+      "target": "class:app/src/test/java/com/lotterynet/pro/core/auth/SupabaseSessionTokenProviderTest.kt:SupabaseSessionTokenProviderTest",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "SupabaseSessionTokenProviderTest.kt contains SupabaseSessionTokenProviderTest"
+    },
+    {
+      "source": "file:app/src/test/java/com/lotterynet/pro/core/auth/SupabaseSessionTokenProviderTest.kt",
+      "target": "file:app/src/main/java/com/lotterynet/pro/core/model/UserRole.kt",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7,
+      "description": "app/src/test/java/com/lotterynet/pro/core/auth/SupabaseSessionTokenProviderTest.kt imports app/src/main/java/com/lotterynet/pro/core/model/UserRole.kt"
+    },
+    {
+      "source": "file:app/src/test/java/com/lotterynet/pro/core/auth/SupabaseSessionTokenProviderTest.kt",
+      "target": "file:app/src/main/java/com/lotterynet/pro/core/repository/SessionRepository.kt",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7,
+      "description": "app/src/test/java/com/lotterynet/pro/core/auth/SupabaseSessionTokenProviderTest.kt imports app/src/main/java/com/lotterynet/pro/core/repository/SessionRepository.kt"
+    },
+    {
+      "source": "file:app/src/test/java/com/lotterynet/pro/core/sync/NativeUsersBootstrapperContractsTest.kt",
+      "target": "class:app/src/test/java/com/lotterynet/pro/core/sync/NativeUsersBootstrapperContractsTest.kt:NativeUsersBootstrapperContractsTest",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "NativeUsersBootstrapperContractsTest.kt contains NativeUsersBootstrapperContractsTest"
+    },
+    {
+      "source": "file:app/src/test/java/com/lotterynet/pro/core/sync/NativeUsersBootstrapperContractsTest.kt",
+      "target": "file:app/src/main/java/com/lotterynet/pro/core/users/UsersRemoteStore.kt",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7,
+      "description": "app/src/test/java/com/lotterynet/pro/core/sync/NativeUsersBootstrapperContractsTest.kt imports app/src/main/java/com/lotterynet/pro/core/users/UsersRemoteStore.kt"
+    }
+  ]
+}

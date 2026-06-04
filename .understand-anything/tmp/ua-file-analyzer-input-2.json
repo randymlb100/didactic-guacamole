@@ -1,0 +1,470 @@
+{
+  "projectRoot": "C:\\Users\\Randy Cordero\\Desktop\\lotterynet_android",
+  "batchFiles": [
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/core/results/ResultsSupabaseStore.kt",
+      "language": "kotlin",
+      "sizeLines": 319,
+      "fileCategory": "code"
+    },
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/core/results/TicketPrizeReconciler.kt",
+      "language": "kotlin",
+      "sizeLines": 87,
+      "fileCategory": "code"
+    },
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/core/sales/SaleExposureEngine.kt",
+      "language": "kotlin",
+      "sizeLines": 336,
+      "fileCategory": "code"
+    },
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/core/sales/SaleValidator.kt",
+      "language": "kotlin",
+      "sizeLines": 571,
+      "fileCategory": "code"
+    },
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/core/storage/LocalAdminLotteryConfigRepository.kt",
+      "language": "kotlin",
+      "sizeLines": 447,
+      "fileCategory": "code"
+    },
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/core/storage/LocalBrandingRepository.kt",
+      "language": "kotlin",
+      "sizeLines": 35,
+      "fileCategory": "code"
+    },
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/core/storage/LocalPosModeRepository.kt",
+      "language": "kotlin",
+      "sizeLines": 19,
+      "fileCategory": "code"
+    },
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/core/storage/LocalPrizeConfigRepository.kt",
+      "language": "kotlin",
+      "sizeLines": 121,
+      "fileCategory": "code"
+    },
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/core/storage/LocalResultsRepository.kt",
+      "language": "kotlin",
+      "sizeLines": 78,
+      "fileCategory": "code"
+    },
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/core/storage/LocalSaleDraftRepository.kt",
+      "language": "kotlin",
+      "sizeLines": 122,
+      "fileCategory": "code"
+    },
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/core/storage/LocalThermalPrinterRepository.kt",
+      "language": "kotlin",
+      "sizeLines": 165,
+      "fileCategory": "code"
+    },
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/core/storage/LocalTrustedClockRepository.kt",
+      "language": "kotlin",
+      "sizeLines": 102,
+      "fileCategory": "code"
+    },
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/core/storage/SalesStorageKeys.kt",
+      "language": "kotlin",
+      "sizeLines": 10,
+      "fileCategory": "code"
+    },
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/core/sync/OperationalSyncThrottle.kt",
+      "language": "kotlin",
+      "sizeLines": 19,
+      "fileCategory": "code"
+    },
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/core/sync/SyncGovernor.kt",
+      "language": "kotlin",
+      "sizeLines": 97,
+      "fileCategory": "code"
+    },
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/ui/admin/AdminConfigActivity.kt",
+      "language": "kotlin",
+      "sizeLines": 1390,
+      "fileCategory": "code"
+    },
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/ui/common/NativeChrome.kt",
+      "language": "kotlin",
+      "sizeLines": 3112,
+      "fileCategory": "code"
+    },
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/ui/finance/FinanceReportsActivity.kt",
+      "language": "kotlin",
+      "sizeLines": 884,
+      "fileCategory": "code"
+    },
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/ui/printer/PrinterActivity.kt",
+      "language": "kotlin",
+      "sizeLines": 1196,
+      "fileCategory": "code"
+    },
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/ui/results/LotteryResultsView.kt",
+      "language": "kotlin",
+      "sizeLines": 244,
+      "fileCategory": "code"
+    },
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/ui/results/ResultsActivity.kt",
+      "language": "kotlin",
+      "sizeLines": 3052,
+      "fileCategory": "code"
+    },
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/ui/sales/SalesActivity.kt",
+      "language": "kotlin",
+      "sizeLines": 5881,
+      "fileCategory": "code"
+    },
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/ui/tickets/TicketLookupActivity.kt",
+      "language": "kotlin",
+      "sizeLines": 751,
+      "fileCategory": "code"
+    },
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/ui/tickets/TicketOfficialActivity.kt",
+      "language": "kotlin",
+      "sizeLines": 2473,
+      "fileCategory": "code"
+    },
+    {
+      "path": "app/src/test/java/com/lotterynet/pro/core/calendar/LotteryAvailabilityResolverContractsTest.kt",
+      "language": "kotlin",
+      "sizeLines": 188,
+      "fileCategory": "code"
+    },
+    {
+      "path": "app/src/test/java/com/lotterynet/pro/core/calendar/LotteryClosePolicyContractsTest.kt",
+      "language": "kotlin",
+      "sizeLines": 432,
+      "fileCategory": "code"
+    },
+    {
+      "path": "app/src/test/java/com/lotterynet/pro/core/export/BitmapExportSpecTest.kt",
+      "language": "kotlin",
+      "sizeLines": 90,
+      "fileCategory": "code"
+    },
+    {
+      "path": "app/src/test/java/com/lotterynet/pro/core/printing/BluetoothThermalPrinterPolicyTest.kt",
+      "language": "kotlin",
+      "sizeLines": 103,
+      "fileCategory": "code"
+    },
+    {
+      "path": "app/src/test/java/com/lotterynet/pro/core/results/ResultsScraperOrchestratorTest.kt",
+      "language": "kotlin",
+      "sizeLines": 919,
+      "fileCategory": "code"
+    },
+    {
+      "path": "app/src/test/java/com/lotterynet/pro/core/results/ResultsSupabaseStoreTest.kt",
+      "language": "kotlin",
+      "sizeLines": 764,
+      "fileCategory": "code"
+    },
+    {
+      "path": "app/src/test/java/com/lotterynet/pro/core/sync/RealtimeFlowContractsTest.kt",
+      "language": "kotlin",
+      "sizeLines": 110,
+      "fileCategory": "code"
+    },
+    {
+      "path": "app/src/test/java/com/lotterynet/pro/ui/results/ResultsActivityContractsTest.kt",
+      "language": "kotlin",
+      "sizeLines": 1106,
+      "fileCategory": "code"
+    }
+  ],
+  "batchImportData": {
+    "app/src/main/java/com/lotterynet/pro/core/results/ResultsSupabaseStore.kt": [
+      "app/src/main/java/com/lotterynet/pro/core/catalog/StaticLotteryCatalogRepository.kt"
+    ],
+    "app/src/main/java/com/lotterynet/pro/core/results/TicketPrizeReconciler.kt": [
+      "app/src/main/java/com/lotterynet/pro/core/storage/LocalPrizeConfigRepository.kt",
+      "app/src/main/java/com/lotterynet/pro/core/storage/LocalSalesRepository.kt"
+    ],
+    "app/src/main/java/com/lotterynet/pro/core/sales/SaleExposureEngine.kt": [
+      "app/src/main/java/com/lotterynet/pro/core/model/UserRole.kt",
+      "app/src/main/java/com/lotterynet/pro/core/repository/SalesRepository.kt",
+      "app/src/main/java/com/lotterynet/pro/core/storage/SalesStorageKeys.kt"
+    ],
+    "app/src/main/java/com/lotterynet/pro/core/sales/SaleValidator.kt": [],
+    "app/src/main/java/com/lotterynet/pro/core/storage/LocalAdminLotteryConfigRepository.kt": [
+      "app/src/main/java/com/lotterynet/pro/core/model/UserRole.kt"
+    ],
+    "app/src/main/java/com/lotterynet/pro/core/storage/LocalBrandingRepository.kt": [],
+    "app/src/main/java/com/lotterynet/pro/core/storage/LocalPosModeRepository.kt": [],
+    "app/src/main/java/com/lotterynet/pro/core/storage/LocalPrizeConfigRepository.kt": [],
+    "app/src/main/java/com/lotterynet/pro/core/storage/LocalResultsRepository.kt": [
+      "app/src/main/java/com/lotterynet/pro/core/repository/ResultsRepository.kt"
+    ],
+    "app/src/main/java/com/lotterynet/pro/core/storage/LocalSaleDraftRepository.kt": [],
+    "app/src/main/java/com/lotterynet/pro/core/storage/LocalThermalPrinterRepository.kt": [
+      "app/src/main/java/com/lotterynet/pro/core/repository/ThermalPrinterRepository.kt"
+    ],
+    "app/src/main/java/com/lotterynet/pro/core/storage/LocalTrustedClockRepository.kt": [
+      "app/src/main/java/com/lotterynet/pro/core/calendar/LotteryTimeZones.kt",
+      "app/src/main/java/com/lotterynet/pro/core/repository/TrustedClockRepository.kt"
+    ],
+    "app/src/main/java/com/lotterynet/pro/core/storage/SalesStorageKeys.kt": [],
+    "app/src/main/java/com/lotterynet/pro/core/sync/OperationalSyncThrottle.kt": [],
+    "app/src/main/java/com/lotterynet/pro/core/sync/SyncGovernor.kt": [],
+    "app/src/main/java/com/lotterynet/pro/ui/admin/AdminConfigActivity.kt": [
+      "app/src/main/java/com/lotterynet/pro/core/calendar/LotteryAvailabilityResolver.kt",
+      "app/src/main/java/com/lotterynet/pro/core/calendar/LotteryClosePolicy.kt",
+      "app/src/main/java/com/lotterynet/pro/core/calendar/StaticHolidayCalendarRepository.kt",
+      "app/src/main/java/com/lotterynet/pro/core/catalog/StaticLotteryCatalogRepository.kt",
+      "app/src/main/java/com/lotterynet/pro/core/master/SupabaseMasterConfigRemoteStore.kt",
+      "app/src/main/java/com/lotterynet/pro/core/model/UserRole.kt",
+      "app/src/main/java/com/lotterynet/pro/core/results/PickResultIdentityResolver.kt",
+      "app/src/main/java/com/lotterynet/pro/core/storage/LocalAdminLotteryConfigRepository.kt",
+      "app/src/main/java/com/lotterynet/pro/core/storage/LocalBrandingRepository.kt",
+      "app/src/main/java/com/lotterynet/pro/core/storage/LocalSalesRepository.kt",
+      "app/src/main/java/com/lotterynet/pro/core/storage/LocalSessionRepository.kt",
+      "app/src/main/java/com/lotterynet/pro/core/storage/LocalThermalPrinterRepository.kt",
+      "app/src/main/java/com/lotterynet/pro/core/storage/LocalTrustedClockRepository.kt",
+      "app/src/main/java/com/lotterynet/pro/core/storage/LocalUsersRepository.kt",
+      "app/src/main/java/com/lotterynet/pro/core/sync/NativeOperationalSyncCoordinator.kt",
+      "app/src/main/java/com/lotterynet/pro/core/sync/NativeTicketCloudSyncCoordinator.kt",
+      "app/src/main/java/com/lotterynet/pro/core/sync/NativeTicketSyncQueueRepository.kt",
+      "app/src/main/java/com/lotterynet/pro/core/sync/SyncGovernor.kt"
+    ],
+    "app/src/main/java/com/lotterynet/pro/ui/common/NativeChrome.kt": [
+      "app/src/main/java/com/lotterynet/pro/core/catalog/LotteryLogoBitmapLoader.kt",
+      "app/src/main/java/com/lotterynet/pro/core/model/UserRole.kt",
+      "app/src/main/java/com/lotterynet/pro/core/storage/LocalPosModeRepository.kt",
+      "app/src/main/java/com/lotterynet/pro/ui/finance/FinanceActivity.kt",
+      "app/src/main/java/com/lotterynet/pro/ui/master/MasterDashboardActivity.kt",
+      "app/src/main/java/com/lotterynet/pro/ui/results/ResultsActivity.kt",
+      "app/src/main/java/com/lotterynet/pro/ui/sales/SalesActivity.kt",
+      "app/src/main/java/com/lotterynet/pro/ui/shell/ShellActivity.kt",
+      "app/src/main/java/com/lotterynet/pro/ui/tickets/TicketLookupActivity.kt",
+      "app/src/main/java/com/lotterynet/pro/ui/tickets/TicketSummaryActivity.kt"
+    ],
+    "app/src/main/java/com/lotterynet/pro/ui/finance/FinanceReportsActivity.kt": [
+      "app/src/main/java/com/lotterynet/pro/core/export/NativeBitmapExport.kt",
+      "app/src/main/java/com/lotterynet/pro/core/finance/LocalFinanceRepository.kt",
+      "app/src/main/java/com/lotterynet/pro/core/model/UserRole.kt",
+      "app/src/main/java/com/lotterynet/pro/core/printing/ThermalTicketRenderer.kt",
+      "app/src/main/java/com/lotterynet/pro/core/storage/LocalRechargeRepository.kt",
+      "app/src/main/java/com/lotterynet/pro/core/storage/LocalSalesRepository.kt",
+      "app/src/main/java/com/lotterynet/pro/core/storage/LocalSessionRepository.kt",
+      "app/src/main/java/com/lotterynet/pro/core/storage/LocalThermalPrinterRepository.kt",
+      "app/src/main/java/com/lotterynet/pro/core/storage/LocalUsersRepository.kt",
+      "app/src/main/java/com/lotterynet/pro/ui/printer/PrinterActivity.kt"
+    ],
+    "app/src/main/java/com/lotterynet/pro/ui/printer/PrinterActivity.kt": [
+      "app/src/main/java/com/lotterynet/pro/core/model/UserRole.kt",
+      "app/src/main/java/com/lotterynet/pro/core/printing/BluetoothThermalPrinter.kt",
+      "app/src/main/java/com/lotterynet/pro/core/printing/ThermalTicketRenderer.kt",
+      "app/src/main/java/com/lotterynet/pro/core/storage/LocalSalesRepository.kt",
+      "app/src/main/java/com/lotterynet/pro/core/storage/LocalSessionRepository.kt",
+      "app/src/main/java/com/lotterynet/pro/core/storage/LocalThermalPrinterRepository.kt",
+      "app/src/main/java/com/lotterynet/pro/core/storage/LocalUsersRepository.kt",
+      "app/src/main/java/com/lotterynet/pro/ui/tickets/TicketOfficialActivity.kt"
+    ],
+    "app/src/main/java/com/lotterynet/pro/ui/results/LotteryResultsView.kt": [
+      "app/src/main/java/com/lotterynet/pro/core/catalog/LotteryLogoBitmapLoader.kt"
+    ],
+    "app/src/main/java/com/lotterynet/pro/ui/results/ResultsActivity.kt": [
+      "app/src/main/java/com/lotterynet/pro/core/calendar/LotteryClosePolicy.kt",
+      "app/src/main/java/com/lotterynet/pro/core/calendar/LotteryTimeZones.kt",
+      "app/src/main/java/com/lotterynet/pro/core/calendar/StaticHolidayCalendarRepository.kt",
+      "app/src/main/java/com/lotterynet/pro/core/catalog/LotteryAssetResolver.kt",
+      "app/src/main/java/com/lotterynet/pro/core/catalog/LotteryLogoBitmapLoader.kt",
+      "app/src/main/java/com/lotterynet/pro/core/catalog/StaticLotteryCatalogRepository.kt",
+      "app/src/main/java/com/lotterynet/pro/core/catalog/UsPickScheduleResolver.kt",
+      "app/src/main/java/com/lotterynet/pro/core/diagnostics/NativeCrashReporter.kt",
+      "app/src/main/java/com/lotterynet/pro/core/export/NativeBitmapExport.kt",
+      "app/src/main/java/com/lotterynet/pro/core/export/StaticExportTemplateRepository.kt",
+      "app/src/main/java/com/lotterynet/pro/core/model/UserRole.kt",
+      "app/src/main/java/com/lotterynet/pro/core/realtime/LotterynetRealtimeClient.kt",
+      "app/src/main/java/com/lotterynet/pro/core/realtime/LotterynetRealtimeSubscription.kt",
+      "app/src/main/java/com/lotterynet/pro/core/render/LocalRenderCacheRepository.kt",
+      "app/src/main/java/com/lotterynet/pro/core/repository/ResultsRepository.kt",
+      "app/src/main/java/com/lotterynet/pro/core/results/PickResultIdentityResolver.kt",
+      "app/src/main/java/com/lotterynet/pro/core/results/ResultsRemoteStore.kt",
+      "app/src/main/java/com/lotterynet/pro/core/results/ResultsScraperOrchestrator.kt",
+      "app/src/main/java/com/lotterynet/pro/core/results/ResultsSupabaseStore.kt",
+      "app/src/main/java/com/lotterynet/pro/core/results/SupabaseResultsRemoteStore.kt",
+      "app/src/main/java/com/lotterynet/pro/core/results/TicketPrizeReconciler.kt",
+      "app/src/main/java/com/lotterynet/pro/core/storage/LocalAdminLotteryConfigRepository.kt",
+      "app/src/main/java/com/lotterynet/pro/core/storage/LocalBrandingRepository.kt",
+      "app/src/main/java/com/lotterynet/pro/core/storage/LocalCashierPrizePayoutRepository.kt",
+      "app/src/main/java/com/lotterynet/pro/core/storage/LocalPrizeConfigRepository.kt",
+      "app/src/main/java/com/lotterynet/pro/core/storage/LocalResultsRepository.kt",
+      "app/src/main/java/com/lotterynet/pro/core/storage/LocalSalesRepository.kt",
+      "app/src/main/java/com/lotterynet/pro/core/storage/LocalSessionRepository.kt",
+      "app/src/main/java/com/lotterynet/pro/core/storage/LocalTrustedClockRepository.kt",
+      "app/src/main/java/com/lotterynet/pro/core/storage/LocalUsersRepository.kt",
+      "app/src/main/java/com/lotterynet/pro/core/sync/LocalSyncFreshnessRepository.kt",
+      "app/src/main/java/com/lotterynet/pro/core/sync/NativeOperationalSyncCoordinator.kt",
+      "app/src/main/java/com/lotterynet/pro/core/sync/NativeTicketCloudSyncCoordinator.kt",
+      "app/src/main/java/com/lotterynet/pro/core/sync/NativeTicketSyncQueueRepository.kt",
+      "app/src/main/java/com/lotterynet/pro/core/sync/SyncGovernor.kt",
+      "app/src/main/java/com/lotterynet/pro/ui/shell/ShellActivity.kt"
+    ],
+    "app/src/main/java/com/lotterynet/pro/ui/sales/SalesActivity.kt": [
+      "app/src/main/java/com/lotterynet/pro/core/auth/SupabaseSessionTokenProvider.kt",
+      "app/src/main/java/com/lotterynet/pro/core/calendar/LotteryAvailabilityResolver.kt",
+      "app/src/main/java/com/lotterynet/pro/core/calendar/LotteryClosePolicy.kt",
+      "app/src/main/java/com/lotterynet/pro/core/calendar/StaticHolidayCalendarRepository.kt",
+      "app/src/main/java/com/lotterynet/pro/core/catalog/StaticLotteryCatalogRepository.kt",
+      "app/src/main/java/com/lotterynet/pro/core/catalog/UsPickScheduleResolver.kt",
+      "app/src/main/java/com/lotterynet/pro/core/delivery/TicketDeliveryPolicy.kt",
+      "app/src/main/java/com/lotterynet/pro/core/diagnostics/NativeCrashReporter.kt",
+      "app/src/main/java/com/lotterynet/pro/core/export/NativeBitmapExport.kt",
+      "app/src/main/java/com/lotterynet/pro/core/export/StaticExportTemplateRepository.kt",
+      "app/src/main/java/com/lotterynet/pro/core/export/TicketSecurity.kt",
+      "app/src/main/java/com/lotterynet/pro/core/master/SupabaseMasterConfigRemoteStore.kt",
+      "app/src/main/java/com/lotterynet/pro/core/model/UserRole.kt",
+      "app/src/main/java/com/lotterynet/pro/core/network/ProductionNetworkGuard.kt",
+      "app/src/main/java/com/lotterynet/pro/core/notification/LotteryClosingNotifier.kt",
+      "app/src/main/java/com/lotterynet/pro/core/notification/WinningTicketNotifier.kt",
+      "app/src/main/java/com/lotterynet/pro/core/perf/PosPerformanceBudget.kt",
+      "app/src/main/java/com/lotterynet/pro/core/printing/BluetoothThermalPrinter.kt",
+      "app/src/main/java/com/lotterynet/pro/core/printing/IntegratedThermalPrinter.kt",
+      "app/src/main/java/com/lotterynet/pro/core/printing/ThermalTicketRenderer.kt",
+      "app/src/main/java/com/lotterynet/pro/core/realtime/LotterynetRealtimeClient.kt",
+      "app/src/main/java/com/lotterynet/pro/core/realtime/LotterynetRealtimeSubscription.kt",
+      "app/src/main/java/com/lotterynet/pro/core/remote/SupabaseEdgeClient.kt",
+      "app/src/main/java/com/lotterynet/pro/core/render/LocalRenderCacheRepository.kt",
+      "app/src/main/java/com/lotterynet/pro/core/repository/NativeSyncQueueRepository.kt",
+      "app/src/main/java/com/lotterynet/pro/core/results/PickResultIdentityResolver.kt",
+      "app/src/main/java/com/lotterynet/pro/core/results/ResultsScraperOrchestrator.kt",
+      "app/src/main/java/com/lotterynet/pro/core/results/ResultsSupabaseStore.kt",
+      "app/src/main/java/com/lotterynet/pro/core/results/TicketPrizeReconciler.kt",
+      "app/src/main/java/com/lotterynet/pro/core/sales/SaleExposureEngine.kt",
+      "app/src/main/java/com/lotterynet/pro/core/sales/SaleValidator.kt",
+      "app/src/main/java/com/lotterynet/pro/core/sales/SupabaseTicketBackendClient.kt",
+      "app/src/main/java/com/lotterynet/pro/core/storage/LocalAdminLotteryConfigRepository.kt",
+      "app/src/main/java/com/lotterynet/pro/core/storage/LocalBrandingRepository.kt",
+      "app/src/main/java/com/lotterynet/pro/core/storage/LocalCashierPrizePayoutRepository.kt",
+      "app/src/main/java/com/lotterynet/pro/core/storage/LocalCashierSalesLimitRepository.kt",
+      "app/src/main/java/com/lotterynet/pro/core/storage/LocalPrizeConfigRepository.kt",
+      "app/src/main/java/com/lotterynet/pro/core/storage/LocalResultsRepository.kt",
+      "app/src/main/java/com/lotterynet/pro/core/storage/LocalSaleDraftRepository.kt",
+      "app/src/main/java/com/lotterynet/pro/core/storage/LocalSalesRepository.kt",
+      "app/src/main/java/com/lotterynet/pro/core/storage/LocalSessionRepository.kt",
+      "app/src/main/java/com/lotterynet/pro/core/storage/LocalThermalPrinterRepository.kt",
+      "app/src/main/java/com/lotterynet/pro/core/storage/LocalTrustedClockRepository.kt",
+      "app/src/main/java/com/lotterynet/pro/core/storage/LocalUsersRepository.kt",
+      "app/src/main/java/com/lotterynet/pro/core/sync/CashierLimitCloudSyncCoordinator.kt",
+      "app/src/main/java/com/lotterynet/pro/core/sync/LocalSyncFreshnessRepository.kt",
+      "app/src/main/java/com/lotterynet/pro/core/sync/NativeOperationalSyncCoordinator.kt",
+      "app/src/main/java/com/lotterynet/pro/core/sync/NativeTicketCloudSyncCoordinator.kt",
+      "app/src/main/java/com/lotterynet/pro/core/sync/NativeTicketSyncQueueRepository.kt",
+      "app/src/main/java/com/lotterynet/pro/core/sync/NativeUsersBootstrapper.kt",
+      "app/src/main/java/com/lotterynet/pro/core/sync/OperationalSyncThrottle.kt",
+      "app/src/main/java/com/lotterynet/pro/core/sync/SyncGovernor.kt",
+      "app/src/main/java/com/lotterynet/pro/ui/login/LoginActivity.kt",
+      "app/src/main/java/com/lotterynet/pro/ui/printer/PrinterActivity.kt",
+      "app/src/main/java/com/lotterynet/pro/ui/shell/ShellActivity.kt",
+      "app/src/main/java/com/lotterynet/pro/ui/tickets/TicketLookupActivity.kt",
+      "app/src/main/java/com/lotterynet/pro/ui/tickets/TicketOfficialActivity.kt"
+    ],
+    "app/src/main/java/com/lotterynet/pro/ui/tickets/TicketLookupActivity.kt": [
+      "app/src/main/java/com/lotterynet/pro/core/auth/SupabaseSessionTokenProvider.kt",
+      "app/src/main/java/com/lotterynet/pro/core/calendar/LotteryClosePolicy.kt",
+      "app/src/main/java/com/lotterynet/pro/core/calendar/StaticHolidayCalendarRepository.kt",
+      "app/src/main/java/com/lotterynet/pro/core/catalog/StaticLotteryCatalogRepository.kt",
+      "app/src/main/java/com/lotterynet/pro/core/model/UserRole.kt",
+      "app/src/main/java/com/lotterynet/pro/core/sales/SupabaseTicketBackendClient.kt",
+      "app/src/main/java/com/lotterynet/pro/core/storage/LocalAdminLotteryConfigRepository.kt",
+      "app/src/main/java/com/lotterynet/pro/core/storage/LocalSalesRepository.kt",
+      "app/src/main/java/com/lotterynet/pro/core/storage/LocalSessionRepository.kt",
+      "app/src/main/java/com/lotterynet/pro/core/storage/LocalTrustedClockRepository.kt",
+      "app/src/main/java/com/lotterynet/pro/core/storage/LocalUsersRepository.kt"
+    ],
+    "app/src/main/java/com/lotterynet/pro/ui/tickets/TicketOfficialActivity.kt": [
+      "app/src/main/java/com/lotterynet/pro/core/auth/SupabaseSessionTokenProvider.kt",
+      "app/src/main/java/com/lotterynet/pro/core/calendar/LotteryClosePolicy.kt",
+      "app/src/main/java/com/lotterynet/pro/core/calendar/StaticHolidayCalendarRepository.kt",
+      "app/src/main/java/com/lotterynet/pro/core/catalog/StaticLotteryCatalogRepository.kt",
+      "app/src/main/java/com/lotterynet/pro/core/delivery/TicketDeliveryPolicy.kt",
+      "app/src/main/java/com/lotterynet/pro/core/diagnostics/NativeCrashReporter.kt",
+      "app/src/main/java/com/lotterynet/pro/core/export/NativeBitmapExport.kt",
+      "app/src/main/java/com/lotterynet/pro/core/export/StaticExportTemplateRepository.kt",
+      "app/src/main/java/com/lotterynet/pro/core/export/TicketSecurity.kt",
+      "app/src/main/java/com/lotterynet/pro/core/model/UserRole.kt",
+      "app/src/main/java/com/lotterynet/pro/core/network/ProductionNetworkGuard.kt",
+      "app/src/main/java/com/lotterynet/pro/core/printing/BluetoothThermalPrinter.kt",
+      "app/src/main/java/com/lotterynet/pro/core/printing/IntegratedThermalPrinter.kt",
+      "app/src/main/java/com/lotterynet/pro/core/printing/ThermalTicketRenderer.kt",
+      "app/src/main/java/com/lotterynet/pro/core/render/LocalRenderCacheRepository.kt",
+      "app/src/main/java/com/lotterynet/pro/core/results/PrizeValidationEngine.kt",
+      "app/src/main/java/com/lotterynet/pro/core/results/TicketPrizeReconciler.kt",
+      "app/src/main/java/com/lotterynet/pro/core/sales/SupabaseTicketBackendClient.kt",
+      "app/src/main/java/com/lotterynet/pro/core/storage/LocalAdminLimitRepository.kt",
+      "app/src/main/java/com/lotterynet/pro/core/storage/LocalAdminLotteryConfigRepository.kt",
+      "app/src/main/java/com/lotterynet/pro/core/storage/LocalBrandingRepository.kt",
+      "app/src/main/java/com/lotterynet/pro/core/storage/LocalCashierPrizePayoutRepository.kt",
+      "app/src/main/java/com/lotterynet/pro/core/storage/LocalCashierSalesLimitRepository.kt",
+      "app/src/main/java/com/lotterynet/pro/core/storage/LocalPrizeConfigRepository.kt",
+      "app/src/main/java/com/lotterynet/pro/core/storage/LocalResultsRepository.kt",
+      "app/src/main/java/com/lotterynet/pro/core/storage/LocalSaleDraftRepository.kt",
+      "app/src/main/java/com/lotterynet/pro/core/storage/LocalSalesRepository.kt",
+      "app/src/main/java/com/lotterynet/pro/core/storage/LocalSessionRepository.kt",
+      "app/src/main/java/com/lotterynet/pro/core/storage/LocalThermalPrinterRepository.kt",
+      "app/src/main/java/com/lotterynet/pro/core/storage/LocalTrustedClockRepository.kt",
+      "app/src/main/java/com/lotterynet/pro/core/storage/LocalUsersRepository.kt",
+      "app/src/main/java/com/lotterynet/pro/core/sync/NativeOperationalSyncCoordinator.kt",
+      "app/src/main/java/com/lotterynet/pro/core/sync/NativeTicketCloudSyncCoordinator.kt",
+      "app/src/main/java/com/lotterynet/pro/core/sync/NativeTicketSyncQueueRepository.kt",
+      "app/src/main/java/com/lotterynet/pro/ui/sales/SalesActivity.kt"
+    ],
+    "app/src/test/java/com/lotterynet/pro/core/calendar/LotteryAvailabilityResolverContractsTest.kt": [
+      "app/src/main/java/com/lotterynet/pro/core/catalog/StaticLotteryCatalogRepository.kt",
+      "app/src/main/java/com/lotterynet/pro/core/repository/TrustedClockRepository.kt"
+    ],
+    "app/src/test/java/com/lotterynet/pro/core/calendar/LotteryClosePolicyContractsTest.kt": [
+      "app/src/main/java/com/lotterynet/pro/core/catalog/StaticLotteryCatalogRepository.kt",
+      "app/src/main/java/com/lotterynet/pro/core/repository/TrustedClockRepository.kt"
+    ],
+    "app/src/test/java/com/lotterynet/pro/core/export/BitmapExportSpecTest.kt": [
+      "app/src/main/java/com/lotterynet/pro/core/perf/PosPerformanceBudget.kt"
+    ],
+    "app/src/test/java/com/lotterynet/pro/core/printing/BluetoothThermalPrinterPolicyTest.kt": [
+      "app/src/main/java/com/lotterynet/pro/core/perf/PosPerformanceBudget.kt"
+    ],
+    "app/src/test/java/com/lotterynet/pro/core/results/ResultsScraperOrchestratorTest.kt": [
+      "app/src/main/java/com/lotterynet/pro/core/repository/ResultsRepository.kt",
+      "app/src/main/java/com/lotterynet/pro/core/sync/SyncGovernor.kt"
+    ],
+    "app/src/test/java/com/lotterynet/pro/core/results/ResultsSupabaseStoreTest.kt": [
+      "app/src/main/java/com/lotterynet/pro/core/catalog/StaticLotteryCatalogRepository.kt"
+    ],
+    "app/src/test/java/com/lotterynet/pro/core/sync/RealtimeFlowContractsTest.kt": [
+      "app/src/main/java/com/lotterynet/pro/core/model/UserRole.kt",
+      "app/src/main/java/com/lotterynet/pro/core/perf/PosPerformanceBudget.kt"
+    ],
+    "app/src/test/java/com/lotterynet/pro/ui/results/ResultsActivityContractsTest.kt": [
+      "app/src/main/java/com/lotterynet/pro/core/calendar/LotteryClosePolicy.kt",
+      "app/src/main/java/com/lotterynet/pro/core/catalog/StaticLotteryCatalogRepository.kt",
+      "app/src/main/java/com/lotterynet/pro/core/export/NativeBitmapExport.kt",
+      "app/src/main/java/com/lotterynet/pro/core/model/UserRole.kt",
+      "app/src/main/java/com/lotterynet/pro/core/repository/HolidayCalendarRepository.kt",
+      "app/src/main/java/com/lotterynet/pro/core/repository/TrustedClockRepository.kt",
+      "app/src/main/java/com/lotterynet/pro/core/results/PickResultIdentityResolver.kt"
+    ]
+  }
+}

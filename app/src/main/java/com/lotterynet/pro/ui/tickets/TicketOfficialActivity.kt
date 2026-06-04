@@ -47,9 +47,11 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.Alignment
@@ -64,6 +66,7 @@ import com.lotterynet.pro.core.calendar.StaticHolidayCalendarRepository
 import com.lotterynet.pro.core.auth.SupabaseSessionTokenProvider
 import com.lotterynet.pro.core.catalog.StaticLotteryCatalogRepository
 import com.lotterynet.pro.core.diagnostics.NativeCrashReporter
+import com.lotterynet.pro.core.delivery.TicketDeliveryPolicy
 import com.lotterynet.pro.core.export.NativeBitmapExport
 import com.lotterynet.pro.core.export.StaticExportTemplateRepository
 import com.lotterynet.pro.core.export.TicketSecurity
@@ -74,6 +77,7 @@ import com.lotterynet.pro.core.model.TicketRecord
 import com.lotterynet.pro.core.model.ActiveSession
 import com.lotterynet.pro.core.model.LotteryCatalogItem
 import com.lotterynet.pro.core.model.LotteryTerritory
+import com.lotterynet.pro.core.model.PlayItem
 import com.lotterynet.pro.core.model.UserRole
 import com.lotterynet.pro.core.model.effectiveDrawDateKey
 import com.lotterynet.pro.core.model.formatPlayDisplayNumber
@@ -99,9 +103,11 @@ import com.lotterynet.pro.core.sales.BackendTicketActionRequest
 import com.lotterynet.pro.core.sales.SupabaseTicketBackendClient
 import com.lotterynet.pro.core.sync.NativeOperationalSyncCoordinator
 import com.lotterynet.pro.core.sync.NativeTicketCloudSyncCoordinator
+import com.lotterynet.pro.core.sync.NativeTicketRemoteStore
 import com.lotterynet.pro.core.sync.NativeTicketSyncQueueRepository
 import com.lotterynet.pro.core.sync.isTerminalCancelTicketStatus
 import com.lotterynet.pro.core.sync.resolveOperationalOwnerKey
+import com.lotterynet.pro.core.sync.resolveOperationalOwnerKeys
 import com.lotterynet.pro.core.storage.LocalAdminLimitRepository
 import com.lotterynet.pro.core.storage.LocalBrandingRepository
 import com.lotterynet.pro.core.storage.LocalCashierSalesLimitRepository
@@ -139,6 +145,7 @@ import java.util.Locale
 import java.util.TimeZone
 import kotlin.concurrent.thread
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 
@@ -183,7 +190,7 @@ class TicketOfficialActivity : AppCompatActivity() {
         usersRepository.touchSession(activeSession)
         val cashiers = usersRepository.getCashiers()
         val ticketOutputAccounts = usersRepository.getAdmins() + usersRepository.getSupervisors() + cashiers
-        val actorLabelsByKey = buildUserActorLabelLookup(cashiers)
+        val actorLabelsByKey = buildUserActorLabelLookup(ticketOutputAccounts)
         val systemModeConfig = resolveSalesStartupSystemModeConfig(
             session = activeSession,
             usersRepository = usersRepository,
@@ -204,6 +211,7 @@ class TicketOfficialActivity : AppCompatActivity() {
             val decision = closePolicy.resolveCloseDecision(
                 lottery = lottery,
                 operationTerritory = operationTerritory,
+                allowAdminAfterCloseGrace = activeSession.role == UserRole.ADMIN,
                 nowUtcMs = trustedClockRepository.getTrustedUtcMs(),
             )
             DuplicateLotteryOption(
@@ -212,6 +220,10 @@ class TicketOfficialActivity : AppCompatActivity() {
                 logoAssetPath = lottery.logoAssetPath,
                 drawTimeLabel = decision.drawTime ?: lottery.baseDrawTime,
                 isClosed = decision.isClosed,
+                statusLabel = decision.reason,
+                adminGrace = activeSession.role == UserRole.ADMIN &&
+                    !decision.isClosed &&
+                    decision.reason.contains("Admin extra", ignoreCase = true),
             )
         }
         val duplicateLotteriesById = duplicateModeLotteries.associateBy { it.id }
@@ -226,12 +238,12 @@ class TicketOfficialActivity : AppCompatActivity() {
         val ticketDayKey = buildDayKey(ticketEpoch)
         val dayTickets = repo.getTicketsForDay(ticketDayKey)
         val scopedTickets = filterTicketsForOperationalScope(activeSession, dayTickets, cashiers)
-        val refreshedTicket = scopedTickets.firstOrNull { it.id == ticketId } ?: if (snapshotTicket == null) {
-            filterTicketsForOperationalScope(activeSession, repo.getAllTickets(), usersRepository.getCashiers())
-                .firstOrNull { it.id == ticketId }
-        } else {
-            null
-        }
+        val refreshedTicket = findOfficialTicketCandidate(scopedTickets, ticketId, snapshotTicket)
+            ?: findOfficialTicketCandidate(
+                filterTicketsForOperationalScope(activeSession, repo.getAllTickets(), usersRepository.getCashiers()),
+                ticketId,
+                snapshotTicket,
+            )
         ticketState = resolveInitialOfficialTicket(snapshotTicket, refreshedTicket)
         val exportRepo = StaticExportTemplateRepository()
         val saleDraftRepository = LocalSaleDraftRepository(this)
@@ -296,7 +308,7 @@ class TicketOfficialActivity : AppCompatActivity() {
                         thread(name = "official-ticket-thermal-print") {
                             val outputBancaName = resolveTicketOutputBancaName(record, bancaName, ticketOutputAccounts)
                             val prefs = LocalThermalPrinterRepository(this).getPrefs()
-                            val content = ThermalTicketRenderer().renderTicket(
+                            val chunks = ThermalTicketRenderer().renderTicketChunks(
                                 ticket = record,
                                 bancaName = outputBancaName,
                                 prefs = prefs,
@@ -306,17 +318,25 @@ class TicketOfficialActivity : AppCompatActivity() {
                                 integratedAvailable = IntegratedThermalPrinter.isAvailable(this),
                                 selectedBluetoothAddress = prefs.selectedPrinterAddress,
                             )
-                            val result = when (target) {
-                                OfficialTicketPrintTarget.INTEGRATED -> IntegratedThermalPrinter.printText(this, content)
-                                OfficialTicketPrintTarget.BLUETOOTH -> BluetoothThermalPrinter.printText(
-                                    context = this,
-                                    content = content,
-                                    prefs = prefs,
-                                )
-                                OfficialTicketPrintTarget.NONE -> BluetoothThermalPrinter.PrintResult(
-                                    success = false,
-                                    message = "No hay impresora conectada",
-                                )
+                            var result = BluetoothThermalPrinter.PrintResult(false, "No hay impresora conectada")
+                            for (chunk in chunks) {
+                                result = when (target) {
+                                    OfficialTicketPrintTarget.INTEGRATED -> IntegratedThermalPrinter.printText(this, chunk)
+                                    OfficialTicketPrintTarget.BLUETOOTH -> BluetoothThermalPrinter.printText(
+                                        context = this,
+                                        content = chunk,
+                                        prefs = prefs,
+                                    )
+                                    OfficialTicketPrintTarget.NONE -> BluetoothThermalPrinter.PrintResult(
+                                        success = false,
+                                        message = "No hay impresora conectada",
+                                    )
+                                }
+                                if (!result.success) break
+                                Thread.sleep(250L)
+                            }
+                            if (result.success && chunks.size > 1) {
+                                result = result.copy(message = "Ticket impreso en ${chunks.size} partes")
                             }
                             runOnUiThread {
                                 Toast.makeText(this, result.message, Toast.LENGTH_LONG).show()
@@ -458,7 +478,7 @@ class TicketOfficialActivity : AppCompatActivity() {
                                         ).freshAccessToken()
                                         SupabaseTicketBackendClient().voidTicket(
                                             request = BackendTicketActionRequest(
-                                                actorKey = activeSession.userId,
+                                                actorKey = resolveTicketBackendActorKey(activeSession),
                                                 adminKey = record.adminUser ?: activeSession.adminUser ?: record.adminId ?: activeSession.username,
                                                 ownerKey = record.adminId ?: record.adminUser ?: activeSession.adminUser ?: activeSession.username,
                                                 cashierKey = record.sellerId ?: record.sellerUser,
@@ -507,43 +527,45 @@ class TicketOfficialActivity : AppCompatActivity() {
                         )
                         if (canDeleteRecord) {
                             Toast.makeText(this, "Confirmando eliminacion en servidor...", Toast.LENGTH_SHORT).show()
-                            val serverResult = runCatching {
-                                runBlocking {
-                                    withContext(Dispatchers.IO) {
-                                        val freshBearerToken = SupabaseSessionTokenProvider(
-                                            LocalSessionRepository(this@TicketOfficialActivity),
-                                        ).freshAccessToken()
-                                        SupabaseTicketBackendClient().deleteTicket(
-                                            request = BackendTicketActionRequest(
-                                                actorKey = activeSession.userId,
-                                                adminKey = record.adminUser ?: activeSession.adminUser ?: record.adminId ?: activeSession.username,
-                                                ownerKey = record.adminId ?: record.adminUser ?: activeSession.adminUser ?: activeSession.username,
-                                                cashierKey = record.sellerId ?: record.sellerUser,
-                                                localTicketId = record.id,
-                                                clientRequestId = record.id,
-                                                returnLimit = returnLimit,
-                                            ),
-                                            bearerToken = freshBearerToken,
-                                        )
+                            thread(name = "ticket-delete-backend") {
+                                val serverResult = runCatching {
+                                    val freshBearerToken = SupabaseSessionTokenProvider(
+                                        LocalSessionRepository(this@TicketOfficialActivity),
+                                    ).freshAccessToken()
+                                    SupabaseTicketBackendClient().deleteTicket(
+                                        request = BackendTicketActionRequest(
+                                            actorKey = resolveTicketBackendActorKey(activeSession),
+                                            adminKey = record.adminUser ?: activeSession.adminUser ?: record.adminId ?: activeSession.username,
+                                            ownerKey = record.adminId ?: record.adminUser ?: activeSession.adminUser ?: activeSession.username,
+                                            cashierKey = record.sellerId ?: record.sellerUser,
+                                            localTicketId = record.id,
+                                            clientRequestId = record.id,
+                                            returnLimit = returnLimit,
+                                        ),
+                                        bearerToken = freshBearerToken,
+                                    )
+                                }
+                                serverResult.onSuccess {
+                                    thread(name = "ticket-delete-sync") {
+                                        resolveTicketRealtimeSyncOwnerKeys(activeSession, record).forEach { ownerKey ->
+                                            operationalSync.flushOwnerLocalSnapshot(ownerKey, bancaName)
+                                        }
+                                    }
+                                    runOnUiThread {
+                                        repo.deleteTicket(record)
+                                        Toast.makeText(this, "Ticket eliminado en servidor.", Toast.LENGTH_SHORT).show()
+                                        finish()
+                                    }
+                                }.onFailure { error ->
+                                    NativeCrashReporter(this).recordHandled("TicketOfficial.deleteTicketBackend", error)
+                                    runOnUiThread {
+                                        Toast.makeText(
+                                            this,
+                                            "Servidor no confirmo la eliminacion. No se cambio el ticket.",
+                                            Toast.LENGTH_LONG,
+                                        ).show()
                                     }
                                 }
-                            }
-                            serverResult.onSuccess {
-                                repo.deleteTicket(record)
-                                Toast.makeText(this, "Ticket eliminado en servidor.", Toast.LENGTH_SHORT).show()
-                                finish()
-                                thread(name = "ticket-delete-sync") {
-                                    resolveTicketRealtimeSyncOwnerKeys(activeSession, record).forEach { ownerKey ->
-                                        operationalSync.flushOwnerLocalSnapshot(ownerKey, bancaName)
-                                    }
-                                }
-                            }.onFailure { error ->
-                                NativeCrashReporter(this).recordHandled("TicketOfficial.deleteTicketBackend", error)
-                                Toast.makeText(
-                                    this,
-                                    "Servidor no confirmo la eliminacion. No se cambio el ticket.",
-                                    Toast.LENGTH_LONG,
-                                ).show()
                             }
                         } else {
                             Toast.makeText(
@@ -611,6 +633,34 @@ class TicketOfficialActivity : AppCompatActivity() {
                 runOnUiThread {
                     ticketState = protectedTicket
                 }
+            }
+        }
+        thread(name = "official-ticket-remote-catch-up") {
+            runCatching {
+                val catchUpTicket = ticketState ?: snapshotTicket ?: refreshedTicket
+                val ownerKeys = if (catchUpTicket != null) {
+                    resolveTicketRealtimeSyncOwnerKeys(activeSession, catchUpTicket)
+                } else {
+                    listOf(resolveOperationalOwnerKey(activeSession))
+                }
+                val remoteStore = NativeTicketRemoteStore()
+                val remoteRefreshedTicket = ownerKeys.asSequence()
+                    .mapNotNull { ownerKey ->
+                        ownerKey.takeIf { it.isNotBlank() }?.let { remoteStore.fetchSnapshot(it).tickets }
+                    }
+                    .mapNotNull { tickets -> findOfficialTicketCandidate(tickets, ticketId, snapshotTicket) }
+                    .firstOrNull()
+                    ?: return@runCatching
+                val nextTicket = resolveInitialOfficialTicket(ticketState ?: snapshotTicket, remoteRefreshedTicket)
+                    ?: remoteRefreshedTicket
+                if (nextTicket != ticketState) {
+                    repo.replaceTicket(nextTicket)
+                    runOnUiThread {
+                        ticketState = nextTicket
+                    }
+                }
+            }.onFailure { error ->
+                NativeCrashReporter(this).recordHandled("TicketOfficial.remoteCatchUp", error)
             }
         }
     }
@@ -821,6 +871,8 @@ internal data class OfficialTicketViewState(
     val operatorLabel: String,
     val securityCode: String,
     val totalLabel: String,
+    val primaryAmountLabel: String,
+    val primaryAmountSupporting: String,
     val prizeLabel: String,
     val logoUri: String,
     val lotteryGroups: List<OfficialTicketLotteryGroup>,
@@ -832,6 +884,7 @@ internal data class OfficialTicketLotteryGroup(
     val lotteryName: String,
     val playCount: Int,
     val totalLabel: String,
+    val plays: List<PlayItem>,
 )
 
 internal data class TicketLotteryBadgeGrid(
@@ -845,10 +898,32 @@ internal data class DuplicateLotteryOption(
     val logoAssetPath: String?,
     val drawTimeLabel: String,
     val isClosed: Boolean,
+    val statusLabel: String = "",
+    val adminGrace: Boolean = false,
 )
 
 internal fun resolveDuplicateSelectableLotteries(options: List<DuplicateLotteryOption>): List<DuplicateLotteryOption> {
-    return options.filterNot { it.isClosed }
+    return options
+        .filterNot { it.isClosed }
+        .sortedWith(
+            compareBy<DuplicateLotteryOption>(
+                { parseDuplicateDrawMinutes(it.drawTimeLabel) },
+                { it.name.lowercase(Locale.US) },
+            ),
+        )
+}
+
+private fun parseDuplicateDrawMinutes(value: String): Int {
+    val normalized = value.trim().uppercase(Locale.US)
+        .replace(".", ":")
+        .replace(Regex("\\s+"), "")
+    val match = Regex("""^(\d{1,2})(?::(\d{2}))?(AM|PM)?$""").find(normalized) ?: return Int.MAX_VALUE
+    var hour = match.groupValues[1].toIntOrNull() ?: return Int.MAX_VALUE
+    val minute = match.groupValues[2].takeIf { it.isNotBlank() }?.toIntOrNull() ?: 0
+    val period = match.groupValues.getOrNull(3).orEmpty()
+    if (period == "PM" && hour < 12) hour += 12
+    if (period == "AM" && hour == 12) hour = 0
+    return hour * 60 + minute
 }
 
 internal fun buildDuplicateSaleDraftFromTicket(
@@ -929,9 +1004,10 @@ internal fun buildOfficialTicketViewState(
                 lotteryName = lotteryName,
                 playCount = plays.size,
                 totalLabel = formatMoney(plays.sumOf { it.amount }),
+                plays = plays,
             )
         }
-    val payablePrize = ticket.totalPrize > 0.0 && !ticket.isPaidStatus()
+    val hasConfirmedPrize = ticket.totalPrize > 0.0
     return OfficialTicketViewState(
         title = mode.title,
         bancaName = bancaName,
@@ -941,7 +1017,9 @@ internal fun buildOfficialTicketViewState(
         drawValidLabel = "Este ticket es válido para el sorteo ${NativeBitmapExport.formatDrawDateForTicket(ticket.effectiveDrawDateKey(), resolveTicketDrawTimeLabel(ticket))}",
         operatorLabel = resolveTicketActorLabel(ticket, actorLabelsByKey, fallback = "Sin usuario"),
         securityCode = securityCode.ifBlank { ticket.serial ?: ticket.id },
-        totalLabel = formatMoney(if (payablePrize) ticket.totalPrize else ticket.total),
+        totalLabel = formatMoney(if (hasConfirmedPrize) ticket.totalPrize else ticket.total),
+        primaryAmountLabel = if (hasConfirmedPrize) "Premio" else "Total",
+        primaryAmountSupporting = if (hasConfirmedPrize) "Venta ${formatMoney(ticket.total)}" else "${ticket.plays.size} jugadas",
         prizeLabel = formatMoney(ticket.totalPrize),
         logoUri = logoUri,
         lotteryGroups = groups,
@@ -960,9 +1038,10 @@ internal fun resolveOfficialTicketAfterLocalValidation(
     validation: PrizeValidationOutcome,
 ): TicketRecord {
     val validated = if (validation.didValidate) validation.ticket else canonical
-    val currentHasPendingPrize = current.isOfficialPayRelevant() && !current.isPaidStatus()
+    val protectedSource = resolveInitialOfficialTicket(current, canonical) ?: current
+    val currentHasPendingPrize = protectedSource.isOfficialPayRelevant() && !protectedSource.isPaidStatus()
     val validationRemovedPrize = !validated.isOfficialPayRelevant() || validated.totalPrize <= 0.0
-    return if (currentHasPendingPrize && validationRemovedPrize) current else validated
+    return if (currentHasPendingPrize && validationRemovedPrize) protectedSource else validated
 }
 
 internal fun resolveTicketLotteryBadgeGrid(
@@ -1198,19 +1277,31 @@ internal fun resolveTicketDeleteSyncOwnerKey(session: ActiveSession, ticket: Tic
 }
 
 internal fun resolveTicketRealtimeSyncOwnerKeys(session: ActiveSession, ticket: TicketRecord): List<String> {
-    return listOf(
-        ticket.adminId,
-        session.adminId,
-        ticket.adminUser,
-        session.adminUser,
-        resolveOperationalOwnerKey(session),
-    )
+    return (
+        listOf(
+            ticket.adminId,
+            ticket.sellerId,
+            session.adminId,
+            session.userId,
+            ticket.adminUser,
+            ticket.sellerUser,
+            session.adminUser,
+            session.username,
+        ) + resolveOperationalOwnerKeys(session) + listOf(resolveOperationalOwnerKey(session))
+        )
         .mapNotNull { value -> value?.trim()?.takeIf { it.isNotBlank() } }
         .distinctBy { it.lowercase() }
 }
 
 internal fun resolveTicketPayoutSyncOwnerKey(session: ActiveSession, ticket: TicketRecord): String {
     return ticket.adminId?.takeIf { it.isNotBlank() } ?: resolveOperationalOwnerKey(session)
+}
+
+internal fun resolveTicketBackendActorKey(session: ActiveSession): String {
+    return session.username.takeIf { it.isNotBlank() }
+        ?: session.adminUser?.takeIf { it.isNotBlank() }
+        ?: session.adminId?.takeIf { it.isNotBlank() }
+        ?: session.userId
 }
 
 internal fun resolveTicketPayoutBackendRequest(
@@ -1227,7 +1318,7 @@ internal fun resolveTicketPayoutBackendRequest(
         ?: ticket.sellerUser?.takeIf { it.isNotBlank() }
         ?: session.username
     return BackendTicketActionRequest(
-        actorKey = session.userId.takeIf { it.isNotBlank() } ?: session.username,
+        actorKey = resolveTicketBackendActorKey(session),
         adminKey = adminKey,
         ownerKey = adminKey,
         cashierKey = cashierKey,
@@ -1306,26 +1397,87 @@ private fun TicketOfficialRouteCompact(
         containerColor = visual.colors.background,
         contentWindowInsets = WindowInsets.safeDrawing,
     ) { innerPadding ->
-        var currentTicket by remember(ticket) { mutableStateOf(ticket) }
+        var currentTicket by remember(ticket.id) { mutableStateOf(ticket) }
+        LaunchedEffect(ticket) {
+            val merged = resolveInitialOfficialTicket(currentTicket, ticket) ?: ticket
+            if (merged != currentTicket) {
+                currentTicket = merged
+            }
+        }
         var actionMessage by remember(currentTicket.id) { mutableStateOf<String?>(null) }
         var showDuplicateMenu by remember(currentTicket.id, mode) { mutableStateOf(mode == TicketOfficialMode.DUPLICATE) }
         var showPayoutConfirm by remember(currentTicket.id, mode) { mutableStateOf(mode == TicketOfficialMode.PAY) }
         var showEliminateConfirm by remember(currentTicket.id) { mutableStateOf(false) }
         var selectedDuplicateLotteryIds by remember(currentTicket.id) { mutableStateOf(emptySet<String>()) }
+        var actionBusy by remember(currentTicket.id) { mutableStateOf(false) }
+        val actionScope = rememberCoroutineScope()
         val selectableDuplicateLotteries = remember(duplicateLotteryOptions) {
             resolveDuplicateSelectableLotteries(duplicateLotteryOptions)
         }
         val securityCode = TicketSecurity.resolveSecurityCode(currentTicket, bancaName)
-        fun renderBitmapForAction(record: TicketRecord): Bitmap? {
-            return runCatching {
-                NativeBitmapExport.renderOfficialTicketBitmap(
+        suspend fun renderBitmapsForAction(record: TicketRecord): List<Bitmap> {
+            return withContext(Dispatchers.IO) {
+                runCatching {
+                    val security = TicketSecurity.resolveSecurityCode(record, bancaName)
+                    val estimatedHeight = NativeBitmapExport.estimateOfficialTicketBitmapHeight(record, security)
+                    if (TicketDeliveryPolicy.shouldRenderPreviewBitmap(record, estimatedHeight)) {
+                        listOf(
+                            NativeBitmapExport.renderOfficialTicketBitmap(
+                                context = localContext,
+                                ticket = record,
+                                bancaName = bancaName,
+                                securityCode = security,
+                                bancaLogoUri = bancaLogoUri,
+                            ),
+                        )
+                    } else {
+                        listOf(
+                            ThermalTicketRenderer().renderCompactShareBitmap(
+                                ticket = record,
+                                bancaName = bancaName,
+                            ),
+                        )
+                    }
+                }.getOrDefault(emptyList())
+            }
+        }
+        fun preparingTicketMessage(record: TicketRecord): String {
+            val lotteryCount = record.plays
+                .map { play -> listOf(play.lotteryName, play.secondaryLotteryName).filterNotNull().joinToString("/") }
+                .distinct()
+                .size
+            return if (record.plays.size >= 70 || lotteryCount >= 4) {
+                "Ticket grande: preparando plantilla compacta para que WhatsApp no lo corte."
+            } else {
+                "Preparando imagen del ticket..."
+            }
+        }
+        suspend fun shareTicketImages(record: TicketRecord, whatsappOnly: Boolean): String {
+            val bitmaps = renderBitmapsForAction(record)
+            if (bitmaps.isEmpty()) return "No se pudo preparar la imagen del ticket"
+            val envelope = exportRepository.buildTicketWhatsAppShare(record, bancaName)
+            val renderCache = LocalRenderCacheRepository(localContext)
+            val estimatedHeight = NativeBitmapExport.estimateOfficialTicketBitmapHeight(
+                record,
+                TicketSecurity.resolveSecurityCode(record, bancaName),
+            )
+            val renderKey = ticketRenderCacheKey(record, bancaName = bancaName, logoUri = bancaLogoUri).let {
+                if (TicketDeliveryPolicy.shouldRenderPreviewBitmap(record, estimatedHeight)) it else "$it|compact-thermal-share"
+            }
+            val uris = withContext(Dispatchers.IO) {
+                renderCache.saveBitmaps(renderKey, bitmaps)
+            }
+            return if (uris.isNotEmpty()) {
+                NativeBitmapExport.shareImageUris(
                     context = localContext,
-                    ticket = record,
-                    bancaName = bancaName,
-                    securityCode = TicketSecurity.resolveSecurityCode(record, bancaName),
-                    bancaLogoUri = bancaLogoUri,
-                )
-            }.getOrNull()
+                    uris = uris,
+                    title = envelope.title,
+                    text = envelope.text,
+                    whatsappOnly = whatsappOnly,
+                ).message
+            } else {
+                "No se pudo preparar el lote de imagenes"
+            }
         }
         val verificationCode = securityCode.ifBlank { currentTicket.serial ?: currentTicket.id }
         val ticketViewState = remember(currentTicket, bancaName, securityCode, bancaLogoUri, mode) {
@@ -1409,28 +1561,39 @@ private fun TicketOfficialRouteCompact(
                             actionMessage = "Enviando a impresora"
                         }
                         TicketPreviewAction.WHATSAPP -> TicketQuickActionSpec("WhatsApp", Icons.Rounded.Whatsapp, ActionTone.Success) {
-                            val readyBitmap = renderBitmapForAction(currentTicket)
-                            actionMessage = if (readyBitmap == null) {
-                                "No se pudo preparar la imagen del ticket"
-                            } else {
-                                onShare(currentTicket, readyBitmap, true).message
+                            if (!actionBusy) {
+                                actionBusy = true
+                                actionMessage = preparingTicketMessage(currentTicket)
+                                actionScope.launch {
+                                    actionMessage = shareTicketImages(currentTicket, true)
+                                    actionBusy = false
+                                }
                             }
                         }
                         TicketPreviewAction.SHARE -> TicketQuickActionSpec("Compartir", Icons.Rounded.Share, ActionTone.Secondary) {
-                            val readyBitmap = renderBitmapForAction(currentTicket)
-                            actionMessage = if (readyBitmap == null) {
-                                "No se pudo preparar la imagen del ticket"
-                            } else {
-                                onShare(currentTicket, readyBitmap, false).message
+                            if (!actionBusy) {
+                                actionBusy = true
+                                actionMessage = preparingTicketMessage(currentTicket)
+                                actionScope.launch {
+                                    actionMessage = shareTicketImages(currentTicket, false)
+                                    actionBusy = false
+                                }
                             }
                         }
                         TicketPreviewAction.SAVE -> TicketQuickActionSpec("Guardar", Icons.Rounded.Download, ActionTone.Secondary) {
-                            val readyBitmap = renderBitmapForAction(currentTicket)
-                            if (readyBitmap == null) {
-                                actionMessage = "No se pudo preparar la imagen del ticket"
-                            } else {
-                                val saved = onSave(currentTicket, readyBitmap)
-                                actionMessage = if (saved) "Ticket exportado en Descargas" else "No se pudo guardar el ticket"
+                            if (!actionBusy) {
+                                actionBusy = true
+                                actionMessage = preparingTicketMessage(currentTicket)
+                                actionScope.launch {
+                                    val readyBitmap = renderBitmapsForAction(currentTicket).firstOrNull()
+                                    actionMessage = if (readyBitmap == null) {
+                                        "No se pudo preparar la imagen del ticket"
+                                    } else {
+                                        val saved = onSave(currentTicket, readyBitmap)
+                                        if (saved) "Ticket exportado en Descargas" else "No se pudo guardar el ticket"
+                                    }
+                                    actionBusy = false
+                                }
                             }
                         }
                         TicketPreviewAction.DUPLICATE -> TicketQuickActionSpec("Duplicar", Icons.Rounded.ContentCopy, ActionTone.Secondary, emphasized = mode == TicketOfficialMode.DUPLICATE) {
@@ -1663,9 +1826,9 @@ private fun TicketOfficialRouteCompact(
                         )
                         TicketMetaCard(
                             modifier = Modifier.weight(1f),
-                            label = "Total",
+                            label = ticketViewState.primaryAmountLabel,
                             value = ticketViewState.totalLabel,
-                            supporting = "${currentTicket.plays.size} jugadas",
+                            supporting = ticketViewState.primaryAmountSupporting,
                             emphasized = true,
                         )
                     }
@@ -1690,12 +1853,17 @@ private fun TicketOfficialRouteCompact(
                         ) { actionIndex, itemModifier ->
                             val action = visibleActions[actionIndex]
                             CompactActionButton(
-                                label = action.label,
+                                label = if (actionBusy && action.label in setOf("WhatsApp", "Compartir", "Guardar")) {
+                                    "Preparando"
+                                } else {
+                                    action.label
+                                },
                                 onClick = action.onClick,
                                 modifier = itemModifier,
                                 icon = action.icon,
                                 tone = action.tone,
                                 active = action.emphasized,
+                                enabled = !actionBusy || action.label !in setOf("WhatsApp", "Compartir", "Guardar"),
                             )
                         }
                     }
@@ -1827,9 +1995,18 @@ private fun DuplicateLotteryPickerDialog(
                                             fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
                                         )
                                         Text(
-                                            text = "Sorteo ${option.drawTimeLabel}",
+                                            text = duplicateLotteryOptionSubtitle(option),
                                             style = MaterialTheme.typography.bodySmall,
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                            color = if (option.adminGrace) {
+                                                MaterialTheme.colorScheme.tertiary
+                                            } else {
+                                                MaterialTheme.colorScheme.onSurfaceVariant
+                                            },
+                                            fontWeight = if (option.adminGrace) {
+                                                androidx.compose.ui.text.font.FontWeight.Bold
+                                            } else {
+                                                androidx.compose.ui.text.font.FontWeight.Normal
+                                            },
                                         )
                                     }
                                     Checkbox(
@@ -1857,6 +2034,15 @@ private fun DuplicateLotteryPickerDialog(
             }
         },
     )
+}
+
+private fun duplicateLotteryOptionSubtitle(option: DuplicateLotteryOption): String {
+    val draw = option.drawTimeLabel.ifBlank { "--" }
+    return if (option.adminGrace) {
+        "Sorteo $draw - gracia admin"
+    } else {
+        "Sorteo $draw"
+    }
 }
 
 private data class TicketQuickActionSpec(
@@ -1935,24 +2121,44 @@ private fun OfficialTicketSnapshotCard(
                 }
             }
         }
+        val winnerGroups = NativeBitmapExport.groupOfficialTicketWinnerDetails(ticket)
+        if (winnerGroups.isNotEmpty()) {
+            SectionHeader(title = "Premios del ticket", meta = NativeBitmapExport.winnerDetailsMeta(ticket))
+            WinnerPrizeTotalBlock(ticket = ticket)
+            winnerGroups.forEach { group ->
+                WinningGroupBlock(group = group)
+            }
+        }
         SectionHeader(title = "Jugadas", meta = "${ticket.plays.size} total")
-        ticket.plays.forEach { play ->
+        viewState.lotteryGroups.forEach { group ->
+            SnapshotPlayGroupBlock(group = group)
+        }
+    }
+}
+
+@Composable
+private fun SnapshotPlayGroupBlock(group: OfficialTicketLotteryGroup) {
+    val visual = rememberLotteryNetVisualSpec()
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(visual.sizes.panelRadius),
+        color = visual.colors.panel,
+        border = BorderStroke(1.dp, visual.colors.border),
+        tonalElevation = 0.dp,
+        shadowElevation = 0.dp,
+    ) {
+        Column(
+            modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp),
+        ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
-                    text = officialTicketSnapshotPlayTypeLabel(play.playType),
-                    modifier = Modifier.weight(0.55f),
-                    style = MaterialTheme.typography.labelLarge,
-                    color = visual.colors.tickets,
-                    fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
-                    maxLines = 1,
-                )
-                Text(
-                    text = formatPlayDisplayNumber(play.number, play.playType),
-                    modifier = Modifier.weight(1.2f),
+                    text = group.lotteryName,
+                    modifier = Modifier.weight(1f),
                     style = MaterialTheme.typography.bodyMedium,
                     color = visual.colors.ink,
                     fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
@@ -1960,15 +2166,222 @@ private fun OfficialTicketSnapshotCard(
                     overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
                 )
                 Text(
-                    text = formatMoney(play.amount),
-                    modifier = Modifier.weight(1f),
-                    style = MaterialTheme.typography.bodyMedium,
+                    text = group.totalLabel,
+                    style = MaterialTheme.typography.titleSmall,
                     color = visual.colors.gain,
                     fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
                     maxLines = 1,
                 )
             }
+            Text(
+                text = "${group.playCount} jugadas · Monto lotería",
+                style = MaterialTheme.typography.bodySmall,
+                color = visual.colors.muted,
+                maxLines = 1,
+                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+            )
+            group.plays.forEach { play ->
+                SnapshotPlayRow(play = play)
+            }
         }
+    }
+}
+
+@Composable
+private fun SnapshotPlayRow(play: PlayItem) {
+    val visual = rememberLotteryNetVisualSpec()
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            text = officialTicketSnapshotPlayTypeLabel(play.playType),
+            modifier = Modifier.weight(0.55f),
+            style = MaterialTheme.typography.labelLarge,
+            color = visual.colors.tickets,
+            fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+            maxLines = 1,
+        )
+        Text(
+            text = formatPlayDisplayNumber(play.number, play.playType),
+            modifier = Modifier.weight(1.2f),
+            style = MaterialTheme.typography.bodyMedium,
+            color = visual.colors.ink,
+            fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+            maxLines = 1,
+            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+        )
+        Text(
+            text = formatMoney(play.amount),
+            modifier = Modifier.weight(1f),
+            style = MaterialTheme.typography.bodyMedium,
+            color = visual.colors.gain,
+            fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+            maxLines = 1,
+            textAlign = androidx.compose.ui.text.style.TextAlign.End,
+        )
+    }
+}
+
+@Composable
+private fun WinnerPrizeTotalBlock(ticket: TicketRecord) {
+    val visual = rememberLotteryNetVisualSpec()
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(visual.sizes.panelRadius),
+        color = MaterialTheme.colorScheme.primary,
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary),
+        tonalElevation = 0.dp,
+        shadowElevation = 0.dp,
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = "Total premio",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.78f),
+                    fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+                    maxLines = 1,
+                )
+                Text(
+                    text = NativeBitmapExport.winnerDetailsMeta(ticket),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.78f),
+                    maxLines = 1,
+                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                )
+            }
+            Text(
+                text = formatMoney(NativeBitmapExport.winnerPrizeTotalAmount(ticket)),
+                style = MaterialTheme.typography.titleLarge,
+                color = MaterialTheme.colorScheme.onPrimary,
+                fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+                maxLines = 1,
+            )
+        }
+    }
+}
+
+@Composable
+private fun WinningGroupBlock(group: NativeBitmapExport.OfficialTicketWinnerGroup) {
+    val visual = rememberLotteryNetVisualSpec()
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(visual.sizes.panelRadius),
+        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.07f),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.24f)),
+        tonalElevation = 0.dp,
+        shadowElevation = 0.dp,
+    ) {
+        Column(
+            modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp),
+            verticalArrangement = Arrangement.spacedBy(7.dp),
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = group.lotteryName,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = visual.colors.ink,
+                        fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+                        maxLines = 2,
+                        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                    )
+                    Text(
+                        text = "Ganador ${group.resultNumber.ifBlank { "-" }}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = visual.colors.muted,
+                        maxLines = 1,
+                    )
+                }
+                if (NativeBitmapExport.shouldShowWinnerGroupSubtotal(group)) {
+                    Text(
+                        text = formatMoney(group.totalPayout),
+                        style = MaterialTheme.typography.titleSmall,
+                        color = visual.colors.gain,
+                        fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+                        maxLines = 1,
+                    )
+                }
+            }
+            group.details.forEach { detail ->
+                WinningDetailRow(detail = detail)
+            }
+        }
+    }
+}
+
+@Composable
+private fun WinningDetailRow(detail: com.lotterynet.pro.core.model.WinningPlayDetail) {
+    val visual = rememberLotteryNetVisualSpec()
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(visual.sizes.panelRadius),
+        color = visual.colors.panel,
+        border = BorderStroke(1.dp, visual.colors.border),
+        tonalElevation = 0.dp,
+        shadowElevation = 0.dp,
+    ) {
+        Column(
+            modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp),
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                CompactStatusBadge(officialTicketSnapshotPlayTypeLabel(detail.playType), tone = visual.colors.tickets)
+                Text(
+                    text = formatPlayDisplayNumber(detail.playedNumber, detail.playType),
+                    modifier = Modifier.weight(1f),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = visual.colors.ink,
+                    fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+                    maxLines = 1,
+                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                )
+                Text(
+                    text = formatMoney(detail.payoutAmount),
+                    style = MaterialTheme.typography.titleSmall,
+                    color = visual.colors.gain,
+                    fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+                    maxLines = 1,
+                )
+            }
+            Text(
+                text = "Acierto ${winningHitLabel(detail.hitPosition)} · Apostado ${formatMoney(detail.amount)}",
+                style = MaterialTheme.typography.bodySmall,
+                color = visual.colors.muted,
+                maxLines = 2,
+                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+            )
+        }
+    }
+}
+
+private fun winningHitLabel(raw: String): String {
+    return when (raw.trim().lowercase(Locale.US)) {
+        "1" -> "primera"
+        "2" -> "segunda"
+        "3" -> "tercera"
+        "1-2" -> "pale 1-2"
+        "1-3" -> "pale 1-3"
+        "2-3" -> "pale 2-3"
+        "sp" -> "super pale"
+        "straight" -> "straight"
+        "back" -> "ultimo par"
+        "" -> "ganadora"
+        else -> raw
     }
 }
 

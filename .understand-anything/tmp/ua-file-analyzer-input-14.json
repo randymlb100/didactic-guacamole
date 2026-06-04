@@ -1,0 +1,147 @@
+{
+  "projectRoot": "C:\\Users\\Randy Cordero\\Desktop\\lotterynet_android",
+  "batchFiles": [
+    {
+      "path": ".agents/skills/supabase-postgres-best-practices/references/_contributing.md",
+      "language": "markdown",
+      "sizeLines": 170,
+      "fileCategory": "docs"
+    },
+    {
+      "path": ".agents/skills/supabase-postgres-best-practices/references/_sections.md",
+      "language": "markdown",
+      "sizeLines": 39,
+      "fileCategory": "docs"
+    },
+    {
+      "path": ".agents/skills/supabase-postgres-best-practices/references/_template.md",
+      "language": "markdown",
+      "sizeLines": 34,
+      "fileCategory": "docs"
+    },
+    {
+      "path": ".agents/skills/supabase-postgres-best-practices/references/advanced-full-text-search.md",
+      "language": "markdown",
+      "sizeLines": 55,
+      "fileCategory": "docs"
+    },
+    {
+      "path": ".agents/skills/supabase-postgres-best-practices/references/advanced-jsonb-indexing.md",
+      "language": "markdown",
+      "sizeLines": 49,
+      "fileCategory": "docs"
+    },
+    {
+      "path": ".agents/skills/supabase-postgres-best-practices/references/conn-idle-timeout.md",
+      "language": "markdown",
+      "sizeLines": 46,
+      "fileCategory": "docs"
+    },
+    {
+      "path": ".agents/skills/supabase-postgres-best-practices/references/conn-limits.md",
+      "language": "markdown",
+      "sizeLines": 44,
+      "fileCategory": "docs"
+    },
+    {
+      "path": ".agents/skills/supabase-postgres-best-practices/references/conn-pooling.md",
+      "language": "markdown",
+      "sizeLines": 41,
+      "fileCategory": "docs"
+    },
+    {
+      "path": ".agents/skills/supabase-postgres-best-practices/references/conn-prepared-statements.md",
+      "language": "markdown",
+      "sizeLines": 46,
+      "fileCategory": "docs"
+    },
+    {
+      "path": ".agents/skills/supabase-postgres-best-practices/references/data-batch-inserts.md",
+      "language": "markdown",
+      "sizeLines": 54,
+      "fileCategory": "docs"
+    },
+    {
+      "path": ".agents/skills/supabase-postgres-best-practices/references/data-n-plus-one.md",
+      "language": "markdown",
+      "sizeLines": 53,
+      "fileCategory": "docs"
+    },
+    {
+      "path": ".agents/skills/supabase-postgres-best-practices/references/data-pagination.md",
+      "language": "markdown",
+      "sizeLines": 50,
+      "fileCategory": "docs"
+    },
+    {
+      "path": ".agents/skills/supabase-postgres-best-practices/references/data-upsert.md",
+      "language": "markdown",
+      "sizeLines": 50,
+      "fileCategory": "docs"
+    },
+    {
+      "path": ".agents/skills/supabase-postgres-best-practices/references/lock-advisory.md",
+      "language": "markdown",
+      "sizeLines": 56,
+      "fileCategory": "docs"
+    },
+    {
+      "path": ".agents/skills/supabase-postgres-best-practices/references/lock-deadlock-prevention.md",
+      "language": "markdown",
+      "sizeLines": 68,
+      "fileCategory": "docs"
+    },
+    {
+      "path": ".agents/skills/supabase-postgres-best-practices/references/lock-short-transactions.md",
+      "language": "markdown",
+      "sizeLines": 50,
+      "fileCategory": "docs"
+    },
+    {
+      "path": ".agents/skills/supabase-postgres-best-practices/references/lock-skip-locked.md",
+      "language": "markdown",
+      "sizeLines": 54,
+      "fileCategory": "docs"
+    },
+    {
+      "path": ".agents/skills/supabase-postgres-best-practices/references/monitor-explain-analyze.md",
+      "language": "markdown",
+      "sizeLines": 45,
+      "fileCategory": "docs"
+    },
+    {
+      "path": ".agents/skills/supabase-postgres-best-practices/references/monitor-pg-stat-statements.md",
+      "language": "markdown",
+      "sizeLines": 55,
+      "fileCategory": "docs"
+    },
+    {
+      "path": ".agents/skills/supabase-postgres-best-practices/references/monitor-vacuum-analyze.md",
+      "language": "markdown",
+      "sizeLines": 55,
+      "fileCategory": "docs"
+    }
+  ],
+  "batchImportData": {
+    ".agents/skills/supabase-postgres-best-practices/references/_contributing.md": [],
+    ".agents/skills/supabase-postgres-best-practices/references/_sections.md": [],
+    ".agents/skills/supabase-postgres-best-practices/references/_template.md": [],
+    ".agents/skills/supabase-postgres-best-practices/references/advanced-full-text-search.md": [],
+    ".agents/skills/supabase-postgres-best-practices/references/advanced-jsonb-indexing.md": [],
+    ".agents/skills/supabase-postgres-best-practices/references/conn-idle-timeout.md": [],
+    ".agents/skills/supabase-postgres-best-practices/references/conn-limits.md": [],
+    ".agents/skills/supabase-postgres-best-practices/references/conn-pooling.md": [],
+    ".agents/skills/supabase-postgres-best-practices/references/conn-prepared-statements.md": [],
+    ".agents/skills/supabase-postgres-best-practices/references/data-batch-inserts.md": [],
+    ".agents/skills/supabase-postgres-best-practices/references/data-n-plus-one.md": [],
+    ".agents/skills/supabase-postgres-best-practices/references/data-pagination.md": [],
+    ".agents/skills/supabase-postgres-best-practices/references/data-upsert.md": [],
+    ".agents/skills/supabase-postgres-best-practices/references/lock-advisory.md": [],
+    ".agents/skills/supabase-postgres-best-practices/references/lock-deadlock-prevention.md": [],
+    ".agents/skills/supabase-postgres-best-practices/references/lock-short-transactions.md": [],
+    ".agents/skills/supabase-postgres-best-practices/references/lock-skip-locked.md": [],
+    ".agents/skills/supabase-postgres-best-practices/references/monitor-explain-analyze.md": [],
+    ".agents/skills/supabase-postgres-best-practices/references/monitor-pg-stat-statements.md": [],
+    ".agents/skills/supabase-postgres-best-practices/references/monitor-vacuum-analyze.md": []
+  }
+}

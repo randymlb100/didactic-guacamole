@@ -1,0 +1,1602 @@
+{
+  "scriptCompleted": true,
+  "filesAnalyzed": 20,
+  "filesSkipped": [],
+  "results": [
+    {
+      "path": "docs/superpowers/plans/2026-04-18-lotterynet-full-app-recovery.md",
+      "language": "markdown",
+      "fileCategory": "docs",
+      "totalLines": 309,
+      "nonEmptyLines": 230,
+      "sections": [
+        {
+          "heading": "LotteryNet Full App Recovery Implementation Plan",
+          "level": 1,
+          "line": 1
+        },
+        {
+          "heading": "File Map",
+          "level": 2,
+          "line": 13
+        },
+        {
+          "heading": "Task 1: Freeze Crash Loops And Restore Safe Entry",
+          "level": 3,
+          "line": 27
+        },
+        {
+          "heading": "Task 2: Rebuild Navigation Ownership",
+          "level": 3,
+          "line": 79
+        },
+        {
+          "heading": "Task 3: Repair Master Experience",
+          "level": 3,
+          "line": 130
+        },
+        {
+          "heading": "Task 4: Reorganize The Full Shell And App Layout",
+          "level": 3,
+          "line": 192
+        },
+        {
+          "heading": "Task 5: Validate Recovery On Device",
+          "level": 3,
+          "line": 250
+        },
+        {
+          "heading": "Notes",
+          "level": 2,
+          "line": 305
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "sectionCount": 8
+      }
+    },
+    {
+      "path": "docs/superpowers/plans/2026-04-18-lotterynet-native-ui-polish.md",
+      "language": "markdown",
+      "fileCategory": "docs",
+      "totalLines": 479,
+      "nonEmptyLines": 341,
+      "sections": [
+        {
+          "heading": "LotteryNet Native UI Polish Implementation Plan",
+          "level": 1,
+          "line": 1
+        },
+        {
+          "heading": "Task 1: Audit And Stabilize Shared Navigation",
+          "level": 3,
+          "line": 13
+        },
+        {
+          "heading": "Task 2: Rebuild The Shared Visual System",
+          "level": 3,
+          "line": 134
+        },
+        {
+          "heading": "Task 3: Compact The Bottom Navigation For POS",
+          "level": 3,
+          "line": 219
+        },
+        {
+          "heading": "Task 4: Redesign The Login Screen For Compact POS Use",
+          "level": 3,
+          "line": 285
+        },
+        {
+          "heading": "Task 5: Normalize Screen Density Across Core Flows",
+          "level": 3,
+          "line": 346
+        },
+        {
+          "heading": "Task 6: Build, Device QA, And Regression Pass",
+          "level": 3,
+          "line": 419
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "sectionCount": 7
+      }
+    },
+    {
+      "path": "docs/superpowers/plans/2026-04-20-mobile-layout-ticket-preview.md",
+      "language": "markdown",
+      "fileCategory": "docs",
+      "totalLines": 345,
+      "nonEmptyLines": 262,
+      "sections": [
+        {
+          "heading": "Mobile Layout And Ticket Preview Implementation Plan",
+          "level": 1,
+          "line": 1
+        },
+        {
+          "heading": "Task 1: Consolidar Inset Handling En Pantallas Compose",
+          "level": 3,
+          "line": 13
+        },
+        {
+          "heading": "Task 2: Tighten Venta Composer For Small Devices",
+          "level": 3,
+          "line": 98
+        },
+        {
+          "heading": "Task 3: Turn Ticket Screen Into Clear Preview Hub",
+          "level": 3,
+          "line": 170
+        },
+        {
+          "heading": "Task 4: Validate Remaining Screens That Likely Still Overflow",
+          "level": 3,
+          "line": 263
+        },
+        {
+          "heading": "Task 5: Device Validation And Release Candidate",
+          "level": 3,
+          "line": 307
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "sectionCount": 6
+      }
+    },
+    {
+      "path": "docs/superpowers/plans/2026-04-24-supabase-admin-cajero-realtime.md",
+      "language": "markdown",
+      "fileCategory": "docs",
+      "totalLines": 112,
+      "nonEmptyLines": 85,
+      "sections": [
+        {
+          "heading": "Plan: Supabase admin/cajero inmediato multi-banca",
+          "level": 1,
+          "line": 1
+        },
+        {
+          "heading": "Resumen de auditoria",
+          "level": 2,
+          "line": 3
+        },
+        {
+          "heading": "Evidencia relevante",
+          "level": 2,
+          "line": 9
+        },
+        {
+          "heading": "Critico",
+          "level": 2,
+          "line": 18
+        },
+        {
+          "heading": "Importante",
+          "level": 2,
+          "line": 46
+        },
+        {
+          "heading": "Mejoras visuales/operativas",
+          "level": 2,
+          "line": 67
+        },
+        {
+          "heading": "Tests de contrato",
+          "level": 2,
+          "line": 74
+        },
+        {
+          "heading": "Validacion manual",
+          "level": 2,
+          "line": 95
+        },
+        {
+          "heading": "Orden de implementacion recomendado",
+          "level": 2,
+          "line": 105
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "sectionCount": 9
+      }
+    },
+    {
+      "path": "docs/superpowers/plans/2026-04-26-cashier-performance-no-freeze.md",
+      "language": "markdown",
+      "fileCategory": "docs",
+      "totalLines": 581,
+      "nonEmptyLines": 439,
+      "sections": [
+        {
+          "heading": "Cashier Performance No-Freeze Implementation Plan",
+          "level": 1,
+          "line": 1
+        },
+        {
+          "heading": "File Map",
+          "level": 2,
+          "line": 12
+        },
+        {
+          "heading": "Task 1: Define POS Performance Budgets",
+          "level": 2,
+          "line": 39
+        },
+        {
+          "heading": "Task 2: Cache Parsed Local Ticket Days",
+          "level": 2,
+          "line": 125
+        },
+        {
+          "heading": "Task 3: Keep Cashier First Screen Light",
+          "level": 2,
+          "line": 218
+        },
+        {
+          "heading": "Task 4: Throttle Background Sync",
+          "level": 2,
+          "line": 315
+        },
+        {
+          "heading": "Task 5: Make Ticket Save and Print Non-Blocking",
+          "level": 2,
+          "line": 383
+        },
+        {
+          "heading": "Task 6: Reduce Bitmap Memory for Share/Save",
+          "level": 2,
+          "line": 429
+        },
+        {
+          "heading": "Task 7: Stabilize Compose Recomposition in Sales",
+          "level": 2,
+          "line": 473
+        },
+        {
+          "heading": "Task 8: Add Old Android QA Checklist",
+          "level": 2,
+          "line": 516
+        },
+        {
+          "heading": "Final Verification",
+          "level": 2,
+          "line": 564
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "sectionCount": 11
+      }
+    },
+    {
+      "path": "docs/superpowers/plans/2026-04-26-cashier-pos-performance.md",
+      "language": "markdown",
+      "fileCategory": "docs",
+      "totalLines": 501,
+      "nonEmptyLines": 359,
+      "sections": [
+        {
+          "heading": "Cashier POS Performance Implementation Plan",
+          "level": 1,
+          "line": 1
+        },
+        {
+          "heading": "File Map",
+          "level": 2,
+          "line": 13
+        },
+        {
+          "heading": "Task 1: Add Runtime Performance Profile",
+          "level": 2,
+          "line": 28
+        },
+        {
+          "heading": "Task 2: Route Cashier to a Lightweight Start Surface",
+          "level": 2,
+          "line": 132
+        },
+        {
+          "heading": "Task 3: Avoid Legacy WebView Load for Cashier Lite",
+          "level": 2,
+          "line": 236
+        },
+        {
+          "heading": "Task 4: Disable Heavy Animations for Low-RAM POS",
+          "level": 2,
+          "line": 302
+        },
+        {
+          "heading": "Task 5: Bound Bitmap Export Memory",
+          "level": 2,
+          "line": 368
+        },
+        {
+          "heading": "Task 6: Add Manual POS Performance Checklist",
+          "level": 2,
+          "line": 429
+        },
+        {
+          "heading": "Decision: One App or Two Apps?",
+          "level": 2,
+          "line": 478
+        },
+        {
+          "heading": "Verification Commands",
+          "level": 2,
+          "line": 491
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "sectionCount": 10
+      }
+    },
+    {
+      "path": "docs/superpowers/plans/2026-04-26-native-local-no-webview.md",
+      "language": "markdown",
+      "fileCategory": "docs",
+      "totalLines": 785,
+      "nonEmptyLines": 563,
+      "sections": [
+        {
+          "heading": "Native Local No-WebView Implementation Plan",
+          "level": 1,
+          "line": 1
+        },
+        {
+          "heading": "Decision",
+          "level": 2,
+          "line": 13
+        },
+        {
+          "heading": "File Map",
+          "level": 2,
+          "line": 21
+        },
+        {
+          "heading": "Task 1: Define Native-Only Routing Contract",
+          "level": 2,
+          "line": 44
+        },
+        {
+          "heading": "Task 2: Route Login and Launcher Away From WebView",
+          "level": 2,
+          "line": 123
+        },
+        {
+          "heading": "Task 3: Add Stable Render Fingerprints",
+          "level": 2,
+          "line": 211
+        },
+        {
+          "heading": "Task 4: Add Local Render Cache Repository",
+          "level": 2,
+          "line": 346
+        },
+        {
+          "heading": "Task 5: Cache Official Ticket Rendering",
+          "level": 2,
+          "line": 433
+        },
+        {
+          "heading": "Task 6: Cache Result Share Images",
+          "level": 2,
+          "line": 510
+        },
+        {
+          "heading": "Task 7: Remove Normal WebView Navigation",
+          "level": 2,
+          "line": 578
+        },
+        {
+          "heading": "Task 8: Delete Legacy Web Assets After Native Parity",
+          "level": 2,
+          "line": 636
+        },
+        {
+          "heading": "Task 9: Local-First Data Rules",
+          "level": 2,
+          "line": 674
+        },
+        {
+          "heading": "Task 10: POS QA Checklist",
+          "level": 2,
+          "line": 719
+        },
+        {
+          "heading": "Final Verification",
+          "level": 2,
+          "line": 769
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "sectionCount": 14
+      }
+    },
+    {
+      "path": "docs/superpowers/plans/2026-05-04-recargas-rapidas-integration.md",
+      "language": "markdown",
+      "fileCategory": "docs",
+      "totalLines": 54,
+      "nonEmptyLines": 37,
+      "sections": [
+        {
+          "heading": "Recargas Rapidas Integration Implementation Plan",
+          "level": 1,
+          "line": 1
+        },
+        {
+          "heading": "Task 1: Provider Catalog And Endpoints",
+          "level": 3,
+          "line": 13
+        },
+        {
+          "heading": "Task 2: Record Status Fields",
+          "level": 3,
+          "line": 24
+        },
+        {
+          "heading": "Task 3: UI Contracts",
+          "level": 3,
+          "line": 36
+        },
+        {
+          "heading": "Task 4: Build Verification",
+          "level": 3,
+          "line": 47
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "sectionCount": 5
+      }
+    },
+    {
+      "path": "docs/superpowers/plans/2026-05-11-production-ready-results-system-mode.md",
+      "language": "markdown",
+      "fileCategory": "docs",
+      "totalLines": 220,
+      "nonEmptyLines": 150,
+      "sections": [
+        {
+          "heading": "Production Ready Results and System Mode Implementation Plan",
+          "level": 1,
+          "line": 1
+        },
+        {
+          "heading": "Task 1: Make Results Production Job Real",
+          "level": 3,
+          "line": 13
+        },
+        {
+          "heading": "Task 2: Backfill Incomplete Supabase Result Caches",
+          "level": 3,
+          "line": 63
+        },
+        {
+          "heading": "Task 3: Load System Mode From Server On New Phones",
+          "level": 3,
+          "line": 109
+        },
+        {
+          "heading": "Task 4: Verify End To End",
+          "level": 3,
+          "line": 175
+        },
+        {
+          "heading": "Ready Criteria",
+          "level": 3,
+          "line": 213
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "sectionCount": 6
+      }
+    },
+    {
+      "path": "docs/superpowers/plans/2026-05-13-supabase-realtime-app.md",
+      "language": "markdown",
+      "fileCategory": "docs",
+      "totalLines": 637,
+      "nonEmptyLines": 480,
+      "sections": [
+        {
+          "heading": "Supabase Realtime App Implementation Plan",
+          "level": 1,
+          "line": 1
+        },
+        {
+          "heading": "File Structure",
+          "level": 2,
+          "line": 13
+        },
+        {
+          "heading": "Scope Decision",
+          "level": 2,
+          "line": 57
+        },
+        {
+          "heading": "Task 1: Dependency and client foundation",
+          "level": 3,
+          "line": 90
+        },
+        {
+          "heading": "Task 2: Supabase publication and table scope",
+          "level": 3,
+          "line": 167
+        },
+        {
+          "heading": "Task 3: Typed subscription map",
+          "level": 3,
+          "line": 211
+        },
+        {
+          "heading": "Task 4: Realtime orchestrator for users and master config",
+          "level": 3,
+          "line": 305
+        },
+        {
+          "heading": "Task 5: Operational owner realtime for tickets, recharges, and cashier limits",
+          "level": 3,
+          "line": 375
+        },
+        {
+          "heading": "Task 6: Results realtime without live-scrape sockets",
+          "level": 3,
+          "line": 440
+        },
+        {
+          "heading": "Task 7: App lifecycle, throttling, and failure policy",
+          "level": 3,
+          "line": 509
+        },
+        {
+          "heading": "Task 8: Verification and rollout",
+          "level": 3,
+          "line": 573
+        },
+        {
+          "heading": "Self-Review",
+          "level": 2,
+          "line": 614
+        },
+        {
+          "heading": "Execution Handoff",
+          "level": 2,
+          "line": 629
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "sectionCount": 13
+      }
+    },
+    {
+      "path": "docs/superpowers/plans/2026-05-23-compose-ui-organization-audit.md",
+      "language": "markdown",
+      "fileCategory": "docs",
+      "totalLines": 397,
+      "nonEmptyLines": 308,
+      "sections": [
+        {
+          "heading": "Compose UI Organization Audit Implementation Plan",
+          "level": 1,
+          "line": 1
+        },
+        {
+          "heading": "Reference Rules Codex Must Follow",
+          "level": 2,
+          "line": 13
+        },
+        {
+          "heading": "Official Documentation Notes",
+          "level": 2,
+          "line": 32
+        },
+        {
+          "heading": "Current Findings",
+          "level": 2,
+          "line": 78
+        },
+        {
+          "heading": "Global Component Layer",
+          "level": 3,
+          "line": 80
+        },
+        {
+          "heading": "User/Cajeros",
+          "level": 3,
+          "line": 99
+        },
+        {
+          "heading": "Configuración",
+          "level": 3,
+          "line": 121
+        },
+        {
+          "heading": "Finanzas/Cuadre",
+          "level": 3,
+          "line": 139
+        },
+        {
+          "heading": "Resultados",
+          "level": 3,
+          "line": 158
+        },
+        {
+          "heading": "Tickets",
+          "level": 3,
+          "line": 173
+        },
+        {
+          "heading": "Recargas",
+          "level": 3,
+          "line": 196
+        },
+        {
+          "heading": "Admin Dashboard / Monitor / Limits",
+          "level": 3,
+          "line": 215
+        },
+        {
+          "heading": "Master",
+          "level": 3,
+          "line": 237
+        },
+        {
+          "heading": "Login",
+          "level": 3,
+          "line": 257
+        },
+        {
+          "heading": "Printer",
+          "level": 3,
+          "line": 271
+        },
+        {
+          "heading": "Node/Production Examination",
+          "level": 2,
+          "line": 288
+        },
+        {
+          "heading": "Execution Order",
+          "level": 2,
+          "line": 314
+        },
+        {
+          "heading": "Task 1: Shared UI Vocabulary",
+          "level": 3,
+          "line": 316
+        },
+        {
+          "heading": "Task 2: Configuración Cleanup",
+          "level": 3,
+          "line": 327
+        },
+        {
+          "heading": "Task 3: Cajeros Cleanup",
+          "level": 3,
+          "line": 338
+        },
+        {
+          "heading": "Task 4: Finanzas Cleanup",
+          "level": 3,
+          "line": 349
+        },
+        {
+          "heading": "Task 5: Tickets and Results Cleanup",
+          "level": 3,
+          "line": 361
+        },
+        {
+          "heading": "Task 6: Admin, Master, Recargas, Printer Pass",
+          "level": 3,
+          "line": 375
+        },
+        {
+          "heading": "Task 7: Production Examination",
+          "level": 3,
+          "line": 386
+        },
+        {
+          "heading": "Scope Guard",
+          "level": 2,
+          "line": 395
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "sectionCount": 25
+      }
+    },
+    {
+      "path": "docs/superpowers/plans/2026-05-23-non-sales-visual-redesign.md",
+      "language": "markdown",
+      "fileCategory": "docs",
+      "totalLines": 757,
+      "nonEmptyLines": 543,
+      "sections": [
+        {
+          "heading": "Non-Sales Visual Redesign Implementation Plan",
+          "level": 1,
+          "line": 1
+        },
+        {
+          "heading": "Safety Backup",
+          "level": 2,
+          "line": 13
+        },
+        {
+          "heading": "Documentation And Design Rules Reviewed",
+          "level": 2,
+          "line": 23
+        },
+        {
+          "heading": "Global Visual Direction",
+          "level": 2,
+          "line": 37
+        },
+        {
+          "heading": "Explicit Exclusions",
+          "level": 2,
+          "line": 54
+        },
+        {
+          "heading": "File Map",
+          "level": 2,
+          "line": 77
+        },
+        {
+          "heading": "Task 1: Add A Shared Non-Sales Visual Contract",
+          "level": 2,
+          "line": 143
+        },
+        {
+          "heading": "Task 2: Create Shared Dense Row Components",
+          "level": 2,
+          "line": 222
+        },
+        {
+          "heading": "Task 3: Preserve Venta With A Guard Test",
+          "level": 2,
+          "line": 297
+        },
+        {
+          "heading": "Task 4: Add POS Lite Adaptive Viewport Contract",
+          "level": 2,
+          "line": 340
+        },
+        {
+          "heading": "Task 5: Redesign Shell, Login, And Role Menus",
+          "level": 2,
+          "line": 432
+        },
+        {
+          "heading": "Task 6: Redesign Admin, Master, Users, Config, Limits, And Monitor Family",
+          "level": 2,
+          "line": 473
+        },
+        {
+          "heading": "Task 7: Redesign Tickets And Results Screens",
+          "level": 2,
+          "line": 531
+        },
+        {
+          "heading": "Task 8: Redesign Recargas, Finance, And Operational Reports",
+          "level": 2,
+          "line": 571
+        },
+        {
+          "heading": "Task 9: Redesign Alerts, Audit, Printer, And Secondary Operational Screens",
+          "level": 2,
+          "line": 619
+        },
+        {
+          "heading": "Task 10: Add Manual QA Checklist",
+          "level": 2,
+          "line": 662
+        },
+        {
+          "heading": "Implementation Order",
+          "level": 2,
+          "line": 736
+        },
+        {
+          "heading": "Acceptance Criteria",
+          "level": 2,
+          "line": 747
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "sectionCount": 18
+      }
+    },
+    {
+      "path": "docs/superpowers/plans/2026-05-24-results-supabase-compose-optimization.md",
+      "language": "markdown",
+      "fileCategory": "docs",
+      "totalLines": 316,
+      "nonEmptyLines": 223,
+      "sections": [
+        {
+          "heading": "Results Supabase Compose Optimization Implementation Plan",
+          "level": 1,
+          "line": 1
+        },
+        {
+          "heading": "Evidence Already Found",
+          "level": 2,
+          "line": 13
+        },
+        {
+          "heading": "Technical References Used",
+          "level": 2,
+          "line": 21
+        },
+        {
+          "heading": "Files To Review Or Modify",
+          "level": 2,
+          "line": 29
+        },
+        {
+          "heading": "Phase 1: Baseline And Safety",
+          "level": 2,
+          "line": 60
+        },
+        {
+          "heading": "Task 1: Capture Current Baseline",
+          "level": 3,
+          "line": 62
+        },
+        {
+          "heading": "Task 2: Add A Repeatable Node Smoke Test",
+          "level": 3,
+          "line": 91
+        },
+        {
+          "heading": "Phase 2: Supabase Write Optimization",
+          "level": 2,
+          "line": 114
+        },
+        {
+          "heading": "Task 3: Skip KV Writes When Payload Did Not Change",
+          "level": 3,
+          "line": 116
+        },
+        {
+          "heading": "Task 4: Skip Native Table Writes When Payload Did Not Change",
+          "level": 3,
+          "line": 132
+        },
+        {
+          "heading": "Task 5: Reduce Backfill Writes To Missing/Changed Dates Only",
+          "level": 3,
+          "line": 147
+        },
+        {
+          "heading": "Phase 3: Android Results Network Optimization",
+          "level": 2,
+          "line": 164
+        },
+        {
+          "heading": "Task 6: Make Past Complete Dates Prefer Local Cache",
+          "level": 3,
+          "line": 166
+        },
+        {
+          "heading": "Task 7: Avoid Render Fallback When Supabase Cache Has Coverage",
+          "level": 3,
+          "line": 182
+        },
+        {
+          "heading": "Task 8: Keep Manual Refresh Strong",
+          "level": 3,
+          "line": 193
+        },
+        {
+          "heading": "Phase 4: Compose UI Smoothness",
+          "level": 2,
+          "line": 204
+        },
+        {
+          "heading": "Task 9: Reduce Board Rebuild Frequency",
+          "level": 3,
+          "line": 206
+        },
+        {
+          "heading": "Task 10: Add Stable Lazy Keys To Result Rows",
+          "level": 3,
+          "line": 219
+        },
+        {
+          "heading": "Task 11: Use derivedStateOf For Frequently Changing UI Decisions",
+          "level": 3,
+          "line": 236
+        },
+        {
+          "heading": "Phase 5: Validation Before Production",
+          "level": 2,
+          "line": 251
+        },
+        {
+          "heading": "Task 12: Supabase Validation",
+          "level": 3,
+          "line": 253
+        },
+        {
+          "heading": "Task 13: Node End-To-End Simulation",
+          "level": 3,
+          "line": 264
+        },
+        {
+          "heading": "Task 14: Android Build/Unit Test Only After Permission",
+          "level": 3,
+          "line": 277
+        },
+        {
+          "heading": "Rollback Plan",
+          "level": 2,
+          "line": 296
+        },
+        {
+          "heading": "Recommended Order Tonight",
+          "level": 2,
+          "line": 304
+        },
+        {
+          "heading": "Decision Needed Before Execution",
+          "level": 2,
+          "line": 312
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "sectionCount": 26
+      }
+    },
+    {
+      "path": "docs/superpowers/plans/2026-05-25-blindaje-resultados-pick-falsos.md",
+      "language": "markdown",
+      "fileCategory": "docs",
+      "totalLines": 220,
+      "nonEmptyLines": 154,
+      "sections": [
+        {
+          "heading": "Blindaje Resultados Pick Falsos Implementation Plan",
+          "level": 1,
+          "line": 1
+        },
+        {
+          "heading": "Estado Actual",
+          "level": 2,
+          "line": 13
+        },
+        {
+          "heading": "Riesgo Que Queda",
+          "level": 2,
+          "line": 21
+        },
+        {
+          "heading": "Task 1: Agregar Metadatos De Auditoria A Resultados Pick",
+          "level": 3,
+          "line": 27
+        },
+        {
+          "heading": "Task 2: Reemplazo Inteligente De Fila Suprimida",
+          "level": 3,
+          "line": 63
+        },
+        {
+          "heading": "Task 3: Monitor Node De Resultados Sospechosos",
+          "level": 3,
+          "line": 92
+        },
+        {
+          "heading": "Task 4: Prueba Node De Correccion Completa",
+          "level": 3,
+          "line": 136
+        },
+        {
+          "heading": "Task 5: Despliegue Seguro",
+          "level": 3,
+          "line": 162
+        },
+        {
+          "heading": "Criterios De Aceptacion",
+          "level": 2,
+          "line": 206
+        },
+        {
+          "heading": "Nota Operativa",
+          "level": 2,
+          "line": 218
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "sectionCount": 10
+      }
+    },
+    {
+      "path": "docs/superpowers/plans/2026-05-26-pick-fast-keypad.md",
+      "language": "markdown",
+      "fileCategory": "docs",
+      "totalLines": 548,
+      "nonEmptyLines": 393,
+      "sections": [
+        {
+          "heading": "Pick Fast Keypad Implementation Plan",
+          "level": 1,
+          "line": 1
+        },
+        {
+          "heading": "File Structure",
+          "level": 2,
+          "line": 13
+        },
+        {
+          "heading": "Visual Direction",
+          "level": 2,
+          "line": 30
+        },
+        {
+          "heading": "Task 1: Add Fast Pick Symbol Contracts",
+          "level": 2,
+          "line": 81
+        },
+        {
+          "heading": "Task 2: Replace Pick Keypad Rows With Video-Style Symbols",
+          "level": 2,
+          "line": 162
+        },
+        {
+          "heading": "Task 3: Wire Symbol Keys To Pick Actions",
+          "level": 2,
+          "line": 240
+        },
+        {
+          "heading": "Task 4: Add Straight+Box Shortcut Behavior",
+          "level": 2,
+          "line": 333
+        },
+        {
+          "heading": "Task 5: Compact The Pick Keypad Visuals",
+          "level": 2,
+          "line": 418
+        },
+        {
+          "heading": "Task 6: Verification",
+          "level": 2,
+          "line": 483
+        },
+        {
+          "heading": "Self-Review",
+          "level": 2,
+          "line": 533
+        },
+        {
+          "heading": "Execution Choice",
+          "level": 2,
+          "line": 541
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "sectionCount": 11
+      }
+    },
+    {
+      "path": "docs/superpowers/plans/2026-05-26-results-current-architecture-small-improvements.md",
+      "language": "markdown",
+      "fileCategory": "docs",
+      "totalLines": 594,
+      "nonEmptyLines": 439,
+      "sections": [
+        {
+          "heading": "Results Current Architecture Small Improvements Implementation Plan",
+          "level": 1,
+          "line": 1
+        },
+        {
+          "heading": "Documented Basis",
+          "level": 2,
+          "line": 13
+        },
+        {
+          "heading": "Current Flow",
+          "level": 2,
+          "line": 20
+        },
+        {
+          "heading": "File Structure",
+          "level": 2,
+          "line": 40
+        },
+        {
+          "heading": "Task 1: Render Cache-First Policy Gate",
+          "level": 3,
+          "line": 61
+        },
+        {
+          "heading": "Task 2: Protect Manual Scraper Routes",
+          "level": 3,
+          "line": 206
+        },
+        {
+          "heading": "Task 3: Node.js Results Monitor",
+          "level": 3,
+          "line": 313
+        },
+        {
+          "heading": "Task 4: Post-Scrape Health Check in GitHub Actions",
+          "level": 3,
+          "line": 430
+        },
+        {
+          "heading": "Task 5: Results Operations Runbook",
+          "level": 3,
+          "line": 491
+        },
+        {
+          "heading": "Verification Before Release",
+          "level": 2,
+          "line": 553
+        },
+        {
+          "heading": "Rollout Order",
+          "level": 2,
+          "line": 580
+        },
+        {
+          "heading": "Decision Record",
+          "level": 2,
+          "line": 588
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "sectionCount": 12
+      }
+    },
+    {
+      "path": "docs/superpowers/plans/2026-05-27-compose-visual-organization-refresh.md",
+      "language": "markdown",
+      "fileCategory": "docs",
+      "totalLines": 1500,
+      "nonEmptyLines": 1150,
+      "sections": [
+        {
+          "heading": "Compose Visual Organization Refresh Implementation Plan",
+          "level": 1,
+          "line": 1
+        },
+        {
+          "heading": "Documentation Reviewed",
+          "level": 2,
+          "line": 13
+        },
+        {
+          "heading": "Non-Negotiables",
+          "level": 2,
+          "line": 22
+        },
+        {
+          "heading": "Visual Direction",
+          "level": 2,
+          "line": 31
+        },
+        {
+          "heading": "File Map",
+          "level": 2,
+          "line": 44
+        },
+        {
+          "heading": "Task 1: Shared Visual Grammar Contract",
+          "level": 2,
+          "line": 90
+        },
+        {
+          "heading": "Task 2: Shared Components For Buttons, Badges, Dropdowns, Sheets",
+          "level": 2,
+          "line": 166
+        },
+        {
+          "heading": "Task 3: POS Lite Sale Button And Small Screen Fit",
+          "level": 2,
+          "line": 262
+        },
+        {
+          "heading": "Task 4: Monitor, Supervisor, Admin Cajero Cards",
+          "level": 2,
+          "line": 353
+        },
+        {
+          "heading": "Task 5: Tickets And Reports Filter Bands",
+          "level": 2,
+          "line": 408
+        },
+        {
+          "heading": "Task 6: Results Section Refresh And Visual Cleanup",
+          "level": 2,
+          "line": 457
+        },
+        {
+          "heading": "Task 7: Master, Admin, Cajero Dashboards",
+          "level": 2,
+          "line": 505
+        },
+        {
+          "heading": "Task 8: Final QA, Screens, And Release Guard",
+          "level": 2,
+          "line": 554
+        },
+        {
+          "heading": "Execution Order",
+          "level": 2,
+          "line": 607
+        },
+        {
+          "heading": "Additional Sondeo: Visual Debt Found After First Implementation Pass",
+          "level": 2,
+          "line": 622
+        },
+        {
+          "heading": "Findings",
+          "level": 3,
+          "line": 626
+        },
+        {
+          "heading": "Task 9: Shell Menu Role Home Reorganization",
+          "level": 2,
+          "line": 642
+        },
+        {
+          "heading": "Task 10: Recargas Visual Flow Cleanup",
+          "level": 2,
+          "line": 735
+        },
+        {
+          "heading": "Task 11: Printer Control Center Cleanup",
+          "level": 2,
+          "line": 817
+        },
+        {
+          "heading": "Task 12: Operational Report And Finance Export Sheet",
+          "level": 2,
+          "line": 899
+        },
+        {
+          "heading": "Task 13: Admin Configuration, Limits, And Lottery Monitor Settings",
+          "level": 2,
+          "line": 983
+        },
+        {
+          "heading": "Task 14: Master And User Administration Cards",
+          "level": 2,
+          "line": 1191
+        },
+        {
+          "heading": "Task 15: Ticket Official, Lookup, And Detail Action System",
+          "level": 2,
+          "line": 1277
+        },
+        {
+          "heading": "Task 16: Secondary Admin List Screens And QA Evidence",
+          "level": 2,
+          "line": 1378
+        },
+        {
+          "heading": "Expanded Execution Order",
+          "level": 2,
+          "line": 1485
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "sectionCount": 25
+      }
+    },
+    {
+      "path": "docs/superpowers/plans/2026-05-29-large-ticket-delivery-stability.md",
+      "language": "markdown",
+      "fileCategory": "docs",
+      "totalLines": 172,
+      "nonEmptyLines": 145,
+      "sections": [
+        {
+          "heading": "Large Ticket Delivery Stability Implementation Plan",
+          "level": 1,
+          "line": 1
+        },
+        {
+          "heading": "Contexto Tecnico Encontrado",
+          "level": 2,
+          "line": 13
+        },
+        {
+          "heading": "Documentacion Usada",
+          "level": 2,
+          "line": 20
+        },
+        {
+          "heading": "UX y Reglas Visuales",
+          "level": 2,
+          "line": 33
+        },
+        {
+          "heading": "Implementacion",
+          "level": 2,
+          "line": 41
+        },
+        {
+          "heading": "Riesgos y Decisiones",
+          "level": 2,
+          "line": 160
+        },
+        {
+          "heading": "Resultado Esperado",
+          "level": 2,
+          "line": 166
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "sectionCount": 7
+      }
+    },
+    {
+      "path": "docs/superpowers/plans/2026-05-29-safe-results-migration.md",
+      "language": "markdown",
+      "fileCategory": "docs",
+      "totalLines": 236,
+      "nonEmptyLines": 156,
+      "sections": [
+        {
+          "heading": "Safe Results Migration Implementation Plan",
+          "level": 1,
+          "line": 1
+        },
+        {
+          "heading": "Documentation Used",
+          "level": 2,
+          "line": 13
+        },
+        {
+          "heading": "Current Risk Map",
+          "level": 2,
+          "line": 22
+        },
+        {
+          "heading": "Migration Rules",
+          "level": 2,
+          "line": 31
+        },
+        {
+          "heading": "Task 1: Add Server Read Contract For Normalized Results",
+          "level": 3,
+          "line": 41
+        },
+        {
+          "heading": "Task 2: Switch Android To V2 With Legacy Fallback",
+          "level": 3,
+          "line": 88
+        },
+        {
+          "heading": "Task 3: Update Status Endpoint Without Breaking App Refresh",
+          "level": 3,
+          "line": 131
+        },
+        {
+          "heading": "Task 4: Make Prize Reconcile Strictly V2 After Coverage Is Proven",
+          "level": 3,
+          "line": 167
+        },
+        {
+          "heading": "Task 5: Realtime Safety",
+          "level": 3,
+          "line": 199
+        },
+        {
+          "heading": "Task 6: Production Rollout Checklist",
+          "level": 3,
+          "line": 218
+        },
+        {
+          "heading": "Rollback",
+          "level": 2,
+          "line": 231
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "sectionCount": 11
+      }
+    },
+    {
+      "path": "docs/superpowers/plans/2026-05-29-solucion-definitiva-resultados-premios-servidor.md",
+      "language": "markdown",
+      "fileCategory": "docs",
+      "totalLines": 196,
+      "nonEmptyLines": 144,
+      "sections": [
+        {
+          "heading": "Solucion Definitiva Resultados Y Premios Servidor Implementation Plan",
+          "level": 1,
+          "line": 1
+        },
+        {
+          "heading": "Hallazgos",
+          "level": 2,
+          "line": 13
+        },
+        {
+          "heading": "Documentacion usada",
+          "level": 2,
+          "line": 21
+        },
+        {
+          "heading": "Propuesta",
+          "level": 2,
+          "line": 29
+        },
+        {
+          "heading": "1. Crear tabla autoritativa de resultados normalizados",
+          "level": 3,
+          "line": 31
+        },
+        {
+          "heading": "2. Crear tabla autoritativa de premios por item",
+          "level": 3,
+          "line": 58
+        },
+        {
+          "heading": "3. Congelar configuracion de premio al vender",
+          "level": 3,
+          "line": 79
+        },
+        {
+          "heading": "4. Reconciliacion idempotente por cola, no por recalculo grande",
+          "level": 3,
+          "line": 88
+        },
+        {
+          "heading": "5. Estado definitivo del ticket",
+          "level": 3,
+          "line": 109
+        },
+        {
+          "heading": "6. Cache y realtime limpios",
+          "level": 3,
+          "line": 118
+        },
+        {
+          "heading": "7. Pruebas obligatorias antes de produccion",
+          "level": 3,
+          "line": 126
+        },
+        {
+          "heading": "Orden recomendado",
+          "level": 2,
+          "line": 136
+        },
+        {
+          "heading": "Task 1: Auditoria sin riesgo",
+          "level": 3,
+          "line": 138
+        },
+        {
+          "heading": "Task 2: Tablas nuevas sin activar flujo",
+          "level": 3,
+          "line": 144
+        },
+        {
+          "heading": "Task 3: Normalizador de resultados",
+          "level": 3,
+          "line": 151
+        },
+        {
+          "heading": "Task 4: Motor de premios v2",
+          "level": 3,
+          "line": 157
+        },
+        {
+          "heading": "Task 5: Cola de reconciliacion",
+          "level": 3,
+          "line": 164
+        },
+        {
+          "heading": "Task 6: Cambiar Render scraper",
+          "level": 3,
+          "line": 171
+        },
+        {
+          "heading": "Task 7: Android y visual",
+          "level": 3,
+          "line": 178
+        },
+        {
+          "heading": "Decision recomendada",
+          "level": 2,
+          "line": 184
+        },
+        {
+          "heading": "Ejecucion 2026-05-29",
+          "level": 2,
+          "line": 188
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "sectionCount": 21
+      }
+    }
+  ]
+}

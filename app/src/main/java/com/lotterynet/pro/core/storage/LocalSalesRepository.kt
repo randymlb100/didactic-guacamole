@@ -7,8 +7,10 @@ import com.lotterynet.pro.core.model.ExposureSummary
 import com.lotterynet.pro.core.model.PlayItem
 import com.lotterynet.pro.core.model.TicketRecord
 import com.lotterynet.pro.core.model.UserRole
+import com.lotterynet.pro.core.model.WinningPlayDetail
 import com.lotterynet.pro.core.model.effectiveDrawDateKey
 import com.lotterynet.pro.core.notification.WinningTicketNotifier
+import com.lotterynet.pro.core.operations.normalizeActorLabelKey
 import com.lotterynet.pro.core.repository.SalesRepository
 import com.lotterynet.pro.core.sync.filterDeletedTickets
 import com.lotterynet.pro.core.sync.mergeTicketsPreferImported
@@ -36,6 +38,7 @@ class LocalSalesRepository(
     }
 
     override fun saveTicket(ticket: TicketRecord) {
+        if (!ticket.isSafeToPersistLocally()) return
         synchronized(STORAGE_LOCK) {
             val dayKey = ticket.effectiveDrawDateKey()
             val tickets = getTicketsForDay(dayKey).toMutableList()
@@ -45,15 +48,16 @@ class LocalSalesRepository(
     }
 
     fun replaceTicket(ticket: TicketRecord) {
+        if (!ticket.isSafeToPersistLocally()) return
         synchronized(STORAGE_LOCK) {
             val dayKey = ticket.effectiveDrawDateKey()
-            val previous = getTicketsForDay(dayKey).firstOrNull { it.id == ticket.id }
             val currentTickets = getTicketsForDay(dayKey)
+            val previous = currentTickets.firstOrNull { existing -> sameTicketRecordIdentity(existing, ticket) }
             val tickets = if (previous == null) {
                 currentTickets + ticket
             } else {
                 currentTickets.map { existing ->
-                    if (existing.id == ticket.id) ticket else existing
+                    if (sameTicketRecordIdentity(existing, ticket)) ticket else existing
                 }
             }
             saveTicketsForDay(dayKey, tickets)
@@ -84,6 +88,7 @@ class LocalSalesRepository(
     }
 
     fun duplicateTicket(source: TicketRecord, newTicket: TicketRecord) {
+        if (!newTicket.isSafeToPersistLocally()) return
         synchronized(STORAGE_LOCK) {
             val dayKey = newTicket.effectiveDrawDateKey()
             val tickets = getTicketsForDay(dayKey).toMutableList()
@@ -306,6 +311,20 @@ class LocalSalesRepository(
             put("discount", ticket.discount)
             put("total", ticket.total)
             put("totalPrize", ticket.totalPrize)
+            put(
+                "winningDetails",
+                JSONArray(ticket.winningDetails.map { detail ->
+                    JSONObject().apply {
+                        put("lotteryName", detail.lotteryName)
+                        put("playType", detail.playType)
+                        put("playedNumber", detail.playedNumber)
+                        put("resultNumber", detail.resultNumber)
+                        put("hitPosition", detail.hitPosition)
+                        put("amount", detail.amount)
+                        put("payoutAmount", detail.payoutAmount)
+                    }
+                }),
+            )
             put("status", ticket.status)
             put("note", ticket.note)
             put(
@@ -329,6 +348,7 @@ class LocalSalesRepository(
 
     private fun ticketFromJson(json: JSONObject): TicketRecord {
         val playsArray = json.optJSONArray("plays") ?: JSONArray()
+        val winningDetailsArray = json.optJSONArray("winningDetails") ?: JSONArray()
         return TicketRecord(
             id = json.optString("id"),
             serial = json.optString("serial").takeIf { it.isNotBlank() },
@@ -365,6 +385,22 @@ class LocalSalesRepository(
             discount = json.optDouble("discount", 0.0),
             total = json.optDouble("total", 0.0),
             totalPrize = json.optDouble("totalPrize", 0.0),
+            winningDetails = buildList {
+                for (index in 0 until winningDetailsArray.length()) {
+                    val item = winningDetailsArray.optJSONObject(index) ?: continue
+                    add(
+                        WinningPlayDetail(
+                            lotteryName = item.optString("lotteryName"),
+                            playType = item.optString("playType"),
+                            playedNumber = item.optString("playedNumber"),
+                            resultNumber = item.optString("resultNumber"),
+                            hitPosition = item.optString("hitPosition"),
+                            amount = item.optDouble("amount", 0.0),
+                            payoutAmount = item.optDouble("payoutAmount", 0.0),
+                        ),
+                    )
+                }
+            },
             status = json.optString("status", "active"),
             note = json.optString("note").takeIf { it.isNotBlank() },
         )
@@ -412,6 +448,15 @@ class LocalSalesRepository(
     }
 }
 
+private fun sameTicketRecordIdentity(left: TicketRecord, right: TicketRecord): Boolean {
+    if (left.id.isNotBlank() && right.id.isNotBlank() && left.id.equals(right.id, ignoreCase = true)) {
+        return true
+    }
+    val leftSerial = left.serial?.trim().orEmpty()
+    val rightSerial = right.serial?.trim().orEmpty()
+    return leftSerial.isNotBlank() && rightSerial.isNotBlank() && leftSerial.equals(rightSerial, ignoreCase = true)
+}
+
 internal fun reconcileScopedImportedTickets(
     existing: List<TicketRecord>,
     ownerKey: String?,
@@ -419,8 +464,9 @@ internal fun reconcileScopedImportedTickets(
     deletedIds: Set<String>,
 ): List<TicketRecord> {
     val normalizedOwner = ownerKey?.trim().orEmpty()
+    val adminOwnerAliases = buildAdminOwnerAliases(normalizedOwner, imported)
     val preserved = existing.filterNot { ticket ->
-        normalizedOwner.isNotBlank() && matchesScopedImportedTicketOwner(ticket, normalizedOwner)
+        normalizedOwner.isNotBlank() && matchesScopedImportedTicketOwner(ticket, normalizedOwner, adminOwnerAliases)
     }
     return filterDeletedTickets(
         tickets = mergeTicketsPreferImported(preserved, imported),
@@ -428,11 +474,39 @@ internal fun reconcileScopedImportedTickets(
     )
 }
 
-private fun matchesScopedImportedTicketOwner(ticket: TicketRecord, ownerKey: String): Boolean {
-    return ticket.adminId.equals(ownerKey, ignoreCase = true) ||
-        ticket.adminUser.equals(ownerKey, ignoreCase = true) ||
-        ticket.sellerId.equals(ownerKey, ignoreCase = true) ||
+private fun buildAdminOwnerAliases(ownerKey: String, imported: List<TicketRecord>): Set<String> {
+    return buildSet {
+        normalizeActorLabelKey(ownerKey)?.let(::add)
+        imported.forEach { ticket ->
+            normalizeActorLabelKey(ticket.adminId)?.let(::add)
+            normalizeActorLabelKey(ticket.adminUser)?.let(::add)
+        }
+    }
+}
+
+private fun matchesScopedImportedTicketOwner(
+    ticket: TicketRecord,
+    ownerKey: String,
+    adminOwnerAliases: Set<String>,
+): Boolean {
+    val adminMatches = listOf(ticket.adminId, ticket.adminUser)
+        .any { key -> normalizeActorLabelKey(key)?.let(adminOwnerAliases::contains) == true }
+    if (adminMatches) return true
+
+    return ticket.sellerId.equals(ownerKey, ignoreCase = true) ||
         ticket.sellerUser.equals(ownerKey, ignoreCase = true)
+}
+
+internal fun TicketRecord.isSafeToPersistLocally(): Boolean {
+    if (status.trim().lowercase(java.util.Locale.US) in setOf("deleted", "borrado", "removed")) return true
+    if (total > 0.0 && plays.isEmpty()) return false
+    return plays.all { play ->
+        play.number.isNotBlank() &&
+            play.playType.isNotBlank() &&
+            !play.lotteryId.isNullOrBlank() &&
+            !play.lotteryName.isNullOrBlank() &&
+            play.amount > 0.0
+    }
 }
 
 internal fun matchesSalesActorTicket(ticket: TicketRecord, actorKey: String): Boolean {

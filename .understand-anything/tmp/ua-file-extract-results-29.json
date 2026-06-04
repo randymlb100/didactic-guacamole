@@ -1,0 +1,207 @@
+{
+  "scriptCompleted": true,
+  "filesAnalyzed": 25,
+  "filesSkipped": [],
+  "results": [
+    {
+      "path": "app/src/test/java/com/lotterynet/pro/core/sales/SupabaseTicketBackendClientTest.kt",
+      "language": "kotlin",
+      "fileCategory": "code",
+      "totalLines": 412,
+      "nonEmptyLines": 373,
+      "metrics": {}
+    },
+    {
+      "path": "app/src/test/java/com/lotterynet/pro/core/storage/CashierPrizePayoutRepositoryTest.kt",
+      "language": "kotlin",
+      "fileCategory": "code",
+      "totalLines": 49,
+      "nonEmptyLines": 40,
+      "metrics": {}
+    },
+    {
+      "path": "app/src/test/java/com/lotterynet/pro/core/storage/CashierSalesLimitPayloadTest.kt",
+      "language": "kotlin",
+      "fileCategory": "code",
+      "totalLines": 46,
+      "nonEmptyLines": 40,
+      "metrics": {}
+    },
+    {
+      "path": "app/src/test/java/com/lotterynet/pro/core/storage/LocalUsersDeletedRepositoryTest.kt",
+      "language": "kotlin",
+      "fileCategory": "code",
+      "totalLines": 90,
+      "nonEmptyLines": 79,
+      "metrics": {}
+    },
+    {
+      "path": "app/src/test/java/com/lotterynet/pro/core/storage/RechargeLimitRepositoryContractsTest.kt",
+      "language": "kotlin",
+      "fileCategory": "code",
+      "totalLines": 32,
+      "nonEmptyLines": 25,
+      "metrics": {}
+    },
+    {
+      "path": "app/src/test/java/com/lotterynet/pro/core/storage/RechargeRepositoryContractsTest.kt",
+      "language": "kotlin",
+      "fileCategory": "code",
+      "totalLines": 29,
+      "nonEmptyLines": 24,
+      "metrics": {}
+    },
+    {
+      "path": "app/src/test/java/com/lotterynet/pro/core/storage/SalesDayTicketCacheTest.kt",
+      "language": "kotlin",
+      "fileCategory": "code",
+      "totalLines": 55,
+      "nonEmptyLines": 43,
+      "metrics": {}
+    },
+    {
+      "path": "app/src/test/java/com/lotterynet/pro/core/storage/ThermalPrinterPrefsCodecTest.kt",
+      "language": "kotlin",
+      "fileCategory": "code",
+      "totalLines": 43,
+      "nonEmptyLines": 36,
+      "metrics": {}
+    },
+    {
+      "path": "app/src/test/java/com/lotterynet/pro/core/storage/TrustedClockContractsTest.kt",
+      "language": "kotlin",
+      "fileCategory": "code",
+      "totalLines": 68,
+      "nonEmptyLines": 58,
+      "metrics": {}
+    },
+    {
+      "path": "app/src/test/java/com/lotterynet/pro/core/storage/UsersPayloadCacheTest.kt",
+      "language": "kotlin",
+      "fileCategory": "code",
+      "totalLines": 42,
+      "nonEmptyLines": 35,
+      "metrics": {}
+    },
+    {
+      "path": "app/src/test/java/com/lotterynet/pro/core/sync/LocalSyncFreshnessContractsTest.kt",
+      "language": "kotlin",
+      "fileCategory": "code",
+      "totalLines": 66,
+      "nonEmptyLines": 61,
+      "metrics": {}
+    },
+    {
+      "path": "app/src/test/java/com/lotterynet/pro/core/sync/NativeOperationalHydrationTest.kt",
+      "language": "kotlin",
+      "fileCategory": "code",
+      "totalLines": 291,
+      "nonEmptyLines": 242,
+      "metrics": {}
+    },
+    {
+      "path": "app/src/test/java/com/lotterynet/pro/core/sync/NativeRechargeSyncContractsTest.kt",
+      "language": "kotlin",
+      "fileCategory": "code",
+      "totalLines": 59,
+      "nonEmptyLines": 51,
+      "metrics": {}
+    },
+    {
+      "path": "app/src/test/java/com/lotterynet/pro/core/sync/OperationalSyncThrottleTest.kt",
+      "language": "kotlin",
+      "fileCategory": "code",
+      "totalLines": 25,
+      "nonEmptyLines": 20,
+      "metrics": {}
+    },
+    {
+      "path": "app/src/test/java/com/lotterynet/pro/core/update/UpdateContractsTest.kt",
+      "language": "kotlin",
+      "fileCategory": "code",
+      "totalLines": 89,
+      "nonEmptyLines": 79,
+      "metrics": {}
+    },
+    {
+      "path": "app/src/test/java/com/lotterynet/pro/core/users/SupabaseUsersRemoteStoreTest.kt",
+      "language": "kotlin",
+      "fileCategory": "code",
+      "totalLines": 205,
+      "nonEmptyLines": 174,
+      "metrics": {}
+    },
+    {
+      "path": "app/src/test/java/com/lotterynet/pro/ui/admin/AdminLimitsContractsTest.kt",
+      "language": "kotlin",
+      "fileCategory": "code",
+      "totalLines": 71,
+      "nonEmptyLines": 59,
+      "metrics": {}
+    },
+    {
+      "path": "app/src/test/java/com/lotterynet/pro/ui/common/AdaptiveBuildContractsTest.kt",
+      "language": "kotlin",
+      "fileCategory": "code",
+      "totalLines": 20,
+      "nonEmptyLines": 16,
+      "metrics": {}
+    },
+    {
+      "path": "app/src/test/java/com/lotterynet/pro/ui/common/PosModeContractsTest.kt",
+      "language": "kotlin",
+      "fileCategory": "code",
+      "totalLines": 37,
+      "nonEmptyLines": 33,
+      "metrics": {}
+    },
+    {
+      "path": "app/src/test/java/com/lotterynet/pro/ui/finance/FinanceStartupContractsTest.kt",
+      "language": "kotlin",
+      "fileCategory": "code",
+      "totalLines": 31,
+      "nonEmptyLines": 26,
+      "metrics": {}
+    },
+    {
+      "path": "app/src/test/java/com/lotterynet/pro/ui/login/LoginActivityContractsTest.kt",
+      "language": "kotlin",
+      "fileCategory": "code",
+      "totalLines": 26,
+      "nonEmptyLines": 22,
+      "metrics": {}
+    },
+    {
+      "path": "app/src/test/java/com/lotterynet/pro/ui/navigation/NativeOnlySourceContractsTest.kt",
+      "language": "kotlin",
+      "fileCategory": "code",
+      "totalLines": 37,
+      "nonEmptyLines": 33,
+      "metrics": {}
+    },
+    {
+      "path": "app/src/test/java/com/lotterynet/pro/ui/report/OperationalReportSyncContractsTest.kt",
+      "language": "kotlin",
+      "fileCategory": "code",
+      "totalLines": 40,
+      "nonEmptyLines": 35,
+      "metrics": {}
+    },
+    {
+      "path": "app/src/test/java/com/lotterynet/pro/ui/results/ResultsStartupContractsTest.kt",
+      "language": "kotlin",
+      "fileCategory": "code",
+      "totalLines": 27,
+      "nonEmptyLines": 22,
+      "metrics": {}
+    },
+    {
+      "path": "app/src/test/java/com/lotterynet/pro/ui/sales/CashierStartupContractsTest.kt",
+      "language": "kotlin",
+      "fileCategory": "code",
+      "totalLines": 31,
+      "nonEmptyLines": 26,
+      "metrics": {}
+    }
+  ]
+}

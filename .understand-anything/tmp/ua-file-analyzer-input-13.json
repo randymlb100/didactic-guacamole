@@ -1,0 +1,266 @@
+{
+  "projectRoot": "C:\\Users\\Randy Cordero\\Desktop\\lotterynet_android",
+  "batchFiles": [
+    {
+      "path": "supabase/migrations/20260507000100_ota_update_system.sql",
+      "language": "sql",
+      "sizeLines": 115,
+      "fileCategory": "data"
+    },
+    {
+      "path": "supabase/migrations/20260518000100_results_server_refresh_cron.sql",
+      "language": "sql",
+      "sizeLines": 60,
+      "fileCategory": "data"
+    },
+    {
+      "path": "supabase/migrations/20260518230328_server_first_prize_payments.sql",
+      "language": "sql",
+      "sizeLines": 614,
+      "fileCategory": "data"
+    },
+    {
+      "path": "supabase/migrations/20260518235038_temporary_lock_public_ticket_rpcs.sql",
+      "language": "sql",
+      "sizeLines": 63,
+      "fileCategory": "data"
+    },
+    {
+      "path": "supabase/migrations/20260518235228_temporary_lock_remaining_public_security_definers.sql",
+      "language": "sql",
+      "sizeLines": 0,
+      "fileCategory": "data"
+    },
+    {
+      "path": "supabase/migrations/20260519003000_enforce_ticket_delete_roles_and_two_minute_window.sql",
+      "language": "sql",
+      "sizeLines": 152,
+      "fileCategory": "data"
+    },
+    {
+      "path": "supabase/migrations/20260519013000_server_authoritative_sales_limits.sql",
+      "language": "sql",
+      "sizeLines": 363,
+      "fileCategory": "data"
+    },
+    {
+      "path": "supabase/migrations/20260519023000_server_profile_grace_jwt_clock.sql",
+      "language": "sql",
+      "sizeLines": 238,
+      "fileCategory": "data"
+    },
+    {
+      "path": "supabase/migrations/20260519033000_client_health_events.sql",
+      "language": "sql",
+      "sizeLines": 26,
+      "fileCategory": "data"
+    },
+    {
+      "path": "supabase/migrations/20260519043000_normalize_pick_box_straight_server.sql",
+      "language": "sql",
+      "sizeLines": 152,
+      "fileCategory": "data"
+    },
+    {
+      "path": "supabase/migrations/20260519052000_harden_advisors_nonblocking.sql",
+      "language": "sql",
+      "sizeLines": 63,
+      "fileCategory": "data"
+    },
+    {
+      "path": "supabase/migrations/20260519053000_harden_remaining_function_search_paths.sql",
+      "language": "sql",
+      "sizeLines": 16,
+      "fileCategory": "data"
+    },
+    {
+      "path": "supabase/migrations/20260519072000_allow_public_results_cache_writes.sql",
+      "language": "sql",
+      "sizeLines": 45,
+      "fileCategory": "data"
+    },
+    {
+      "path": "supabase/migrations/20260519075000_scope_cashier_play_limits_by_cashier.sql",
+      "language": "sql",
+      "sizeLines": 52,
+      "fileCategory": "data"
+    },
+    {
+      "path": "supabase/migrations/20260520123000_auto_sync_winning_ticket_payloads.sql",
+      "language": "sql",
+      "sizeLines": 192,
+      "fileCategory": "data"
+    },
+    {
+      "path": "supabase/migrations/20260520124500_include_pick_results_in_server_reconcile.sql",
+      "language": "sql",
+      "sizeLines": 235,
+      "fileCategory": "data"
+    },
+    {
+      "path": "supabase/migrations/20260520131500_fix_finance_report_dates_commissions_and_limit_status.sql",
+      "language": "sql",
+      "sizeLines": 216,
+      "fileCategory": "data"
+    },
+    {
+      "path": "supabase/migrations/20260520132000_map_ticket_limit_errors_to_conflict.sql",
+      "language": "sql",
+      "sizeLines": 32,
+      "fileCategory": "data"
+    },
+    {
+      "path": "supabase/migrations/20260520205152_reserve_pending_prizes_in_reports.sql",
+      "language": "sql",
+      "sizeLines": 123,
+      "fileCategory": "data"
+    },
+    {
+      "path": "supabase/migrations/20260521183000_secure_results_reconcile_ticket_items.sql",
+      "language": "sql",
+      "sizeLines": 46,
+      "fileCategory": "data"
+    },
+    {
+      "path": "supabase/migrations/20260522031721_fix_limits_pick_supervisor_regressions.sql",
+      "language": "sql",
+      "sizeLines": 317,
+      "fileCategory": "data"
+    },
+    {
+      "path": "supabase/migrations/20260522070500_fix_performance_advisor_indexes_rls.sql",
+      "language": "sql",
+      "sizeLines": 115,
+      "fileCategory": "data"
+    },
+    {
+      "path": "supabase/migrations/20260524092446_sync_results_tables_from_kv_cache.sql",
+      "language": "sql",
+      "sizeLines": 101,
+      "fileCategory": "data"
+    },
+    {
+      "path": "supabase/migrations/20260524101500_avoid_reconcile_when_result_numbers_unchanged.sql",
+      "language": "sql",
+      "sizeLines": 108,
+      "fileCategory": "data"
+    },
+    {
+      "path": "supabase/migrations/20260525000100_fix_prize_payout_config_aliases.sql",
+      "language": "sql",
+      "sizeLines": 165,
+      "fileCategory": "data"
+    },
+    {
+      "path": "supabase/migrations/20260525001000_fix_prize_payout_config_master_state.sql",
+      "language": "sql",
+      "sizeLines": 165,
+      "fileCategory": "data"
+    },
+    {
+      "path": "supabase/migrations/20260527093000_separate_admin_self_limits_from_cashier_defaults.sql",
+      "language": "sql",
+      "sizeLines": 102,
+      "fileCategory": "data"
+    },
+    {
+      "path": "supabase/migrations/20260528014500_skip_inline_reconcile_during_results_kv_sync.sql",
+      "language": "sql",
+      "sizeLines": 119,
+      "fileCategory": "data"
+    },
+    {
+      "path": "supabase/migrations/20260528120000_optimize_rls_and_indexes.sql",
+      "language": "sql",
+      "sizeLines": 28,
+      "fileCategory": "data"
+    },
+    {
+      "path": "supabase/migrations/20260528130000_harden_security_definer_executes.sql",
+      "language": "sql",
+      "sizeLines": 11,
+      "fileCategory": "data"
+    },
+    {
+      "path": "supabase/migrations/20260529003000_result_draws_prize_v2_foundation.sql",
+      "language": "sql",
+      "sizeLines": 708,
+      "fileCategory": "data"
+    },
+    {
+      "path": "supabase/migrations/20260529004500_result_reconcile_queue_guard.sql",
+      "language": "sql",
+      "sizeLines": 134,
+      "fileCategory": "data"
+    },
+    {
+      "path": "supabase/migrations/20260529011000_results_realtime_signal.sql",
+      "language": "sql",
+      "sizeLines": 137,
+      "fileCategory": "data"
+    },
+    {
+      "path": "supabase/migrations/20260529013000_ticket_owner_realtime_touch.sql",
+      "language": "sql",
+      "sizeLines": 76,
+      "fileCategory": "data"
+    },
+    {
+      "path": "supabase/migrations/20260529020000_result_draws_first_cutover.sql",
+      "language": "sql",
+      "sizeLines": 46,
+      "fileCategory": "data"
+    },
+    {
+      "path": "supabase/migrations/20260529033000_force_prize_config_from_ticket_seller.sql",
+      "language": "sql",
+      "sizeLines": 32,
+      "fileCategory": "data"
+    },
+    {
+      "path": "supabase/migrations/20260529034500_reconcile_paid_ticket_prizes_with_seller_config.sql",
+      "language": "sql",
+      "sizeLines": 106,
+      "fileCategory": "data"
+    }
+  ],
+  "batchImportData": {
+    "supabase/migrations/20260507000100_ota_update_system.sql": [],
+    "supabase/migrations/20260518000100_results_server_refresh_cron.sql": [],
+    "supabase/migrations/20260518230328_server_first_prize_payments.sql": [],
+    "supabase/migrations/20260518235038_temporary_lock_public_ticket_rpcs.sql": [],
+    "supabase/migrations/20260518235228_temporary_lock_remaining_public_security_definers.sql": [],
+    "supabase/migrations/20260519003000_enforce_ticket_delete_roles_and_two_minute_window.sql": [],
+    "supabase/migrations/20260519013000_server_authoritative_sales_limits.sql": [],
+    "supabase/migrations/20260519023000_server_profile_grace_jwt_clock.sql": [],
+    "supabase/migrations/20260519033000_client_health_events.sql": [],
+    "supabase/migrations/20260519043000_normalize_pick_box_straight_server.sql": [],
+    "supabase/migrations/20260519052000_harden_advisors_nonblocking.sql": [],
+    "supabase/migrations/20260519053000_harden_remaining_function_search_paths.sql": [],
+    "supabase/migrations/20260519072000_allow_public_results_cache_writes.sql": [],
+    "supabase/migrations/20260519075000_scope_cashier_play_limits_by_cashier.sql": [],
+    "supabase/migrations/20260520123000_auto_sync_winning_ticket_payloads.sql": [],
+    "supabase/migrations/20260520124500_include_pick_results_in_server_reconcile.sql": [],
+    "supabase/migrations/20260520131500_fix_finance_report_dates_commissions_and_limit_status.sql": [],
+    "supabase/migrations/20260520132000_map_ticket_limit_errors_to_conflict.sql": [],
+    "supabase/migrations/20260520205152_reserve_pending_prizes_in_reports.sql": [],
+    "supabase/migrations/20260521183000_secure_results_reconcile_ticket_items.sql": [],
+    "supabase/migrations/20260522031721_fix_limits_pick_supervisor_regressions.sql": [],
+    "supabase/migrations/20260522070500_fix_performance_advisor_indexes_rls.sql": [],
+    "supabase/migrations/20260524092446_sync_results_tables_from_kv_cache.sql": [],
+    "supabase/migrations/20260524101500_avoid_reconcile_when_result_numbers_unchanged.sql": [],
+    "supabase/migrations/20260525000100_fix_prize_payout_config_aliases.sql": [],
+    "supabase/migrations/20260525001000_fix_prize_payout_config_master_state.sql": [],
+    "supabase/migrations/20260527093000_separate_admin_self_limits_from_cashier_defaults.sql": [],
+    "supabase/migrations/20260528014500_skip_inline_reconcile_during_results_kv_sync.sql": [],
+    "supabase/migrations/20260528120000_optimize_rls_and_indexes.sql": [],
+    "supabase/migrations/20260528130000_harden_security_definer_executes.sql": [],
+    "supabase/migrations/20260529003000_result_draws_prize_v2_foundation.sql": [],
+    "supabase/migrations/20260529004500_result_reconcile_queue_guard.sql": [],
+    "supabase/migrations/20260529011000_results_realtime_signal.sql": [],
+    "supabase/migrations/20260529013000_ticket_owner_realtime_touch.sql": [],
+    "supabase/migrations/20260529020000_result_draws_first_cutover.sql": [],
+    "supabase/migrations/20260529033000_force_prize_config_from_ticket_seller.sql": [],
+    "supabase/migrations/20260529034500_reconcile_paid_ticket_prizes_with_seller_config.sql": []
+  }
+}

@@ -1,0 +1,1716 @@
+{
+  "nodes": [
+    {
+      "id": "file:app/src/test/java/com/lotterynet/pro/core/operations/TicketOwnerCanonicalizationTest.kt",
+      "type": "file",
+      "name": "TicketOwnerCanonicalizationTest.kt",
+      "summary": "Source file app/src/test/java/com/lotterynet/pro/core/operations/TicketOwnerCanonicalizationTest.kt containing 1 class(es).",
+      "tags": [
+        "code",
+        "test",
+        "ticket"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/test/java/com/lotterynet/pro/core/operations/TicketOwnerCanonicalizationTest.kt",
+      "lineRange": [
+        1,
+        83
+      ]
+    },
+    {
+      "id": "class:app/src/test/java/com/lotterynet/pro/core/operations/TicketOwnerCanonicalizationTest.kt:TicketOwnerCanonicalizationTest",
+      "type": "class",
+      "name": "TicketOwnerCanonicalizationTest",
+      "summary": "Class TicketOwnerCanonicalizationTest in TicketOwnerCanonicalizationTest.kt.",
+      "tags": [
+        "class",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/test/java/com/lotterynet/pro/core/operations/TicketOwnerCanonicalizationTest.kt",
+      "lineRange": [
+        10,
+        84
+      ]
+    },
+    {
+      "id": "file:app/src/test/java/com/lotterynet/pro/core/operations/UserAccountOrderingTest.kt",
+      "type": "file",
+      "name": "UserAccountOrderingTest.kt",
+      "summary": "Source file app/src/test/java/com/lotterynet/pro/core/operations/UserAccountOrderingTest.kt containing 1 class(es) and 1 function(s).",
+      "tags": [
+        "code",
+        "test"
+      ],
+      "complexity": "simple",
+      "filePath": "app/src/test/java/com/lotterynet/pro/core/operations/UserAccountOrderingTest.kt",
+      "lineRange": [
+        1,
+        37
+      ]
+    },
+    {
+      "id": "function:app/src/test/java/com/lotterynet/pro/core/operations/UserAccountOrderingTest.kt:cashier",
+      "type": "function",
+      "name": "cashier",
+      "summary": "Function cashier in UserAccountOrderingTest.kt.",
+      "tags": [
+        "function",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/test/java/com/lotterynet/pro/core/operations/UserAccountOrderingTest.kt",
+      "lineRange": [
+        29,
+        38
+      ]
+    },
+    {
+      "id": "class:app/src/test/java/com/lotterynet/pro/core/operations/UserAccountOrderingTest.kt:UserAccountOrderingTest",
+      "type": "class",
+      "name": "UserAccountOrderingTest",
+      "summary": "Class UserAccountOrderingTest in UserAccountOrderingTest.kt.",
+      "tags": [
+        "class",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/test/java/com/lotterynet/pro/core/operations/UserAccountOrderingTest.kt",
+      "lineRange": [
+        8,
+        38
+      ]
+    },
+    {
+      "id": "file:app/src/test/java/com/lotterynet/pro/core/sales/SaleExposureLimitContractsTest.kt",
+      "type": "file",
+      "name": "SaleExposureLimitContractsTest.kt",
+      "summary": "Source file app/src/test/java/com/lotterynet/pro/core/sales/SaleExposureLimitContractsTest.kt containing 1 class(es) and 2 function(s).",
+      "tags": [
+        "code",
+        "test",
+        "sales"
+      ],
+      "complexity": "complex",
+      "filePath": "app/src/test/java/com/lotterynet/pro/core/sales/SaleExposureLimitContractsTest.kt",
+      "lineRange": [
+        1,
+        326
+      ]
+    },
+    {
+      "id": "function:app/src/test/java/com/lotterynet/pro/core/sales/SaleExposureLimitContractsTest.kt:play",
+      "type": "function",
+      "name": "play",
+      "summary": "Function play in SaleExposureLimitContractsTest.kt.",
+      "tags": [
+        "function",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/test/java/com/lotterynet/pro/core/sales/SaleExposureLimitContractsTest.kt",
+      "lineRange": [
+        311,
+        327
+      ]
+    },
+    {
+      "id": "function:app/src/test/java/com/lotterynet/pro/core/sales/SaleExposureLimitContractsTest.kt:staged",
+      "type": "function",
+      "name": "staged",
+      "summary": "Function staged in SaleExposureLimitContractsTest.kt.",
+      "tags": [
+        "function",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/test/java/com/lotterynet/pro/core/sales/SaleExposureLimitContractsTest.kt",
+      "lineRange": [
+        315,
+        327
+      ]
+    },
+    {
+      "id": "class:app/src/test/java/com/lotterynet/pro/core/sales/SaleExposureLimitContractsTest.kt:SaleExposureLimitContractsTest",
+      "type": "class",
+      "name": "SaleExposureLimitContractsTest",
+      "summary": "Class SaleExposureLimitContractsTest in SaleExposureLimitContractsTest.kt.",
+      "tags": [
+        "class",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/test/java/com/lotterynet/pro/core/sales/SaleExposureLimitContractsTest.kt",
+      "lineRange": [
+        11,
+        90
+      ]
+    },
+    {
+      "id": "file:app/src/test/java/com/lotterynet/pro/core/storage/AdminLotteryConfigContractsTest.kt",
+      "type": "file",
+      "name": "AdminLotteryConfigContractsTest.kt",
+      "summary": "Source file app/src/test/java/com/lotterynet/pro/core/storage/AdminLotteryConfigContractsTest.kt containing 1 class(es).",
+      "tags": [
+        "code",
+        "test"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/test/java/com/lotterynet/pro/core/storage/AdminLotteryConfigContractsTest.kt",
+      "lineRange": [
+        1,
+        222
+      ]
+    },
+    {
+      "id": "class:app/src/test/java/com/lotterynet/pro/core/storage/AdminLotteryConfigContractsTest.kt:AdminLotteryConfigContractsTest",
+      "type": "class",
+      "name": "AdminLotteryConfigContractsTest",
+      "summary": "Class AdminLotteryConfigContractsTest in AdminLotteryConfigContractsTest.kt.",
+      "tags": [
+        "class",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/test/java/com/lotterynet/pro/core/storage/AdminLotteryConfigContractsTest.kt",
+      "lineRange": [
+        11,
+        90
+      ]
+    },
+    {
+      "id": "file:app/src/test/java/com/lotterynet/pro/core/storage/LocalSalesRepositoryContractsTest.kt",
+      "type": "file",
+      "name": "LocalSalesRepositoryContractsTest.kt",
+      "summary": "Source file app/src/test/java/com/lotterynet/pro/core/storage/LocalSalesRepositoryContractsTest.kt containing 1 class(es).",
+      "tags": [
+        "code",
+        "test",
+        "sales"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/test/java/com/lotterynet/pro/core/storage/LocalSalesRepositoryContractsTest.kt",
+      "lineRange": [
+        1,
+        149
+      ]
+    },
+    {
+      "id": "class:app/src/test/java/com/lotterynet/pro/core/storage/LocalSalesRepositoryContractsTest.kt:LocalSalesRepositoryContractsTest",
+      "type": "class",
+      "name": "LocalSalesRepositoryContractsTest",
+      "summary": "Class LocalSalesRepositoryContractsTest in LocalSalesRepositoryContractsTest.kt.",
+      "tags": [
+        "class",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/test/java/com/lotterynet/pro/core/storage/LocalSalesRepositoryContractsTest.kt",
+      "lineRange": [
+        11,
+        90
+      ]
+    },
+    {
+      "id": "file:app/src/test/java/com/lotterynet/pro/core/storage/LocalUsersRepositorySecurityContractsTest.kt",
+      "type": "file",
+      "name": "LocalUsersRepositorySecurityContractsTest.kt",
+      "summary": "Source file app/src/test/java/com/lotterynet/pro/core/storage/LocalUsersRepositorySecurityContractsTest.kt containing 1 class(es).",
+      "tags": [
+        "code",
+        "test"
+      ],
+      "complexity": "simple",
+      "filePath": "app/src/test/java/com/lotterynet/pro/core/storage/LocalUsersRepositorySecurityContractsTest.kt",
+      "lineRange": [
+        1,
+        30
+      ]
+    },
+    {
+      "id": "class:app/src/test/java/com/lotterynet/pro/core/storage/LocalUsersRepositorySecurityContractsTest.kt:LocalUsersRepositorySecurityContractsTest",
+      "type": "class",
+      "name": "LocalUsersRepositorySecurityContractsTest",
+      "summary": "Class LocalUsersRepositorySecurityContractsTest in LocalUsersRepositorySecurityContractsTest.kt.",
+      "tags": [
+        "class",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/test/java/com/lotterynet/pro/core/storage/LocalUsersRepositorySecurityContractsTest.kt",
+      "lineRange": [
+        9,
+        31
+      ]
+    },
+    {
+      "id": "file:app/src/test/java/com/lotterynet/pro/core/sync/NativeOperationalSyncContractsTest.kt",
+      "type": "file",
+      "name": "NativeOperationalSyncContractsTest.kt",
+      "summary": "Source file app/src/test/java/com/lotterynet/pro/core/sync/NativeOperationalSyncContractsTest.kt containing 1 class(es) and 6 function(s).",
+      "tags": [
+        "code",
+        "test",
+        "sync"
+      ],
+      "complexity": "complex",
+      "filePath": "app/src/test/java/com/lotterynet/pro/core/sync/NativeOperationalSyncContractsTest.kt",
+      "lineRange": [
+        1,
+        301
+      ]
+    },
+    {
+      "id": "function:app/src/test/java/com/lotterynet/pro/core/sync/NativeOperationalSyncContractsTest.kt:enqueueAndFlush",
+      "type": "function",
+      "name": "enqueueAndFlush",
+      "summary": "Function enqueueAndFlush in NativeOperationalSyncContractsTest.kt.",
+      "tags": [
+        "function",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/test/java/com/lotterynet/pro/core/sync/NativeOperationalSyncContractsTest.kt",
+      "lineRange": [
+        271,
+        290
+      ]
+    },
+    {
+      "id": "function:app/src/test/java/com/lotterynet/pro/core/sync/NativeOperationalSyncContractsTest.kt:hydrateOwner",
+      "type": "function",
+      "name": "hydrateOwner",
+      "summary": "Function hydrateOwner in NativeOperationalSyncContractsTest.kt.",
+      "tags": [
+        "function",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/test/java/com/lotterynet/pro/core/sync/NativeOperationalSyncContractsTest.kt",
+      "lineRange": [
+        276,
+        295
+      ]
+    },
+    {
+      "id": "function:app/src/test/java/com/lotterynet/pro/core/sync/NativeOperationalSyncContractsTest.kt:flushOwner",
+      "type": "function",
+      "name": "flushOwner",
+      "summary": "Function flushOwner in NativeOperationalSyncContractsTest.kt.",
+      "tags": [
+        "function",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/test/java/com/lotterynet/pro/core/sync/NativeOperationalSyncContractsTest.kt",
+      "lineRange": [
+        282,
+        301
+      ]
+    },
+    {
+      "id": "function:app/src/test/java/com/lotterynet/pro/core/sync/NativeOperationalSyncContractsTest.kt:flushOwnerLocalSnapshot",
+      "type": "function",
+      "name": "flushOwnerLocalSnapshot",
+      "summary": "Function flushOwnerLocalSnapshot in NativeOperationalSyncContractsTest.kt.",
+      "tags": [
+        "function",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/test/java/com/lotterynet/pro/core/sync/NativeOperationalSyncContractsTest.kt",
+      "lineRange": [
+        284,
+        302
+      ]
+    },
+    {
+      "id": "function:app/src/test/java/com/lotterynet/pro/core/sync/NativeOperationalSyncContractsTest.kt:fetchUpdatedAt",
+      "type": "function",
+      "name": "fetchUpdatedAt",
+      "summary": "Function fetchUpdatedAt in NativeOperationalSyncContractsTest.kt.",
+      "tags": [
+        "function",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/test/java/com/lotterynet/pro/core/sync/NativeOperationalSyncContractsTest.kt",
+      "lineRange": [
+        293,
+        302
+      ]
+    },
+    {
+      "id": "class:app/src/test/java/com/lotterynet/pro/core/sync/NativeOperationalSyncContractsTest.kt:NativeOperationalSyncContractsTest",
+      "type": "class",
+      "name": "NativeOperationalSyncContractsTest",
+      "summary": "Class NativeOperationalSyncContractsTest in NativeOperationalSyncContractsTest.kt.",
+      "tags": [
+        "class",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/test/java/com/lotterynet/pro/core/sync/NativeOperationalSyncContractsTest.kt",
+      "lineRange": [
+        12,
+        91
+      ]
+    },
+    {
+      "id": "file:app/src/test/java/com/lotterynet/pro/core/sync/NativeTicketSyncContractsTest.kt",
+      "type": "file",
+      "name": "NativeTicketSyncContractsTest.kt",
+      "summary": "Source file app/src/test/java/com/lotterynet/pro/core/sync/NativeTicketSyncContractsTest.kt containing 1 class(es).",
+      "tags": [
+        "code",
+        "test",
+        "ticket",
+        "sync"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/test/java/com/lotterynet/pro/core/sync/NativeTicketSyncContractsTest.kt",
+      "lineRange": [
+        1,
+        82
+      ]
+    },
+    {
+      "id": "class:app/src/test/java/com/lotterynet/pro/core/sync/NativeTicketSyncContractsTest.kt:NativeTicketSyncContractsTest",
+      "type": "class",
+      "name": "NativeTicketSyncContractsTest",
+      "summary": "Class NativeTicketSyncContractsTest in NativeTicketSyncContractsTest.kt.",
+      "tags": [
+        "class",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/test/java/com/lotterynet/pro/core/sync/NativeTicketSyncContractsTest.kt",
+      "lineRange": [
+        11,
+        83
+      ]
+    },
+    {
+      "id": "file:app/src/test/java/com/lotterynet/pro/core/users/UserPasswordBackendClientTest.kt",
+      "type": "file",
+      "name": "UserPasswordBackendClientTest.kt",
+      "summary": "Source file app/src/test/java/com/lotterynet/pro/core/users/UserPasswordBackendClientTest.kt containing 1 class(es).",
+      "tags": [
+        "code",
+        "test"
+      ],
+      "complexity": "simple",
+      "filePath": "app/src/test/java/com/lotterynet/pro/core/users/UserPasswordBackendClientTest.kt",
+      "lineRange": [
+        1,
+        33
+      ]
+    },
+    {
+      "id": "class:app/src/test/java/com/lotterynet/pro/core/users/UserPasswordBackendClientTest.kt:UserPasswordBackendClientTest",
+      "type": "class",
+      "name": "UserPasswordBackendClientTest",
+      "summary": "Class UserPasswordBackendClientTest in UserPasswordBackendClientTest.kt.",
+      "tags": [
+        "class",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/test/java/com/lotterynet/pro/core/users/UserPasswordBackendClientTest.kt",
+      "lineRange": [
+        9,
+        34
+      ]
+    },
+    {
+      "id": "file:app/src/test/java/com/lotterynet/pro/ui/admin/AdminConfigContractsTest.kt",
+      "type": "file",
+      "name": "AdminConfigContractsTest.kt",
+      "summary": "Source file app/src/test/java/com/lotterynet/pro/ui/admin/AdminConfigContractsTest.kt containing 1 class(es).",
+      "tags": [
+        "code",
+        "test",
+        "ui"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/test/java/com/lotterynet/pro/ui/admin/AdminConfigContractsTest.kt",
+      "lineRange": [
+        1,
+        212
+      ]
+    },
+    {
+      "id": "class:app/src/test/java/com/lotterynet/pro/ui/admin/AdminConfigContractsTest.kt:AdminConfigContractsTest",
+      "type": "class",
+      "name": "AdminConfigContractsTest",
+      "summary": "Class AdminConfigContractsTest in AdminConfigContractsTest.kt.",
+      "tags": [
+        "class",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/test/java/com/lotterynet/pro/ui/admin/AdminConfigContractsTest.kt",
+      "lineRange": [
+        14,
+        93
+      ]
+    },
+    {
+      "id": "file:app/src/test/java/com/lotterynet/pro/ui/admin/AdminUiContractsTest.kt",
+      "type": "file",
+      "name": "AdminUiContractsTest.kt",
+      "summary": "Source file app/src/test/java/com/lotterynet/pro/ui/admin/AdminUiContractsTest.kt containing 1 class(es) and 1 function(s).",
+      "tags": [
+        "code",
+        "test",
+        "ui"
+      ],
+      "complexity": "complex",
+      "filePath": "app/src/test/java/com/lotterynet/pro/ui/admin/AdminUiContractsTest.kt",
+      "lineRange": [
+        1,
+        888
+      ]
+    },
+    {
+      "id": "function:app/src/test/java/com/lotterynet/pro/ui/admin/AdminUiContractsTest.kt:utcMillis",
+      "type": "function",
+      "name": "utcMillis",
+      "summary": "Function utcMillis in AdminUiContractsTest.kt.",
+      "tags": [
+        "function",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/test/java/com/lotterynet/pro/ui/admin/AdminUiContractsTest.kt",
+      "lineRange": [
+        867,
+        886
+      ]
+    },
+    {
+      "id": "class:app/src/test/java/com/lotterynet/pro/ui/admin/AdminUiContractsTest.kt:AdminUiContractsTest",
+      "type": "class",
+      "name": "AdminUiContractsTest",
+      "summary": "Class AdminUiContractsTest in AdminUiContractsTest.kt.",
+      "tags": [
+        "class",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/test/java/com/lotterynet/pro/ui/admin/AdminUiContractsTest.kt",
+      "lineRange": [
+        41,
+        120
+      ]
+    },
+    {
+      "id": "file:app/src/test/java/com/lotterynet/pro/ui/admin/AdminWinnersContractsTest.kt",
+      "type": "file",
+      "name": "AdminWinnersContractsTest.kt",
+      "summary": "Source file app/src/test/java/com/lotterynet/pro/ui/admin/AdminWinnersContractsTest.kt containing 1 class(es).",
+      "tags": [
+        "code",
+        "test",
+        "ui"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/test/java/com/lotterynet/pro/ui/admin/AdminWinnersContractsTest.kt",
+      "lineRange": [
+        1,
+        182
+      ]
+    },
+    {
+      "id": "class:app/src/test/java/com/lotterynet/pro/ui/admin/AdminWinnersContractsTest.kt:AdminWinnersContractsTest",
+      "type": "class",
+      "name": "AdminWinnersContractsTest",
+      "summary": "Class AdminWinnersContractsTest in AdminWinnersContractsTest.kt.",
+      "tags": [
+        "class",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/test/java/com/lotterynet/pro/ui/admin/AdminWinnersContractsTest.kt",
+      "lineRange": [
+        14,
+        93
+      ]
+    },
+    {
+      "id": "file:app/src/test/java/com/lotterynet/pro/ui/common/NativeChromeContractsTest.kt",
+      "type": "file",
+      "name": "NativeChromeContractsTest.kt",
+      "summary": "Source file app/src/test/java/com/lotterynet/pro/ui/common/NativeChromeContractsTest.kt containing 1 class(es).",
+      "tags": [
+        "code",
+        "test",
+        "ui"
+      ],
+      "complexity": "complex",
+      "filePath": "app/src/test/java/com/lotterynet/pro/ui/common/NativeChromeContractsTest.kt",
+      "lineRange": [
+        1,
+        440
+      ]
+    },
+    {
+      "id": "class:app/src/test/java/com/lotterynet/pro/ui/common/NativeChromeContractsTest.kt:NativeChromeContractsTest",
+      "type": "class",
+      "name": "NativeChromeContractsTest",
+      "summary": "Class NativeChromeContractsTest in NativeChromeContractsTest.kt.",
+      "tags": [
+        "class",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/test/java/com/lotterynet/pro/ui/common/NativeChromeContractsTest.kt",
+      "lineRange": [
+        12,
+        91
+      ]
+    },
+    {
+      "id": "file:app/src/test/java/com/lotterynet/pro/ui/finance/FinanceUiContractsTest.kt",
+      "type": "file",
+      "name": "FinanceUiContractsTest.kt",
+      "summary": "Source file app/src/test/java/com/lotterynet/pro/ui/finance/FinanceUiContractsTest.kt containing 1 class(es).",
+      "tags": [
+        "code",
+        "test",
+        "ui"
+      ],
+      "complexity": "complex",
+      "filePath": "app/src/test/java/com/lotterynet/pro/ui/finance/FinanceUiContractsTest.kt",
+      "lineRange": [
+        1,
+        263
+      ]
+    },
+    {
+      "id": "class:app/src/test/java/com/lotterynet/pro/ui/finance/FinanceUiContractsTest.kt:FinanceUiContractsTest",
+      "type": "class",
+      "name": "FinanceUiContractsTest",
+      "summary": "Class FinanceUiContractsTest in FinanceUiContractsTest.kt.",
+      "tags": [
+        "class",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/test/java/com/lotterynet/pro/ui/finance/FinanceUiContractsTest.kt",
+      "lineRange": [
+        12,
+        91
+      ]
+    },
+    {
+      "id": "file:app/src/test/java/com/lotterynet/pro/ui/login/LoginUiContractsTest.kt",
+      "type": "file",
+      "name": "LoginUiContractsTest.kt",
+      "summary": "Source file app/src/test/java/com/lotterynet/pro/ui/login/LoginUiContractsTest.kt containing 1 class(es).",
+      "tags": [
+        "code",
+        "test",
+        "ui"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/test/java/com/lotterynet/pro/ui/login/LoginUiContractsTest.kt",
+      "lineRange": [
+        1,
+        124
+      ]
+    },
+    {
+      "id": "class:app/src/test/java/com/lotterynet/pro/ui/login/LoginUiContractsTest.kt:LoginUiContractsTest",
+      "type": "class",
+      "name": "LoginUiContractsTest",
+      "summary": "Class LoginUiContractsTest in LoginUiContractsTest.kt.",
+      "tags": [
+        "class",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/test/java/com/lotterynet/pro/ui/login/LoginUiContractsTest.kt",
+      "lineRange": [
+        12,
+        91
+      ]
+    },
+    {
+      "id": "file:app/src/test/java/com/lotterynet/pro/ui/master/MasterUiContractsTest.kt",
+      "type": "file",
+      "name": "MasterUiContractsTest.kt",
+      "summary": "Source file app/src/test/java/com/lotterynet/pro/ui/master/MasterUiContractsTest.kt containing 1 class(es).",
+      "tags": [
+        "code",
+        "test",
+        "ui"
+      ],
+      "complexity": "complex",
+      "filePath": "app/src/test/java/com/lotterynet/pro/ui/master/MasterUiContractsTest.kt",
+      "lineRange": [
+        1,
+        242
+      ]
+    },
+    {
+      "id": "class:app/src/test/java/com/lotterynet/pro/ui/master/MasterUiContractsTest.kt:MasterUiContractsTest",
+      "type": "class",
+      "name": "MasterUiContractsTest",
+      "summary": "Class MasterUiContractsTest in MasterUiContractsTest.kt.",
+      "tags": [
+        "class",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/test/java/com/lotterynet/pro/ui/master/MasterUiContractsTest.kt",
+      "lineRange": [
+        13,
+        92
+      ]
+    },
+    {
+      "id": "file:app/src/test/java/com/lotterynet/pro/ui/navigation/NativeRoutingContractsTest.kt",
+      "type": "file",
+      "name": "NativeRoutingContractsTest.kt",
+      "summary": "Source file app/src/test/java/com/lotterynet/pro/ui/navigation/NativeRoutingContractsTest.kt containing 1 class(es).",
+      "tags": [
+        "code",
+        "test",
+        "ui"
+      ],
+      "complexity": "simple",
+      "filePath": "app/src/test/java/com/lotterynet/pro/ui/navigation/NativeRoutingContractsTest.kt",
+      "lineRange": [
+        1,
+        43
+      ]
+    },
+    {
+      "id": "class:app/src/test/java/com/lotterynet/pro/ui/navigation/NativeRoutingContractsTest.kt:NativeRoutingContractsTest",
+      "type": "class",
+      "name": "NativeRoutingContractsTest",
+      "summary": "Class NativeRoutingContractsTest in NativeRoutingContractsTest.kt.",
+      "tags": [
+        "class",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/test/java/com/lotterynet/pro/ui/navigation/NativeRoutingContractsTest.kt",
+      "lineRange": [
+        8,
+        44
+      ]
+    },
+    {
+      "id": "file:app/src/test/java/com/lotterynet/pro/ui/navigation/NavigationSafetyContractsTest.kt",
+      "type": "file",
+      "name": "NavigationSafetyContractsTest.kt",
+      "summary": "Source file app/src/test/java/com/lotterynet/pro/ui/navigation/NavigationSafetyContractsTest.kt containing 1 class(es) and 2 function(s).",
+      "tags": [
+        "code",
+        "test",
+        "ui"
+      ],
+      "complexity": "complex",
+      "filePath": "app/src/test/java/com/lotterynet/pro/ui/navigation/NavigationSafetyContractsTest.kt",
+      "lineRange": [
+        1,
+        268
+      ]
+    },
+    {
+      "id": "function:app/src/test/java/com/lotterynet/pro/ui/navigation/NavigationSafetyContractsTest.kt:portraitLockedManifestActivities",
+      "type": "function",
+      "name": "portraitLockedManifestActivities",
+      "summary": "Function portraitLockedManifestActivities in NavigationSafetyContractsTest.kt.",
+      "tags": [
+        "function",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/test/java/com/lotterynet/pro/ui/navigation/NavigationSafetyContractsTest.kt",
+      "lineRange": [
+        243,
+        262
+      ]
+    },
+    {
+      "id": "function:app/src/test/java/com/lotterynet/pro/ui/navigation/NavigationSafetyContractsTest.kt:declaredManifestActivities",
+      "type": "function",
+      "name": "declaredManifestActivities",
+      "summary": "Function declaredManifestActivities in NavigationSafetyContractsTest.kt.",
+      "tags": [
+        "function",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/test/java/com/lotterynet/pro/ui/navigation/NavigationSafetyContractsTest.kt",
+      "lineRange": [
+        259,
+        269
+      ]
+    },
+    {
+      "id": "class:app/src/test/java/com/lotterynet/pro/ui/navigation/NavigationSafetyContractsTest.kt:NavigationSafetyContractsTest",
+      "type": "class",
+      "name": "NavigationSafetyContractsTest",
+      "summary": "Class NavigationSafetyContractsTest in NavigationSafetyContractsTest.kt.",
+      "tags": [
+        "class",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/test/java/com/lotterynet/pro/ui/navigation/NavigationSafetyContractsTest.kt",
+      "lineRange": [
+        13,
+        92
+      ]
+    },
+    {
+      "id": "file:app/src/test/java/com/lotterynet/pro/ui/printer/PrinterContractsTest.kt",
+      "type": "file",
+      "name": "PrinterContractsTest.kt",
+      "summary": "Source file app/src/test/java/com/lotterynet/pro/ui/printer/PrinterContractsTest.kt containing 1 class(es).",
+      "tags": [
+        "code",
+        "test",
+        "ui",
+        "printing"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/test/java/com/lotterynet/pro/ui/printer/PrinterContractsTest.kt",
+      "lineRange": [
+        1,
+        135
+      ]
+    },
+    {
+      "id": "class:app/src/test/java/com/lotterynet/pro/ui/printer/PrinterContractsTest.kt:PrinterContractsTest",
+      "type": "class",
+      "name": "PrinterContractsTest",
+      "summary": "Class PrinterContractsTest in PrinterContractsTest.kt.",
+      "tags": [
+        "class",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/test/java/com/lotterynet/pro/ui/printer/PrinterContractsTest.kt",
+      "lineRange": [
+        10,
+        89
+      ]
+    },
+    {
+      "id": "file:app/src/test/java/com/lotterynet/pro/ui/recharge/RecargasUiContractsTest.kt",
+      "type": "file",
+      "name": "RecargasUiContractsTest.kt",
+      "summary": "Source file app/src/test/java/com/lotterynet/pro/ui/recharge/RecargasUiContractsTest.kt containing 1 class(es).",
+      "tags": [
+        "code",
+        "test",
+        "ui"
+      ],
+      "complexity": "complex",
+      "filePath": "app/src/test/java/com/lotterynet/pro/ui/recharge/RecargasUiContractsTest.kt",
+      "lineRange": [
+        1,
+        455
+      ]
+    },
+    {
+      "id": "class:app/src/test/java/com/lotterynet/pro/ui/recharge/RecargasUiContractsTest.kt:RecargasUiContractsTest",
+      "type": "class",
+      "name": "RecargasUiContractsTest",
+      "summary": "Class RecargasUiContractsTest in RecargasUiContractsTest.kt.",
+      "tags": [
+        "class",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/test/java/com/lotterynet/pro/ui/recharge/RecargasUiContractsTest.kt",
+      "lineRange": [
+        16,
+        95
+      ]
+    },
+    {
+      "id": "file:app/src/test/java/com/lotterynet/pro/ui/report/OperationalReportContractsTest.kt",
+      "type": "file",
+      "name": "OperationalReportContractsTest.kt",
+      "summary": "Source file app/src/test/java/com/lotterynet/pro/ui/report/OperationalReportContractsTest.kt containing 1 class(es).",
+      "tags": [
+        "code",
+        "test",
+        "ui"
+      ],
+      "complexity": "complex",
+      "filePath": "app/src/test/java/com/lotterynet/pro/ui/report/OperationalReportContractsTest.kt",
+      "lineRange": [
+        1,
+        313
+      ]
+    },
+    {
+      "id": "class:app/src/test/java/com/lotterynet/pro/ui/report/OperationalReportContractsTest.kt:OperationalReportContractsTest",
+      "type": "class",
+      "name": "OperationalReportContractsTest",
+      "summary": "Class OperationalReportContractsTest in OperationalReportContractsTest.kt.",
+      "tags": [
+        "class",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/test/java/com/lotterynet/pro/ui/report/OperationalReportContractsTest.kt",
+      "lineRange": [
+        24,
+        103
+      ]
+    },
+    {
+      "id": "file:app/src/test/java/com/lotterynet/pro/ui/sales/SalesUiContractsTest.kt",
+      "type": "file",
+      "name": "SalesUiContractsTest.kt",
+      "summary": "Source file app/src/test/java/com/lotterynet/pro/ui/sales/SalesUiContractsTest.kt containing 1 class(es) and 3 function(s).",
+      "tags": [
+        "code",
+        "test",
+        "ui",
+        "sales"
+      ],
+      "complexity": "complex",
+      "filePath": "app/src/test/java/com/lotterynet/pro/ui/sales/SalesUiContractsTest.kt",
+      "lineRange": [
+        1,
+        2139
+      ]
+    },
+    {
+      "id": "function:app/src/test/java/com/lotterynet/pro/ui/sales/SalesUiContractsTest.kt:lottery",
+      "type": "function",
+      "name": "lottery",
+      "summary": "Function lottery in SalesUiContractsTest.kt.",
+      "tags": [
+        "function",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/test/java/com/lotterynet/pro/ui/sales/SalesUiContractsTest.kt",
+      "lineRange": [
+        2112,
+        2131
+      ]
+    },
+    {
+      "id": "function:app/src/test/java/com/lotterynet/pro/ui/sales/SalesUiContractsTest.kt:utcMillis",
+      "type": "function",
+      "name": "utcMillis",
+      "summary": "Function utcMillis in SalesUiContractsTest.kt.",
+      "tags": [
+        "function",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/test/java/com/lotterynet/pro/ui/sales/SalesUiContractsTest.kt",
+      "lineRange": [
+        2123,
+        2140
+      ]
+    },
+    {
+      "id": "function:app/src/test/java/com/lotterynet/pro/ui/sales/SalesUiContractsTest.kt:zeroSaleLimits",
+      "type": "function",
+      "name": "zeroSaleLimits",
+      "summary": "Function zeroSaleLimits in SalesUiContractsTest.kt.",
+      "tags": [
+        "function",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/test/java/com/lotterynet/pro/ui/sales/SalesUiContractsTest.kt",
+      "lineRange": [
+        2125,
+        2140
+      ]
+    },
+    {
+      "id": "class:app/src/test/java/com/lotterynet/pro/ui/sales/SalesUiContractsTest.kt:SalesUiContractsTest",
+      "type": "class",
+      "name": "SalesUiContractsTest",
+      "summary": "Class SalesUiContractsTest in SalesUiContractsTest.kt.",
+      "tags": [
+        "class",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/test/java/com/lotterynet/pro/ui/sales/SalesUiContractsTest.kt",
+      "lineRange": [
+        31,
+        110
+      ]
+    },
+    {
+      "id": "file:app/src/test/java/com/lotterynet/pro/ui/shell/ShellMenuContractsTest.kt",
+      "type": "file",
+      "name": "ShellMenuContractsTest.kt",
+      "summary": "Source file app/src/test/java/com/lotterynet/pro/ui/shell/ShellMenuContractsTest.kt containing 1 class(es).",
+      "tags": [
+        "code",
+        "test",
+        "ui"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/test/java/com/lotterynet/pro/ui/shell/ShellMenuContractsTest.kt",
+      "lineRange": [
+        1,
+        172
+      ]
+    },
+    {
+      "id": "class:app/src/test/java/com/lotterynet/pro/ui/shell/ShellMenuContractsTest.kt:ShellMenuContractsTest",
+      "type": "class",
+      "name": "ShellMenuContractsTest",
+      "summary": "Class ShellMenuContractsTest in ShellMenuContractsTest.kt.",
+      "tags": [
+        "class",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/test/java/com/lotterynet/pro/ui/shell/ShellMenuContractsTest.kt",
+      "lineRange": [
+        9,
+        88
+      ]
+    },
+    {
+      "id": "file:app/src/test/java/com/lotterynet/pro/ui/shell/ShellUiContractsTest.kt",
+      "type": "file",
+      "name": "ShellUiContractsTest.kt",
+      "summary": "Source file app/src/test/java/com/lotterynet/pro/ui/shell/ShellUiContractsTest.kt containing 1 class(es).",
+      "tags": [
+        "code",
+        "test",
+        "ui"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/test/java/com/lotterynet/pro/ui/shell/ShellUiContractsTest.kt",
+      "lineRange": [
+        1,
+        190
+      ]
+    },
+    {
+      "id": "class:app/src/test/java/com/lotterynet/pro/ui/shell/ShellUiContractsTest.kt:ShellUiContractsTest",
+      "type": "class",
+      "name": "ShellUiContractsTest",
+      "summary": "Class ShellUiContractsTest in ShellUiContractsTest.kt.",
+      "tags": [
+        "class",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/test/java/com/lotterynet/pro/ui/shell/ShellUiContractsTest.kt",
+      "lineRange": [
+        10,
+        89
+      ]
+    },
+    {
+      "id": "file:app/src/test/java/com/lotterynet/pro/ui/tickets/TicketCollectionContractsTest.kt",
+      "type": "file",
+      "name": "TicketCollectionContractsTest.kt",
+      "summary": "Source file app/src/test/java/com/lotterynet/pro/ui/tickets/TicketCollectionContractsTest.kt containing 1 class(es).",
+      "tags": [
+        "code",
+        "test",
+        "ui",
+        "ticket"
+      ],
+      "complexity": "complex",
+      "filePath": "app/src/test/java/com/lotterynet/pro/ui/tickets/TicketCollectionContractsTest.kt",
+      "lineRange": [
+        1,
+        506
+      ]
+    },
+    {
+      "id": "class:app/src/test/java/com/lotterynet/pro/ui/tickets/TicketCollectionContractsTest.kt:TicketCollectionContractsTest",
+      "type": "class",
+      "name": "TicketCollectionContractsTest",
+      "summary": "Class TicketCollectionContractsTest in TicketCollectionContractsTest.kt.",
+      "tags": [
+        "class",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/test/java/com/lotterynet/pro/ui/tickets/TicketCollectionContractsTest.kt",
+      "lineRange": [
+        16,
+        95
+      ]
+    },
+    {
+      "id": "file:app/src/test/java/com/lotterynet/pro/ui/tickets/TicketOfficialContractsTest.kt",
+      "type": "file",
+      "name": "TicketOfficialContractsTest.kt",
+      "summary": "Source file app/src/test/java/com/lotterynet/pro/ui/tickets/TicketOfficialContractsTest.kt containing 1 class(es).",
+      "tags": [
+        "code",
+        "test",
+        "ui",
+        "ticket"
+      ],
+      "complexity": "complex",
+      "filePath": "app/src/test/java/com/lotterynet/pro/ui/tickets/TicketOfficialContractsTest.kt",
+      "lineRange": [
+        1,
+        952
+      ]
+    },
+    {
+      "id": "class:app/src/test/java/com/lotterynet/pro/ui/tickets/TicketOfficialContractsTest.kt:TicketOfficialContractsTest",
+      "type": "class",
+      "name": "TicketOfficialContractsTest",
+      "summary": "Class TicketOfficialContractsTest in TicketOfficialContractsTest.kt.",
+      "tags": [
+        "class",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/test/java/com/lotterynet/pro/ui/tickets/TicketOfficialContractsTest.kt",
+      "lineRange": [
+        18,
+        97
+      ]
+    },
+    {
+      "id": "file:app/src/test/java/com/lotterynet/pro/ui/tickets/TicketSummaryStartupContractsTest.kt",
+      "type": "file",
+      "name": "TicketSummaryStartupContractsTest.kt",
+      "summary": "Source file app/src/test/java/com/lotterynet/pro/ui/tickets/TicketSummaryStartupContractsTest.kt containing 1 class(es).",
+      "tags": [
+        "code",
+        "test",
+        "ui",
+        "ticket"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/test/java/com/lotterynet/pro/ui/tickets/TicketSummaryStartupContractsTest.kt",
+      "lineRange": [
+        1,
+        105
+      ]
+    },
+    {
+      "id": "class:app/src/test/java/com/lotterynet/pro/ui/tickets/TicketSummaryStartupContractsTest.kt:TicketSummaryStartupContractsTest",
+      "type": "class",
+      "name": "TicketSummaryStartupContractsTest",
+      "summary": "Class TicketSummaryStartupContractsTest in TicketSummaryStartupContractsTest.kt.",
+      "tags": [
+        "class",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/test/java/com/lotterynet/pro/ui/tickets/TicketSummaryStartupContractsTest.kt",
+      "lineRange": [
+        11,
+        90
+      ]
+    },
+    {
+      "id": "file:app/src/test/java/com/lotterynet/pro/ui/users/UserAccountsFormattingTest.kt",
+      "type": "file",
+      "name": "UserAccountsFormattingTest.kt",
+      "summary": "Source file app/src/test/java/com/lotterynet/pro/ui/users/UserAccountsFormattingTest.kt containing 1 class(es).",
+      "tags": [
+        "code",
+        "test",
+        "ui"
+      ],
+      "complexity": "complex",
+      "filePath": "app/src/test/java/com/lotterynet/pro/ui/users/UserAccountsFormattingTest.kt",
+      "lineRange": [
+        1,
+        590
+      ]
+    },
+    {
+      "id": "class:app/src/test/java/com/lotterynet/pro/ui/users/UserAccountsFormattingTest.kt:UserAccountsFormattingTest",
+      "type": "class",
+      "name": "UserAccountsFormattingTest",
+      "summary": "Class UserAccountsFormattingTest in UserAccountsFormattingTest.kt.",
+      "tags": [
+        "class",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/test/java/com/lotterynet/pro/ui/users/UserAccountsFormattingTest.kt",
+      "lineRange": [
+        13,
+        92
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "source": "file:app/src/test/java/com/lotterynet/pro/core/operations/TicketOwnerCanonicalizationTest.kt",
+      "target": "class:app/src/test/java/com/lotterynet/pro/core/operations/TicketOwnerCanonicalizationTest.kt:TicketOwnerCanonicalizationTest",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "TicketOwnerCanonicalizationTest.kt contains TicketOwnerCanonicalizationTest"
+    },
+    {
+      "source": "file:app/src/test/java/com/lotterynet/pro/core/operations/TicketOwnerCanonicalizationTest.kt",
+      "target": "file:app/src/main/java/com/lotterynet/pro/core/model/UserRole.kt",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7,
+      "description": "app/src/test/java/com/lotterynet/pro/core/operations/TicketOwnerCanonicalizationTest.kt imports app/src/main/java/com/lotterynet/pro/core/model/UserRole.kt"
+    },
+    {
+      "source": "file:app/src/test/java/com/lotterynet/pro/core/operations/UserAccountOrderingTest.kt",
+      "target": "function:app/src/test/java/com/lotterynet/pro/core/operations/UserAccountOrderingTest.kt:cashier",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "UserAccountOrderingTest.kt contains cashier"
+    },
+    {
+      "source": "file:app/src/test/java/com/lotterynet/pro/core/operations/UserAccountOrderingTest.kt",
+      "target": "class:app/src/test/java/com/lotterynet/pro/core/operations/UserAccountOrderingTest.kt:UserAccountOrderingTest",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "UserAccountOrderingTest.kt contains UserAccountOrderingTest"
+    },
+    {
+      "source": "file:app/src/test/java/com/lotterynet/pro/core/operations/UserAccountOrderingTest.kt",
+      "target": "file:app/src/main/java/com/lotterynet/pro/core/model/UserRole.kt",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7,
+      "description": "app/src/test/java/com/lotterynet/pro/core/operations/UserAccountOrderingTest.kt imports app/src/main/java/com/lotterynet/pro/core/model/UserRole.kt"
+    },
+    {
+      "source": "file:app/src/test/java/com/lotterynet/pro/core/sales/SaleExposureLimitContractsTest.kt",
+      "target": "function:app/src/test/java/com/lotterynet/pro/core/sales/SaleExposureLimitContractsTest.kt:play",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "SaleExposureLimitContractsTest.kt contains play"
+    },
+    {
+      "source": "file:app/src/test/java/com/lotterynet/pro/core/sales/SaleExposureLimitContractsTest.kt",
+      "target": "function:app/src/test/java/com/lotterynet/pro/core/sales/SaleExposureLimitContractsTest.kt:staged",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "SaleExposureLimitContractsTest.kt contains staged"
+    },
+    {
+      "source": "file:app/src/test/java/com/lotterynet/pro/core/sales/SaleExposureLimitContractsTest.kt",
+      "target": "class:app/src/test/java/com/lotterynet/pro/core/sales/SaleExposureLimitContractsTest.kt:SaleExposureLimitContractsTest",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "SaleExposureLimitContractsTest.kt contains SaleExposureLimitContractsTest"
+    },
+    {
+      "source": "file:app/src/test/java/com/lotterynet/pro/core/sales/SaleExposureLimitContractsTest.kt",
+      "target": "file:app/src/main/java/com/lotterynet/pro/core/model/UserRole.kt",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7,
+      "description": "app/src/test/java/com/lotterynet/pro/core/sales/SaleExposureLimitContractsTest.kt imports app/src/main/java/com/lotterynet/pro/core/model/UserRole.kt"
+    },
+    {
+      "source": "file:app/src/test/java/com/lotterynet/pro/core/storage/AdminLotteryConfigContractsTest.kt",
+      "target": "class:app/src/test/java/com/lotterynet/pro/core/storage/AdminLotteryConfigContractsTest.kt:AdminLotteryConfigContractsTest",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "AdminLotteryConfigContractsTest.kt contains AdminLotteryConfigContractsTest"
+    },
+    {
+      "source": "file:app/src/test/java/com/lotterynet/pro/core/storage/AdminLotteryConfigContractsTest.kt",
+      "target": "file:app/src/main/java/com/lotterynet/pro/core/model/UserRole.kt",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7,
+      "description": "app/src/test/java/com/lotterynet/pro/core/storage/AdminLotteryConfigContractsTest.kt imports app/src/main/java/com/lotterynet/pro/core/model/UserRole.kt"
+    },
+    {
+      "source": "file:app/src/test/java/com/lotterynet/pro/core/storage/LocalSalesRepositoryContractsTest.kt",
+      "target": "class:app/src/test/java/com/lotterynet/pro/core/storage/LocalSalesRepositoryContractsTest.kt:LocalSalesRepositoryContractsTest",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "LocalSalesRepositoryContractsTest.kt contains LocalSalesRepositoryContractsTest"
+    },
+    {
+      "source": "file:app/src/test/java/com/lotterynet/pro/core/storage/LocalSalesRepositoryContractsTest.kt",
+      "target": "file:app/src/main/java/com/lotterynet/pro/core/model/UserRole.kt",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7,
+      "description": "app/src/test/java/com/lotterynet/pro/core/storage/LocalSalesRepositoryContractsTest.kt imports app/src/main/java/com/lotterynet/pro/core/model/UserRole.kt"
+    },
+    {
+      "source": "file:app/src/test/java/com/lotterynet/pro/core/storage/LocalUsersRepositorySecurityContractsTest.kt",
+      "target": "class:app/src/test/java/com/lotterynet/pro/core/storage/LocalUsersRepositorySecurityContractsTest.kt:LocalUsersRepositorySecurityContractsTest",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "LocalUsersRepositorySecurityContractsTest.kt contains LocalUsersRepositorySecurityContractsTest"
+    },
+    {
+      "source": "file:app/src/test/java/com/lotterynet/pro/core/storage/LocalUsersRepositorySecurityContractsTest.kt",
+      "target": "file:app/src/main/java/com/lotterynet/pro/core/model/UserRole.kt",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7,
+      "description": "app/src/test/java/com/lotterynet/pro/core/storage/LocalUsersRepositorySecurityContractsTest.kt imports app/src/main/java/com/lotterynet/pro/core/model/UserRole.kt"
+    },
+    {
+      "source": "file:app/src/test/java/com/lotterynet/pro/core/sync/NativeOperationalSyncContractsTest.kt",
+      "target": "function:app/src/test/java/com/lotterynet/pro/core/sync/NativeOperationalSyncContractsTest.kt:enqueueAndFlush",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "NativeOperationalSyncContractsTest.kt contains enqueueAndFlush"
+    },
+    {
+      "source": "file:app/src/test/java/com/lotterynet/pro/core/sync/NativeOperationalSyncContractsTest.kt",
+      "target": "function:app/src/test/java/com/lotterynet/pro/core/sync/NativeOperationalSyncContractsTest.kt:hydrateOwner",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "NativeOperationalSyncContractsTest.kt contains hydrateOwner"
+    },
+    {
+      "source": "file:app/src/test/java/com/lotterynet/pro/core/sync/NativeOperationalSyncContractsTest.kt",
+      "target": "function:app/src/test/java/com/lotterynet/pro/core/sync/NativeOperationalSyncContractsTest.kt:flushOwner",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "NativeOperationalSyncContractsTest.kt contains flushOwner"
+    },
+    {
+      "source": "file:app/src/test/java/com/lotterynet/pro/core/sync/NativeOperationalSyncContractsTest.kt",
+      "target": "function:app/src/test/java/com/lotterynet/pro/core/sync/NativeOperationalSyncContractsTest.kt:flushOwnerLocalSnapshot",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "NativeOperationalSyncContractsTest.kt contains flushOwnerLocalSnapshot"
+    },
+    {
+      "source": "file:app/src/test/java/com/lotterynet/pro/core/sync/NativeOperationalSyncContractsTest.kt",
+      "target": "function:app/src/test/java/com/lotterynet/pro/core/sync/NativeOperationalSyncContractsTest.kt:fetchUpdatedAt",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "NativeOperationalSyncContractsTest.kt contains fetchUpdatedAt"
+    },
+    {
+      "source": "file:app/src/test/java/com/lotterynet/pro/core/sync/NativeOperationalSyncContractsTest.kt",
+      "target": "class:app/src/test/java/com/lotterynet/pro/core/sync/NativeOperationalSyncContractsTest.kt:NativeOperationalSyncContractsTest",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "NativeOperationalSyncContractsTest.kt contains NativeOperationalSyncContractsTest"
+    },
+    {
+      "source": "file:app/src/test/java/com/lotterynet/pro/core/sync/NativeOperationalSyncContractsTest.kt",
+      "target": "file:app/src/main/java/com/lotterynet/pro/core/model/UserRole.kt",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7,
+      "description": "app/src/test/java/com/lotterynet/pro/core/sync/NativeOperationalSyncContractsTest.kt imports app/src/main/java/com/lotterynet/pro/core/model/UserRole.kt"
+    },
+    {
+      "source": "file:app/src/test/java/com/lotterynet/pro/core/sync/NativeTicketSyncContractsTest.kt",
+      "target": "class:app/src/test/java/com/lotterynet/pro/core/sync/NativeTicketSyncContractsTest.kt:NativeTicketSyncContractsTest",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "NativeTicketSyncContractsTest.kt contains NativeTicketSyncContractsTest"
+    },
+    {
+      "source": "file:app/src/test/java/com/lotterynet/pro/core/sync/NativeTicketSyncContractsTest.kt",
+      "target": "file:app/src/main/java/com/lotterynet/pro/core/model/UserRole.kt",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7,
+      "description": "app/src/test/java/com/lotterynet/pro/core/sync/NativeTicketSyncContractsTest.kt imports app/src/main/java/com/lotterynet/pro/core/model/UserRole.kt"
+    },
+    {
+      "source": "file:app/src/test/java/com/lotterynet/pro/core/users/UserPasswordBackendClientTest.kt",
+      "target": "class:app/src/test/java/com/lotterynet/pro/core/users/UserPasswordBackendClientTest.kt:UserPasswordBackendClientTest",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "UserPasswordBackendClientTest.kt contains UserPasswordBackendClientTest"
+    },
+    {
+      "source": "file:app/src/test/java/com/lotterynet/pro/core/users/UserPasswordBackendClientTest.kt",
+      "target": "file:app/src/main/java/com/lotterynet/pro/core/model/UserRole.kt",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7,
+      "description": "app/src/test/java/com/lotterynet/pro/core/users/UserPasswordBackendClientTest.kt imports app/src/main/java/com/lotterynet/pro/core/model/UserRole.kt"
+    },
+    {
+      "source": "file:app/src/test/java/com/lotterynet/pro/ui/admin/AdminConfigContractsTest.kt",
+      "target": "class:app/src/test/java/com/lotterynet/pro/ui/admin/AdminConfigContractsTest.kt:AdminConfigContractsTest",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "AdminConfigContractsTest.kt contains AdminConfigContractsTest"
+    },
+    {
+      "source": "file:app/src/test/java/com/lotterynet/pro/ui/admin/AdminConfigContractsTest.kt",
+      "target": "file:app/src/main/java/com/lotterynet/pro/core/model/UserRole.kt",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7,
+      "description": "app/src/test/java/com/lotterynet/pro/ui/admin/AdminConfigContractsTest.kt imports app/src/main/java/com/lotterynet/pro/core/model/UserRole.kt"
+    },
+    {
+      "source": "file:app/src/test/java/com/lotterynet/pro/ui/admin/AdminUiContractsTest.kt",
+      "target": "function:app/src/test/java/com/lotterynet/pro/ui/admin/AdminUiContractsTest.kt:utcMillis",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "AdminUiContractsTest.kt contains utcMillis"
+    },
+    {
+      "source": "file:app/src/test/java/com/lotterynet/pro/ui/admin/AdminUiContractsTest.kt",
+      "target": "class:app/src/test/java/com/lotterynet/pro/ui/admin/AdminUiContractsTest.kt:AdminUiContractsTest",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "AdminUiContractsTest.kt contains AdminUiContractsTest"
+    },
+    {
+      "source": "file:app/src/test/java/com/lotterynet/pro/ui/admin/AdminUiContractsTest.kt",
+      "target": "file:app/src/main/java/com/lotterynet/pro/core/model/UserRole.kt",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7,
+      "description": "app/src/test/java/com/lotterynet/pro/ui/admin/AdminUiContractsTest.kt imports app/src/main/java/com/lotterynet/pro/core/model/UserRole.kt"
+    },
+    {
+      "source": "file:app/src/test/java/com/lotterynet/pro/ui/admin/AdminWinnersContractsTest.kt",
+      "target": "class:app/src/test/java/com/lotterynet/pro/ui/admin/AdminWinnersContractsTest.kt:AdminWinnersContractsTest",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "AdminWinnersContractsTest.kt contains AdminWinnersContractsTest"
+    },
+    {
+      "source": "file:app/src/test/java/com/lotterynet/pro/ui/admin/AdminWinnersContractsTest.kt",
+      "target": "file:app/src/main/java/com/lotterynet/pro/core/model/UserRole.kt",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7,
+      "description": "app/src/test/java/com/lotterynet/pro/ui/admin/AdminWinnersContractsTest.kt imports app/src/main/java/com/lotterynet/pro/core/model/UserRole.kt"
+    },
+    {
+      "source": "file:app/src/test/java/com/lotterynet/pro/ui/common/NativeChromeContractsTest.kt",
+      "target": "class:app/src/test/java/com/lotterynet/pro/ui/common/NativeChromeContractsTest.kt:NativeChromeContractsTest",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "NativeChromeContractsTest.kt contains NativeChromeContractsTest"
+    },
+    {
+      "source": "file:app/src/test/java/com/lotterynet/pro/ui/common/NativeChromeContractsTest.kt",
+      "target": "file:app/src/main/java/com/lotterynet/pro/core/model/UserRole.kt",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7,
+      "description": "app/src/test/java/com/lotterynet/pro/ui/common/NativeChromeContractsTest.kt imports app/src/main/java/com/lotterynet/pro/core/model/UserRole.kt"
+    },
+    {
+      "source": "file:app/src/test/java/com/lotterynet/pro/ui/finance/FinanceUiContractsTest.kt",
+      "target": "class:app/src/test/java/com/lotterynet/pro/ui/finance/FinanceUiContractsTest.kt:FinanceUiContractsTest",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "FinanceUiContractsTest.kt contains FinanceUiContractsTest"
+    },
+    {
+      "source": "file:app/src/test/java/com/lotterynet/pro/ui/finance/FinanceUiContractsTest.kt",
+      "target": "file:app/src/main/java/com/lotterynet/pro/core/model/UserRole.kt",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7,
+      "description": "app/src/test/java/com/lotterynet/pro/ui/finance/FinanceUiContractsTest.kt imports app/src/main/java/com/lotterynet/pro/core/model/UserRole.kt"
+    },
+    {
+      "source": "file:app/src/test/java/com/lotterynet/pro/ui/login/LoginUiContractsTest.kt",
+      "target": "class:app/src/test/java/com/lotterynet/pro/ui/login/LoginUiContractsTest.kt:LoginUiContractsTest",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "LoginUiContractsTest.kt contains LoginUiContractsTest"
+    },
+    {
+      "source": "file:app/src/test/java/com/lotterynet/pro/ui/login/LoginUiContractsTest.kt",
+      "target": "file:app/src/main/java/com/lotterynet/pro/core/model/UserRole.kt",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7,
+      "description": "app/src/test/java/com/lotterynet/pro/ui/login/LoginUiContractsTest.kt imports app/src/main/java/com/lotterynet/pro/core/model/UserRole.kt"
+    },
+    {
+      "source": "file:app/src/test/java/com/lotterynet/pro/ui/master/MasterUiContractsTest.kt",
+      "target": "class:app/src/test/java/com/lotterynet/pro/ui/master/MasterUiContractsTest.kt:MasterUiContractsTest",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "MasterUiContractsTest.kt contains MasterUiContractsTest"
+    },
+    {
+      "source": "file:app/src/test/java/com/lotterynet/pro/ui/master/MasterUiContractsTest.kt",
+      "target": "file:app/src/main/java/com/lotterynet/pro/core/model/UserRole.kt",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7,
+      "description": "app/src/test/java/com/lotterynet/pro/ui/master/MasterUiContractsTest.kt imports app/src/main/java/com/lotterynet/pro/core/model/UserRole.kt"
+    },
+    {
+      "source": "file:app/src/test/java/com/lotterynet/pro/ui/navigation/NativeRoutingContractsTest.kt",
+      "target": "class:app/src/test/java/com/lotterynet/pro/ui/navigation/NativeRoutingContractsTest.kt:NativeRoutingContractsTest",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "NativeRoutingContractsTest.kt contains NativeRoutingContractsTest"
+    },
+    {
+      "source": "file:app/src/test/java/com/lotterynet/pro/ui/navigation/NativeRoutingContractsTest.kt",
+      "target": "file:app/src/main/java/com/lotterynet/pro/core/model/UserRole.kt",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7,
+      "description": "app/src/test/java/com/lotterynet/pro/ui/navigation/NativeRoutingContractsTest.kt imports app/src/main/java/com/lotterynet/pro/core/model/UserRole.kt"
+    },
+    {
+      "source": "file:app/src/test/java/com/lotterynet/pro/ui/navigation/NavigationSafetyContractsTest.kt",
+      "target": "function:app/src/test/java/com/lotterynet/pro/ui/navigation/NavigationSafetyContractsTest.kt:portraitLockedManifestActivities",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "NavigationSafetyContractsTest.kt contains portraitLockedManifestActivities"
+    },
+    {
+      "source": "file:app/src/test/java/com/lotterynet/pro/ui/navigation/NavigationSafetyContractsTest.kt",
+      "target": "function:app/src/test/java/com/lotterynet/pro/ui/navigation/NavigationSafetyContractsTest.kt:declaredManifestActivities",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "NavigationSafetyContractsTest.kt contains declaredManifestActivities"
+    },
+    {
+      "source": "file:app/src/test/java/com/lotterynet/pro/ui/navigation/NavigationSafetyContractsTest.kt",
+      "target": "class:app/src/test/java/com/lotterynet/pro/ui/navigation/NavigationSafetyContractsTest.kt:NavigationSafetyContractsTest",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "NavigationSafetyContractsTest.kt contains NavigationSafetyContractsTest"
+    },
+    {
+      "source": "file:app/src/test/java/com/lotterynet/pro/ui/navigation/NavigationSafetyContractsTest.kt",
+      "target": "file:app/src/main/java/com/lotterynet/pro/core/model/UserRole.kt",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7,
+      "description": "app/src/test/java/com/lotterynet/pro/ui/navigation/NavigationSafetyContractsTest.kt imports app/src/main/java/com/lotterynet/pro/core/model/UserRole.kt"
+    },
+    {
+      "source": "file:app/src/test/java/com/lotterynet/pro/ui/printer/PrinterContractsTest.kt",
+      "target": "class:app/src/test/java/com/lotterynet/pro/ui/printer/PrinterContractsTest.kt:PrinterContractsTest",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "PrinterContractsTest.kt contains PrinterContractsTest"
+    },
+    {
+      "source": "file:app/src/test/java/com/lotterynet/pro/ui/printer/PrinterContractsTest.kt",
+      "target": "file:app/src/main/java/com/lotterynet/pro/core/model/UserRole.kt",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7,
+      "description": "app/src/test/java/com/lotterynet/pro/ui/printer/PrinterContractsTest.kt imports app/src/main/java/com/lotterynet/pro/core/model/UserRole.kt"
+    },
+    {
+      "source": "file:app/src/test/java/com/lotterynet/pro/ui/recharge/RecargasUiContractsTest.kt",
+      "target": "class:app/src/test/java/com/lotterynet/pro/ui/recharge/RecargasUiContractsTest.kt:RecargasUiContractsTest",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "RecargasUiContractsTest.kt contains RecargasUiContractsTest"
+    },
+    {
+      "source": "file:app/src/test/java/com/lotterynet/pro/ui/recharge/RecargasUiContractsTest.kt",
+      "target": "file:app/src/main/java/com/lotterynet/pro/core/model/UserRole.kt",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7,
+      "description": "app/src/test/java/com/lotterynet/pro/ui/recharge/RecargasUiContractsTest.kt imports app/src/main/java/com/lotterynet/pro/core/model/UserRole.kt"
+    },
+    {
+      "source": "file:app/src/test/java/com/lotterynet/pro/ui/report/OperationalReportContractsTest.kt",
+      "target": "class:app/src/test/java/com/lotterynet/pro/ui/report/OperationalReportContractsTest.kt:OperationalReportContractsTest",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "OperationalReportContractsTest.kt contains OperationalReportContractsTest"
+    },
+    {
+      "source": "file:app/src/test/java/com/lotterynet/pro/ui/report/OperationalReportContractsTest.kt",
+      "target": "file:app/src/main/java/com/lotterynet/pro/core/model/UserRole.kt",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7,
+      "description": "app/src/test/java/com/lotterynet/pro/ui/report/OperationalReportContractsTest.kt imports app/src/main/java/com/lotterynet/pro/core/model/UserRole.kt"
+    },
+    {
+      "source": "file:app/src/test/java/com/lotterynet/pro/ui/sales/SalesUiContractsTest.kt",
+      "target": "function:app/src/test/java/com/lotterynet/pro/ui/sales/SalesUiContractsTest.kt:lottery",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "SalesUiContractsTest.kt contains lottery"
+    },
+    {
+      "source": "file:app/src/test/java/com/lotterynet/pro/ui/sales/SalesUiContractsTest.kt",
+      "target": "function:app/src/test/java/com/lotterynet/pro/ui/sales/SalesUiContractsTest.kt:utcMillis",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "SalesUiContractsTest.kt contains utcMillis"
+    },
+    {
+      "source": "file:app/src/test/java/com/lotterynet/pro/ui/sales/SalesUiContractsTest.kt",
+      "target": "function:app/src/test/java/com/lotterynet/pro/ui/sales/SalesUiContractsTest.kt:zeroSaleLimits",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "SalesUiContractsTest.kt contains zeroSaleLimits"
+    },
+    {
+      "source": "file:app/src/test/java/com/lotterynet/pro/ui/sales/SalesUiContractsTest.kt",
+      "target": "class:app/src/test/java/com/lotterynet/pro/ui/sales/SalesUiContractsTest.kt:SalesUiContractsTest",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "SalesUiContractsTest.kt contains SalesUiContractsTest"
+    },
+    {
+      "source": "file:app/src/test/java/com/lotterynet/pro/ui/sales/SalesUiContractsTest.kt",
+      "target": "file:app/src/main/java/com/lotterynet/pro/core/model/UserRole.kt",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7,
+      "description": "app/src/test/java/com/lotterynet/pro/ui/sales/SalesUiContractsTest.kt imports app/src/main/java/com/lotterynet/pro/core/model/UserRole.kt"
+    },
+    {
+      "source": "file:app/src/test/java/com/lotterynet/pro/ui/shell/ShellMenuContractsTest.kt",
+      "target": "class:app/src/test/java/com/lotterynet/pro/ui/shell/ShellMenuContractsTest.kt:ShellMenuContractsTest",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "ShellMenuContractsTest.kt contains ShellMenuContractsTest"
+    },
+    {
+      "source": "file:app/src/test/java/com/lotterynet/pro/ui/shell/ShellMenuContractsTest.kt",
+      "target": "file:app/src/main/java/com/lotterynet/pro/core/model/UserRole.kt",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7,
+      "description": "app/src/test/java/com/lotterynet/pro/ui/shell/ShellMenuContractsTest.kt imports app/src/main/java/com/lotterynet/pro/core/model/UserRole.kt"
+    },
+    {
+      "source": "file:app/src/test/java/com/lotterynet/pro/ui/shell/ShellUiContractsTest.kt",
+      "target": "class:app/src/test/java/com/lotterynet/pro/ui/shell/ShellUiContractsTest.kt:ShellUiContractsTest",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "ShellUiContractsTest.kt contains ShellUiContractsTest"
+    },
+    {
+      "source": "file:app/src/test/java/com/lotterynet/pro/ui/shell/ShellUiContractsTest.kt",
+      "target": "file:app/src/main/java/com/lotterynet/pro/core/model/UserRole.kt",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7,
+      "description": "app/src/test/java/com/lotterynet/pro/ui/shell/ShellUiContractsTest.kt imports app/src/main/java/com/lotterynet/pro/core/model/UserRole.kt"
+    },
+    {
+      "source": "file:app/src/test/java/com/lotterynet/pro/ui/tickets/TicketCollectionContractsTest.kt",
+      "target": "class:app/src/test/java/com/lotterynet/pro/ui/tickets/TicketCollectionContractsTest.kt:TicketCollectionContractsTest",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "TicketCollectionContractsTest.kt contains TicketCollectionContractsTest"
+    },
+    {
+      "source": "file:app/src/test/java/com/lotterynet/pro/ui/tickets/TicketCollectionContractsTest.kt",
+      "target": "file:app/src/main/java/com/lotterynet/pro/core/model/UserRole.kt",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7,
+      "description": "app/src/test/java/com/lotterynet/pro/ui/tickets/TicketCollectionContractsTest.kt imports app/src/main/java/com/lotterynet/pro/core/model/UserRole.kt"
+    },
+    {
+      "source": "file:app/src/test/java/com/lotterynet/pro/ui/tickets/TicketOfficialContractsTest.kt",
+      "target": "class:app/src/test/java/com/lotterynet/pro/ui/tickets/TicketOfficialContractsTest.kt:TicketOfficialContractsTest",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "TicketOfficialContractsTest.kt contains TicketOfficialContractsTest"
+    },
+    {
+      "source": "file:app/src/test/java/com/lotterynet/pro/ui/tickets/TicketOfficialContractsTest.kt",
+      "target": "file:app/src/main/java/com/lotterynet/pro/core/model/UserRole.kt",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7,
+      "description": "app/src/test/java/com/lotterynet/pro/ui/tickets/TicketOfficialContractsTest.kt imports app/src/main/java/com/lotterynet/pro/core/model/UserRole.kt"
+    },
+    {
+      "source": "file:app/src/test/java/com/lotterynet/pro/ui/tickets/TicketSummaryStartupContractsTest.kt",
+      "target": "class:app/src/test/java/com/lotterynet/pro/ui/tickets/TicketSummaryStartupContractsTest.kt:TicketSummaryStartupContractsTest",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "TicketSummaryStartupContractsTest.kt contains TicketSummaryStartupContractsTest"
+    },
+    {
+      "source": "file:app/src/test/java/com/lotterynet/pro/ui/tickets/TicketSummaryStartupContractsTest.kt",
+      "target": "file:app/src/main/java/com/lotterynet/pro/core/model/UserRole.kt",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7,
+      "description": "app/src/test/java/com/lotterynet/pro/ui/tickets/TicketSummaryStartupContractsTest.kt imports app/src/main/java/com/lotterynet/pro/core/model/UserRole.kt"
+    },
+    {
+      "source": "file:app/src/test/java/com/lotterynet/pro/ui/users/UserAccountsFormattingTest.kt",
+      "target": "class:app/src/test/java/com/lotterynet/pro/ui/users/UserAccountsFormattingTest.kt:UserAccountsFormattingTest",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "UserAccountsFormattingTest.kt contains UserAccountsFormattingTest"
+    },
+    {
+      "source": "file:app/src/test/java/com/lotterynet/pro/ui/users/UserAccountsFormattingTest.kt",
+      "target": "file:app/src/main/java/com/lotterynet/pro/core/model/UserRole.kt",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7,
+      "description": "app/src/test/java/com/lotterynet/pro/ui/users/UserAccountsFormattingTest.kt imports app/src/main/java/com/lotterynet/pro/core/model/UserRole.kt"
+    }
+  ]
+}

@@ -1,0 +1,102 @@
+{
+  "nodes": [
+    {
+      "id": "file:docs/qa/2026-05-05-production-readiness-audit.md",
+      "type": "document",
+      "name": "2026-05-05-production-readiness-audit.md",
+      "summary": "Documentation file covering 2026-05-05-production-readiness-audit.md.",
+      "tags": [
+        "docs",
+        "documentation"
+      ],
+      "complexity": "simple",
+      "filePath": "docs/qa/2026-05-05-production-readiness-audit.md",
+      "lineRange": [
+        1,
+        58
+      ]
+    },
+    {
+      "id": "file:docs/qa/2026-05-19-apkpure-upload-info.md",
+      "type": "document",
+      "name": "2026-05-19-apkpure-upload-info.md",
+      "summary": "Documentation file covering 2026-05-19-apkpure-upload-info.md.",
+      "tags": [
+        "docs",
+        "documentation"
+      ],
+      "complexity": "simple",
+      "filePath": "docs/qa/2026-05-19-apkpure-upload-info.md",
+      "lineRange": [
+        1,
+        72
+      ]
+    },
+    {
+      "id": "file:docs/qa/2026-05-19-node-wide-smoke-production-risk.md",
+      "type": "document",
+      "name": "2026-05-19-node-wide-smoke-production-risk.md",
+      "summary": "Documentation file covering 2026-05-19-node-wide-smoke-production-risk.md.",
+      "tags": [
+        "docs",
+        "documentation"
+      ],
+      "complexity": "moderate",
+      "filePath": "docs/qa/2026-05-19-node-wide-smoke-production-risk.md",
+      "lineRange": [
+        1,
+        215
+      ]
+    },
+    {
+      "id": "file:docs/qa/2026-05-23-non-sales-visual-redesign-checklist.md",
+      "type": "document",
+      "name": "2026-05-23-non-sales-visual-redesign-checklist.md",
+      "summary": "Documentation file covering 2026-05-23-non-sales-visual-redesign-checklist.md.",
+      "tags": [
+        "docs",
+        "sales",
+        "documentation"
+      ],
+      "complexity": "simple",
+      "filePath": "docs/qa/2026-05-23-non-sales-visual-redesign-checklist.md",
+      "lineRange": [
+        1,
+        48
+      ]
+    },
+    {
+      "id": "file:docs/qa/cashier-old-android-performance-checklist.md",
+      "type": "document",
+      "name": "cashier-old-android-performance-checklist.md",
+      "summary": "Documentation file covering cashier-old-android-performance-checklist.md.",
+      "tags": [
+        "docs",
+        "documentation"
+      ],
+      "complexity": "simple",
+      "filePath": "docs/qa/cashier-old-android-performance-checklist.md",
+      "lineRange": [
+        1,
+        26
+      ]
+    },
+    {
+      "id": "file:docs/qa/native-local-pos-checklist.md",
+      "type": "document",
+      "name": "native-local-pos-checklist.md",
+      "summary": "Documentation file covering native-local-pos-checklist.md.",
+      "tags": [
+        "docs",
+        "documentation"
+      ],
+      "complexity": "simple",
+      "filePath": "docs/qa/native-local-pos-checklist.md",
+      "lineRange": [
+        1,
+        26
+      ]
+    }
+  ],
+  "edges": []
+}

@@ -59,6 +59,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.safeDrawing
@@ -72,20 +73,19 @@ import com.lotterynet.pro.core.model.LotteryResult
 import com.lotterynet.pro.core.model.LotteryTerritory
 import com.lotterynet.pro.core.model.ThermalPrinterPrefs
 import com.lotterynet.pro.core.model.UserRole
-import com.lotterynet.pro.core.results.ResultsScraperOrchestrator
-import com.lotterynet.pro.core.results.ResultsSupabaseStore
-import com.lotterynet.pro.core.results.SupabaseResultsRemoteStore
 import com.lotterynet.pro.core.results.PickResultIdentityResolver
 import com.lotterynet.pro.core.results.normalizeResultDateKey
 import com.lotterynet.pro.core.master.SupabaseMasterConfigRemoteStore
+import com.lotterynet.pro.core.storage.AdminBlockedSalePlay
 import com.lotterynet.pro.core.storage.AdminSystemModeConfig
 import com.lotterynet.pro.core.storage.LocalAdminLotteryConfigRepository
 import com.lotterynet.pro.core.storage.BancaBranding
 import com.lotterynet.pro.core.storage.decodeAdminSystemModeConfig
 import com.lotterynet.pro.core.storage.encodeAdminSystemModeConfig
+import com.lotterynet.pro.core.storage.blockedSalePlayLabel
+import com.lotterynet.pro.core.storage.normalizeBlockedSalePlay
 import com.lotterynet.pro.core.storage.normalizeAdminSystemModeConfig
 import com.lotterynet.pro.core.storage.LocalBrandingRepository
-import com.lotterynet.pro.core.storage.LocalResultsRepository
 import com.lotterynet.pro.core.storage.LocalSalesRepository
 import com.lotterynet.pro.core.storage.LocalSessionRepository
 import com.lotterynet.pro.core.storage.LocalThermalPrinterRepository
@@ -102,6 +102,7 @@ import com.lotterynet.pro.ui.common.CompactActionButton
 import com.lotterynet.pro.ui.common.ActionTone
 import com.lotterynet.pro.ui.common.BottomNavBar
 import com.lotterynet.pro.ui.common.CompactPanel
+import com.lotterynet.pro.ui.common.CompactTextInput
 import com.lotterynet.pro.ui.common.CompactLoadingState
 import com.lotterynet.pro.ui.common.CompactRecordRow
 import com.lotterynet.pro.ui.common.CompactSegmentedSelector
@@ -121,19 +122,7 @@ import com.lotterynet.pro.ui.common.rememberLotteryNetVisualSpec
 import com.lotterynet.pro.ui.navigation.NativeDestination
 import com.lotterynet.pro.ui.navigation.redirectIfNativeDestinationBlocked
 import com.lotterynet.pro.ui.navigation.startSafeNativeDestination
-import com.lotterynet.pro.ui.printer.PrinterActivity
-import com.lotterynet.pro.ui.results.ManualResultOption
-import com.lotterynet.pro.ui.results.ManualResultsEditorPanel
-import com.lotterynet.pro.ui.results.ManualResultsPickerDialog
-import com.lotterynet.pro.ui.results.buildManualResultOptionsFromLotteries
-import com.lotterynet.pro.ui.results.manualResultValidationMessage
-import com.lotterynet.pro.ui.results.shouldShowManualResultsEditor
-import com.lotterynet.pro.ui.results.validateManualResultInput
 import com.lotterynet.pro.ui.theme.LotteryNetComposeTheme
-import com.lotterynet.pro.ui.users.UserAccountsActivity
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import kotlin.concurrent.thread
 import org.json.JSONObject
 import java.text.SimpleDateFormat
@@ -191,7 +180,6 @@ class AdminConfigActivity : AppCompatActivity() {
         val brandingRepository = LocalBrandingRepository(this)
         val adminLotteryRepository = LocalAdminLotteryConfigRepository(this)
         val salesRepository = LocalSalesRepository(this)
-        val resultsRepository = LocalResultsRepository(this)
         val ticketSync = NativeOperationalSyncCoordinator(
             NativeTicketCloudSyncCoordinator(salesRepository, NativeTicketSyncQueueRepository(this)),
         )
@@ -230,29 +218,6 @@ class AdminConfigActivity : AppCompatActivity() {
                 ?.toString()
                 ?.let(adminLotteryRepository::cacheManualDisabledLotteryConfig)
         }.getOrNull() ?: adminLotteryRepository.getManualDisabledLotteryIds()
-        val expectedResultIdsForDate = { date: String ->
-            com.lotterynet.pro.ui.results.expectedResultIdsForMode(
-                lotteries = lotteries,
-                config = systemModeConfig,
-                calendarRule = calendarRule,
-                date = date,
-            )
-        }
-        val manualResultsRemoteStore = SupabaseResultsRemoteStore()
-        val manualResultsOrchestrator = ResultsScraperOrchestrator(
-            remoteStore = ResultsSupabaseStore(
-                expectedResultIdsForDate = { date ->
-                    if (normalizeResultDateKey(date) == normalizeResultDateKey(buildManualResultsDayKey(0))) {
-                        emptySet()
-                    } else {
-                        expectedResultIdsForDate(date)
-                    }
-                },
-            ),
-            localResultsRepository = resultsRepository,
-            expectedResultIdsProvider = expectedResultIdsForDate,
-            syncGovernor = SyncGovernor.shared,
-        )
         LocalUsersRepository(this).touchSession(session)
         setContent {
             LotteryNetComposeTheme {
@@ -325,77 +290,6 @@ class AdminConfigActivity : AppCompatActivity() {
                     onEnableAvailableLotteries = {
                         adminLotteryRepository.clearManualDisabledLotteryIds().also {
                             syncManualDisabledLotteriesToServer(brandingRemoteStore, ownerKey, adminLotteryRepository)
-                        }
-                    },
-                    manualResultsDateOptions = adminManualResultsDateOptions(),
-                    onLoadManualResultsOptions = { date, forceRemote ->
-                        withContext(Dispatchers.IO) {
-                            val resolvedResults = if (forceRemote) {
-                                manualResultsOrchestrator.refreshDate(
-                                    date = date,
-                                    forceRemote = true,
-                                    allowLive = false,
-                                ).results
-                            } else {
-                                resultsRepository.getResultsForDate(date)
-                            }.filter { result -> normalizeResultDateKey(result.date) == normalizeResultDateKey(date) || result.date.isBlank() }
-                            val editableLotteries = filterManualResultEditableLotteries(
-                                lotteries = lotteries,
-                                results = resolvedResults,
-                                selectedDate = date,
-                                todayDate = buildManualResultsDayKey(0),
-                                nowUtcMs = trustedClockRepository.getTrustedUtcMs(),
-                                hasDrawPassed = { lottery, nowUtcMsForCheck ->
-                                    val decision = closePolicy.resolveCloseDecision(
-                                        lottery = lottery,
-                                        operationTerritory = territory,
-                                        nowUtcMs = nowUtcMsForCheck,
-                                    )
-                                    hasManualLotteryDrawTimePassed(
-                                        drawTime = decision.drawTime ?: lottery.baseDrawTime,
-                                        nowUtcMs = nowUtcMsForCheck,
-                                        operationTerritory = territory,
-                                    )
-                                },
-                            )
-                            buildManualResultOptionsFromLotteries(editableLotteries, resolvedResults)
-                        }
-                    },
-                    onSaveManualResultOverride = { date, option, number ->
-                        withContext(Dispatchers.IO) {
-                            val saved = manualResultsRemoteStore.upsertManualOverride(
-                                session = session,
-                                date = date,
-                                resultId = option.resultId,
-                                name = option.name,
-                                number = number,
-                                game = option.game,
-                            )
-                            if (saved) {
-                                manualResultsOrchestrator.refreshDate(
-                                    date = date,
-                                    forceRemote = true,
-                                    allowLive = false,
-                                )
-                            }
-                            saved
-                        }
-                    },
-                    onDeleteManualResultOverride = { date, option ->
-                        withContext(Dispatchers.IO) {
-                            val deleted = manualResultsRemoteStore.deleteManualOverride(
-                                session = session,
-                                date = date,
-                                resultId = option.resultId,
-                            )
-                            if (deleted) {
-                                manualResultsOrchestrator.refreshDate(
-                                    date = date,
-                                    forceRemote = true,
-                                    allowLive = false,
-                                )
-                            }
-                            deleted
                         }
                     },
                     onOpenPrinter = { startSafeNativeDestination(this, session.role, NativeDestination.PRINTER) },
@@ -501,7 +395,7 @@ internal fun adminConfigSectionTitles(): List<String> = listOf(
     "Operación",
     "Caja",
     "Bloqueo de lotería",
-    "Resultados manuales",
+    "Control de venta",
     "Sistema",
 )
 
@@ -522,6 +416,32 @@ internal fun resolveAdminManualResultDateSelectorContract(optionCount: Int): Adm
 }
 
 internal fun adminSystemGroupedSectionTitles(): List<String> = listOf("Operación", "Cajeros", "Servidor")
+
+internal data class AdminSaleTypeBlockOption(
+    val id: String,
+    val title: String,
+    val subtitle: String,
+)
+
+internal fun adminSaleTypeBlockOptions(): List<AdminSaleTypeBlockOption> = listOf(
+    AdminSaleTypeBlockOption("Q", "Quiniela", "2 dígitos. Ej: 03"),
+    AdminSaleTypeBlockOption("P", "Palé", "4 dígitos. Ej: 0380"),
+    AdminSaleTypeBlockOption("SP", "Super Palé", "4 dígitos. Ej: 0380"),
+    AdminSaleTypeBlockOption("T", "Tripleta", "6 dígitos. Ej: 038025"),
+    AdminSaleTypeBlockOption("P3", "Pick 3 S", "3 dígitos. Ej: 852"),
+    AdminSaleTypeBlockOption("P3BOX", "Pick 3 B", "3 dígitos. Ej: 852"),
+    AdminSaleTypeBlockOption("P4", "Pick 4 S", "4 dígitos. Ej: 1475"),
+    AdminSaleTypeBlockOption("P4BOX", "Pick 4 B", "4 dígitos. Ej: 1475"),
+)
+
+internal fun addBlockedSalePlay(config: AdminSystemModeConfig, playType: String, number: String): AdminSystemModeConfig {
+    val play = normalizeBlockedSalePlay(playType, number) ?: return normalizeAdminSystemModeConfig(config)
+    return normalizeAdminSystemModeConfig(config.copy(blockedSalePlays = config.blockedSalePlays + play))
+}
+
+internal fun removeBlockedSalePlay(config: AdminSystemModeConfig, play: AdminBlockedSalePlay): AdminSystemModeConfig {
+    return normalizeAdminSystemModeConfig(config.copy(blockedSalePlays = config.blockedSalePlays - play))
+}
 
 internal fun resolveInitialAdminSystemModeConfig(
     localConfig: AdminSystemModeConfig,
@@ -635,7 +555,7 @@ internal fun adminSystemModeRows(
     )
 }
 
-internal fun adminSystemModeSaveButtonLabel(): String = "Guardar servidor"
+internal fun adminSystemModeSaveButtonLabel(): String = "Reintentar guardar"
 
 internal data class SystemModeSelectionCommitMessage(
     val syncStatus: String,
@@ -737,14 +657,9 @@ private fun AdminConfigRoute(
     onSetLotteryDisabled: (String, Boolean, Boolean) -> Set<String>,
     onResolveBlockedLotteryTickets: (String, BlockedLotteryTicketAction) -> Int,
     onEnableAvailableLotteries: () -> Set<String>,
-    manualResultsDateOptions: List<AdminManualResultsDateOption>,
-    onLoadManualResultsOptions: suspend (String, Boolean) -> List<ManualResultOption>,
-    onSaveManualResultOverride: suspend (String, ManualResultOption, String) -> Boolean,
-    onDeleteManualResultOverride: suspend (String, ManualResultOption) -> Boolean,
     onOpenPrinter: () -> Unit,
     onOpenUsers: () -> Unit,
 ) {
-    val scope = rememberCoroutineScope()
     var prefs by remember(initialPrefs) { mutableStateOf(initialPrefs) }
     var branding by remember(initialBranding) { mutableStateOf(initialBranding) }
     var systemModeConfig by remember(initialSystemModeConfig) { mutableStateOf(initialSystemModeConfig) }
@@ -756,14 +671,6 @@ private fun AdminConfigRoute(
     var pendingBlockedTicketCount by rememberSaveable { mutableStateOf(0) }
     var pendingBlockedLotteryPassed by rememberSaveable { mutableStateOf(false) }
     var pendingBlockedLotteryPermanent by rememberSaveable { mutableStateOf(false) }
-    var selectedManualDate by rememberSaveable {
-        mutableStateOf(manualResultsDateOptions.firstOrNull()?.dateKey.orEmpty())
-    }
-    var manualResultOptions by remember { mutableStateOf<List<ManualResultOption>>(emptyList()) }
-    var selectedManualResultId by rememberSaveable(selectedManualDate) { mutableStateOf("") }
-    var manualResultNumber by rememberSaveable(selectedManualDate) { mutableStateOf("") }
-    var manualEditorBusy by remember { mutableStateOf(false) }
-    var showManualResultPicker by remember { mutableStateOf(false) }
     val visual = rememberLotteryNetVisualSpec()
     val context = LocalContext.current
     val logoPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
@@ -779,34 +686,6 @@ private fun AdminConfigRoute(
                 statusMessage = if (ok) "Logo sincronizado con el servidor." else "Logo local pendiente de sync."
             }
             Toast.makeText(context, "Logo guardado", Toast.LENGTH_SHORT).show()
-        }
-    }
-
-    val selectedManualOption = remember(manualResultOptions, selectedManualResultId) {
-        manualResultOptions.firstOrNull { it.resultId == selectedManualResultId } ?: manualResultOptions.firstOrNull()
-    }
-    LaunchedEffect(selectedManualDate) {
-        if (selectedManualDate.isBlank()) return@LaunchedEffect
-        manualEditorBusy = true
-        try {
-            val localOptions = onLoadManualResultsOptions(selectedManualDate, false)
-            manualResultOptions = localOptions
-            if (localOptions.none { !it.currentNumber.isNullOrBlank() }) {
-                manualResultOptions = onLoadManualResultsOptions(selectedManualDate, true)
-            }
-            val firstOption = manualResultOptions.firstOrNull()
-            selectedManualResultId = firstOption?.resultId.orEmpty()
-            manualResultNumber = firstOption?.currentNumber.orEmpty()
-        } finally {
-            manualEditorBusy = false
-        }
-    }
-    LaunchedEffect(manualResultOptions, selectedManualResultId) {
-        if (selectedManualResultId !in manualResultOptions.map { it.resultId }) {
-            selectedManualResultId = manualResultOptions.firstOrNull()?.resultId.orEmpty()
-        }
-        if (manualResultNumber.isBlank()) {
-            manualResultNumber = manualResultOptions.firstOrNull { it.resultId == selectedManualResultId }?.currentNumber.orEmpty()
         }
     }
 
@@ -996,88 +875,20 @@ private fun AdminConfigRoute(
             }
             item {
                 CompactPanel {
-                    OperationalListHeader(title = "Resultados manuales", meta = "Corrección")
-                    if (shouldShowManualResultsEditor(session.role) && manualResultsDateOptions.isNotEmpty()) {
-                        val dateSelectorContract = resolveAdminManualResultDateSelectorContract(manualResultsDateOptions.size)
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(6.dp),
-                        ) {
-                            manualResultsDateOptions.forEach { option ->
-                                CompactActionButton(
-                                    label = option.label,
-                                    onClick = { selectedManualDate = option.dateKey },
-                                    active = selectedManualDate == option.dateKey,
-                                    modifier = Modifier
-                                        .weight(1f)
-                                        .height(dateSelectorContract.minTouchTargetDp.dp),
-                                    tone = if (selectedManualDate == option.dateKey) ActionTone.Primary else ActionTone.Secondary,
-                                )
+                    OperationalListHeader(title = "Control de venta", meta = "Aplica a todos")
+                    SaleTypeBlockControlSection(
+                        config = systemModeConfig,
+                        onChange = { next ->
+                            val saved = onSaveSystemModeConfig(next)
+                            systemModeConfig = saved
+                            systemSyncStatus = "Enviando"
+                            statusMessage = "Guardando bloqueo de jugadas..."
+                            onSyncSystemModeConfig(saved) { ok ->
+                                systemSyncStatus = if (ok) "Sincronizado" else "Pendiente"
+                                statusMessage = if (ok) "Bloqueo de jugadas sincronizado." else "Bloqueo local pendiente de sync."
                             }
-                        }
-                        Spacer(modifier = Modifier.size(8.dp))
-                        ManualResultsEditorPanel(
-                            selectedDate = selectedManualDate,
-                            options = manualResultOptions,
-                            selectedOption = selectedManualOption,
-                            manualResultNumber = manualResultNumber,
-                            onOpenSelector = { showManualResultPicker = true },
-                            onManualResultNumberChange = { manualResultNumber = it },
-                            busy = manualEditorBusy,
-                            onSave = {
-                                val option = selectedManualOption
-                                if (option == null) {
-                                    statusMessage = "Elige un sorteo primero."
-                                } else {
-                                    val normalizedNumber = manualResultNumber.trim()
-                                    if (!validateManualResultInput(normalizedNumber, option.game)) {
-                                        statusMessage = manualResultValidationMessage(option.game)
-                                    } else {
-                                        scope.launch {
-                                            manualEditorBusy = true
-                                            try {
-                                                val saved = onSaveManualResultOverride(selectedManualDate, option, normalizedNumber)
-                                                if (!saved) {
-                                                    statusMessage = "No se pudo guardar el cambio manual."
-                                                    return@launch
-                                                }
-                                                manualResultOptions = onLoadManualResultsOptions(selectedManualDate, true)
-                                                manualResultNumber = manualResultOptions.firstOrNull { it.resultId == option.resultId }?.currentNumber.orEmpty()
-                                                statusMessage = "Resultado manual guardado en servidor."
-                                            } finally {
-                                                manualEditorBusy = false
-                                            }
-                                        }
-                                    }
-                                }
-                            },
-                            onDelete = {
-                                val option = selectedManualOption
-                                if (option == null) {
-                                    statusMessage = "Elige un sorteo primero."
-                                } else {
-                                    scope.launch {
-                                        manualEditorBusy = true
-                                        try {
-                                            val deleted = onDeleteManualResultOverride(selectedManualDate, option)
-                                            if (!deleted) {
-                                                statusMessage = "No se pudo quitar el cambio manual."
-                                                return@launch
-                                            }
-                                            manualResultOptions = onLoadManualResultsOptions(selectedManualDate, true)
-                                            manualResultNumber = manualResultOptions.firstOrNull { it.resultId == option.resultId }?.currentNumber.orEmpty()
-                                            statusMessage = "Cambio manual quitado."
-                                        } finally {
-                                            manualEditorBusy = false
-                                        }
-                                    }
-                                }
-                            },
-                        )
-                        Spacer(modifier = Modifier.size(8.dp))
-                    } else {
-                        CompactStatusBadge("Sin permisos", tone = visual.colors.neutral)
-                    }
+                        },
+                    )
                 }
             }
             item {
@@ -1236,6 +1047,76 @@ private fun ConfigShortcut(
 }
 
 @Composable
+private fun SaleTypeBlockControlSection(
+    config: AdminSystemModeConfig,
+    onChange: (AdminSystemModeConfig) -> Unit,
+) {
+    val visual = rememberLotteryNetVisualSpec()
+    var selectedType by rememberSaveable { mutableStateOf("Q") }
+    var numberInput by rememberSaveable { mutableStateOf("") }
+    val selectedOption = adminSaleTypeBlockOptions().firstOrNull { it.id == selectedType } ?: adminSaleTypeBlockOptions().first()
+    val blocked = config.blockedSalePlays
+    val candidate = remember(selectedType, numberInput) { normalizeBlockedSalePlay(selectedType, numberInput) }
+    Text(
+        "Bloquea una jugada exacta para todos. Ejemplo: Quiniela 03 bloquea solo 03; 04 sigue disponible.",
+        style = MaterialTheme.typography.bodySmall,
+        color = visual.colors.muted,
+    )
+    MetricStrip(
+        items = listOf(
+            MetricStripItem("Bloq.", blocked.size.toString(), if (blocked.isNotEmpty()) MaterialTheme.colorScheme.error else visual.colors.neutral),
+            MetricStripItem("Estado", if (blocked.isEmpty()) "Libre" else "Activo", if (blocked.isEmpty()) visual.colors.gain else MaterialTheme.colorScheme.error),
+        ),
+    )
+    CompactSegmentedSelector(
+        options = adminSaleTypeBlockOptions().map { QuickFilterChip(it.id, it.title) },
+        selectedId = selectedType,
+        onSelected = {
+            selectedType = it
+            numberInput = ""
+        },
+        columns = 2,
+        modifier = Modifier.fillMaxWidth(),
+    )
+    CompactTextInput(
+        label = selectedOption.title,
+        value = numberInput,
+        onValueChange = { numberInput = it.filter(Char::isDigit).take(6) },
+        placeholder = selectedOption.subtitle,
+        keyboardType = KeyboardType.Number,
+    )
+    CompactActionButton(
+        label = "Bloquear jugada",
+        onClick = {
+            candidate?.let {
+                onChange(addBlockedSalePlay(config, it.playType, it.number))
+                numberInput = ""
+            }
+        },
+        enabled = candidate != null,
+        modifier = Modifier.fillMaxWidth(),
+        icon = Icons.Rounded.Lock,
+        tone = ActionTone.Danger,
+    )
+    if (blocked.isEmpty()) {
+        CompactStatusBadge("Sin jugadas bloqueadas", tone = visual.colors.gain)
+    } else {
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            blocked.sortedWith(compareBy<AdminBlockedSalePlay> { it.playType }.thenBy { it.number }).forEach { play ->
+                OperationalSettingRow(
+                    title = blockedSalePlayLabel(play),
+                    subtitle = "Bloqueada para todos los cajeros y admin.",
+                    meta = "Quitar",
+                    icon = Icons.Rounded.Lock,
+                    tone = MaterialTheme.colorScheme.error,
+                    onClick = { onChange(removeBlockedSalePlay(config, play)) },
+                )
+            }
+        }
+    }
+}
+
+@Composable
 private fun SystemModeConfigSection(
     config: AdminSystemModeConfig,
     role: UserRole,
@@ -1286,7 +1167,7 @@ private fun SystemModeConfigSection(
             modifier = Modifier.fillMaxWidth(),
         )
 
-        OperationalListHeader(title = "Servidor", meta = "Guardar cambios")
+        OperationalListHeader(title = "Servidor", meta = "Auto al tocar modo")
         CompactActionButton(
             label = adminSystemModeSaveButtonLabel(),
             onClick = onSaveServer,

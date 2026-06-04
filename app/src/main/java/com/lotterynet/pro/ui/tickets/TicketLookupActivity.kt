@@ -43,6 +43,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.journeyapps.barcodescanner.ScanContract
 import com.journeyapps.barcodescanner.ScanOptions
+import com.lotterynet.pro.core.auth.SupabaseSessionTokenProvider
 import com.lotterynet.pro.core.calendar.LotteryClosePolicy
 import com.lotterynet.pro.core.calendar.StaticHolidayCalendarRepository
 import com.lotterynet.pro.core.catalog.StaticLotteryCatalogRepository
@@ -57,6 +58,7 @@ import com.lotterynet.pro.core.model.isPendingWinnerStatus
 import com.lotterynet.pro.core.operations.buildUserActorLabelLookup
 import com.lotterynet.pro.core.operations.filterTicketsForOperationalScope
 import com.lotterynet.pro.core.operations.resolveTicketActorLabel
+import com.lotterynet.pro.core.sales.SupabaseTicketBackendClient
 import com.lotterynet.pro.core.sync.isTerminalCancelTicketStatus
 import com.lotterynet.pro.core.storage.LocalSalesRepository
 import com.lotterynet.pro.core.storage.LocalSessionRepository
@@ -87,6 +89,7 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import java.util.TimeZone
+import kotlin.concurrent.thread
 import org.json.JSONObject
 
 class TicketLookupActivity : AppCompatActivity() {
@@ -129,10 +132,13 @@ class TicketLookupActivity : AppCompatActivity() {
 
         setContent {
             LotteryNetComposeTheme {
+                var allTicketsState by remember { mutableStateOf(allTickets) }
                 var query by rememberSaveable { mutableStateOf(intent?.getStringExtra(EXTRA_INITIAL_QUERY).orEmpty()) }
                 var qrValue by remember { mutableStateOf("") }
                 var autoScanStarted by rememberSaveable { mutableStateOf(false) }
                 var autoOpenedQr by rememberSaveable { mutableStateOf("") }
+                var payingAll by rememberSaveable { mutableStateOf(false) }
+                var payAllProgress by rememberSaveable { mutableStateOf("") }
                 LaunchedEffect(Unit) {
                     if (intent?.getBooleanExtra(EXTRA_AUTO_SCAN, false) == true && !autoScanStarted) {
                         autoScanStarted = true
@@ -145,10 +151,10 @@ class TicketLookupActivity : AppCompatActivity() {
                         query = scanned
                     }
                 }
-                val tickets = remember(query, allTickets, cashiers, lookupMode, deletedTicketIds, systemModeConfig) {
+                val tickets = remember(query, allTicketsState, cashiers, lookupMode, deletedTicketIds, systemModeConfig) {
                     filterLookupTicketsForSession(
                         session = session,
-                        tickets = allTickets,
+                        tickets = allTicketsState,
                         cashiers = cashiers,
                         mode = lookupMode,
                         query = query,
@@ -173,6 +179,61 @@ class TicketLookupActivity : AppCompatActivity() {
                     actorLabelsByKey = buildUserActorLabelLookup(cashiers),
                     onQueryChange = { query = it.uppercase(Locale.getDefault()) },
                     onScanQr = { launchQrScanner() },
+                    isPayingAll = payingAll,
+                    payAllProgress = payAllProgress,
+                    onPayAll = {
+                        if (payingAll) return@TicketLookupRoute
+                        val pendingTickets = tickets.filter(::isLookupBulkPayableTicket)
+                        if (pendingTickets.isEmpty()) {
+                            Toast.makeText(this, "No hay premios pendientes para pagar.", Toast.LENGTH_SHORT).show()
+                            return@TicketLookupRoute
+                        }
+                        payingAll = true
+                        payAllProgress = "0/${pendingTickets.size}"
+                        Toast.makeText(this, "Pagando ${pendingTickets.size} ticket(s) en orden...", Toast.LENGTH_SHORT).show()
+                        thread(name = "ticket-pay-all") {
+                            val tokenProvider = SupabaseSessionTokenProvider(LocalSessionRepository(this))
+                            val backendClient = SupabaseTicketBackendClient()
+                            var paidCount = 0
+                            var failedCount = 0
+                            pendingTickets.forEachIndexed { index, ticket ->
+                                val result = runCatching {
+                                    val freshBearerToken = tokenProvider.freshAccessToken()
+                                    val response = backendClient.payTicket(
+                                        request = resolveTicketPayoutBackendRequest(session, ticket),
+                                        bearerToken = freshBearerToken,
+                                    )
+                                    val paidPrize = response.optDouble("amount", ticket.totalPrize)
+                                    val paidTicket = ticket.copy(
+                                        status = "paid",
+                                        totalPrize = paidPrize.takeIf { it > 0.0 } ?: ticket.totalPrize,
+                                    )
+                                    salesRepository.replaceTicket(paidTicket)
+                                }
+                                if (result.isSuccess) {
+                                    paidCount += 1
+                                } else {
+                                    failedCount += 1
+                                }
+                                runOnUiThread {
+                                    allTicketsState = salesRepository.getAllTickets()
+                                    payAllProgress = "${index + 1}/${pendingTickets.size}"
+                                }
+                                Thread.sleep(180)
+                            }
+                            runOnUiThread {
+                                allTicketsState = salesRepository.getAllTickets()
+                                payingAll = false
+                                payAllProgress = ""
+                                val message = if (failedCount == 0) {
+                                    "Pagados $paidCount ticket(s)."
+                                } else {
+                                    "Pagados $paidCount; fallaron $failedCount. Revisa pendientes."
+                                }
+                                Toast.makeText(this, message, Toast.LENGTH_LONG).show()
+                            }
+                        }
+                    },
                     onDuplicateTicket = { ticket ->
                         startActivity(Intent(this, TicketOfficialActivity::class.java).apply {
                             putExtra(TicketOfficialActivity.EXTRA_TICKET_ID, ticket.id)
@@ -436,6 +497,12 @@ internal fun isLookupPayableTicket(ticket: TicketRecord): Boolean {
             )
 }
 
+internal fun isLookupBulkPayableTicket(ticket: TicketRecord): Boolean {
+    return !ticket.isPaidStatus() &&
+        !isTerminalCancelTicketStatus(ticket.status) &&
+        (ticket.isPendingWinnerStatus() || ticket.totalPrize > 0.0)
+}
+
 private fun resolveLookupDuplicateLotteries(
     context: android.content.Context,
     session: ActiveSession,
@@ -472,6 +539,9 @@ private fun TicketLookupRoute(
     actorLabelsByKey: Map<String, String>,
     onQueryChange: (String) -> Unit,
     onScanQr: () -> Unit,
+    isPayingAll: Boolean,
+    payAllProgress: String,
+    onPayAll: () -> Unit,
     onDuplicateTicket: (TicketRecord) -> Unit,
     onOpenTicket: (TicketRecord) -> Unit,
 ) {
@@ -520,7 +590,15 @@ private fun TicketLookupRoute(
                     alt = true,
                     contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 10.dp, vertical = layout.headerPaddingVerticalDp.dp),
                 ) {
-                    SectionHeader(title = "Abrir ticket", meta = "${tickets.size} coincidencias")
+                    val pendingPayCount = tickets.count(::isLookupBulkPayableTicket)
+                    SectionHeader(
+                        title = "Abrir ticket",
+                        meta = if (mode == LookupMode.PAY && pendingPayCount > 0) {
+                            "$pendingPayCount pendiente(s)"
+                        } else {
+                            "${tickets.size} coincidencias"
+                        },
+                    )
                     OutlinedTextField(
                         value = query,
                         onValueChange = onQueryChange,
@@ -529,6 +607,27 @@ private fun TicketLookupRoute(
                         leadingIcon = { Icon(Icons.Rounded.Search, contentDescription = null) },
                         label = { Text("Buscar ticket, serial o usuario") },
                     )
+                    if (mode == LookupMode.PAY) {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            CompactActionButton(
+                                label = if (isPayingAll) "Pagando $payAllProgress" else "Paga todo",
+                                onClick = onPayAll,
+                                enabled = pendingPayCount > 0 && !isPayingAll,
+                                modifier = Modifier.weight(1f),
+                                icon = Icons.Rounded.Paid,
+                                tone = ActionTone.Primary,
+                            )
+                            CompactStatusBadge(
+                                label = if (pendingPayCount > 0) "$pendingPayCount pendientes" else "Sin pendientes",
+                                tone = if (pendingPayCount > 0) visual.colors.results else visual.colors.gain,
+                            )
+                        }
+                    }
                 }
                 Spacer(modifier = Modifier.height(6.dp))
                 if (tickets.isEmpty()) {

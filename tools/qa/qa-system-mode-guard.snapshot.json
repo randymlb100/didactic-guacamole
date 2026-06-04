@@ -1,0 +1,47 @@
+{
+  "key": "system_modes:ADM-C5FFB0",
+  "payload": {
+    "updatedAt": 1780124427284,
+    "posLiteEnabled": false,
+    "pickModeEnabled": true,
+    "blockedSalePlays": [
+      {
+        "number": "03",
+        "playType": "Q"
+      },
+      {
+        "number": "0311",
+        "playType": "P"
+      },
+      {
+        "number": "03-11",
+        "playType": "SP"
+      },
+      {
+        "number": "031122",
+        "playType": "T"
+      },
+      {
+        "number": "147",
+        "playType": "P3"
+      },
+      {
+        "number": "741",
+        "playType": "P3BOX"
+      },
+      {
+        "number": "1475",
+        "playType": "P4"
+      },
+      {
+        "number": "5741",
+        "playType": "P4BOX"
+      }
+    ],
+    "cashierModeEnabled": false,
+    "cashierPickEnabled": false,
+    "lotteryModeEnabled": false,
+    "cashierPickModeEnabled": false,
+    "cashierLotteryModeEnabled": true
+  }
+}

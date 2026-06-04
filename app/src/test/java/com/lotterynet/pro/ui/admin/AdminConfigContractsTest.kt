@@ -103,17 +103,17 @@ class AdminConfigContractsTest {
 
     @Test
     fun `system save button remains available for manual retry`() {
-        assertEquals("Guardar servidor", adminSystemModeSaveButtonLabel())
+        assertEquals("Reintentar guardar", adminSystemModeSaveButtonLabel())
     }
 
     @Test
-    fun `configuration sections separate manual results from system mode`() {
+    fun `configuration sections separate sale control from system mode`() {
         val sections = adminConfigSectionTitles()
 
-        assertTrue(sections.indexOf("Resultados manuales") > sections.indexOf("Bloqueo de lotería"))
-        assertTrue(sections.indexOf("Sistema") > sections.indexOf("Resultados manuales"))
+        assertTrue(sections.indexOf("Control de venta") > sections.indexOf("Bloqueo de lotería"))
+        assertTrue(sections.indexOf("Sistema") > sections.indexOf("Control de venta"))
         assertEquals(1, sections.count { it == "Sistema" })
-        assertEquals(1, sections.count { it == "Resultados manuales" })
+        assertEquals(1, sections.count { it == "Control de venta" })
     }
 
     @Test

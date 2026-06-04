@@ -117,6 +117,9 @@ class LocalAdminLotteryConfigRepository(
                 cashierModeEnabled = prefs.getBoolean(AdminLotteryStorageKeys.SYSTEM_CASHIER_MODE_KEY, false),
                 cashierLotteryModeEnabled = prefs.getBoolean(AdminLotteryStorageKeys.SYSTEM_CASHIER_LOTTERY_MODE_KEY, true),
                 cashierPickModeEnabled = prefs.getBoolean(AdminLotteryStorageKeys.SYSTEM_CASHIER_PICK_MODE_KEY, false),
+                blockedSalePlays = decodeBlockedSalePlays(
+                    prefs.getString(AdminLotteryStorageKeys.SYSTEM_BLOCKED_PLAYS_KEY, null),
+                ),
             ),
         )
     }
@@ -132,6 +135,14 @@ class LocalAdminLotteryConfigRepository(
             putBoolean(AdminLotteryStorageKeys.SYSTEM_CASHIER_MODE_KEY, normalized.cashierModeEnabled)
             putBoolean(AdminLotteryStorageKeys.SYSTEM_CASHIER_LOTTERY_MODE_KEY, normalized.cashierLotteryModeEnabled)
             putBoolean(AdminLotteryStorageKeys.SYSTEM_CASHIER_PICK_MODE_KEY, normalized.cashierPickModeEnabled)
+            if (normalized.blockedSalePlays.isEmpty()) {
+                remove(AdminLotteryStorageKeys.SYSTEM_BLOCKED_PLAYS_KEY)
+            } else {
+                putString(
+                    AdminLotteryStorageKeys.SYSTEM_BLOCKED_PLAYS_KEY,
+                    encodeBlockedSalePlaysArray(normalized.blockedSalePlays).toString(),
+                )
+            }
         }
         return normalized
     }
@@ -193,6 +204,11 @@ fun decodeManualDisabledLotteryConfig(raw: String?): ManualDisabledLotteryConfig
     }.getOrDefault(ManualDisabledLotteryConfig())
 }
 
+data class AdminBlockedSalePlay(
+    val playType: String,
+    val number: String,
+)
+
 data class AdminSystemModeConfig(
     val posLiteEnabled: Boolean = false,
     val lotteryModeEnabled: Boolean = true,
@@ -201,6 +217,7 @@ data class AdminSystemModeConfig(
     val cashierModeEnabled: Boolean = false,
     val cashierLotteryModeEnabled: Boolean = true,
     val cashierPickModeEnabled: Boolean = false,
+    val blockedSalePlays: Set<AdminBlockedSalePlay> = emptySet(),
 ) {
     val pickAndLotteryEnabled: Boolean
         get() = lotteryModeEnabled && pickModeEnabled
@@ -210,7 +227,7 @@ data class AdminSystemModeConfig(
 }
 
 fun normalizeAdminSystemModeConfig(config: AdminSystemModeConfig): AdminSystemModeConfig {
-    var normalized = config
+    var normalized = config.copy(blockedSalePlays = normalizeBlockedSalePlays(config.blockedSalePlays))
     if (!normalized.lotteryModeEnabled && !normalized.pickModeEnabled) {
         normalized = normalized.copy(lotteryModeEnabled = true)
     }
@@ -226,6 +243,105 @@ fun normalizeAdminSystemModeConfig(config: AdminSystemModeConfig): AdminSystemMo
     } else {
         normalized.copy(cashierPickEnabled = normalized.cashierPickModeEnabled)
     }
+}
+
+fun normalizeBlockedSalePlays(plays: Set<AdminBlockedSalePlay>): Set<AdminBlockedSalePlay> {
+    return plays.mapNotNull { normalizeBlockedSalePlay(it.playType, it.number) }
+        .sortedWith(compareBy<AdminBlockedSalePlay> { it.playType }.thenBy { it.number })
+        .toSet()
+}
+
+fun normalizeBlockedSalePlay(playType: String, number: String): AdminBlockedSalePlay? {
+    val type = salePlayExactTypeKey(playType) ?: return null
+    val digits = number.filter(Char::isDigit)
+    val normalizedNumber = when (type) {
+        "Q" -> digits.takeIf { it.length == 2 }
+        "P" -> digits.takeIf { it.length == 4 }
+        "SP" -> digits.takeIf { it.length == 4 }?.let { "${it.take(2)}-${it.drop(2)}" }
+        "T" -> digits.takeIf { it.length == 6 }
+        "P3", "P3BOX" -> digits.takeIf { it.length == 3 }
+        "P4", "P4BOX" -> digits.takeIf { it.length == 4 }
+        else -> null
+    } ?: return null
+    return AdminBlockedSalePlay(type, normalizedNumber)
+}
+
+fun salePlayExactTypeKey(playType: String): String? {
+    return when (playType.trim().uppercase(Locale.US)) {
+        "Q", "QUINIELA" -> "Q"
+        "P", "PALE", "PALÉ" -> "P"
+        "SP", "SUPERPALE", "SUPER_PALE", "SUPER PALÉ", "SUPER PALE" -> "SP"
+        "T", "TRIPLETA" -> "T"
+        "P3", "PICK3", "PICK_3", "PICK 3", "P3S", "P3STRAIGHT" -> "P3"
+        "P3BOX", "PICK3BOX", "PICK_3_BOX", "PICK 3 BOX" -> "P3BOX"
+        "P4", "PICK4", "PICK_4", "PICK 4", "P4S", "P4STRAIGHT" -> "P4"
+        "P4BOX", "PICK4BOX", "PICK_4_BOX", "PICK 4 BOX" -> "P4BOX"
+        else -> null
+    }
+}
+
+fun salePlayTypeBlockLabel(playType: String): String {
+    return when (salePlayExactTypeKey(playType) ?: playType.trim().uppercase(Locale.US)) {
+        "Q" -> "Quiniela"
+        "P" -> "Palé"
+        "SP" -> "Super Palé"
+        "T" -> "Tripleta"
+        "P3" -> "Pick 3 Straight"
+        "P3BOX" -> "Pick 3 Box"
+        "P4" -> "Pick 4 Straight"
+        "P4BOX" -> "Pick 4 Box"
+        else -> "Jugada"
+    }
+}
+
+fun blockedSalePlayLabel(play: AdminBlockedSalePlay): String {
+    val displayNumber = if (play.playType == "SP") {
+        play.number.replace("-", "/")
+    } else {
+        play.number
+    }
+    return "${salePlayTypeBlockLabel(play.playType)} $displayNumber"
+}
+
+fun isSalePlayBlocked(playType: String, number: String, config: AdminSystemModeConfig): Boolean {
+    val play = normalizeBlockedSalePlay(playType, number) ?: return false
+    return play in normalizeAdminSystemModeConfig(config).blockedSalePlays
+}
+
+fun firstBlockedSalePlayLabel(plays: Iterable<AdminBlockedSalePlay>, config: AdminSystemModeConfig): String? {
+    return plays.firstOrNull { isSalePlayBlocked(it.playType, it.number, config) }?.let(::blockedSalePlayLabel)
+}
+
+private fun encodeBlockedSalePlaysArray(plays: Set<AdminBlockedSalePlay>): JSONArray {
+    return JSONArray().apply {
+        normalizeBlockedSalePlays(plays).forEach { play ->
+            put(JSONObject().apply {
+                put("playType", play.playType)
+                put("number", play.number)
+            })
+        }
+    }
+}
+
+private fun decodeBlockedSalePlays(raw: String?): Set<AdminBlockedSalePlay> {
+    raw ?: return emptySet()
+    return runCatching {
+        val array = JSONArray(raw)
+        buildSet {
+            for (index in 0 until array.length()) {
+                val item = array.opt(index)
+                when (item) {
+                    is JSONObject -> normalizeBlockedSalePlay(
+                        item.optString("playType"),
+                        item.optString("number"),
+                    )?.let(::add)
+                    else -> {
+                        // Ignore old type-wide entries; sale blocking is now exact-number only.
+                    }
+                }
+            }
+        }
+    }.map(::normalizeBlockedSalePlays).getOrDefault(emptySet())
 }
 
 fun effectiveAdminSystemModeConfigForRole(
@@ -299,6 +415,7 @@ fun systemModeRemoteKey(ownerKey: String): String = "system_modes:${ownerKey.tri
 fun encodeAdminSystemModeConfig(config: AdminSystemModeConfig): String {
     val normalized = normalizeAdminSystemModeConfig(config)
     return JSONObject().apply {
+        put("configured", true)
         put("posLiteEnabled", normalized.posLiteEnabled)
         put("lotteryModeEnabled", normalized.lotteryModeEnabled)
         put("pickModeEnabled", normalized.pickModeEnabled)
@@ -306,6 +423,7 @@ fun encodeAdminSystemModeConfig(config: AdminSystemModeConfig): String {
         put("cashierModeEnabled", normalized.cashierModeEnabled)
         put("cashierLotteryModeEnabled", normalized.cashierLotteryModeEnabled)
         put("cashierPickModeEnabled", normalized.cashierPickModeEnabled)
+        put("blockedSalePlays", encodeBlockedSalePlaysArray(normalized.blockedSalePlays))
         put("updatedAt", System.currentTimeMillis())
     }.toString()
 }
@@ -314,7 +432,8 @@ fun decodeAdminSystemModeConfig(raw: String?): AdminSystemModeConfig {
     if (raw.isNullOrBlank()) return AdminSystemModeConfig()
     return runCatching {
         val json = JSONObject(raw)
-        normalizeAdminSystemModeConfig(
+        val configured = json.optBoolean("configured", false)
+        val decoded = normalizeAdminSystemModeConfig(
             AdminSystemModeConfig(
                 posLiteEnabled = json.optBoolean("posLiteEnabled", false),
                 lotteryModeEnabled = json.optBoolean("lotteryModeEnabled", true),
@@ -323,7 +442,13 @@ fun decodeAdminSystemModeConfig(raw: String?): AdminSystemModeConfig {
                 cashierModeEnabled = json.optBoolean("cashierModeEnabled", json.optBoolean("cashierPickEnabled", false)),
                 cashierLotteryModeEnabled = json.optBoolean("cashierLotteryModeEnabled", true),
                 cashierPickModeEnabled = json.optBoolean("cashierPickModeEnabled", json.optBoolean("cashierPickEnabled", false)),
+                blockedSalePlays = decodeBlockedSalePlays(json.optJSONArray("blockedSalePlays")?.toString()),
             ),
         )
+        if (!configured && !decoded.lotteryModeEnabled) {
+            AdminSystemModeConfig()
+        } else {
+            decoded
+        }
     }.getOrDefault(AdminSystemModeConfig())
 }

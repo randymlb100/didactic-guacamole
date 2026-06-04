@@ -1,0 +1,1307 @@
+{
+  "nodes": [
+    {
+      "id": "file:.agents/skills/supabase-postgres-best-practices/SKILL.md",
+      "type": "document",
+      "name": "SKILL.md",
+      "summary": "Supabase integration file used by the app/server for remote data, ticket, result, or configuration workflows.",
+      "tags": [
+        "docs",
+        "supabase",
+        "documentation"
+      ],
+      "complexity": "moderate",
+      "filePath": ".agents/skills/supabase-postgres-best-practices/SKILL.md",
+      "lineRange": [
+        1,
+        64
+      ]
+    },
+    {
+      "id": "file:.agents/skills/supabase/assets/feedback-issue-template.md",
+      "type": "document",
+      "name": "feedback-issue-template.md",
+      "summary": "Supabase integration file used by the app/server for remote data, ticket, result, or configuration workflows.",
+      "tags": [
+        "docs",
+        "supabase",
+        "documentation"
+      ],
+      "complexity": "simple",
+      "filePath": ".agents/skills/supabase/assets/feedback-issue-template.md",
+      "lineRange": [
+        1,
+        17
+      ]
+    },
+    {
+      "id": "file:.agents/skills/supabase/references/skill-feedback.md",
+      "type": "document",
+      "name": "skill-feedback.md",
+      "summary": "Supabase integration file used by the app/server for remote data, ticket, result, or configuration workflows.",
+      "tags": [
+        "docs",
+        "supabase",
+        "documentation"
+      ],
+      "complexity": "simple",
+      "filePath": ".agents/skills/supabase/references/skill-feedback.md",
+      "lineRange": [
+        1,
+        17
+      ]
+    },
+    {
+      "id": "file:.agents/skills/supabase/SKILL.md",
+      "type": "document",
+      "name": "SKILL.md",
+      "summary": "Supabase integration file used by the app/server for remote data, ticket, result, or configuration workflows.",
+      "tags": [
+        "docs",
+        "supabase",
+        "documentation"
+      ],
+      "complexity": "moderate",
+      "filePath": ".agents/skills/supabase/SKILL.md",
+      "lineRange": [
+        1,
+        135
+      ]
+    },
+    {
+      "id": "file:.gitattributes",
+      "type": "file",
+      "name": ".gitattributes",
+      "summary": "Source file .gitattributes in the LotteryNetPro project.",
+      "tags": [
+        "code"
+      ],
+      "complexity": "simple",
+      "filePath": ".gitattributes",
+      "lineRange": [
+        1,
+        2
+      ]
+    },
+    {
+      "id": "file:.understand-anything/.understandignore",
+      "type": "file",
+      "name": ".understandignore",
+      "summary": "Source file .understand-anything/.understandignore in the LotteryNetPro project.",
+      "tags": [
+        "code"
+      ],
+      "complexity": "simple",
+      "filePath": ".understand-anything/.understandignore",
+      "lineRange": [
+        1,
+        41
+      ]
+    },
+    {
+      "id": "file:app/build.gradle.kts",
+      "type": "file",
+      "name": "build.gradle.kts",
+      "summary": "Source file app/build.gradle.kts containing 1 function(s).",
+      "tags": [
+        "code"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/build.gradle.kts",
+      "lineRange": [
+        1,
+        144
+      ]
+    },
+    {
+      "id": "function:app/build.gradle.kts:asBuildConfigString",
+      "type": "function",
+      "name": "asBuildConfigString",
+      "summary": "Function asBuildConfigString in build.gradle.kts.",
+      "tags": [
+        "function",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/build.gradle.kts",
+      "lineRange": [
+        31,
+        50
+      ]
+    },
+    {
+      "id": "file:app/proguard-rules.pro",
+      "type": "file",
+      "name": "proguard-rules.pro",
+      "summary": "Source file app/proguard-rules.pro in the LotteryNetPro project.",
+      "tags": [
+        "code"
+      ],
+      "complexity": "simple",
+      "filePath": "app/proguard-rules.pro",
+      "lineRange": [
+        1,
+        38
+      ]
+    },
+    {
+      "id": "file:app/src/main/AndroidManifest.xml",
+      "type": "config",
+      "name": "AndroidManifest.xml",
+      "summary": "Configuration file for AndroidManifest.xml.",
+      "tags": [
+        "config",
+        "configuration"
+      ],
+      "complexity": "complex",
+      "filePath": "app/src/main/AndroidManifest.xml",
+      "lineRange": [
+        1,
+        254
+      ]
+    },
+    {
+      "id": "file:app/src/main/assets/fonts/MaterialSymbols-LICENSE.txt",
+      "type": "document",
+      "name": "MaterialSymbols-LICENSE.txt",
+      "summary": "Documentation file covering MaterialSymbols-LICENSE.txt.",
+      "tags": [
+        "docs",
+        "documentation"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/assets/fonts/MaterialSymbols-LICENSE.txt",
+      "lineRange": [
+        1,
+        202
+      ]
+    },
+    {
+      "id": "file:app/src/main/assets/fonts/RobotoFlex-OFL.txt",
+      "type": "document",
+      "name": "RobotoFlex-OFL.txt",
+      "summary": "Documentation file covering RobotoFlex-OFL.txt.",
+      "tags": [
+        "docs",
+        "documentation"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/assets/fonts/RobotoFlex-OFL.txt",
+      "lineRange": [
+        1,
+        93
+      ]
+    },
+    {
+      "id": "file:app/src/main/java/com/lotterynet/pro/core/export/ResultsWhatsAppShare.kt",
+      "type": "file",
+      "name": "ResultsWhatsAppShare.kt",
+      "summary": "Source file app/src/main/java/com/lotterynet/pro/core/export/ResultsWhatsAppShare.kt containing 2 function(s).",
+      "tags": [
+        "code",
+        "results"
+      ],
+      "complexity": "simple",
+      "filePath": "app/src/main/java/com/lotterynet/pro/core/export/ResultsWhatsAppShare.kt",
+      "lineRange": [
+        1,
+        13
+      ]
+    },
+    {
+      "id": "file:app/src/main/java/com/lotterynet/pro/core/finance/FinanceModels.kt",
+      "type": "file",
+      "name": "FinanceModels.kt",
+      "summary": "Source file app/src/main/java/com/lotterynet/pro/core/finance/FinanceModels.kt containing 13 class(es).",
+      "tags": [
+        "code",
+        "large-module"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/core/finance/FinanceModels.kt",
+      "lineRange": [
+        1,
+        128
+      ]
+    },
+    {
+      "id": "class:app/src/main/java/com/lotterynet/pro/core/finance/FinanceModels.kt:FinanceAlertTone",
+      "type": "class",
+      "name": "FinanceAlertTone",
+      "summary": "Class FinanceAlertTone in FinanceModels.kt.",
+      "tags": [
+        "class",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/core/finance/FinanceModels.kt",
+      "lineRange": [
+        3,
+        82
+      ]
+    },
+    {
+      "id": "class:app/src/main/java/com/lotterynet/pro/core/finance/FinanceModels.kt:FinanceAlert",
+      "type": "class",
+      "name": "FinanceAlert",
+      "summary": "Class FinanceAlert in FinanceModels.kt.",
+      "tags": [
+        "class",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/core/finance/FinanceModels.kt",
+      "lineRange": [
+        9,
+        88
+      ]
+    },
+    {
+      "id": "class:app/src/main/java/com/lotterynet/pro/core/finance/FinanceModels.kt:FinanceSummary",
+      "type": "class",
+      "name": "FinanceSummary",
+      "summary": "Class FinanceSummary in FinanceModels.kt.",
+      "tags": [
+        "class",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/core/finance/FinanceModels.kt",
+      "lineRange": [
+        15,
+        94
+      ]
+    },
+    {
+      "id": "class:app/src/main/java/com/lotterynet/pro/core/finance/FinanceModels.kt:CashierFinanceSummary",
+      "type": "class",
+      "name": "CashierFinanceSummary",
+      "summary": "Class CashierFinanceSummary in FinanceModels.kt.",
+      "tags": [
+        "class",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/core/finance/FinanceModels.kt",
+      "lineRange": [
+        48,
+        127
+      ]
+    },
+    {
+      "id": "class:app/src/main/java/com/lotterynet/pro/core/finance/FinanceModels.kt:TurnoFinanceSummary",
+      "type": "class",
+      "name": "TurnoFinanceSummary",
+      "summary": "Class TurnoFinanceSummary in FinanceModels.kt.",
+      "tags": [
+        "class",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/core/finance/FinanceModels.kt",
+      "lineRange": [
+        54,
+        129
+      ]
+    },
+    {
+      "id": "class:app/src/main/java/com/lotterynet/pro/core/finance/FinanceModels.kt:FinanceScopeType",
+      "type": "class",
+      "name": "FinanceScopeType",
+      "summary": "Class FinanceScopeType in FinanceModels.kt.",
+      "tags": [
+        "class",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/core/finance/FinanceModels.kt",
+      "lineRange": [
+        61,
+        129
+      ]
+    },
+    {
+      "id": "class:app/src/main/java/com/lotterynet/pro/core/finance/FinanceModels.kt:FinanceScope",
+      "type": "class",
+      "name": "FinanceScope",
+      "summary": "Class FinanceScope in FinanceModels.kt.",
+      "tags": [
+        "class",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/core/finance/FinanceModels.kt",
+      "lineRange": [
+        66,
+        129
+      ]
+    },
+    {
+      "id": "class:app/src/main/java/com/lotterynet/pro/core/finance/FinanceModels.kt:FinancePeriodPreset",
+      "type": "class",
+      "name": "FinancePeriodPreset",
+      "summary": "Class FinancePeriodPreset in FinanceModels.kt.",
+      "tags": [
+        "class",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/core/finance/FinanceModels.kt",
+      "lineRange": [
+        78,
+        129
+      ]
+    },
+    {
+      "id": "class:app/src/main/java/com/lotterynet/pro/core/finance/FinanceModels.kt:FinanceResolvedRange",
+      "type": "class",
+      "name": "FinanceResolvedRange",
+      "summary": "Class FinanceResolvedRange in FinanceModels.kt.",
+      "tags": [
+        "class",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/core/finance/FinanceModels.kt",
+      "lineRange": [
+        86,
+        129
+      ]
+    },
+    {
+      "id": "class:app/src/main/java/com/lotterynet/pro/core/finance/FinanceModels.kt:FinancePeriodRow",
+      "type": "class",
+      "name": "FinancePeriodRow",
+      "summary": "Class FinancePeriodRow in FinanceModels.kt.",
+      "tags": [
+        "class",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/core/finance/FinanceModels.kt",
+      "lineRange": [
+        94,
+        129
+      ]
+    },
+    {
+      "id": "class:app/src/main/java/com/lotterynet/pro/core/finance/FinanceModels.kt:FinanceActorPeriodRow",
+      "type": "class",
+      "name": "FinanceActorPeriodRow",
+      "summary": "Class FinanceActorPeriodRow in FinanceModels.kt.",
+      "tags": [
+        "class",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/core/finance/FinanceModels.kt",
+      "lineRange": [
+        99,
+        129
+      ]
+    },
+    {
+      "id": "class:app/src/main/java/com/lotterynet/pro/core/finance/FinanceModels.kt:FinancePeriodReport",
+      "type": "class",
+      "name": "FinancePeriodReport",
+      "summary": "Class FinancePeriodReport in FinanceModels.kt.",
+      "tags": [
+        "class",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/core/finance/FinanceModels.kt",
+      "lineRange": [
+        105,
+        129
+      ]
+    },
+    {
+      "id": "file:app/src/main/java/com/lotterynet/pro/core/finance/FinanceRemoteRefreshPolicy.kt",
+      "type": "file",
+      "name": "FinanceRemoteRefreshPolicy.kt",
+      "summary": "Source file app/src/main/java/com/lotterynet/pro/core/finance/FinanceRemoteRefreshPolicy.kt containing 1 class(es).",
+      "tags": [
+        "code"
+      ],
+      "complexity": "simple",
+      "filePath": "app/src/main/java/com/lotterynet/pro/core/finance/FinanceRemoteRefreshPolicy.kt",
+      "lineRange": [
+        1,
+        48
+      ]
+    },
+    {
+      "id": "class:app/src/main/java/com/lotterynet/pro/core/finance/FinanceRemoteRefreshPolicy.kt:FinanceRemoteRefreshDecision",
+      "type": "class",
+      "name": "FinanceRemoteRefreshDecision",
+      "summary": "Class FinanceRemoteRefreshDecision in FinanceRemoteRefreshPolicy.kt.",
+      "tags": [
+        "class",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/core/finance/FinanceRemoteRefreshPolicy.kt",
+      "lineRange": [
+        7,
+        49
+      ]
+    },
+    {
+      "id": "file:app/src/main/java/com/lotterynet/pro/core/format/MoneyFormatter.kt",
+      "type": "file",
+      "name": "MoneyFormatter.kt",
+      "summary": "Source file app/src/main/java/com/lotterynet/pro/core/format/MoneyFormatter.kt containing 3 function(s).",
+      "tags": [
+        "code"
+      ],
+      "complexity": "simple",
+      "filePath": "app/src/main/java/com/lotterynet/pro/core/format/MoneyFormatter.kt",
+      "lineRange": [
+        1,
+        24
+      ]
+    },
+    {
+      "id": "function:app/src/main/java/com/lotterynet/pro/core/format/MoneyFormatter.kt:formatWholeAmount",
+      "type": "function",
+      "name": "formatWholeAmount",
+      "summary": "Function formatWholeAmount in MoneyFormatter.kt.",
+      "tags": [
+        "function",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/core/format/MoneyFormatter.kt",
+      "lineRange": [
+        7,
+        25
+      ]
+    },
+    {
+      "id": "function:app/src/main/java/com/lotterynet/pro/core/format/MoneyFormatter.kt:formatWholeMoney",
+      "type": "function",
+      "name": "formatWholeMoney",
+      "summary": "Function formatWholeMoney in MoneyFormatter.kt.",
+      "tags": [
+        "function",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/core/format/MoneyFormatter.kt",
+      "lineRange": [
+        17,
+        25
+      ]
+    },
+    {
+      "id": "file:app/src/main/java/com/lotterynet/pro/core/master/ReloadlyConnectionTester.kt",
+      "type": "file",
+      "name": "ReloadlyConnectionTester.kt",
+      "summary": "Source file app/src/main/java/com/lotterynet/pro/core/master/ReloadlyConnectionTester.kt containing 2 class(es) and 4 function(s).",
+      "tags": [
+        "code"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/core/master/ReloadlyConnectionTester.kt",
+      "lineRange": [
+        1,
+        83
+      ]
+    },
+    {
+      "id": "function:app/src/main/java/com/lotterynet/pro/core/master/ReloadlyConnectionTester.kt:probe",
+      "type": "function",
+      "name": "probe",
+      "summary": "Function probe in ReloadlyConnectionTester.kt.",
+      "tags": [
+        "function",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/core/master/ReloadlyConnectionTester.kt",
+      "lineRange": [
+        15,
+        34
+      ]
+    },
+    {
+      "id": "function:app/src/main/java/com/lotterynet/pro/core/master/ReloadlyConnectionTester.kt:requestToken",
+      "type": "function",
+      "name": "requestToken",
+      "summary": "Function requestToken in ReloadlyConnectionTester.kt.",
+      "tags": [
+        "function",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/core/master/ReloadlyConnectionTester.kt",
+      "lineRange": [
+        33,
+        52
+      ]
+    },
+    {
+      "id": "function:app/src/main/java/com/lotterynet/pro/core/master/ReloadlyConnectionTester.kt:authorizedGet",
+      "type": "function",
+      "name": "authorizedGet",
+      "summary": "Function authorizedGet in ReloadlyConnectionTester.kt.",
+      "tags": [
+        "function",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/core/master/ReloadlyConnectionTester.kt",
+      "lineRange": [
+        45,
+        64
+      ]
+    },
+    {
+      "id": "function:app/src/main/java/com/lotterynet/pro/core/master/ReloadlyConnectionTester.kt:postJson",
+      "type": "function",
+      "name": "postJson",
+      "summary": "Function postJson in ReloadlyConnectionTester.kt.",
+      "tags": [
+        "function",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/core/master/ReloadlyConnectionTester.kt",
+      "lineRange": [
+        56,
+        75
+      ]
+    },
+    {
+      "id": "class:app/src/main/java/com/lotterynet/pro/core/master/ReloadlyConnectionTester.kt:ReloadlyProbeResult",
+      "type": "class",
+      "name": "ReloadlyProbeResult",
+      "summary": "Class ReloadlyProbeResult in ReloadlyConnectionTester.kt.",
+      "tags": [
+        "class",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/core/master/ReloadlyConnectionTester.kt",
+      "lineRange": [
+        9,
+        84
+      ]
+    },
+    {
+      "id": "class:app/src/main/java/com/lotterynet/pro/core/master/ReloadlyConnectionTester.kt:ReloadlyConnectionTester",
+      "type": "class",
+      "name": "ReloadlyConnectionTester",
+      "summary": "Class ReloadlyConnectionTester in ReloadlyConnectionTester.kt.",
+      "tags": [
+        "class",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/core/master/ReloadlyConnectionTester.kt",
+      "lineRange": [
+        14,
+        84
+      ]
+    },
+    {
+      "id": "file:app/src/main/java/com/lotterynet/pro/core/model/AlertModels.kt",
+      "type": "file",
+      "name": "AlertModels.kt",
+      "summary": "Source file app/src/main/java/com/lotterynet/pro/core/model/AlertModels.kt containing 1 class(es).",
+      "tags": [
+        "code"
+      ],
+      "complexity": "simple",
+      "filePath": "app/src/main/java/com/lotterynet/pro/core/model/AlertModels.kt",
+      "lineRange": [
+        1,
+        10
+      ]
+    },
+    {
+      "id": "file:app/src/main/java/com/lotterynet/pro/core/model/AuditModels.kt",
+      "type": "file",
+      "name": "AuditModels.kt",
+      "summary": "Source file app/src/main/java/com/lotterynet/pro/core/model/AuditModels.kt containing 1 class(es).",
+      "tags": [
+        "code"
+      ],
+      "complexity": "simple",
+      "filePath": "app/src/main/java/com/lotterynet/pro/core/model/AuditModels.kt",
+      "lineRange": [
+        1,
+        9
+      ]
+    },
+    {
+      "id": "file:app/src/main/java/com/lotterynet/pro/core/model/CalendarModels.kt",
+      "type": "file",
+      "name": "CalendarModels.kt",
+      "summary": "Source file app/src/main/java/com/lotterynet/pro/core/model/CalendarModels.kt containing 4 class(es).",
+      "tags": [
+        "code"
+      ],
+      "complexity": "simple",
+      "filePath": "app/src/main/java/com/lotterynet/pro/core/model/CalendarModels.kt",
+      "lineRange": [
+        1,
+        31
+      ]
+    },
+    {
+      "id": "class:app/src/main/java/com/lotterynet/pro/core/model/CalendarModels.kt:TrustedClockSnapshot",
+      "type": "class",
+      "name": "TrustedClockSnapshot",
+      "summary": "Class TrustedClockSnapshot in CalendarModels.kt.",
+      "tags": [
+        "class",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/core/model/CalendarModels.kt",
+      "lineRange": [
+        3,
+        32
+      ]
+    },
+    {
+      "id": "class:app/src/main/java/com/lotterynet/pro/core/model/CalendarModels.kt:ClockSource",
+      "type": "class",
+      "name": "ClockSource",
+      "summary": "Class ClockSource in CalendarModels.kt.",
+      "tags": [
+        "class",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/core/model/CalendarModels.kt",
+      "lineRange": [
+        10,
+        32
+      ]
+    },
+    {
+      "id": "file:app/src/main/java/com/lotterynet/pro/core/model/ExportModels.kt",
+      "type": "file",
+      "name": "ExportModels.kt",
+      "summary": "Source file app/src/main/java/com/lotterynet/pro/core/model/ExportModels.kt containing 7 class(es).",
+      "tags": [
+        "code"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/core/model/ExportModels.kt",
+      "lineRange": [
+        1,
+        75
+      ]
+    },
+    {
+      "id": "class:app/src/main/java/com/lotterynet/pro/core/model/ExportModels.kt:OfficialTicketVisualSpec",
+      "type": "class",
+      "name": "OfficialTicketVisualSpec",
+      "summary": "Class OfficialTicketVisualSpec in ExportModels.kt.",
+      "tags": [
+        "class",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/core/model/ExportModels.kt",
+      "lineRange": [
+        3,
+        76
+      ]
+    },
+    {
+      "id": "class:app/src/main/java/com/lotterynet/pro/core/model/ExportModels.kt:TicketQrPlayPayload",
+      "type": "class",
+      "name": "TicketQrPlayPayload",
+      "summary": "Class TicketQrPlayPayload in ExportModels.kt.",
+      "tags": [
+        "class",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/core/model/ExportModels.kt",
+      "lineRange": [
+        21,
+        76
+      ]
+    },
+    {
+      "id": "class:app/src/main/java/com/lotterynet/pro/core/model/ExportModels.kt:TicketQrPayload",
+      "type": "class",
+      "name": "TicketQrPayload",
+      "summary": "Class TicketQrPayload in ExportModels.kt.",
+      "tags": [
+        "class",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/core/model/ExportModels.kt",
+      "lineRange": [
+        29,
+        76
+      ]
+    },
+    {
+      "id": "class:app/src/main/java/com/lotterynet/pro/core/model/ExportModels.kt:ShareEnvelope",
+      "type": "class",
+      "name": "ShareEnvelope",
+      "summary": "Class ShareEnvelope in ExportModels.kt.",
+      "tags": [
+        "class",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/core/model/ExportModels.kt",
+      "lineRange": [
+        40,
+        76
+      ]
+    },
+    {
+      "id": "class:app/src/main/java/com/lotterynet/pro/core/model/ExportModels.kt:ResultsVisualSpec",
+      "type": "class",
+      "name": "ResultsVisualSpec",
+      "summary": "Class ResultsVisualSpec in ExportModels.kt.",
+      "tags": [
+        "class",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/core/model/ExportModels.kt",
+      "lineRange": [
+        46,
+        76
+      ]
+    },
+    {
+      "id": "class:app/src/main/java/com/lotterynet/pro/core/model/ExportModels.kt:ResultShareRow",
+      "type": "class",
+      "name": "ResultShareRow",
+      "summary": "Class ResultShareRow in ExportModels.kt.",
+      "tags": [
+        "class",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/core/model/ExportModels.kt",
+      "lineRange": [
+        56,
+        76
+      ]
+    },
+    {
+      "id": "file:app/src/main/java/com/lotterynet/pro/core/model/LotteryCatalogModels.kt",
+      "type": "file",
+      "name": "LotteryCatalogModels.kt",
+      "summary": "Source file app/src/main/java/com/lotterynet/pro/core/model/LotteryCatalogModels.kt containing 5 class(es).",
+      "tags": [
+        "code"
+      ],
+      "complexity": "simple",
+      "filePath": "app/src/main/java/com/lotterynet/pro/core/model/LotteryCatalogModels.kt",
+      "lineRange": [
+        1,
+        46
+      ]
+    },
+    {
+      "id": "class:app/src/main/java/com/lotterynet/pro/core/model/LotteryCatalogModels.kt:LotteryCatalogItem",
+      "type": "class",
+      "name": "LotteryCatalogItem",
+      "summary": "Class LotteryCatalogItem in LotteryCatalogModels.kt.",
+      "tags": [
+        "class",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/core/model/LotteryCatalogModels.kt",
+      "lineRange": [
+        3,
+        47
+      ]
+    },
+    {
+      "id": "class:app/src/main/java/com/lotterynet/pro/core/model/LotteryCatalogModels.kt:LotterySchedule",
+      "type": "class",
+      "name": "LotterySchedule",
+      "summary": "Class LotterySchedule in LotteryCatalogModels.kt.",
+      "tags": [
+        "class",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/core/model/LotteryCatalogModels.kt",
+      "lineRange": [
+        19,
+        47
+      ]
+    },
+    {
+      "id": "class:app/src/main/java/com/lotterynet/pro/core/model/LotteryCatalogModels.kt:LotteryPlayCapabilities",
+      "type": "class",
+      "name": "LotteryPlayCapabilities",
+      "summary": "Class LotteryPlayCapabilities in LotteryCatalogModels.kt.",
+      "tags": [
+        "class",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/core/model/LotteryCatalogModels.kt",
+      "lineRange": [
+        24,
+        47
+      ]
+    },
+    {
+      "id": "file:app/src/main/java/com/lotterynet/pro/core/model/PlayNumberFormatting.kt",
+      "type": "file",
+      "name": "PlayNumberFormatting.kt",
+      "summary": "Source file app/src/main/java/com/lotterynet/pro/core/model/PlayNumberFormatting.kt containing 1 function(s).",
+      "tags": [
+        "code"
+      ],
+      "complexity": "simple",
+      "filePath": "app/src/main/java/com/lotterynet/pro/core/model/PlayNumberFormatting.kt",
+      "lineRange": [
+        1,
+        23
+      ]
+    },
+    {
+      "id": "function:app/src/main/java/com/lotterynet/pro/core/model/PlayNumberFormatting.kt:formatPlayDisplayNumber",
+      "type": "function",
+      "name": "formatPlayDisplayNumber",
+      "summary": "Function formatPlayDisplayNumber in PlayNumberFormatting.kt.",
+      "tags": [
+        "function",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/core/model/PlayNumberFormatting.kt",
+      "lineRange": [
+        3,
+        22
+      ]
+    },
+    {
+      "id": "file:app/src/main/java/com/lotterynet/pro/core/model/PrintingModels.kt",
+      "type": "file",
+      "name": "PrintingModels.kt",
+      "summary": "Source file app/src/main/java/com/lotterynet/pro/core/model/PrintingModels.kt containing 2 class(es).",
+      "tags": [
+        "code",
+        "printing"
+      ],
+      "complexity": "simple",
+      "filePath": "app/src/main/java/com/lotterynet/pro/core/model/PrintingModels.kt",
+      "lineRange": [
+        1,
+        34
+      ]
+    },
+    {
+      "id": "class:app/src/main/java/com/lotterynet/pro/core/model/PrintingModels.kt:ThermalPrinterPrefs",
+      "type": "class",
+      "name": "ThermalPrinterPrefs",
+      "summary": "Class ThermalPrinterPrefs in PrintingModels.kt.",
+      "tags": [
+        "class",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/core/model/PrintingModels.kt",
+      "lineRange": [
+        3,
+        35
+      ]
+    },
+    {
+      "id": "file:app/src/main/java/com/lotterynet/pro/core/model/PrizeModels.kt",
+      "type": "file",
+      "name": "PrizeModels.kt",
+      "summary": "Source file app/src/main/java/com/lotterynet/pro/core/model/PrizeModels.kt containing 1 class(es) and 1 function(s).",
+      "tags": [
+        "code"
+      ],
+      "complexity": "simple",
+      "filePath": "app/src/main/java/com/lotterynet/pro/core/model/PrizeModels.kt",
+      "lineRange": [
+        1,
+        41
+      ]
+    },
+    {
+      "id": "function:app/src/main/java/com/lotterynet/pro/core/model/PrizeModels.kt:normalizePale",
+      "type": "function",
+      "name": "normalizePale",
+      "summary": "Function normalizePale in PrizeModels.kt.",
+      "tags": [
+        "function",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/core/model/PrizeModels.kt",
+      "lineRange": [
+        31,
+        42
+      ]
+    },
+    {
+      "id": "class:app/src/main/java/com/lotterynet/pro/core/model/PrizeModels.kt:PrizeTableConfig",
+      "type": "class",
+      "name": "PrizeTableConfig",
+      "summary": "Class PrizeTableConfig in PrizeModels.kt.",
+      "tags": [
+        "class",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/core/model/PrizeModels.kt",
+      "lineRange": [
+        6,
+        42
+      ]
+    },
+    {
+      "id": "file:app/src/main/java/com/lotterynet/pro/core/model/RechargeModels.kt",
+      "type": "file",
+      "name": "RechargeModels.kt",
+      "summary": "Source file app/src/main/java/com/lotterynet/pro/core/model/RechargeModels.kt containing 1 class(es).",
+      "tags": [
+        "code"
+      ],
+      "complexity": "simple",
+      "filePath": "app/src/main/java/com/lotterynet/pro/core/model/RechargeModels.kt",
+      "lineRange": [
+        1,
+        17
+      ]
+    },
+    {
+      "id": "class:app/src/main/java/com/lotterynet/pro/core/model/RechargeModels.kt:RechargeRecord",
+      "type": "class",
+      "name": "RechargeRecord",
+      "summary": "Class RechargeRecord in RechargeModels.kt.",
+      "tags": [
+        "class",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/core/model/RechargeModels.kt",
+      "lineRange": [
+        3,
+        18
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "source": "file:app/build.gradle.kts",
+      "target": "function:app/build.gradle.kts:asBuildConfigString",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "build.gradle.kts contains asBuildConfigString"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/core/finance/FinanceModels.kt",
+      "target": "class:app/src/main/java/com/lotterynet/pro/core/finance/FinanceModels.kt:FinanceAlertTone",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "FinanceModels.kt contains FinanceAlertTone"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/core/finance/FinanceModels.kt",
+      "target": "class:app/src/main/java/com/lotterynet/pro/core/finance/FinanceModels.kt:FinanceAlert",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "FinanceModels.kt contains FinanceAlert"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/core/finance/FinanceModels.kt",
+      "target": "class:app/src/main/java/com/lotterynet/pro/core/finance/FinanceModels.kt:FinanceSummary",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "FinanceModels.kt contains FinanceSummary"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/core/finance/FinanceModels.kt",
+      "target": "class:app/src/main/java/com/lotterynet/pro/core/finance/FinanceModels.kt:CashierFinanceSummary",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "FinanceModels.kt contains CashierFinanceSummary"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/core/finance/FinanceModels.kt",
+      "target": "class:app/src/main/java/com/lotterynet/pro/core/finance/FinanceModels.kt:TurnoFinanceSummary",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "FinanceModels.kt contains TurnoFinanceSummary"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/core/finance/FinanceModels.kt",
+      "target": "class:app/src/main/java/com/lotterynet/pro/core/finance/FinanceModels.kt:FinanceScopeType",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "FinanceModels.kt contains FinanceScopeType"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/core/finance/FinanceModels.kt",
+      "target": "class:app/src/main/java/com/lotterynet/pro/core/finance/FinanceModels.kt:FinanceScope",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "FinanceModels.kt contains FinanceScope"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/core/finance/FinanceModels.kt",
+      "target": "class:app/src/main/java/com/lotterynet/pro/core/finance/FinanceModels.kt:FinancePeriodPreset",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "FinanceModels.kt contains FinancePeriodPreset"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/core/finance/FinanceModels.kt",
+      "target": "class:app/src/main/java/com/lotterynet/pro/core/finance/FinanceModels.kt:FinanceResolvedRange",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "FinanceModels.kt contains FinanceResolvedRange"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/core/finance/FinanceModels.kt",
+      "target": "class:app/src/main/java/com/lotterynet/pro/core/finance/FinanceModels.kt:FinancePeriodRow",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "FinanceModels.kt contains FinancePeriodRow"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/core/finance/FinanceModels.kt",
+      "target": "class:app/src/main/java/com/lotterynet/pro/core/finance/FinanceModels.kt:FinanceActorPeriodRow",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "FinanceModels.kt contains FinanceActorPeriodRow"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/core/finance/FinanceModels.kt",
+      "target": "class:app/src/main/java/com/lotterynet/pro/core/finance/FinanceModels.kt:FinancePeriodReport",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "FinanceModels.kt contains FinancePeriodReport"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/core/finance/FinanceRemoteRefreshPolicy.kt",
+      "target": "class:app/src/main/java/com/lotterynet/pro/core/finance/FinanceRemoteRefreshPolicy.kt:FinanceRemoteRefreshDecision",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "FinanceRemoteRefreshPolicy.kt contains FinanceRemoteRefreshDecision"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/core/format/MoneyFormatter.kt",
+      "target": "function:app/src/main/java/com/lotterynet/pro/core/format/MoneyFormatter.kt:formatWholeAmount",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "MoneyFormatter.kt contains formatWholeAmount"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/core/format/MoneyFormatter.kt",
+      "target": "function:app/src/main/java/com/lotterynet/pro/core/format/MoneyFormatter.kt:formatWholeMoney",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "MoneyFormatter.kt contains formatWholeMoney"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/core/master/ReloadlyConnectionTester.kt",
+      "target": "function:app/src/main/java/com/lotterynet/pro/core/master/ReloadlyConnectionTester.kt:probe",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "ReloadlyConnectionTester.kt contains probe"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/core/master/ReloadlyConnectionTester.kt",
+      "target": "function:app/src/main/java/com/lotterynet/pro/core/master/ReloadlyConnectionTester.kt:requestToken",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "ReloadlyConnectionTester.kt contains requestToken"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/core/master/ReloadlyConnectionTester.kt",
+      "target": "function:app/src/main/java/com/lotterynet/pro/core/master/ReloadlyConnectionTester.kt:authorizedGet",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "ReloadlyConnectionTester.kt contains authorizedGet"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/core/master/ReloadlyConnectionTester.kt",
+      "target": "function:app/src/main/java/com/lotterynet/pro/core/master/ReloadlyConnectionTester.kt:postJson",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "ReloadlyConnectionTester.kt contains postJson"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/core/master/ReloadlyConnectionTester.kt",
+      "target": "class:app/src/main/java/com/lotterynet/pro/core/master/ReloadlyConnectionTester.kt:ReloadlyProbeResult",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "ReloadlyConnectionTester.kt contains ReloadlyProbeResult"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/core/master/ReloadlyConnectionTester.kt",
+      "target": "class:app/src/main/java/com/lotterynet/pro/core/master/ReloadlyConnectionTester.kt:ReloadlyConnectionTester",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "ReloadlyConnectionTester.kt contains ReloadlyConnectionTester"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/core/model/CalendarModels.kt",
+      "target": "class:app/src/main/java/com/lotterynet/pro/core/model/CalendarModels.kt:TrustedClockSnapshot",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "CalendarModels.kt contains TrustedClockSnapshot"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/core/model/CalendarModels.kt",
+      "target": "class:app/src/main/java/com/lotterynet/pro/core/model/CalendarModels.kt:ClockSource",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "CalendarModels.kt contains ClockSource"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/core/model/ExportModels.kt",
+      "target": "class:app/src/main/java/com/lotterynet/pro/core/model/ExportModels.kt:OfficialTicketVisualSpec",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "ExportModels.kt contains OfficialTicketVisualSpec"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/core/model/ExportModels.kt",
+      "target": "class:app/src/main/java/com/lotterynet/pro/core/model/ExportModels.kt:TicketQrPlayPayload",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "ExportModels.kt contains TicketQrPlayPayload"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/core/model/ExportModels.kt",
+      "target": "class:app/src/main/java/com/lotterynet/pro/core/model/ExportModels.kt:TicketQrPayload",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "ExportModels.kt contains TicketQrPayload"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/core/model/ExportModels.kt",
+      "target": "class:app/src/main/java/com/lotterynet/pro/core/model/ExportModels.kt:ShareEnvelope",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "ExportModels.kt contains ShareEnvelope"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/core/model/ExportModels.kt",
+      "target": "class:app/src/main/java/com/lotterynet/pro/core/model/ExportModels.kt:ResultsVisualSpec",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "ExportModels.kt contains ResultsVisualSpec"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/core/model/ExportModels.kt",
+      "target": "class:app/src/main/java/com/lotterynet/pro/core/model/ExportModels.kt:ResultShareRow",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "ExportModels.kt contains ResultShareRow"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/core/model/LotteryCatalogModels.kt",
+      "target": "class:app/src/main/java/com/lotterynet/pro/core/model/LotteryCatalogModels.kt:LotteryCatalogItem",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "LotteryCatalogModels.kt contains LotteryCatalogItem"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/core/model/LotteryCatalogModels.kt",
+      "target": "class:app/src/main/java/com/lotterynet/pro/core/model/LotteryCatalogModels.kt:LotterySchedule",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "LotteryCatalogModels.kt contains LotterySchedule"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/core/model/LotteryCatalogModels.kt",
+      "target": "class:app/src/main/java/com/lotterynet/pro/core/model/LotteryCatalogModels.kt:LotteryPlayCapabilities",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "LotteryCatalogModels.kt contains LotteryPlayCapabilities"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/core/model/PlayNumberFormatting.kt",
+      "target": "function:app/src/main/java/com/lotterynet/pro/core/model/PlayNumberFormatting.kt:formatPlayDisplayNumber",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "PlayNumberFormatting.kt contains formatPlayDisplayNumber"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/core/model/PrintingModels.kt",
+      "target": "class:app/src/main/java/com/lotterynet/pro/core/model/PrintingModels.kt:ThermalPrinterPrefs",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "PrintingModels.kt contains ThermalPrinterPrefs"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/core/model/PrizeModels.kt",
+      "target": "function:app/src/main/java/com/lotterynet/pro/core/model/PrizeModels.kt:normalizePale",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "PrizeModels.kt contains normalizePale"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/core/model/PrizeModels.kt",
+      "target": "class:app/src/main/java/com/lotterynet/pro/core/model/PrizeModels.kt:PrizeTableConfig",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "PrizeModels.kt contains PrizeTableConfig"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/core/model/RechargeModels.kt",
+      "target": "class:app/src/main/java/com/lotterynet/pro/core/model/RechargeModels.kt:RechargeRecord",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "RechargeModels.kt contains RechargeRecord"
+    }
+  ]
+}

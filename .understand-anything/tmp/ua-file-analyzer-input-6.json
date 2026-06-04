@@ -1,0 +1,205 @@
+{
+  "projectRoot": "C:\\Users\\Randy Cordero\\Desktop\\lotterynet_android",
+  "batchFiles": [
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/core/auth/SupabaseAuthBridgeClient.kt",
+      "language": "kotlin",
+      "sizeLines": 88,
+      "fileCategory": "code"
+    },
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/core/config/SupabaseConfig.kt",
+      "language": "kotlin",
+      "sizeLines": 26,
+      "fileCategory": "code"
+    },
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/core/master/MasterConfigRemoteStore.kt",
+      "language": "kotlin",
+      "sizeLines": 8,
+      "fileCategory": "code"
+    },
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/core/master/SupabaseMasterConfigRemoteStore.kt",
+      "language": "kotlin",
+      "sizeLines": 94,
+      "fileCategory": "code"
+    },
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/core/recharge/recargasrapidas/RecargasRapidasBackendClient.kt",
+      "language": "kotlin",
+      "sizeLines": 58,
+      "fileCategory": "code"
+    },
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/core/remote/SupabaseEdgeClient.kt",
+      "language": "kotlin",
+      "sizeLines": 124,
+      "fileCategory": "code"
+    },
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/core/results/SupabaseResultsRemoteStore.kt",
+      "language": "kotlin",
+      "sizeLines": 433,
+      "fileCategory": "code"
+    },
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/core/sales/SupabaseTicketBackendClient.kt",
+      "language": "kotlin",
+      "sizeLines": 267,
+      "fileCategory": "code"
+    },
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/core/storage/LocalAdminLimitRepository.kt",
+      "language": "kotlin",
+      "sizeLines": 26,
+      "fileCategory": "code"
+    },
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/core/storage/LocalCashierPrizePayoutRepository.kt",
+      "language": "kotlin",
+      "sizeLines": 167,
+      "fileCategory": "code"
+    },
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/core/storage/LocalCashierSalesLimitRepository.kt",
+      "language": "kotlin",
+      "sizeLines": 245,
+      "fileCategory": "code"
+    },
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/core/sync/CashierLimitCloudSyncCoordinator.kt",
+      "language": "kotlin",
+      "sizeLines": 83,
+      "fileCategory": "code"
+    },
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/core/sync/CashierPrizePayoutCloudSyncCoordinator.kt",
+      "language": "kotlin",
+      "sizeLines": 51,
+      "fileCategory": "code"
+    },
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/core/sync/NativeRechargeRemoteStore.kt",
+      "language": "kotlin",
+      "sizeLines": 45,
+      "fileCategory": "code"
+    },
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/core/sync/NativeTicketRemoteStore.kt",
+      "language": "kotlin",
+      "sizeLines": 124,
+      "fileCategory": "code"
+    },
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/core/update/SupabaseService.kt",
+      "language": "kotlin",
+      "sizeLines": 48,
+      "fileCategory": "code"
+    },
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/core/users/UserPasswordBackendClient.kt",
+      "language": "kotlin",
+      "sizeLines": 51,
+      "fileCategory": "code"
+    },
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/ui/admin/AdminLimitsActivity.kt",
+      "language": "kotlin",
+      "sizeLines": 747,
+      "fileCategory": "code"
+    },
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/ui/users/UserAccountsActivity.kt",
+      "language": "kotlin",
+      "sizeLines": 3537,
+      "fileCategory": "code"
+    }
+  ],
+  "batchImportData": {
+    "app/src/main/java/com/lotterynet/pro/core/auth/SupabaseAuthBridgeClient.kt": [
+      "app/src/main/java/com/lotterynet/pro/core/config/SupabaseConfig.kt",
+      "app/src/main/java/com/lotterynet/pro/core/remote/SupabaseEdgeClient.kt"
+    ],
+    "app/src/main/java/com/lotterynet/pro/core/config/SupabaseConfig.kt": [],
+    "app/src/main/java/com/lotterynet/pro/core/master/MasterConfigRemoteStore.kt": [],
+    "app/src/main/java/com/lotterynet/pro/core/master/SupabaseMasterConfigRemoteStore.kt": [
+      "app/src/main/java/com/lotterynet/pro/core/config/SupabaseConfig.kt",
+      "app/src/main/java/com/lotterynet/pro/core/remote/SupabaseEdgeClient.kt"
+    ],
+    "app/src/main/java/com/lotterynet/pro/core/recharge/recargasrapidas/RecargasRapidasBackendClient.kt": [
+      "app/src/main/java/com/lotterynet/pro/core/config/SupabaseConfig.kt",
+      "app/src/main/java/com/lotterynet/pro/core/remote/SupabaseEdgeClient.kt"
+    ],
+    "app/src/main/java/com/lotterynet/pro/core/remote/SupabaseEdgeClient.kt": [
+      "app/src/main/java/com/lotterynet/pro/core/config/SupabaseConfig.kt"
+    ],
+    "app/src/main/java/com/lotterynet/pro/core/results/SupabaseResultsRemoteStore.kt": [
+      "app/src/main/java/com/lotterynet/pro/core/catalog/StaticLotteryCatalogRepository.kt",
+      "app/src/main/java/com/lotterynet/pro/core/config/SupabaseConfig.kt",
+      "app/src/main/java/com/lotterynet/pro/core/model/UserRole.kt",
+      "app/src/main/java/com/lotterynet/pro/core/remote/SupabaseEdgeClient.kt"
+    ],
+    "app/src/main/java/com/lotterynet/pro/core/sales/SupabaseTicketBackendClient.kt": [
+      "app/src/main/java/com/lotterynet/pro/core/config/SupabaseConfig.kt",
+      "app/src/main/java/com/lotterynet/pro/core/remote/SupabaseEdgeClient.kt"
+    ],
+    "app/src/main/java/com/lotterynet/pro/core/storage/LocalAdminLimitRepository.kt": [],
+    "app/src/main/java/com/lotterynet/pro/core/storage/LocalCashierPrizePayoutRepository.kt": [],
+    "app/src/main/java/com/lotterynet/pro/core/storage/LocalCashierSalesLimitRepository.kt": [],
+    "app/src/main/java/com/lotterynet/pro/core/sync/CashierLimitCloudSyncCoordinator.kt": [
+      "app/src/main/java/com/lotterynet/pro/core/master/MasterConfigRemoteStore.kt",
+      "app/src/main/java/com/lotterynet/pro/core/master/SupabaseMasterConfigRemoteStore.kt",
+      "app/src/main/java/com/lotterynet/pro/core/storage/LocalCashierSalesLimitRepository.kt"
+    ],
+    "app/src/main/java/com/lotterynet/pro/core/sync/CashierPrizePayoutCloudSyncCoordinator.kt": [
+      "app/src/main/java/com/lotterynet/pro/core/master/MasterConfigRemoteStore.kt",
+      "app/src/main/java/com/lotterynet/pro/core/master/SupabaseMasterConfigRemoteStore.kt",
+      "app/src/main/java/com/lotterynet/pro/core/storage/LocalCashierPrizePayoutRepository.kt"
+    ],
+    "app/src/main/java/com/lotterynet/pro/core/sync/NativeRechargeRemoteStore.kt": [
+      "app/src/main/java/com/lotterynet/pro/core/config/SupabaseConfig.kt",
+      "app/src/main/java/com/lotterynet/pro/core/remote/SupabaseEdgeClient.kt"
+    ],
+    "app/src/main/java/com/lotterynet/pro/core/sync/NativeTicketRemoteStore.kt": [
+      "app/src/main/java/com/lotterynet/pro/core/config/SupabaseConfig.kt",
+      "app/src/main/java/com/lotterynet/pro/core/remote/SupabaseEdgeClient.kt"
+    ],
+    "app/src/main/java/com/lotterynet/pro/core/update/SupabaseService.kt": [
+      "app/src/main/java/com/lotterynet/pro/core/config/SupabaseConfig.kt"
+    ],
+    "app/src/main/java/com/lotterynet/pro/core/users/UserPasswordBackendClient.kt": [
+      "app/src/main/java/com/lotterynet/pro/core/config/SupabaseConfig.kt",
+      "app/src/main/java/com/lotterynet/pro/core/remote/SupabaseEdgeClient.kt"
+    ],
+    "app/src/main/java/com/lotterynet/pro/ui/admin/AdminLimitsActivity.kt": [
+      "app/src/main/java/com/lotterynet/pro/core/master/SupabaseMasterConfigRemoteStore.kt",
+      "app/src/main/java/com/lotterynet/pro/core/storage/LocalAdminLimitRepository.kt",
+      "app/src/main/java/com/lotterynet/pro/core/storage/LocalCashierSalesLimitRepository.kt",
+      "app/src/main/java/com/lotterynet/pro/core/storage/LocalPosModeRepository.kt",
+      "app/src/main/java/com/lotterynet/pro/core/storage/LocalRechargeLimitRepository.kt",
+      "app/src/main/java/com/lotterynet/pro/core/storage/LocalSessionRepository.kt",
+      "app/src/main/java/com/lotterynet/pro/core/storage/LocalUsersRepository.kt",
+      "app/src/main/java/com/lotterynet/pro/core/sync/CashierLimitCloudSyncCoordinator.kt"
+    ],
+    "app/src/main/java/com/lotterynet/pro/ui/users/UserAccountsActivity.kt": [
+      "app/src/main/java/com/lotterynet/pro/core/auth/CredentialFactory.kt",
+      "app/src/main/java/com/lotterynet/pro/core/auth/SupabaseAuthBridgeClient.kt",
+      "app/src/main/java/com/lotterynet/pro/core/auth/SupabaseSessionTokenProvider.kt",
+      "app/src/main/java/com/lotterynet/pro/core/finance/LocalFinanceRepository.kt",
+      "app/src/main/java/com/lotterynet/pro/core/model/UserRole.kt",
+      "app/src/main/java/com/lotterynet/pro/core/storage/LocalAdminLimitRepository.kt",
+      "app/src/main/java/com/lotterynet/pro/core/storage/LocalCashierPrizePayoutRepository.kt",
+      "app/src/main/java/com/lotterynet/pro/core/storage/LocalCashierSalesLimitRepository.kt",
+      "app/src/main/java/com/lotterynet/pro/core/storage/LocalRechargeRepository.kt",
+      "app/src/main/java/com/lotterynet/pro/core/storage/LocalSalesRepository.kt",
+      "app/src/main/java/com/lotterynet/pro/core/storage/LocalSessionRepository.kt",
+      "app/src/main/java/com/lotterynet/pro/core/storage/LocalUsersRepository.kt",
+      "app/src/main/java/com/lotterynet/pro/core/sync/CashierLimitCloudSyncCoordinator.kt",
+      "app/src/main/java/com/lotterynet/pro/core/sync/CashierPrizePayoutCloudSyncCoordinator.kt",
+      "app/src/main/java/com/lotterynet/pro/core/sync/NativeUsersBootstrapper.kt",
+      "app/src/main/java/com/lotterynet/pro/core/users/SupabaseUsersRemoteStore.kt",
+      "app/src/main/java/com/lotterynet/pro/core/users/UserPasswordBackendClient.kt"
+    ]
+  }
+}

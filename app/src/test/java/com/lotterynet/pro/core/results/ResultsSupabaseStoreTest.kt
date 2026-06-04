@@ -692,7 +692,6 @@ class ResultsSupabaseStoreTest {
                 .put("number", "19-93-58"),
         )
         val store = SupabaseResultsRemoteStore(
-            cachePayloadFetcher = { null },
             edgePayloadFetcher = {
                 edgeCalls += 1
                 JSONArray().put(JSONObject().put("id", "99"))
@@ -719,6 +718,7 @@ class ResultsSupabaseStoreTest {
     fun `remote payload reads supabase cache before render for realtime freshness`() {
         var cacheCalls = 0
         var renderCalls = 0
+        var edgeCalls = 0
         val cachePayload = JSONArray().put(
             JSONObject()
                 .put("id", "1")
@@ -727,8 +727,8 @@ class ResultsSupabaseStoreTest {
                 .put("number", "19-93-58"),
         )
         val store = SupabaseResultsRemoteStore(
-            cachePayloadFetcher = {
-                cacheCalls += 1
+            edgePayloadFetcher = {
+                edgeCalls += 1
                 cachePayload
             },
             renderPayloadFetcher = { _, forceLive ->
@@ -745,7 +745,8 @@ class ResultsSupabaseStoreTest {
         ) as JSONArray
 
         assertEquals(0, renderCalls)
-        assertEquals(1, cacheCalls)
+        assertEquals(0, cacheCalls)
+        assertEquals(1, edgeCalls)
         assertEquals("19-93-58", payload.getJSONObject(0).getString("number"))
     }
 

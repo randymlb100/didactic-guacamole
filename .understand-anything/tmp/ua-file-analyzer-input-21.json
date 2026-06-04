@@ -1,0 +1,98 @@
+{
+  "projectRoot": "C:\\Users\\Randy Cordero\\Desktop\\lotterynet_android",
+  "batchFiles": [
+    {
+      "path": "docs/supabase/2026-05-06_lotterynet_backend_migration_blueprint.sql",
+      "language": "sql",
+      "sizeLines": 520,
+      "fileCategory": "data"
+    },
+    {
+      "path": "docs/supabase/2026-05-13-realtime-cutover-checklist.md",
+      "language": "markdown",
+      "sizeLines": 54,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "docs/supabase/2026-05-13-realtime-final-rollout.sql",
+      "language": "sql",
+      "sizeLines": 78,
+      "fileCategory": "data"
+    },
+    {
+      "path": "docs/supabase/2026-05-13-realtime-rollout-checklist.md",
+      "language": "markdown",
+      "sizeLines": 11,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "docs/supabase/2026-05-13-realtime-rollout.sql",
+      "language": "sql",
+      "sizeLines": 7,
+      "fileCategory": "data"
+    },
+    {
+      "path": "docs/supabase/2026-05-13-supabase-functions-multi-banca.md",
+      "language": "markdown",
+      "sizeLines": 68,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "docs/supabase/2026-05-14-render-cache-webhooks.sql",
+      "language": "sql",
+      "sizeLines": 31,
+      "fileCategory": "data"
+    },
+    {
+      "path": "docs/supabase/2026-05-14-supabase-cutover.sql",
+      "language": "sql",
+      "sizeLines": 112,
+      "fileCategory": "data"
+    },
+    {
+      "path": "docs/supabase/edge_functions_base.md",
+      "language": "markdown",
+      "sizeLines": 171,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "docs/supabase/kotlin_edge_function_examples.md",
+      "language": "markdown",
+      "sizeLines": 89,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "docs/supabase/production-call-volume-hardening.md",
+      "language": "markdown",
+      "sizeLines": 53,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "docs/supabase/production-server-first-multibanca.md",
+      "language": "markdown",
+      "sizeLines": 151,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "docs/supabase/realtime_number_limits_and_ticket_backend.md",
+      "language": "markdown",
+      "sizeLines": 69,
+      "fileCategory": "docs"
+    }
+  ],
+  "batchImportData": {
+    "docs/supabase/2026-05-06_lotterynet_backend_migration_blueprint.sql": [],
+    "docs/supabase/2026-05-13-realtime-cutover-checklist.md": [],
+    "docs/supabase/2026-05-13-realtime-final-rollout.sql": [],
+    "docs/supabase/2026-05-13-realtime-rollout-checklist.md": [],
+    "docs/supabase/2026-05-13-realtime-rollout.sql": [],
+    "docs/supabase/2026-05-13-supabase-functions-multi-banca.md": [],
+    "docs/supabase/2026-05-14-render-cache-webhooks.sql": [],
+    "docs/supabase/2026-05-14-supabase-cutover.sql": [],
+    "docs/supabase/edge_functions_base.md": [],
+    "docs/supabase/kotlin_edge_function_examples.md": [],
+    "docs/supabase/production-call-volume-hardening.md": [],
+    "docs/supabase/production-server-first-multibanca.md": [],
+    "docs/supabase/realtime_number_limits_and_ticket_backend.md": []
+  }
+}

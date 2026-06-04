@@ -1,0 +1,182 @@
+{
+  "projectRoot": "C:\\Users\\Randy Cordero\\Desktop\\lotterynet_android",
+  "batchFiles": [
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/core/storage/ThermalPrinterStorageKeys.kt",
+      "language": "kotlin",
+      "sizeLines": 6,
+      "fileCategory": "code"
+    },
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/core/storage/TrustedClockStorageKeys.kt",
+      "language": "kotlin",
+      "sizeLines": 9,
+      "fileCategory": "code"
+    },
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/core/storage/UsersPayloadCache.kt",
+      "language": "kotlin",
+      "sizeLines": 28,
+      "fileCategory": "code"
+    },
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/core/update/SupabaseUpdateService.kt",
+      "language": "kotlin",
+      "sizeLines": 74,
+      "fileCategory": "code"
+    },
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/core/update/UpdateCacheRepository.kt",
+      "language": "kotlin",
+      "sizeLines": 39,
+      "fileCategory": "code"
+    },
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/core/update/UpdateLogRepository.kt",
+      "language": "kotlin",
+      "sizeLines": 33,
+      "fileCategory": "code"
+    },
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/core/update/UpdateModels.kt",
+      "language": "kotlin",
+      "sizeLines": 97,
+      "fileCategory": "code"
+    },
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/ui/admin/AdminLimitsContracts.kt",
+      "language": "kotlin",
+      "sizeLines": 96,
+      "fileCategory": "code"
+    },
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/ui/admin/redesign/components/FintechControls.kt",
+      "language": "kotlin",
+      "sizeLines": 311,
+      "fileCategory": "code"
+    },
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/ui/admin/redesign/components/MetricCard.kt",
+      "language": "kotlin",
+      "sizeLines": 115,
+      "fileCategory": "code"
+    },
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/ui/admin/redesign/components/UserCard.kt",
+      "language": "kotlin",
+      "sizeLines": 235,
+      "fileCategory": "code"
+    },
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/ui/admin/redesign/navigation/FintechNavigation.kt",
+      "language": "kotlin",
+      "sizeLines": 15,
+      "fileCategory": "code"
+    },
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/ui/admin/redesign/theme/FintechColor.kt",
+      "language": "kotlin",
+      "sizeLines": 22,
+      "fileCategory": "code"
+    },
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/ui/admin/redesign/theme/FintechTheme.kt",
+      "language": "kotlin",
+      "sizeLines": 113,
+      "fileCategory": "code"
+    },
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/ui/sales/SalesUiContracts.kt",
+      "language": "kotlin",
+      "sizeLines": 417,
+      "fileCategory": "code"
+    },
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/ui/theme/Color.kt",
+      "language": "kotlin",
+      "sizeLines": 32,
+      "fileCategory": "code"
+    },
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/ui/theme/Theme.kt",
+      "language": "kotlin",
+      "sizeLines": 41,
+      "fileCategory": "code"
+    },
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/ui/theme/Type.kt",
+      "language": "kotlin",
+      "sizeLines": 76,
+      "fileCategory": "code"
+    },
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/ui/tickets/QrCaptureActivity.kt",
+      "language": "kotlin",
+      "sizeLines": 5,
+      "fileCategory": "code"
+    },
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/ui/tickets/TicketOutputIdentity.kt",
+      "language": "kotlin",
+      "sizeLines": 21,
+      "fileCategory": "code"
+    },
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/ui/update/UpdateDialog.kt",
+      "language": "kotlin",
+      "sizeLines": 205,
+      "fileCategory": "code"
+    },
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/ui/update/UpdateUiContracts.kt",
+      "language": "kotlin",
+      "sizeLines": 46,
+      "fileCategory": "code"
+    },
+    {
+      "path": "app/src/main/res/drawable-anydpi-v26/ic_launcher_round.xml",
+      "language": "xml",
+      "sizeLines": 6,
+      "fileCategory": "config"
+    },
+    {
+      "path": "app/src/main/res/drawable-anydpi-v26/ic_launcher.xml",
+      "language": "xml",
+      "sizeLines": 6,
+      "fileCategory": "config"
+    },
+    {
+      "path": "app/src/main/res/values-night/themes.xml",
+      "language": "xml",
+      "sizeLines": 25,
+      "fileCategory": "config"
+    }
+  ],
+  "batchImportData": {
+    "app/src/main/java/com/lotterynet/pro/core/storage/ThermalPrinterStorageKeys.kt": [],
+    "app/src/main/java/com/lotterynet/pro/core/storage/TrustedClockStorageKeys.kt": [],
+    "app/src/main/java/com/lotterynet/pro/core/storage/UsersPayloadCache.kt": [],
+    "app/src/main/java/com/lotterynet/pro/core/update/SupabaseUpdateService.kt": [],
+    "app/src/main/java/com/lotterynet/pro/core/update/UpdateCacheRepository.kt": [],
+    "app/src/main/java/com/lotterynet/pro/core/update/UpdateLogRepository.kt": [],
+    "app/src/main/java/com/lotterynet/pro/core/update/UpdateModels.kt": [],
+    "app/src/main/java/com/lotterynet/pro/ui/admin/AdminLimitsContracts.kt": [],
+    "app/src/main/java/com/lotterynet/pro/ui/admin/redesign/components/FintechControls.kt": [],
+    "app/src/main/java/com/lotterynet/pro/ui/admin/redesign/components/MetricCard.kt": [],
+    "app/src/main/java/com/lotterynet/pro/ui/admin/redesign/components/UserCard.kt": [],
+    "app/src/main/java/com/lotterynet/pro/ui/admin/redesign/navigation/FintechNavigation.kt": [],
+    "app/src/main/java/com/lotterynet/pro/ui/admin/redesign/theme/FintechColor.kt": [],
+    "app/src/main/java/com/lotterynet/pro/ui/admin/redesign/theme/FintechTheme.kt": [],
+    "app/src/main/java/com/lotterynet/pro/ui/sales/SalesUiContracts.kt": [],
+    "app/src/main/java/com/lotterynet/pro/ui/theme/Color.kt": [],
+    "app/src/main/java/com/lotterynet/pro/ui/theme/Theme.kt": [],
+    "app/src/main/java/com/lotterynet/pro/ui/theme/Type.kt": [],
+    "app/src/main/java/com/lotterynet/pro/ui/tickets/QrCaptureActivity.kt": [],
+    "app/src/main/java/com/lotterynet/pro/ui/tickets/TicketOutputIdentity.kt": [],
+    "app/src/main/java/com/lotterynet/pro/ui/update/UpdateDialog.kt": [],
+    "app/src/main/java/com/lotterynet/pro/ui/update/UpdateUiContracts.kt": [],
+    "app/src/main/res/drawable-anydpi-v26/ic_launcher_round.xml": [],
+    "app/src/main/res/drawable-anydpi-v26/ic_launcher.xml": [],
+    "app/src/main/res/values-night/themes.xml": []
+  }
+}

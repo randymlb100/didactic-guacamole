@@ -1,0 +1,215 @@
+{
+  "scriptCompleted": true,
+  "filesAnalyzed": 26,
+  "filesSkipped": [],
+  "results": [
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/core/finance/LocalFinanceRepository.kt",
+      "language": "kotlin",
+      "fileCategory": "code",
+      "totalLines": 921,
+      "nonEmptyLines": 867,
+      "metrics": {}
+    },
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/core/realtime/LotterynetRealtimeClient.kt",
+      "language": "kotlin",
+      "fileCategory": "code",
+      "totalLines": 125,
+      "nonEmptyLines": 110,
+      "metrics": {}
+    },
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/core/realtime/LotterynetRealtimeSubscription.kt",
+      "language": "kotlin",
+      "fileCategory": "code",
+      "totalLines": 57,
+      "nonEmptyLines": 49,
+      "metrics": {}
+    },
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/core/storage/LocalFinanceHistoryRepository.kt",
+      "language": "kotlin",
+      "fileCategory": "code",
+      "totalLines": 147,
+      "nonEmptyLines": 139,
+      "metrics": {}
+    },
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/core/storage/LocalRechargeRepository.kt",
+      "language": "kotlin",
+      "fileCategory": "code",
+      "totalLines": 153,
+      "nonEmptyLines": 139,
+      "metrics": {}
+    },
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/core/storage/LocalSalesRepository.kt",
+      "language": "kotlin",
+      "fileCategory": "code",
+      "totalLines": 499,
+      "nonEmptyLines": 463,
+      "metrics": {}
+    },
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/core/storage/LocalSessionRepository.kt",
+      "language": "kotlin",
+      "fileCategory": "code",
+      "totalLines": 146,
+      "nonEmptyLines": 137,
+      "metrics": {}
+    },
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/core/sync/LocalSyncFreshnessRepository.kt",
+      "language": "kotlin",
+      "fileCategory": "code",
+      "totalLines": 115,
+      "nonEmptyLines": 100,
+      "metrics": {}
+    },
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/core/sync/NativeOperationalSyncCoordinator.kt",
+      "language": "kotlin",
+      "fileCategory": "code",
+      "totalLines": 241,
+      "nonEmptyLines": 225,
+      "metrics": {}
+    },
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/core/sync/NativeRechargeCloudSyncCoordinator.kt",
+      "language": "kotlin",
+      "fileCategory": "code",
+      "totalLines": 74,
+      "nonEmptyLines": 68,
+      "metrics": {}
+    },
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/core/sync/NativeTicketCloudSyncCoordinator.kt",
+      "language": "kotlin",
+      "fileCategory": "code",
+      "totalLines": 147,
+      "nonEmptyLines": 135,
+      "metrics": {}
+    },
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/core/sync/NativeTicketSyncQueueRepository.kt",
+      "language": "kotlin",
+      "fileCategory": "code",
+      "totalLines": 50,
+      "nonEmptyLines": 44,
+      "metrics": {}
+    },
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/core/update/ApkDownloadManager.kt",
+      "language": "kotlin",
+      "fileCategory": "code",
+      "totalLines": 222,
+      "nonEmptyLines": 210,
+      "metrics": {}
+    },
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/core/update/ApkInstaller.kt",
+      "language": "kotlin",
+      "fileCategory": "code",
+      "totalLines": 148,
+      "nonEmptyLines": 136,
+      "metrics": {}
+    },
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/core/update/UpdateRepository.kt",
+      "language": "kotlin",
+      "fileCategory": "code",
+      "totalLines": 84,
+      "nonEmptyLines": 79,
+      "metrics": {}
+    },
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/ui/admin/AdminCashierDetailActivity.kt",
+      "language": "kotlin",
+      "fileCategory": "code",
+      "totalLines": 528,
+      "nonEmptyLines": 507,
+      "metrics": {}
+    },
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/ui/admin/AdminDashboardActivity.kt",
+      "language": "kotlin",
+      "fileCategory": "code",
+      "totalLines": 578,
+      "nonEmptyLines": 555,
+      "metrics": {}
+    },
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/ui/admin/AdminLotteryMonitorActivity.kt",
+      "language": "kotlin",
+      "fileCategory": "code",
+      "totalLines": 648,
+      "nonEmptyLines": 618,
+      "metrics": {}
+    },
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/ui/admin/AdminMonitorActivity.kt",
+      "language": "kotlin",
+      "fileCategory": "code",
+      "totalLines": 2943,
+      "nonEmptyLines": 2845,
+      "metrics": {}
+    },
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/ui/admin/AdminWinnersActivity.kt",
+      "language": "kotlin",
+      "fileCategory": "code",
+      "totalLines": 464,
+      "nonEmptyLines": 436,
+      "metrics": {}
+    },
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/ui/finance/FinanceActivity.kt",
+      "language": "kotlin",
+      "fileCategory": "code",
+      "totalLines": 2005,
+      "nonEmptyLines": 1943,
+      "metrics": {}
+    },
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/ui/report/OperationalReportActivity.kt",
+      "language": "kotlin",
+      "fileCategory": "code",
+      "totalLines": 1097,
+      "nonEmptyLines": 1057,
+      "metrics": {}
+    },
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/ui/shell/ShellActivity.kt",
+      "language": "kotlin",
+      "fileCategory": "code",
+      "totalLines": 1563,
+      "nonEmptyLines": 1513,
+      "metrics": {}
+    },
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/ui/tickets/TicketDetailActivity.kt",
+      "language": "kotlin",
+      "fileCategory": "code",
+      "totalLines": 544,
+      "nonEmptyLines": 530,
+      "metrics": {}
+    },
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/ui/tickets/TicketSummaryActivity.kt",
+      "language": "kotlin",
+      "fileCategory": "code",
+      "totalLines": 826,
+      "nonEmptyLines": 793,
+      "metrics": {}
+    },
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/ui/update/UpdateViewModel.kt",
+      "language": "kotlin",
+      "fileCategory": "code",
+      "totalLines": 118,
+      "nonEmptyLines": 112,
+      "metrics": {}
+    }
+  ]
+}

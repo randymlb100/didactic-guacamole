@@ -81,6 +81,27 @@ class SaleExposureLimitContractsTest {
     }
 
     @Test
+    fun `admin self limits override cashier defaults without leaking to cashier defaults`() {
+        val payload = """{"defaults":{"daySale":1000,"q":50,"sp":500},"adminSelf":{"sp":75},"byUser":{"cajero1":{"q":25}}}"""
+
+        val adminLimits = decodeCashierLimitsForSession(
+            payload,
+            ActiveSession(role = UserRole.ADMIN, userId = "admin-id", username = "admin1"),
+        )
+        val cashierLimits = decodeCashierLimitsForSession(
+            payload,
+            ActiveSession(role = UserRole.CASHIER, userId = "cashier-id", username = "cajero1", adminId = "admin-id"),
+        )
+
+        assertEquals(0.0, adminLimits.daySale, 0.001)
+        assertEquals(0.0, adminLimits.typeLimitFor("Q"), 0.001)
+        assertEquals(75.0, adminLimits.typeLimitFor("SP"), 0.001)
+        assertEquals(1000.0, cashierLimits.daySale, 0.001)
+        assertEquals(25.0, cashierLimits.typeLimitFor("Q"), 0.001)
+        assertEquals(500.0, cashierLimits.typeLimitFor("SP"), 0.001)
+    }
+
+    @Test
     fun `quiniela exposure is scoped by owner cashier and number across all lotteries`() {
         val bucket = resolveSaleExposureLimitBucket("Q", "06")
         val tickets = listOf(
@@ -213,17 +234,34 @@ class SaleExposureLimitContractsTest {
     }
 
     @Test
-    fun `admin remaining rows are hidden because admin has no cap`() {
+    fun `admin remaining rows show when admin has self limit`() {
+        val tickets = listOf(
+            ticket(
+                id = "same-admin",
+                adminId = "admin-1",
+                sellerId = "admin-1",
+                plays = listOf(play(number = "526", playType = "P3BOX", amount = 40.0, lotteryId = "p3-old")),
+            ).copy(role = UserRole.ADMIN),
+            ticket(
+                id = "cashier-sale",
+                adminId = "admin-1",
+                sellerId = "cashier-1",
+                plays = listOf(play(number = "256", playType = "P3BOX", amount = 90.0, lotteryId = "p3-old")),
+            ).copy(role = UserRole.CASHIER),
+        )
+
         val rows = resolveSaleLimitRemainingRows(
             role = UserRole.ADMIN,
             stagedRows = listOf(staged(number = "256", playType = "P3BOX", amount = 25.0, lotteryId = "p3-a")),
-            tickets = emptyList(),
+            tickets = tickets,
             ownerKey = "admin-1",
-            cashierKeys = emptySet(),
+            cashierKeys = setOf("admin-1", "admin1"),
             limits = CashierLimits(pick3Box = 10.0),
         )
 
-        assertEquals(emptyList<SaleLimitRemainingRow>(), rows)
+        assertEquals(1, rows.size)
+        assertEquals(40.0, rows.first().sold, 0.001)
+        assertEquals(0.0, rows.first().remaining, 0.001)
     }
 
     @Test

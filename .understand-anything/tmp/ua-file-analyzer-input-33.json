@@ -1,0 +1,28 @@
+{
+  "projectRoot": "C:\\Users\\Randy Cordero\\Desktop\\lotterynet_android",
+  "batchFiles": [
+    {
+      "path": "tools/real-transaction-smoke.mjs",
+      "language": "javascript",
+      "sizeLines": 258,
+      "fileCategory": "code"
+    },
+    {
+      "path": "tools/results-monitor.mjs",
+      "language": "javascript",
+      "sizeLines": 66,
+      "fileCategory": "code"
+    },
+    {
+      "path": "tools/verify-pick-result-gate.mjs",
+      "language": "javascript",
+      "sizeLines": 299,
+      "fileCategory": "code"
+    }
+  ],
+  "batchImportData": {
+    "tools/real-transaction-smoke.mjs": [],
+    "tools/results-monitor.mjs": [],
+    "tools/verify-pick-result-gate.mjs": []
+  }
+}

@@ -41,11 +41,17 @@ data class LotterynetRealtimeSubscription(
             filter = "config_key=eq.recharge_history:$ownerKey",
         )
 
-        fun resultsCache(key: String): LotterynetRealtimeSubscription = LotterynetRealtimeSubscription(
-            channelName = "results-$key",
+        fun resultsDraws(dateKey: String): LotterynetRealtimeSubscription = LotterynetRealtimeSubscription(
+            channelName = "results-draws-$dateKey",
             schema = "public",
-            table = "lotterynet_kv",
-            filter = "key=eq.$key",
+            table = "result_draws",
+            filter = "result_day_key=eq.$dateKey",
         )
+
+        fun resultsCache(key: String): LotterynetRealtimeSubscription = resultsDraws(
+            key.substringAfterLast(':', key),
+        )
+
+        fun resultsSignal(dateKey: String): LotterynetRealtimeSubscription = resultsDraws(dateKey)
     }
 }

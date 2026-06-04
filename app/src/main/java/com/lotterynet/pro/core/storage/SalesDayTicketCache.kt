@@ -3,6 +3,7 @@ package com.lotterynet.pro.core.storage
 import com.lotterynet.pro.core.model.PlayItem
 import com.lotterynet.pro.core.model.TicketRecord
 import com.lotterynet.pro.core.model.UserRole
+import com.lotterynet.pro.core.model.WinningPlayDetail
 import org.json.JSONArray
 import org.json.JSONObject
 
@@ -55,6 +56,7 @@ class SalesDayTicketCache(
 
     private fun ticketFromJson(json: JSONObject): TicketRecord {
         val playsArray = json.optJSONArray("plays") ?: JSONArray()
+        val winningDetailsArray = json.optJSONArray("winningDetails") ?: JSONArray()
         return TicketRecord(
             id = json.optString("id"),
             serial = json.optString("serial").takeIf { it.isNotBlank() },
@@ -87,6 +89,22 @@ class SalesDayTicketCache(
             discount = json.optDouble("discount", 0.0),
             total = json.optDouble("total", 0.0),
             totalPrize = json.optDouble("totalPrize", 0.0),
+            winningDetails = buildList {
+                for (index in 0 until winningDetailsArray.length()) {
+                    val item = winningDetailsArray.optJSONObject(index) ?: continue
+                    add(
+                        WinningPlayDetail(
+                            lotteryName = item.optString("lotteryName"),
+                            playType = item.optString("playType"),
+                            playedNumber = item.optString("playedNumber"),
+                            resultNumber = item.optString("resultNumber"),
+                            hitPosition = item.optString("hitPosition"),
+                            amount = item.optDouble("amount", 0.0),
+                            payoutAmount = item.optDouble("payoutAmount", 0.0),
+                        ),
+                    )
+                }
+            },
             status = json.optString("status", "active"),
             note = json.optString("note").takeIf { it.isNotBlank() },
         )

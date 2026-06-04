@@ -159,6 +159,42 @@ class OperationalScopeContractsTest {
     }
 
     @Test
+    fun `cashier display name scope is ignored when duplicated in same admin`() {
+        val session = ActiveSession(
+            role = UserRole.ADMIN,
+            userId = "ADM-1",
+            username = "admin01",
+            banca = "Banca Central",
+        )
+        val firstCashier = UserAccount(
+            id = "CAJ-1",
+            user = "banca01",
+            displayName = "Banca Juan",
+            role = UserRole.CASHIER,
+            adminId = "ADM-1",
+            adminUser = "admin01",
+            banca = "Banca Central",
+        )
+        val secondCashier = firstCashier.copy(id = "CAJ-2", user = "moreno01")
+        val ambiguousTicket = TicketRecord(
+            id = "ambiguous",
+            sellerId = null,
+            sellerUser = "Banca Juan",
+            adminId = "other-admin",
+            adminUser = "other-admin",
+            role = UserRole.CASHIER,
+        )
+
+        val visible = filterTicketsForOperationalScope(
+            session = session,
+            tickets = listOf(ambiguousTicket),
+            cashiers = listOf(firstCashier, secondCashier),
+        )
+
+        assertEquals(emptyList<String>(), visible.map { it.id })
+    }
+
+    @Test
     fun `admin monitor includes cashiers assigned by session admin id`() {
         val session = ActiveSession(
             role = UserRole.ADMIN,

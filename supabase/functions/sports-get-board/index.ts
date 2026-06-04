@@ -11,9 +11,81 @@ function toNumber(value: unknown): number | null {
   return Number.isFinite(parsed) ? parsed : null;
 }
 
+function asPayload(value: unknown): JsonMap {
+  return value && typeof value === "object" && !Array.isArray(value) ? value as JsonMap : {};
+}
+
 function normalizeMarketKey(value: unknown): string {
   const key = clean(value).toLowerCase();
   return ["moneyline", "runline", "spread", "total", "first_half", "first_five"].includes(key) ? key : "";
+}
+
+function isPrimarySportsBetType(marketKey: string, betType: string, selectionLabel: string): boolean {
+  const type = clean(betType).toLowerCase();
+  const label = clean(selectionLabel).toLowerCase();
+  if (marketKey === "moneyline") return type === "" || type === "moneyline";
+  if (marketKey === "runline") return type === "" || type === "runline";
+  if (marketKey === "spread") return type === "" || type === "spread" || type === "handicap";
+  if (marketKey === "total") {
+    if (type && type !== "total" && type !== "totals") return false;
+    return !/(corner|corners|card|cards|shot|shots|goal scorer|player|team total|1st half|first half)/.test(label);
+  }
+  if (marketKey === "first_half") return type.includes("half");
+  if (marketKey === "first_five") return type.includes("5");
+  return false;
+}
+
+function normalizedSelectionKey(value: string): string {
+  return clean(value)
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9.+-]+/g, " ")
+    .trim()
+    .replace(/\s+/g, " ");
+}
+
+function displaySelectionLabel(source: JsonMap, rawLabel: unknown, event: JsonMap, marketKey: string, point: number | null): string {
+  const side = clean(source.side).toLowerCase();
+  const withPoint = (label: string): string => {
+    if ((marketKey === "spread" || marketKey === "runline") && point !== null && point !== 0) {
+      const sign = point > 0 ? "+" : "";
+      return `${label} ${sign}${point}`;
+    }
+    if (marketKey === "total" && point !== null && point > 0 && !/\d/.test(label)) {
+      return `${label} ${point}`;
+    }
+    return label;
+  };
+  if (side === "home") return withPoint(clean(event.home_team) || clean(rawLabel));
+  if (side === "away") return withPoint(clean(event.away_team) || clean(rawLabel));
+  if (side === "over") return withPoint("Over");
+  if (side === "under") return withPoint("Under");
+  if (side === "draw") return "Empate";
+  const label = clean(rawLabel);
+  if (label === "1") return withPoint(clean(event.home_team) || label);
+  if (label === "2") return withPoint(clean(event.away_team) || label);
+  if (label.toLowerCase() === "x") return "Empate";
+  return withPoint(label);
+}
+
+function selectionGroupKey(source: JsonMap, label: string, marketKey: string): string {
+  const side = clean(source.side).toLowerCase();
+  if (marketKey === "moneyline") {
+    if (["home", "away", "draw"].includes(side)) return `${marketKey}:${side}`;
+    const normalized = normalizedSelectionKey(label);
+    if (normalized === "1") return `${marketKey}:home`;
+    if (normalized === "2") return `${marketKey}:away`;
+    if (normalized === "x" || normalized === "draw" || normalized === "empate") return `${marketKey}:draw`;
+  }
+  if (marketKey === "spread" || marketKey === "runline") {
+    if (side === "home" || side === "away") return `${marketKey}:${side}`;
+  }
+  if (marketKey === "total") {
+    if (side === "over" || normalizedSelectionKey(label).startsWith("over")) return `${marketKey}:over`;
+    if (side === "under" || normalizedSelectionKey(label).startsWith("under")) return `${marketKey}:under`;
+  }
+  return `${marketKey}:${normalizedSelectionKey(label)}`;
 }
 
 function normalizeTeamName(value: unknown): string {
@@ -45,11 +117,13 @@ Deno.serve(async (req: Request) => {
   if (action !== "fetch") return json({ ok: false, message: "Accion no soportada." }, 400);
 
   const sportKey = clean(body.sportKey);
+  const includeQa = body.includeQa === true || clean(body.league).toLowerCase() === "qa";
   const supabase = supabaseAdmin();
   let query = supabase
     .from("sports_events")
     .select(`
       id,
+      provider,
       sport_key,
       sport_title,
       league_title,
@@ -73,7 +147,8 @@ Deno.serve(async (req: Request) => {
           american_odds,
           point,
           status,
-          last_updated
+          last_updated,
+          source_payload
         )
       )
     `)
@@ -83,6 +158,7 @@ Deno.serve(async (req: Request) => {
     .limit(80);
 
   if (sportKey) query = query.eq("sport_key", sportKey);
+  if (!includeQa) query = query.neq("provider", "codex-qa");
 
   const { data, error } = await query;
   if (error) return json({ ok: false, message: error.message }, 500);
@@ -109,6 +185,38 @@ Deno.serve(async (req: Request) => {
     for (const market of Array.isArray(event.sports_markets) ? event.sports_markets as JsonMap[] : []) {
       const marketKey = normalizeMarketKey(market.market_key);
       if (!marketKey) continue;
+      const marketOdds: JsonMap[] = [];
+      const seenSelections = new Set<string>();
+      const rawOdds = (Array.isArray(market.sports_odds) ? market.sports_odds as JsonMap[] : [])
+        .slice()
+        .sort((left, right) => Math.abs((toNumber(left.decimal_odds) ?? 99) - 1.91) - Math.abs((toNumber(right.decimal_odds) ?? 99) - 1.91));
+      for (const odd of rawOdds) {
+        const decimalOdds = toNumber(odd.decimal_odds);
+        if (!decimalOdds || decimalOdds <= 1) continue;
+        const source = asPayload(odd.source_payload);
+        const period = clean(source.period).toLowerCase();
+        const betType = clean(source.bet_type || source.market_key || market.market_key).toLowerCase();
+        const point = toNumber(odd.point);
+        const selectionLabel = displaySelectionLabel(source, odd.selection_label, event, marketKey, point);
+        const selectionIdentity = selectionGroupKey(source, selectionLabel, marketKey);
+        if (period && period !== "full time") continue;
+        if (!isPrimarySportsBetType(marketKey, betType, selectionLabel)) continue;
+        if (seenSelections.has(selectionIdentity)) continue;
+        seenSelections.add(selectionIdentity);
+        marketOdds.push({
+          id: clean(odd.id),
+          marketId: clean(odd.market_id || market.id),
+          selectionKey: clean(odd.selection_key),
+          selectionLabel,
+          decimalOdds,
+          americanOdds: toNumber(odd.american_odds),
+          point,
+          status: clean(odd.status) || "open",
+          lastUpdated: clean(odd.last_updated),
+        });
+      }
+      if (marketOdds.length === 0) continue;
+      const maxOddsForMarket = marketKey === "moneyline" ? 3 : 4;
       markets.push({
         id: clean(market.id),
         eventId: clean(market.event_id || event.id),
@@ -117,21 +225,7 @@ Deno.serve(async (req: Request) => {
         status: clean(market.status) || "open",
         line: toNumber(market.line),
       });
-      for (const odd of Array.isArray(market.sports_odds) ? market.sports_odds as JsonMap[] : []) {
-        const decimalOdds = toNumber(odd.decimal_odds);
-        if (!decimalOdds || decimalOdds <= 1) continue;
-        odds.push({
-          id: clean(odd.id),
-          marketId: clean(odd.market_id || market.id),
-          selectionKey: clean(odd.selection_key),
-          selectionLabel: clean(odd.selection_label),
-          decimalOdds,
-          americanOdds: toNumber(odd.american_odds),
-          point: toNumber(odd.point),
-          status: clean(odd.status) || "open",
-          lastUpdated: clean(odd.last_updated),
-        });
-      }
+      odds.push(...marketOdds.slice(0, maxOddsForMarket));
     }
 
     return {
@@ -150,6 +244,10 @@ Deno.serve(async (req: Request) => {
       markets,
       odds,
     };
+  }).filter((game: JsonMap) => {
+    const odds = Array.isArray(game.odds) ? game.odds : [];
+    const markets = Array.isArray(game.markets) ? game.markets : [];
+    return odds.length > 0 && markets.length > 0;
   });
 
   return ok({

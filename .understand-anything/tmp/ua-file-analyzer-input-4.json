@@ -1,0 +1,259 @@
+{
+  "projectRoot": "C:\\Users\\Randy Cordero\\Desktop\\lotterynet_android",
+  "batchFiles": [
+    {
+      "path": "app/src/test/java/com/lotterynet/pro/core/operations/TicketOwnerCanonicalizationTest.kt",
+      "language": "kotlin",
+      "sizeLines": 83,
+      "fileCategory": "code"
+    },
+    {
+      "path": "app/src/test/java/com/lotterynet/pro/core/operations/UserAccountOrderingTest.kt",
+      "language": "kotlin",
+      "sizeLines": 37,
+      "fileCategory": "code"
+    },
+    {
+      "path": "app/src/test/java/com/lotterynet/pro/core/sales/SaleExposureLimitContractsTest.kt",
+      "language": "kotlin",
+      "sizeLines": 326,
+      "fileCategory": "code"
+    },
+    {
+      "path": "app/src/test/java/com/lotterynet/pro/core/storage/AdminLotteryConfigContractsTest.kt",
+      "language": "kotlin",
+      "sizeLines": 222,
+      "fileCategory": "code"
+    },
+    {
+      "path": "app/src/test/java/com/lotterynet/pro/core/storage/LocalSalesRepositoryContractsTest.kt",
+      "language": "kotlin",
+      "sizeLines": 149,
+      "fileCategory": "code"
+    },
+    {
+      "path": "app/src/test/java/com/lotterynet/pro/core/storage/LocalUsersRepositorySecurityContractsTest.kt",
+      "language": "kotlin",
+      "sizeLines": 30,
+      "fileCategory": "code"
+    },
+    {
+      "path": "app/src/test/java/com/lotterynet/pro/core/sync/NativeOperationalSyncContractsTest.kt",
+      "language": "kotlin",
+      "sizeLines": 301,
+      "fileCategory": "code"
+    },
+    {
+      "path": "app/src/test/java/com/lotterynet/pro/core/sync/NativeTicketSyncContractsTest.kt",
+      "language": "kotlin",
+      "sizeLines": 82,
+      "fileCategory": "code"
+    },
+    {
+      "path": "app/src/test/java/com/lotterynet/pro/core/users/UserPasswordBackendClientTest.kt",
+      "language": "kotlin",
+      "sizeLines": 33,
+      "fileCategory": "code"
+    },
+    {
+      "path": "app/src/test/java/com/lotterynet/pro/ui/admin/AdminConfigContractsTest.kt",
+      "language": "kotlin",
+      "sizeLines": 212,
+      "fileCategory": "code"
+    },
+    {
+      "path": "app/src/test/java/com/lotterynet/pro/ui/admin/AdminUiContractsTest.kt",
+      "language": "kotlin",
+      "sizeLines": 888,
+      "fileCategory": "code"
+    },
+    {
+      "path": "app/src/test/java/com/lotterynet/pro/ui/admin/AdminWinnersContractsTest.kt",
+      "language": "kotlin",
+      "sizeLines": 182,
+      "fileCategory": "code"
+    },
+    {
+      "path": "app/src/test/java/com/lotterynet/pro/ui/common/NativeChromeContractsTest.kt",
+      "language": "kotlin",
+      "sizeLines": 440,
+      "fileCategory": "code"
+    },
+    {
+      "path": "app/src/test/java/com/lotterynet/pro/ui/finance/FinanceUiContractsTest.kt",
+      "language": "kotlin",
+      "sizeLines": 263,
+      "fileCategory": "code"
+    },
+    {
+      "path": "app/src/test/java/com/lotterynet/pro/ui/login/LoginUiContractsTest.kt",
+      "language": "kotlin",
+      "sizeLines": 124,
+      "fileCategory": "code"
+    },
+    {
+      "path": "app/src/test/java/com/lotterynet/pro/ui/master/MasterUiContractsTest.kt",
+      "language": "kotlin",
+      "sizeLines": 242,
+      "fileCategory": "code"
+    },
+    {
+      "path": "app/src/test/java/com/lotterynet/pro/ui/navigation/NativeRoutingContractsTest.kt",
+      "language": "kotlin",
+      "sizeLines": 43,
+      "fileCategory": "code"
+    },
+    {
+      "path": "app/src/test/java/com/lotterynet/pro/ui/navigation/NavigationSafetyContractsTest.kt",
+      "language": "kotlin",
+      "sizeLines": 268,
+      "fileCategory": "code"
+    },
+    {
+      "path": "app/src/test/java/com/lotterynet/pro/ui/printer/PrinterContractsTest.kt",
+      "language": "kotlin",
+      "sizeLines": 135,
+      "fileCategory": "code"
+    },
+    {
+      "path": "app/src/test/java/com/lotterynet/pro/ui/recharge/RecargasUiContractsTest.kt",
+      "language": "kotlin",
+      "sizeLines": 455,
+      "fileCategory": "code"
+    },
+    {
+      "path": "app/src/test/java/com/lotterynet/pro/ui/report/OperationalReportContractsTest.kt",
+      "language": "kotlin",
+      "sizeLines": 313,
+      "fileCategory": "code"
+    },
+    {
+      "path": "app/src/test/java/com/lotterynet/pro/ui/sales/SalesUiContractsTest.kt",
+      "language": "kotlin",
+      "sizeLines": 2139,
+      "fileCategory": "code"
+    },
+    {
+      "path": "app/src/test/java/com/lotterynet/pro/ui/shell/ShellMenuContractsTest.kt",
+      "language": "kotlin",
+      "sizeLines": 172,
+      "fileCategory": "code"
+    },
+    {
+      "path": "app/src/test/java/com/lotterynet/pro/ui/shell/ShellUiContractsTest.kt",
+      "language": "kotlin",
+      "sizeLines": 190,
+      "fileCategory": "code"
+    },
+    {
+      "path": "app/src/test/java/com/lotterynet/pro/ui/tickets/TicketCollectionContractsTest.kt",
+      "language": "kotlin",
+      "sizeLines": 506,
+      "fileCategory": "code"
+    },
+    {
+      "path": "app/src/test/java/com/lotterynet/pro/ui/tickets/TicketOfficialContractsTest.kt",
+      "language": "kotlin",
+      "sizeLines": 952,
+      "fileCategory": "code"
+    },
+    {
+      "path": "app/src/test/java/com/lotterynet/pro/ui/tickets/TicketSummaryStartupContractsTest.kt",
+      "language": "kotlin",
+      "sizeLines": 105,
+      "fileCategory": "code"
+    },
+    {
+      "path": "app/src/test/java/com/lotterynet/pro/ui/users/UserAccountsFormattingTest.kt",
+      "language": "kotlin",
+      "sizeLines": 590,
+      "fileCategory": "code"
+    }
+  ],
+  "batchImportData": {
+    "app/src/test/java/com/lotterynet/pro/core/operations/TicketOwnerCanonicalizationTest.kt": [
+      "app/src/main/java/com/lotterynet/pro/core/model/UserRole.kt"
+    ],
+    "app/src/test/java/com/lotterynet/pro/core/operations/UserAccountOrderingTest.kt": [
+      "app/src/main/java/com/lotterynet/pro/core/model/UserRole.kt"
+    ],
+    "app/src/test/java/com/lotterynet/pro/core/sales/SaleExposureLimitContractsTest.kt": [
+      "app/src/main/java/com/lotterynet/pro/core/model/UserRole.kt"
+    ],
+    "app/src/test/java/com/lotterynet/pro/core/storage/AdminLotteryConfigContractsTest.kt": [
+      "app/src/main/java/com/lotterynet/pro/core/model/UserRole.kt"
+    ],
+    "app/src/test/java/com/lotterynet/pro/core/storage/LocalSalesRepositoryContractsTest.kt": [
+      "app/src/main/java/com/lotterynet/pro/core/model/UserRole.kt"
+    ],
+    "app/src/test/java/com/lotterynet/pro/core/storage/LocalUsersRepositorySecurityContractsTest.kt": [
+      "app/src/main/java/com/lotterynet/pro/core/model/UserRole.kt"
+    ],
+    "app/src/test/java/com/lotterynet/pro/core/sync/NativeOperationalSyncContractsTest.kt": [
+      "app/src/main/java/com/lotterynet/pro/core/model/UserRole.kt"
+    ],
+    "app/src/test/java/com/lotterynet/pro/core/sync/NativeTicketSyncContractsTest.kt": [
+      "app/src/main/java/com/lotterynet/pro/core/model/UserRole.kt"
+    ],
+    "app/src/test/java/com/lotterynet/pro/core/users/UserPasswordBackendClientTest.kt": [
+      "app/src/main/java/com/lotterynet/pro/core/model/UserRole.kt"
+    ],
+    "app/src/test/java/com/lotterynet/pro/ui/admin/AdminConfigContractsTest.kt": [
+      "app/src/main/java/com/lotterynet/pro/core/model/UserRole.kt"
+    ],
+    "app/src/test/java/com/lotterynet/pro/ui/admin/AdminUiContractsTest.kt": [
+      "app/src/main/java/com/lotterynet/pro/core/model/UserRole.kt"
+    ],
+    "app/src/test/java/com/lotterynet/pro/ui/admin/AdminWinnersContractsTest.kt": [
+      "app/src/main/java/com/lotterynet/pro/core/model/UserRole.kt"
+    ],
+    "app/src/test/java/com/lotterynet/pro/ui/common/NativeChromeContractsTest.kt": [
+      "app/src/main/java/com/lotterynet/pro/core/model/UserRole.kt"
+    ],
+    "app/src/test/java/com/lotterynet/pro/ui/finance/FinanceUiContractsTest.kt": [
+      "app/src/main/java/com/lotterynet/pro/core/model/UserRole.kt"
+    ],
+    "app/src/test/java/com/lotterynet/pro/ui/login/LoginUiContractsTest.kt": [
+      "app/src/main/java/com/lotterynet/pro/core/model/UserRole.kt"
+    ],
+    "app/src/test/java/com/lotterynet/pro/ui/master/MasterUiContractsTest.kt": [
+      "app/src/main/java/com/lotterynet/pro/core/model/UserRole.kt"
+    ],
+    "app/src/test/java/com/lotterynet/pro/ui/navigation/NativeRoutingContractsTest.kt": [
+      "app/src/main/java/com/lotterynet/pro/core/model/UserRole.kt"
+    ],
+    "app/src/test/java/com/lotterynet/pro/ui/navigation/NavigationSafetyContractsTest.kt": [
+      "app/src/main/java/com/lotterynet/pro/core/model/UserRole.kt"
+    ],
+    "app/src/test/java/com/lotterynet/pro/ui/printer/PrinterContractsTest.kt": [
+      "app/src/main/java/com/lotterynet/pro/core/model/UserRole.kt"
+    ],
+    "app/src/test/java/com/lotterynet/pro/ui/recharge/RecargasUiContractsTest.kt": [
+      "app/src/main/java/com/lotterynet/pro/core/model/UserRole.kt"
+    ],
+    "app/src/test/java/com/lotterynet/pro/ui/report/OperationalReportContractsTest.kt": [
+      "app/src/main/java/com/lotterynet/pro/core/model/UserRole.kt"
+    ],
+    "app/src/test/java/com/lotterynet/pro/ui/sales/SalesUiContractsTest.kt": [
+      "app/src/main/java/com/lotterynet/pro/core/model/UserRole.kt"
+    ],
+    "app/src/test/java/com/lotterynet/pro/ui/shell/ShellMenuContractsTest.kt": [
+      "app/src/main/java/com/lotterynet/pro/core/model/UserRole.kt"
+    ],
+    "app/src/test/java/com/lotterynet/pro/ui/shell/ShellUiContractsTest.kt": [
+      "app/src/main/java/com/lotterynet/pro/core/model/UserRole.kt"
+    ],
+    "app/src/test/java/com/lotterynet/pro/ui/tickets/TicketCollectionContractsTest.kt": [
+      "app/src/main/java/com/lotterynet/pro/core/model/UserRole.kt"
+    ],
+    "app/src/test/java/com/lotterynet/pro/ui/tickets/TicketOfficialContractsTest.kt": [
+      "app/src/main/java/com/lotterynet/pro/core/model/UserRole.kt"
+    ],
+    "app/src/test/java/com/lotterynet/pro/ui/tickets/TicketSummaryStartupContractsTest.kt": [
+      "app/src/main/java/com/lotterynet/pro/core/model/UserRole.kt"
+    ],
+    "app/src/test/java/com/lotterynet/pro/ui/users/UserAccountsFormattingTest.kt": [
+      "app/src/main/java/com/lotterynet/pro/core/model/UserRole.kt"
+    ]
+  }
+}

@@ -5,7 +5,8 @@ import { readFile } from "node:fs/promises";
 const SUPABASE_URL = "https://unhoulkujbtsypccpirc.supabase.co";
 const API_KEY = "sb_publishable_A0LxL11fjdQGehmIPnyPZQ_6ty7T8lK";
 const PROJECT_ROOT = new URL("../../", import.meta.url);
-const CREDENTIAL_FILE = process.env.LOTTERYNET_CREDENTIAL_FILE || new URL("contraseña de prueba.txt", PROJECT_ROOT);
+const CREDENTIAL_FILE = process.env.LOTTERYNET_CREDENTIAL_FILE ||
+  "C:/Users/Randy Cordero/Documents/LotteryNet-Secrets/contraseña de prueba.txt";
 const RUN_ID = `clocksec${Date.now()}`;
 const ADMIN_USERNAME = "podero02";
 const CASHIER_USERNAME = "bancae01";
@@ -48,10 +49,17 @@ function edge(slug, body, token = API_KEY) {
 }
 
 function parseCredentials(text) {
-  return [...text.matchAll(/Usuario:\s*([^\r\n]+)\s*[\r\n]+Clave:\s*([^\r\n]+)/gi)].map((match) => ({
+  const blockRows = [...text.matchAll(/Usuario:\s*([^\r\n]+)\s*[\r\n]+Clave:\s*([^\r\n]+)/gi)].map((match) => ({
     username: clean(match[1]),
     password: clean(match[2]),
   }));
+  const looseRows = [...text.matchAll(/id\s+([^\s]+)\s+contrase(?:ñ|n)a\s+([^\s]+)/gi)].map((match) => ({
+    username: clean(match[1]),
+    password: clean(match[2]),
+  }));
+  const byUser = new Map();
+  for (const row of [...looseRows, ...blockRows]) byUser.set(lower(row.username), row);
+  return [...byUser.values()];
 }
 
 function allAccounts(payload) {

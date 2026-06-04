@@ -1,15 +1,9 @@
-import { createClient } from '@supabase/supabase-js';
 import type { UserAccount, TicketRecord, LotteryCatalogItem, AuditLog, DrawResult } from '../types';
-
-// Supabase configuration from environment variables or empty strings for mock fallback
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
-const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
-
-export const isSupabaseConfigured = supabaseUrl && supabaseKey;
-
-export const supabase = isSupabaseConfigured
-  ? createClient(supabaseUrl, supabaseKey)
-  : null;
+import { buildMasterConfigKey, getMasterConfig, saveMasterConfig } from './masterConfig';
+export { isSupabaseConfigured, supabase } from './supabaseClient';
+import { isSupabaseConfigured, supabase } from './supabaseClient';
+import { getTodayResultDateKeyDR, sameResultDay, toResultCacheDateKey } from './resultDates';
+import { mapAccountToRemoteUser, mapRemoteUserToAccount } from './userMapping';
 
 // Complete static lotteries catalog matching exactly the Android KMP application
 const usPickDrawSpecs = [
@@ -572,37 +566,38 @@ export const addAuditLog = async (
 };
 
 // USER MANAGEMENT CRUD
+const accountArray = (value: unknown): Record<string, unknown>[] => Array.isArray(value) ? value as Record<string, unknown>[] : [];
+
+const normalizeRemoteUsersPayload = (payload: any): any[] => {
+  if (Array.isArray(payload?.users)) return payload.users;
+  const supervisors = [
+    ...accountArray(payload?.supervisores),
+    ...accountArray(payload?.supervisors),
+  ];
+  const merged = [
+    ...accountArray(payload?.admins),
+    ...supervisors,
+    ...accountArray(payload?.cajeros),
+  ];
+  const seen = new Set<string>();
+  return merged.filter((user) => {
+    const key = String(user.id || user.user || user.username || '').trim().toLowerCase();
+    if (!key || seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+};
+
 export const fetchUsers = async (): Promise<UserAccount[]> => {
   if (isSupabaseConfigured && supabase) {
     try {
       // In Supabase, the Android app reads from a global users state. 
       // We will read from a local storage mirror or fetch users if stored as relations.
       const { data, error } = await supabase.from('lotterynet_users_state').select('payload').eq('scope', 'global').maybeSingle();
-      if (!error && data?.payload?.users) {
-        const rawUsers = data.payload.users as any[];
-        return rawUsers.map(u => ({
-          ...u,
-          id: u.id || u.userId || '',
-          user: u.user || u.username || '',
-          role: (u.role || 'UNKNOWN').toUpperCase() as any,
-          displayName: u.nombre || u.displayName || u.ownerName || u.own || 'Sin Nombre',
-          ownerName: u.own || u.ownerName || u.nombre || 'Sin Nombre',
-          address: u.addr || u.address || '',
-          active: u.activo !== false && u.blocked !== true,
-          banca: u.banca || '',
-          cashierPrefix: u.cajPrefix || u.cashierPrefix || '',
-          createdLabel: u.creado || u.createdLabel || '',
-          territory: u.territory || 'RD',
-          phone: u.tel || u.phone || '',
-          balance: Number(u.balance ?? 0.0),
-          rechargesEnabled: u.recargasEnabled ?? u.rechargesEnabled ?? false,
-          rechargesAssignedBalance: Number(u.recargasAssignedBalance ?? u.rechargesAssignedBalance ?? 0.0),
-          rechargesBalance: Number(u.recargasBalance ?? u.rechargesBalance ?? 0.0),
-          commissionRate: u.commissionRate ? (u.commissionRate > 1 ? u.commissionRate : u.commissionRate * 100) : 8.0,
-          supervisorIds: u.supervisorIds || [],
-          supervisorUsers: u.supervisorUsers || [],
-          lastSeenAtEpochMs: u.lastSeenAt || u.updatedAt || Date.now()
-        }));
+      if (!error && data?.payload) {
+        const rawUsers = normalizeRemoteUsersPayload(data.payload);
+        if (rawUsers.length === 0) return [];
+        return rawUsers.map(mapRemoteUserToAccount);
       }
     } catch (e) {
       console.warn('Failed to fetch from Supabase, loading mock users', e);
@@ -617,34 +612,25 @@ export const saveAllUsers = async (users: UserAccount[]): Promise<void> => {
   if (isSupabaseConfigured && supabase) {
     try {
       // Map back to both Android and Web properties for 100% compatibility
-      const mappedUsers = users.map(u => ({
-        ...u,
-        id: u.id,
-        userId: u.id,
-        user: u.user,
-        username: u.user,
-        role: u.role.toLowerCase(),
-        nombre: u.displayName,
-        displayName: u.displayName,
-        own: u.ownerName,
-        ownerName: u.ownerName,
-        addr: u.address,
-        address: u.address,
-        activo: u.active,
-        active: u.active,
-        blocked: !u.active,
-        cajPrefix: u.cashierPrefix,
-        cashierPrefix: u.cashierPrefix,
-        creado: u.createdLabel,
-        createdLabel: u.createdLabel,
-        tel: u.phone,
-        phone: u.phone,
-        commissionRate: u.commissionRate ? (u.commissionRate > 1 ? u.commissionRate / 100 : u.commissionRate) : 0.08,
-        lastSeenAt: u.lastSeenAtEpochMs || Date.now(),
-        updatedAt: Date.now()
-      }));
+      const mappedUsers = users.map(mapAccountToRemoteUser);
+      const { data: current } = await supabase
+        .from('lotterynet_users_state')
+        .select('payload')
+        .eq('scope', 'global')
+        .maybeSingle();
+      const currentPayload = (current?.payload || {}) as Record<string, unknown>;
+      const usesLegacyShape = !Array.isArray((currentPayload as any).users) &&
+        (Array.isArray((currentPayload as any).admins) || Array.isArray((currentPayload as any).cajeros) || Array.isArray((currentPayload as any).supervisores));
 
-      const payload = { users: mappedUsers };
+      const payload = usesLegacyShape
+        ? {
+          ...currentPayload,
+          admins: mappedUsers.filter((u: any) => String(u.role).toUpperCase() === 'ADMIN'),
+          supervisores: mappedUsers.filter((u: any) => String(u.role).toUpperCase() === 'SUPERVISOR'),
+          supervisors: mappedUsers.filter((u: any) => String(u.role).toUpperCase() === 'SUPERVISOR'),
+          cajeros: mappedUsers.filter((u: any) => String(u.role).toUpperCase() === 'CASHIER'),
+        }
+        : { ...currentPayload, users: mappedUsers };
       const { error } = await supabase
         .from('lotterynet_users_state')
         .upsert({ scope: 'global', payload, updated_at: new Date().toISOString() });
@@ -992,6 +978,15 @@ export const getAdminLimitsPayload = async (adminId: string): Promise<string> =>
 
 export const saveAdminLimitsPayload = async (adminId: string, payload: string): Promise<void> => {
   localStorage.setItem(`lotterynet_limits_${adminId}`, payload);
+  const parsedPayload = JSON.parse(payload);
+
+  if (isSupabaseConfigured && supabase) {
+    try {
+      await saveMasterConfig(buildMasterConfigKey('cashier_limits', adminId), parsedPayload);
+    } catch (e) {
+      console.warn(`Failed to save cashier_limits:${adminId} to master_state, keeping compatibility cache`, e);
+    }
+  }
   
   const users = await fetchUsers();
   const adminIndex = users.findIndex(u => u.id === adminId && u.role === 'ADMIN');
@@ -1047,6 +1042,17 @@ export const getAdminPayoutsPayload = async (adminId: string): Promise<string> =
 
   if (isSupabaseConfigured && supabase) {
     try {
+      const masterPayload = await getMasterConfig<PayoutsPayload | null>(
+        buildMasterConfigKey('cashier_prize_payouts', adminId),
+        null
+      );
+      if (masterPayload) {
+        return JSON.stringify({
+          defaults: { ...defaultPayouts.defaults, ...masterPayload.defaults },
+          byUser: masterPayload.byUser || {}
+        });
+      }
+
       const { data, error } = await supabase
         .from('lotterynet_kv')
         .select('value')
@@ -1072,10 +1078,18 @@ export const getAdminPayoutsPayload = async (adminId: string): Promise<string> =
 
 export const saveAdminPayoutsPayload = async (adminId: string, payload: string): Promise<void> => {
   localStorage.setItem(`lotterynet_payouts_${adminId}`, payload);
+  const parsed = JSON.parse(payload);
 
   if (isSupabaseConfigured && supabase) {
     try {
-      const parsed = JSON.parse(payload);
+      await saveMasterConfig(buildMasterConfigKey('cashier_prize_payouts', adminId), parsed);
+    } catch (e) {
+      console.warn(`Failed to upsert cashier_prize_payouts:${adminId} to master_state, trying KV fallback`, e);
+    }
+  }
+
+  if (isSupabaseConfigured && supabase) {
+    try {
       await supabase
         .from('lotterynet_kv')
         .upsert({
@@ -1090,22 +1104,84 @@ export const saveAdminPayoutsPayload = async (adminId: string, payload: string):
 };
 
 
-// Helper: get today's date in DD-MM-YYYY format (Dominican Republic timezone UTC-4)
-const getTodayDateKeyDR = (): string => {
-  const now = new Date();
-  // Approximate DR timezone by subtracting 4 hours from UTC
-  const drTime = new Date(now.getTime() - 4 * 60 * 60 * 1000);
-  const dd = String(drTime.getUTCDate()).padStart(2, '0');
-  const mm = String(drTime.getUTCMonth() + 1).padStart(2, '0');
-  const yyyy = drTime.getUTCFullYear();
-  return `${dd}-${mm}-${yyyy}`;
+const normalizeResultNumbers = (row: any): string => {
+  const arrayLike = row.numbers || row.n || row.result || row.results || row.winningNumbers || row.digits;
+  if (Array.isArray(arrayLike)) {
+    const joined = arrayLike.map((part: unknown) => String(part).trim()).filter(Boolean).join('-');
+    if (joined) return joined;
+  }
+
+  const compact = String(row.number || row.numero || row.numbers || row.result || row.results || row.pick3 || row.pick4 || '').trim();
+  if (compact) return compact;
+
+  const parts = [
+    row.first || row.primera || row['1ra'] || row['1era'],
+    row.second || row.segunda || row['2da'],
+    row.third || row.tercera || row['3ra'],
+  ].map((part) => String(part || '').trim()).filter(Boolean);
+
+  return parts.join('-');
+};
+
+const rowsToDrawResults = (rows: any[], fallbackDateKey: string, seenIds: Set<string>, sourceKind: 'lot' | 'pick'): DrawResult[] => {
+  const results: DrawResult[] = [];
+
+  for (const r of rows) {
+    const lotteryId = String(r.id || r.lotteryId || '').trim();
+    const numbers = normalizeResultNumbers(r);
+    if (!lotteryId || !numbers) continue;
+
+    const dateKey = toResultCacheDateKey(String(r.date || r.dateKey || fallbackDateKey));
+    const uniqueId = `${sourceKind}:${lotteryId}:${dateKey}`;
+    if (seenIds.has(uniqueId)) continue;
+    seenIds.add(uniqueId);
+
+    results.push({
+      id: uniqueId,
+      lotteryId,
+      lotteryName: String(r.name || r.lotteryName || lotteryId),
+      dateKey,
+      numbers,
+    });
+  }
+
+  return results;
+};
+
+const readResultCacheRows = (value: unknown): any[] => {
+  try {
+    const parsed = typeof value === 'string' ? JSON.parse(value) : value;
+    if (Array.isArray(parsed)) return parsed;
+    if (parsed && typeof parsed === 'object') {
+      const obj = parsed as any;
+      if (Array.isArray(obj.results)) return obj.results;
+      if (Array.isArray(obj.rows)) return obj.rows;
+    }
+  } catch (e) {
+    console.warn('Failed to parse result cache row', e);
+  }
+  return [];
+};
+
+const cacheRowsToDrawResults = (rows: { key: string; value: unknown }[], defaultDateKey: string): DrawResult[] => {
+  const results: DrawResult[] = [];
+  const seenIds = new Set<string>();
+
+  for (const row of rows) {
+    const fallbackDateKey = String(row.key || '').split(':').pop() || defaultDateKey;
+    const sourceKind = String(row.key || '').startsWith('pick_results_cache_by_day:') ? 'pick' : 'lot';
+    results.push(...rowsToDrawResults(readResultCacheRows(row.value), fallbackDateKey, seenIds, sourceKind));
+  }
+
+  return results;
 };
 
 // Reads real draw results from lotterynet_kv (keys: lot_results_cache_by_day:<date> and pick_results_cache_by_day:<date>)
 export const fetchDrawResults = async (dateOverride?: string): Promise<DrawResult[]> => {
+  const dateKey = toResultCacheDateKey(dateOverride || getTodayResultDateKeyDR());
+
   if (isSupabaseConfigured && supabase) {
     try {
-      const dateKey = dateOverride || getTodayDateKeyDR();
       const lotKey = `lot_results_cache_by_day:${dateKey}`;
       const pickKey = `pick_results_cache_by_day:${dateKey}`;
 
@@ -1115,29 +1191,7 @@ export const fetchDrawResults = async (dateOverride?: string): Promise<DrawResul
         .in('key', [lotKey, pickKey]);
 
       if (!error && data && data.length > 0) {
-        const results: DrawResult[] = [];
-        const seenIds = new Set<string>();
-
-        for (const row of data) {
-          const rawRows = typeof row.value === 'string' ? JSON.parse(row.value) : row.value;
-          if (!Array.isArray(rawRows)) continue;
-
-          for (const r of rawRows) {
-            const lotteryId = String(r.id || '');
-            const uniqueId = `${lotteryId}:${r.date || dateKey}`;
-            if (seenIds.has(uniqueId)) continue;
-            seenIds.add(uniqueId);
-
-            results.push({
-              id: uniqueId,
-              lotteryId,
-              lotteryName: r.name || '',
-              dateKey: r.date || dateKey,
-              numbers: r.number || '',
-            });
-          }
-        }
-
+        const results = cacheRowsToDrawResults(data, dateKey);
         return results;
       }
     } catch (e) {
@@ -1147,7 +1201,12 @@ export const fetchDrawResults = async (dateOverride?: string): Promise<DrawResul
 
   // Fallback to local storage
   const saved = localStorage.getItem('lotterynet_results');
-  if (saved) return JSON.parse(saved);
+  if (saved) {
+    const parsed = JSON.parse(saved);
+    if (Array.isArray(parsed)) {
+      return parsed.filter((result: DrawResult) => sameResultDay(result.dateKey, dateKey));
+    }
+  }
   return [];
 };
 
@@ -1194,6 +1253,18 @@ export const getAdminSystemModeConfig = async (adminId: string): Promise<AdminSy
 
   if (isSupabaseConfigured && supabase) {
     try {
+      const masterPayload = await getMasterConfig<Partial<AdminSystemModeConfig> | null>(
+        buildMasterConfigKey('system_modes', adminId),
+        null
+      );
+      if (masterPayload) {
+        return {
+          ...defaultVal,
+          ...masterPayload,
+          blockedSalePlays: Array.isArray(masterPayload.blockedSalePlays) ? masterPayload.blockedSalePlays : []
+        };
+      }
+
       const { data, error } = await supabase
         .from('lotterynet_kv')
         .select('value')
@@ -1232,6 +1303,12 @@ export const saveAdminSystemModeConfig = async (adminId: string, config: AdminSy
 
   if (isSupabaseConfigured && supabase) {
     try {
+      await saveMasterConfig(buildMasterConfigKey('system_modes', adminId), payload);
+    } catch (e) {
+      console.warn(`Failed to upsert system_modes:${adminId} to master_state, trying KV fallback`, e);
+    }
+
+    try {
       const { error } = await supabase
         .from('lotterynet_kv')
         .upsert({
@@ -1239,7 +1316,10 @@ export const saveAdminSystemModeConfig = async (adminId: string, config: AdminSy
           value: payload,
           updated_at: new Date().toISOString()
         });
-      if (!error) return;
+      if (!error) {
+        localStorage.setItem(`lotterynet_system_modes_${adminId}`, JSON.stringify(payload));
+        return;
+      }
     } catch (e) {
       console.warn(`Failed to upsert system_modes:${adminId} to Supabase, saving locally`, e);
     }
@@ -1268,6 +1348,22 @@ export const getManualDisabledLotteries = async (adminId: string): Promise<Manua
 
   if (isSupabaseConfigured && supabase) {
     try {
+      const masterPayload = await getMasterConfig<Partial<ManualDisabledLotteryConfig> | null>(
+        buildMasterConfigKey('manual_disabled_lotteries', adminId),
+        null
+      );
+      if (masterPayload) {
+        const isStillActive = masterPayload.permanent || masterPayload.date === todayStr;
+        if (isStillActive) {
+          return {
+            ...defaultVal,
+            ...masterPayload,
+            ids: Array.isArray(masterPayload.ids) ? masterPayload.ids : []
+          };
+        }
+        return defaultVal;
+      }
+
       const { data, error } = await supabase
         .from('lotterynet_kv')
         .select('value')
@@ -1311,6 +1407,12 @@ export const saveManualDisabledLotteries = async (adminId: string, config: Manua
 
   if (isSupabaseConfigured && supabase) {
     try {
+      await saveMasterConfig(buildMasterConfigKey('manual_disabled_lotteries', adminId), payload);
+    } catch (e) {
+      console.warn(`Failed to upsert manual_disabled_lotteries:${adminId} to master_state, trying KV fallback`, e);
+    }
+
+    try {
       const { error } = await supabase
         .from('lotterynet_kv')
         .upsert({
@@ -1318,7 +1420,10 @@ export const saveManualDisabledLotteries = async (adminId: string, config: Manua
           value: payload,
           updated_at: new Date().toISOString()
         });
-      if (!error) return;
+      if (!error) {
+        localStorage.setItem(`lotterynet_manual_disabled_lotteries_${adminId}`, JSON.stringify(payload));
+        return;
+      }
     } catch (e) {
       console.warn(`Failed to upsert manual_disabled_lotteries:${adminId} to Supabase, saving locally`, e);
     }

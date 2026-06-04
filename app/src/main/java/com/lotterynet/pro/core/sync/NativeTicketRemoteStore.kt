@@ -6,7 +6,7 @@ import com.lotterynet.pro.core.remote.SupabaseEdgeClient
 import org.json.JSONArray
 import org.json.JSONObject
 
-private const val REMOTE_UPDATED_AT_CACHE_TTL_MS = 60_000L
+private const val REMOTE_UPDATED_AT_CACHE_TTL_MS = 120_000L
 
 data class NativeTicketRemoteSnapshot(
     val tickets: List<TicketRecord> = emptyList(),
@@ -68,10 +68,17 @@ class NativeTicketRemoteStore(
             "get-ticket-list",
             JSONObject()
                 .put("action", "updated-at")
-                .put("ownerKey", key),
+                .put("ownerKey", key)
+                .put("includeOfficialStamp", false),
         ).optString("updatedAt").ifBlank { null }.also {
             cacheTicketUpdatedAt(key, it)
         }
+    }
+
+    fun fetchUpdatedAtFresh(ownerKey: String): String? {
+        val key = ownerKey.trim().takeIf { it.isNotBlank() } ?: return null
+        invalidateTicketUpdatedAtCache(key)
+        return fetchUpdatedAt(key)
     }
 
     private fun Any.toRawJsonString(): String {

@@ -1,0 +1,21 @@
+{
+  "nodes": [
+    {
+      "id": "file:.github/workflows/scrape.yml",
+      "type": "pipeline",
+      "name": "scrape.yml",
+      "summary": "Infrastructure or automation definition for scrape.yml.",
+      "tags": [
+        "infra",
+        "infrastructure"
+      ],
+      "complexity": "simple",
+      "filePath": ".github/workflows/scrape.yml",
+      "lineRange": [
+        1,
+        29
+      ]
+    }
+  ],
+  "edges": []
+}

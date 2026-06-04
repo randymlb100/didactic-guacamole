@@ -7,6 +7,7 @@ import com.lotterynet.pro.core.model.CloseState
 import com.lotterynet.pro.core.model.TicketRecord
 import com.lotterynet.pro.core.storage.AdminSystemModeConfig
 import com.lotterynet.pro.ui.common.ActionTone
+import java.security.MessageDigest
 import java.util.Locale
 
 internal enum class LotteryPickerTarget {
@@ -36,6 +37,77 @@ internal data class SaleThermalPrintResult(
     val closePreview: Boolean,
     val openPrinterSettings: Boolean,
 )
+
+internal data class SaleSaveGateDecision(
+    val canStartSave: Boolean,
+    val message: String? = null,
+)
+
+internal data class SaleSubmissionIdentity(
+    val clientRequestId: String,
+    val fingerprint: String,
+    val createdAtEpochMs: Long,
+)
+
+internal fun resolveSaleSaveGate(
+    isSaveInFlight: Boolean,
+    stagedRowCount: Int,
+): SaleSaveGateDecision {
+    return when {
+        isSaveInFlight -> SaleSaveGateDecision(
+            canStartSave = false,
+            message = "Venta ya está validando. Espera que termine.",
+        )
+        stagedRowCount <= 0 -> SaleSaveGateDecision(
+            canStartSave = false,
+            message = "No hay jugadas para guardar",
+        )
+        else -> SaleSaveGateDecision(canStartSave = true)
+    }
+}
+
+internal fun buildSaleSubmissionFingerprint(
+    adminId: String?,
+    adminUser: String?,
+    sellerId: String?,
+    sellerUser: String?,
+    drawDateKey: String,
+    rows: List<com.lotterynet.pro.core.model.SaleStagedRow>,
+): String {
+    val raw = buildString {
+        append(adminId.orEmpty().trim()).append('|')
+        append(adminUser.orEmpty().trim()).append('|')
+        append(sellerId.orEmpty().trim()).append('|')
+        append(sellerUser.orEmpty().trim()).append('|')
+        append(drawDateKey.trim()).append('|')
+        rows.forEach { row ->
+            append(row.lotteryId.trim()).append(',')
+            append(row.lotteryName.trim()).append(',')
+            append(row.secondaryLotteryId.orEmpty().trim()).append(',')
+            append(row.secondaryLotteryName.orEmpty().trim()).append(',')
+            append(row.playType.trim()).append(',')
+            append(row.number.trim()).append(',')
+            append("%.2f".format(Locale.US, row.amount)).append(';')
+        }
+    }
+    val digest = MessageDigest.getInstance("SHA-256").digest(raw.toByteArray(Charsets.UTF_8))
+    return digest.take(16).joinToString("") { byte -> "%02x".format(byte) }
+}
+
+internal fun resolveSaleSubmissionIdentity(
+    current: SaleSubmissionIdentity?,
+    nextFingerprint: String,
+    nowEpochMs: Long,
+): SaleSubmissionIdentity {
+    if (current != null && current.fingerprint == nextFingerprint) {
+        return current
+    }
+    return SaleSubmissionIdentity(
+        clientRequestId = "native-$nowEpochMs",
+        fingerprint = nextFingerprint,
+        createdAtEpochMs = nowEpochMs,
+    )
+}
 
 internal enum class SaleThermalPrintTarget {
     BLUETOOTH,

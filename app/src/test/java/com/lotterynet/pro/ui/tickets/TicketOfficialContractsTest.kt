@@ -8,6 +8,7 @@ import com.lotterynet.pro.core.model.LotteryCatalogItem
 import com.lotterynet.pro.core.model.ActiveSession
 import com.lotterynet.pro.core.model.PlayItem
 import com.lotterynet.pro.core.model.TicketRecord
+import com.lotterynet.pro.core.model.WinningPlayDetail
 import com.lotterynet.pro.core.model.UserAccount
 import com.lotterynet.pro.core.model.UserRole
 import com.lotterynet.pro.core.render.ticketRenderCacheKey
@@ -34,6 +35,32 @@ class TicketOfficialContractsTest {
     }
 
     @Test
+    fun `official ticket candidate can recover refreshed winner by serial`() {
+        val staleSnapshot = TicketRecord(
+            id = "native-1780487188705",
+            serial = "LN-D79F72-43362F",
+            status = "active",
+            totalPrize = 0.0,
+        )
+        val refreshedWinner = staleSnapshot.copy(
+            id = "eb702835-0ae5-4d4f-9a88-af718fef5dee",
+            status = "winner",
+            totalPrize = 76.0,
+        )
+
+        val candidate = findOfficialTicketCandidate(
+            tickets = listOf(refreshedWinner),
+            ticketId = staleSnapshot.id,
+            snapshot = staleSnapshot,
+        )
+        val initial = resolveInitialOfficialTicket(staleSnapshot, candidate)
+
+        assertEquals("eb702835-0ae5-4d4f-9a88-af718fef5dee", candidate?.id)
+        assertEquals("winner", initial?.status)
+        assertEquals(76.0, initial?.totalPrize ?: 0.0, 0.001)
+    }
+
+    @Test
     fun `official ticket startup keeps winning snapshot when repository is stale`() {
         val snapshot = TicketRecord(id = "ticket-1", status = "winner", totalPrize = 500.0)
         val refreshed = snapshot.copy(status = "active", totalPrize = 0.0)
@@ -45,6 +72,73 @@ class TicketOfficialContractsTest {
     }
 
     @Test
+    fun `official ticket startup prefers refreshed plays over empty quick snapshot`() {
+        val snapshot = TicketRecord(
+            id = "ticket-empty-copy",
+            serial = "LN-A50F42-33D384",
+            sellerUser = "bancay01",
+            status = "active",
+            total = 16.0,
+            plays = emptyList(),
+        )
+        val refreshed = snapshot.copy(
+            total = 16.0,
+            plays = listOf(
+                PlayItem(
+                    number = "25",
+                    playType = "Q",
+                    amount = 2.0,
+                    lotteryId = "lot-national",
+                    lotteryName = "Loteria Nacional",
+                ),
+                PlayItem(
+                    number = "03/30",
+                    playType = "SP",
+                    amount = 2.0,
+                    lotteryId = "lot-national",
+                    lotteryName = "Loteria Nacional",
+                ),
+            ),
+        )
+
+        val initial = resolveInitialOfficialTicket(snapshot, refreshed)
+
+        assertEquals(2, initial?.plays?.size)
+        assertEquals(listOf("25", "03/30"), initial?.plays?.map { it.number })
+        assertEquals(listOf("Loteria Nacional", "Loteria Nacional"), initial?.plays?.map { it.lotteryName })
+    }
+
+    @Test
+    fun `official ticket startup keeps winner status while borrowing better refreshed plays`() {
+        val snapshot = TicketRecord(
+            id = "ticket-winner-copy",
+            status = "winner",
+            total = 16.0,
+            totalPrize = 144.0,
+            plays = emptyList(),
+        )
+        val refreshed = snapshot.copy(
+            status = "active",
+            totalPrize = 0.0,
+            plays = listOf(
+                PlayItem(
+                    number = "25",
+                    playType = "Q",
+                    amount = 2.0,
+                    lotteryId = "lot-national",
+                    lotteryName = "Loteria Nacional",
+                ),
+            ),
+        )
+
+        val initial = resolveInitialOfficialTicket(snapshot, refreshed)
+
+        assertEquals("winner", initial?.status)
+        assertEquals(144.0, initial?.totalPrize ?: 0.0, 0.001)
+        assertEquals(listOf("25"), initial?.plays?.map { it.number })
+    }
+
+    @Test
     fun `official ticket intent snapshot round trips ticket payload`() {
         val ticket = TicketRecord(
             id = "ticket-json",
@@ -52,6 +146,18 @@ class TicketOfficialContractsTest {
             sellerUser = "cajero1",
             status = "active",
             total = 35.0,
+            totalPrize = 1800.0,
+            winningDetails = listOf(
+                WinningPlayDetail(
+                    lotteryName = "Anguila Mediodia",
+                    playType = "Q",
+                    playedNumber = "06",
+                    resultNumber = "06-60-24",
+                    hitPosition = "1",
+                    amount = 25.0,
+                    payoutAmount = 1800.0,
+                ),
+            ),
             plays = listOf(
                 PlayItem(number = "12", playType = "Q", amount = 20.0, lotteryId = "1", lotteryName = "La Primera Día"),
                 PlayItem(number = "34", playType = "Q", amount = 15.0, lotteryId = "2", lotteryName = "Anguila Mañana"),
@@ -64,6 +170,8 @@ class TicketOfficialContractsTest {
         assertEquals(ticket.serial, restored?.serial)
         assertEquals(ticket.plays.map { it.number }, restored?.plays?.map { it.number })
         assertEquals(ticket.plays.map { it.lotteryId }, restored?.plays?.map { it.lotteryId })
+        assertEquals(ticket.winningDetails.map { it.resultNumber }, restored?.winningDetails?.map { it.resultNumber })
+        assertEquals(ticket.winningDetails.map { it.payoutAmount }, restored?.winningDetails?.map { it.payoutAmount })
     }
 
     @Test
@@ -404,7 +512,7 @@ class TicketOfficialContractsTest {
         )
 
         assertEquals(
-            listOf("legacy-admin-id", "ADM-C5FFB0", "nicola01"),
+            listOf("legacy-admin-id", "banca01", "ADM-C5FFB0", "admin-device", "nicola01"),
             resolveTicketRealtimeSyncOwnerKeys(session, ticket),
         )
     }
@@ -426,9 +534,34 @@ class TicketOfficialContractsTest {
         )
 
         assertEquals(
-            listOf("ADM-C5FFB0", "nicola01"),
+            listOf("cashier-device", "ADM-C5FFB0", "banca01", "nicola01"),
             resolveTicketRealtimeSyncOwnerKeys(session, ticket),
         )
+    }
+
+    @Test
+    fun `official ticket refresh listens to admin code and username aliases`() {
+        val session = ActiveSession(
+            role = UserRole.ADMIN,
+            userId = "admin-device",
+            username = "podero02",
+            adminId = "ADM-C5FFB0",
+            adminUser = "podero02",
+        )
+        val ticket = TicketRecord(
+            id = "native-1780487188705",
+            serial = "LN-D79F72-43362F",
+            adminId = "ADM-C5FFB0",
+            adminUser = "podero02",
+            sellerUser = "podero02",
+            status = "active",
+        )
+
+        val ownerKeys = resolveTicketRealtimeSyncOwnerKeys(session, ticket)
+
+        assertTrue(ownerKeys.contains("ADM-C5FFB0"))
+        assertTrue(ownerKeys.contains("podero02"))
+        assertTrue(ownerKeys.contains("admin-device"))
     }
 
     @Test
@@ -452,12 +585,25 @@ class TicketOfficialContractsTest {
 
         val request = resolveTicketPayoutBackendRequest(session, ticket)
 
-        assertEquals("cashier-device", request.actorKey)
+        assertEquals("cajero01", request.actorKey)
         assertEquals("ticket-admin-id", request.adminKey)
         assertEquals("ticket-admin-id", request.ownerKey)
         assertEquals("cashier-ticket-id", request.cashierKey)
         assertEquals("ticket-win", request.localTicketId)
         assertEquals("ticket-win", request.clientRequestId)
+    }
+
+    @Test
+    fun `ticket backend actions use operational username instead of auth uid`() {
+        val session = ActiveSession(
+            role = UserRole.ADMIN,
+            userId = "5e9553d2-72b2-484e-8b85-095fbce6f2a4",
+            username = "nicola01",
+            adminId = "ADM-163C38",
+            adminUser = "nicola01",
+        )
+
+        assertEquals("nicola01", resolveTicketBackendActorKey(session))
     }
 
     @Test
@@ -783,6 +929,18 @@ class TicketOfficialContractsTest {
     }
 
     @Test
+    fun `duplicate lottery menu orders by draw time so morning draws stay before night draws`() {
+        val night = DuplicateLotteryOption("14", "Anguila 9PM", null, "9:00 PM", isClosed = false)
+        val morning8 = DuplicateLotteryOption("29", "Anguilla 8AM", null, "8:00 AM", isClosed = false)
+        val morning9 = DuplicateLotteryOption("30", "Anguilla 9AM", null, "9:00 AM", isClosed = false)
+
+        assertEquals(
+            listOf("29", "30", "14"),
+            resolveDuplicateSelectableLotteries(listOf(night, morning9, morning8)).map { it.id },
+        )
+    }
+
+    @Test
     fun `ticket output uses assigned cashier name before admin banca`() {
         val ticket = TicketRecord(id = "T-1", sellerId = "cashier-1", sellerUser = "cajero01")
         val cashier = UserAccount(
@@ -802,6 +960,33 @@ class TicketOfficialContractsTest {
         val cashier = UserAccount(id = "cashier-1", user = "cajero01", role = UserRole.CASHIER)
 
         assertEquals("Banca Admin", resolveTicketOutputBancaName(ticket, "Banca Admin", listOf(cashier)))
+    }
+
+    @Test
+    fun `official ticket seller label resolves admin alias from account directory`() {
+        val ticket = TicketRecord(
+            id = "T-ADMIN",
+            sellerId = "ADM-PODER",
+            sellerUser = "podero02",
+            adminId = "ADM-PODER",
+            adminUser = "podero02",
+            role = UserRole.ADMIN,
+        )
+        val admin = UserAccount(
+            id = "ADM-PODER",
+            user = "podero02",
+            role = UserRole.ADMIN,
+            banca = "Poderoso",
+        )
+
+        assertEquals(
+            "Poderoso",
+            com.lotterynet.pro.core.operations.resolveTicketActorLabel(
+                ticket,
+                com.lotterynet.pro.core.operations.buildUserActorLabelLookup(listOf(admin)),
+                fallback = "Sin usuario",
+            ),
+        )
     }
 
     @Test
@@ -839,5 +1024,32 @@ class TicketOfficialContractsTest {
         assertEquals(2, state.lotteryGroups.size)
         assertEquals(listOf("Anguila", "Loteria Real"), state.lotteryGroups.map { it.lotteryName })
         assertTrue(state.usesLocalLogo)
+    }
+
+    @Test
+    fun `paid winning ticket view state keeps prize as primary total`() {
+        val ticket = TicketRecord(
+            id = "T-PAID-WIN",
+            serial = "A-PAID",
+            status = "paid",
+            total = 72.0,
+            totalPrize = 7_200.0,
+            plays = listOf(
+                PlayItem("88", "Q", 100.0, lotteryId = "loteka", lotteryName = "Loteka"),
+            ),
+        )
+
+        val state = buildOfficialTicketViewState(
+            ticket = ticket,
+            bancaName = "Mi Banca",
+            mode = TicketOfficialMode.PAY,
+            securityCode = "SEC-PAID",
+            logoUri = "",
+        )
+
+        assertEquals("$ 7,200", state.totalLabel)
+        assertEquals("Premio", state.primaryAmountLabel)
+        assertEquals("Venta $ 72", state.primaryAmountSupporting)
+        assertEquals("$ 7,200", state.prizeLabel)
     }
 }

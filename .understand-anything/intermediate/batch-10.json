@@ -1,0 +1,840 @@
+{
+  "nodes": [
+    {
+      "id": "file:proyecto web nuevo/src/App.tsx",
+      "type": "file",
+      "name": "App.tsx",
+      "summary": "Source file proyecto web nuevo/src/App.tsx containing 2 function(s).",
+      "tags": [
+        "code"
+      ],
+      "complexity": "moderate",
+      "filePath": "proyecto web nuevo/src/App.tsx",
+      "lineRange": [
+        1,
+        65
+      ]
+    },
+    {
+      "id": "function:proyecto web nuevo/src/App.tsx:MainApp",
+      "type": "function",
+      "name": "MainApp",
+      "summary": "Function MainApp in App.tsx.",
+      "tags": [
+        "function",
+        "typescript"
+      ],
+      "complexity": "moderate",
+      "filePath": "proyecto web nuevo/src/App.tsx",
+      "lineRange": [
+        7,
+        55
+      ]
+    },
+    {
+      "id": "file:proyecto web nuevo/src/components/AppShell.tsx",
+      "type": "file",
+      "name": "AppShell.tsx",
+      "summary": "Source file proyecto web nuevo/src/components/AppShell.tsx containing 1 function(s).",
+      "tags": [
+        "code"
+      ],
+      "complexity": "complex",
+      "filePath": "proyecto web nuevo/src/components/AppShell.tsx",
+      "lineRange": [
+        1,
+        494
+      ]
+    },
+    {
+      "id": "function:proyecto web nuevo/src/components/AppShell.tsx:AppShell",
+      "type": "function",
+      "name": "AppShell",
+      "summary": "Function AppShell in AppShell.tsx.",
+      "tags": [
+        "function",
+        "typescript"
+      ],
+      "complexity": "moderate",
+      "filePath": "proyecto web nuevo/src/components/AppShell.tsx",
+      "lineRange": [
+        28,
+        494
+      ]
+    },
+    {
+      "id": "file:proyecto web nuevo/src/context/AuthContext.tsx",
+      "type": "file",
+      "name": "AuthContext.tsx",
+      "summary": "Source file proyecto web nuevo/src/context/AuthContext.tsx containing 3 function(s).",
+      "tags": [
+        "code"
+      ],
+      "complexity": "moderate",
+      "filePath": "proyecto web nuevo/src/context/AuthContext.tsx",
+      "lineRange": [
+        1,
+        230
+      ]
+    },
+    {
+      "id": "function:proyecto web nuevo/src/context/AuthContext.tsx:AuthProvider",
+      "type": "function",
+      "name": "AuthProvider",
+      "summary": "Function AuthProvider in AuthContext.tsx.",
+      "tags": [
+        "function",
+        "typescript"
+      ],
+      "complexity": "moderate",
+      "filePath": "proyecto web nuevo/src/context/AuthContext.tsx",
+      "lineRange": [
+        25,
+        222
+      ]
+    },
+    {
+      "id": "function:proyecto web nuevo/src/context/AuthContext.tsx:useAuth",
+      "type": "function",
+      "name": "useAuth",
+      "summary": "Function useAuth in AuthContext.tsx.",
+      "tags": [
+        "function",
+        "typescript"
+      ],
+      "complexity": "moderate",
+      "filePath": "proyecto web nuevo/src/context/AuthContext.tsx",
+      "lineRange": [
+        224,
+        230
+      ]
+    },
+    {
+      "id": "file:proyecto web nuevo/src/main.tsx",
+      "type": "file",
+      "name": "main.tsx",
+      "summary": "Source file proyecto web nuevo/src/main.tsx in the LotteryNetPro project.",
+      "tags": [
+        "code"
+      ],
+      "complexity": "simple",
+      "filePath": "proyecto web nuevo/src/main.tsx",
+      "lineRange": [
+        1,
+        10
+      ]
+    },
+    {
+      "id": "file:proyecto web nuevo/src/types.ts",
+      "type": "file",
+      "name": "types.ts",
+      "summary": "Source file proyecto web nuevo/src/types.ts in the LotteryNetPro project.",
+      "tags": [
+        "code"
+      ],
+      "complexity": "moderate",
+      "filePath": "proyecto web nuevo/src/types.ts",
+      "lineRange": [
+        1,
+        145
+      ]
+    },
+    {
+      "id": "file:proyecto web nuevo/src/utils/supabase.ts",
+      "type": "file",
+      "name": "supabase.ts",
+      "summary": "Supabase integration file used by the app/server for remote data, ticket, result, or configuration workflows.",
+      "tags": [
+        "code",
+        "supabase",
+        "large-module"
+      ],
+      "complexity": "complex",
+      "filePath": "proyecto web nuevo/src/utils/supabase.ts",
+      "lineRange": [
+        1,
+        1330
+      ]
+    },
+    {
+      "id": "function:proyecto web nuevo/src/utils/supabase.ts:buildDynamicUsPickLotteries",
+      "type": "function",
+      "name": "buildDynamicUsPickLotteries",
+      "summary": "Function buildDynamicUsPickLotteries in supabase.ts.",
+      "tags": [
+        "function",
+        "typescript"
+      ],
+      "complexity": "moderate",
+      "filePath": "proyecto web nuevo/src/utils/supabase.ts",
+      "lineRange": [
+        201,
+        238
+      ]
+    },
+    {
+      "id": "function:proyecto web nuevo/src/utils/supabase.ts:initMockDatabase",
+      "type": "function",
+      "name": "initMockDatabase",
+      "summary": "Function initMockDatabase in supabase.ts.",
+      "tags": [
+        "function",
+        "typescript"
+      ],
+      "complexity": "moderate",
+      "filePath": "proyecto web nuevo/src/utils/supabase.ts",
+      "lineRange": [
+        492,
+        505
+      ]
+    },
+    {
+      "id": "function:proyecto web nuevo/src/utils/supabase.ts:addAuditLog",
+      "type": "function",
+      "name": "addAuditLog",
+      "summary": "Function addAuditLog in supabase.ts.",
+      "tags": [
+        "function",
+        "typescript"
+      ],
+      "complexity": "moderate",
+      "filePath": "proyecto web nuevo/src/utils/supabase.ts",
+      "lineRange": [
+        510,
+        572
+      ]
+    },
+    {
+      "id": "function:proyecto web nuevo/src/utils/supabase.ts:fetchUsers",
+      "type": "function",
+      "name": "fetchUsers",
+      "summary": "Function fetchUsers in supabase.ts.",
+      "tags": [
+        "function",
+        "typescript"
+      ],
+      "complexity": "moderate",
+      "filePath": "proyecto web nuevo/src/utils/supabase.ts",
+      "lineRange": [
+        575,
+        614
+      ]
+    },
+    {
+      "id": "function:proyecto web nuevo/src/utils/supabase.ts:saveAllUsers",
+      "type": "function",
+      "name": "saveAllUsers",
+      "summary": "Function saveAllUsers in supabase.ts.",
+      "tags": [
+        "function",
+        "typescript"
+      ],
+      "complexity": "moderate",
+      "filePath": "proyecto web nuevo/src/utils/supabase.ts",
+      "lineRange": [
+        616,
+        658
+      ]
+    },
+    {
+      "id": "function:proyecto web nuevo/src/utils/supabase.ts:createUserAccount",
+      "type": "function",
+      "name": "createUserAccount",
+      "summary": "Function createUserAccount in supabase.ts.",
+      "tags": [
+        "function",
+        "typescript"
+      ],
+      "complexity": "moderate",
+      "filePath": "proyecto web nuevo/src/utils/supabase.ts",
+      "lineRange": [
+        660,
+        686
+      ]
+    },
+    {
+      "id": "function:proyecto web nuevo/src/utils/supabase.ts:updateUserAccount",
+      "type": "function",
+      "name": "updateUserAccount",
+      "summary": "Function updateUserAccount in supabase.ts.",
+      "tags": [
+        "function",
+        "typescript"
+      ],
+      "complexity": "moderate",
+      "filePath": "proyecto web nuevo/src/utils/supabase.ts",
+      "lineRange": [
+        688,
+        701
+      ]
+    },
+    {
+      "id": "function:proyecto web nuevo/src/utils/supabase.ts:deleteUserAccount",
+      "type": "function",
+      "name": "deleteUserAccount",
+      "summary": "Function deleteUserAccount in supabase.ts.",
+      "tags": [
+        "function",
+        "typescript"
+      ],
+      "complexity": "moderate",
+      "filePath": "proyecto web nuevo/src/utils/supabase.ts",
+      "lineRange": [
+        703,
+        707
+      ]
+    },
+    {
+      "id": "function:proyecto web nuevo/src/utils/supabase.ts:toggleAdminStatus",
+      "type": "function",
+      "name": "toggleAdminStatus",
+      "summary": "Function toggleAdminStatus in supabase.ts.",
+      "tags": [
+        "function",
+        "typescript"
+      ],
+      "complexity": "moderate",
+      "filePath": "proyecto web nuevo/src/utils/supabase.ts",
+      "lineRange": [
+        710,
+        730
+      ]
+    },
+    {
+      "id": "function:proyecto web nuevo/src/utils/supabase.ts:processRecharge",
+      "type": "function",
+      "name": "processRecharge",
+      "summary": "Function processRecharge in supabase.ts.",
+      "tags": [
+        "function",
+        "typescript"
+      ],
+      "complexity": "moderate",
+      "filePath": "proyecto web nuevo/src/utils/supabase.ts",
+      "lineRange": [
+        733,
+        773
+      ]
+    },
+    {
+      "id": "function:proyecto web nuevo/src/utils/supabase.ts:fetchTickets",
+      "type": "function",
+      "name": "fetchTickets",
+      "summary": "Function fetchTickets in supabase.ts.",
+      "tags": [
+        "function",
+        "typescript"
+      ],
+      "complexity": "moderate",
+      "filePath": "proyecto web nuevo/src/utils/supabase.ts",
+      "lineRange": [
+        777,
+        902
+      ]
+    },
+    {
+      "id": "function:proyecto web nuevo/src/utils/supabase.ts:fetchLotteries",
+      "type": "function",
+      "name": "fetchLotteries",
+      "summary": "Function fetchLotteries in supabase.ts.",
+      "tags": [
+        "function",
+        "typescript"
+      ],
+      "complexity": "moderate",
+      "filePath": "proyecto web nuevo/src/utils/supabase.ts",
+      "lineRange": [
+        907,
+        909
+      ]
+    },
+    {
+      "id": "function:proyecto web nuevo/src/utils/supabase.ts:fetchAuditLogs",
+      "type": "function",
+      "name": "fetchAuditLogs",
+      "summary": "Function fetchAuditLogs in supabase.ts.",
+      "tags": [
+        "function",
+        "typescript"
+      ],
+      "complexity": "moderate",
+      "filePath": "proyecto web nuevo/src/utils/supabase.ts",
+      "lineRange": [
+        912,
+        947
+      ]
+    },
+    {
+      "id": "function:proyecto web nuevo/src/utils/supabase.ts:getAdminLimitsPayload",
+      "type": "function",
+      "name": "getAdminLimitsPayload",
+      "summary": "Function getAdminLimitsPayload in supabase.ts.",
+      "tags": [
+        "function",
+        "typescript"
+      ],
+      "complexity": "moderate",
+      "filePath": "proyecto web nuevo/src/utils/supabase.ts",
+      "lineRange": [
+        951,
+        991
+      ]
+    },
+    {
+      "id": "function:proyecto web nuevo/src/utils/supabase.ts:saveAdminLimitsPayload",
+      "type": "function",
+      "name": "saveAdminLimitsPayload",
+      "summary": "Function saveAdminLimitsPayload in supabase.ts.",
+      "tags": [
+        "function",
+        "typescript"
+      ],
+      "complexity": "moderate",
+      "filePath": "proyecto web nuevo/src/utils/supabase.ts",
+      "lineRange": [
+        993,
+        1002
+      ]
+    },
+    {
+      "id": "function:proyecto web nuevo/src/utils/supabase.ts:getAdminPayoutsPayload",
+      "type": "function",
+      "name": "getAdminPayoutsPayload",
+      "summary": "Function getAdminPayoutsPayload in supabase.ts.",
+      "tags": [
+        "function",
+        "typescript"
+      ],
+      "complexity": "moderate",
+      "filePath": "proyecto web nuevo/src/utils/supabase.ts",
+      "lineRange": [
+        1035,
+        1071
+      ]
+    },
+    {
+      "id": "function:proyecto web nuevo/src/utils/supabase.ts:saveAdminPayoutsPayload",
+      "type": "function",
+      "name": "saveAdminPayoutsPayload",
+      "summary": "Function saveAdminPayoutsPayload in supabase.ts.",
+      "tags": [
+        "function",
+        "typescript"
+      ],
+      "complexity": "moderate",
+      "filePath": "proyecto web nuevo/src/utils/supabase.ts",
+      "lineRange": [
+        1073,
+        1090
+      ]
+    },
+    {
+      "id": "function:proyecto web nuevo/src/utils/supabase.ts:getTodayDateKeyDR",
+      "type": "function",
+      "name": "getTodayDateKeyDR",
+      "summary": "Function getTodayDateKeyDR in supabase.ts.",
+      "tags": [
+        "function",
+        "typescript"
+      ],
+      "complexity": "moderate",
+      "filePath": "proyecto web nuevo/src/utils/supabase.ts",
+      "lineRange": [
+        1094,
+        1102
+      ]
+    },
+    {
+      "id": "file:proyecto web nuevo/src/views/Dashboard.tsx",
+      "type": "file",
+      "name": "Dashboard.tsx",
+      "summary": "Source file proyecto web nuevo/src/views/Dashboard.tsx containing 2 function(s).",
+      "tags": [
+        "code"
+      ],
+      "complexity": "complex",
+      "filePath": "proyecto web nuevo/src/views/Dashboard.tsx",
+      "lineRange": [
+        1,
+        4720
+      ]
+    },
+    {
+      "id": "function:proyecto web nuevo/src/views/Dashboard.tsx:buildLotteryMonitorRows",
+      "type": "function",
+      "name": "buildLotteryMonitorRows",
+      "summary": "Function buildLotteryMonitorRows in Dashboard.tsx.",
+      "tags": [
+        "function",
+        "typescript"
+      ],
+      "complexity": "moderate",
+      "filePath": "proyecto web nuevo/src/views/Dashboard.tsx",
+      "lineRange": [
+        46,
+        96
+      ]
+    },
+    {
+      "id": "function:proyecto web nuevo/src/views/Dashboard.tsx:Dashboard",
+      "type": "function",
+      "name": "Dashboard",
+      "summary": "Function Dashboard in Dashboard.tsx.",
+      "tags": [
+        "function",
+        "typescript"
+      ],
+      "complexity": "moderate",
+      "filePath": "proyecto web nuevo/src/views/Dashboard.tsx",
+      "lineRange": [
+        98,
+        4720
+      ]
+    },
+    {
+      "id": "file:proyecto web nuevo/src/views/auth/Login.tsx",
+      "type": "file",
+      "name": "Login.tsx",
+      "summary": "Source file proyecto web nuevo/src/views/auth/Login.tsx containing 1 function(s).",
+      "tags": [
+        "code"
+      ],
+      "complexity": "complex",
+      "filePath": "proyecto web nuevo/src/views/auth/Login.tsx",
+      "lineRange": [
+        1,
+        352
+      ]
+    },
+    {
+      "id": "function:proyecto web nuevo/src/views/auth/Login.tsx:Login",
+      "type": "function",
+      "name": "Login",
+      "summary": "Function Login in Login.tsx.",
+      "tags": [
+        "function",
+        "typescript"
+      ],
+      "complexity": "moderate",
+      "filePath": "proyecto web nuevo/src/views/auth/Login.tsx",
+      "lineRange": [
+        9,
+        352
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "source": "file:proyecto web nuevo/src/App.tsx",
+      "target": "function:proyecto web nuevo/src/App.tsx:MainApp",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "App.tsx contains MainApp"
+    },
+    {
+      "source": "file:proyecto web nuevo/src/App.tsx",
+      "target": "file:proyecto web nuevo/src/components/AppShell.tsx",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7,
+      "description": "proyecto web nuevo/src/App.tsx imports proyecto web nuevo/src/components/AppShell.tsx"
+    },
+    {
+      "source": "file:proyecto web nuevo/src/App.tsx",
+      "target": "file:proyecto web nuevo/src/context/AuthContext.tsx",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7,
+      "description": "proyecto web nuevo/src/App.tsx imports proyecto web nuevo/src/context/AuthContext.tsx"
+    },
+    {
+      "source": "file:proyecto web nuevo/src/App.tsx",
+      "target": "file:proyecto web nuevo/src/views/auth/Login.tsx",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7,
+      "description": "proyecto web nuevo/src/App.tsx imports proyecto web nuevo/src/views/auth/Login.tsx"
+    },
+    {
+      "source": "file:proyecto web nuevo/src/App.tsx",
+      "target": "file:proyecto web nuevo/src/views/Dashboard.tsx",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7,
+      "description": "proyecto web nuevo/src/App.tsx imports proyecto web nuevo/src/views/Dashboard.tsx"
+    },
+    {
+      "source": "file:proyecto web nuevo/src/components/AppShell.tsx",
+      "target": "function:proyecto web nuevo/src/components/AppShell.tsx:AppShell",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "AppShell.tsx contains AppShell"
+    },
+    {
+      "source": "file:proyecto web nuevo/src/components/AppShell.tsx",
+      "target": "file:proyecto web nuevo/src/context/AuthContext.tsx",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7,
+      "description": "proyecto web nuevo/src/components/AppShell.tsx imports proyecto web nuevo/src/context/AuthContext.tsx"
+    },
+    {
+      "source": "file:proyecto web nuevo/src/context/AuthContext.tsx",
+      "target": "function:proyecto web nuevo/src/context/AuthContext.tsx:AuthProvider",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "AuthContext.tsx contains AuthProvider"
+    },
+    {
+      "source": "file:proyecto web nuevo/src/context/AuthContext.tsx",
+      "target": "function:proyecto web nuevo/src/context/AuthContext.tsx:useAuth",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "AuthContext.tsx contains useAuth"
+    },
+    {
+      "source": "file:proyecto web nuevo/src/context/AuthContext.tsx",
+      "target": "file:proyecto web nuevo/src/types.ts",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7,
+      "description": "proyecto web nuevo/src/context/AuthContext.tsx imports proyecto web nuevo/src/types.ts"
+    },
+    {
+      "source": "file:proyecto web nuevo/src/context/AuthContext.tsx",
+      "target": "file:proyecto web nuevo/src/utils/supabase.ts",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7,
+      "description": "proyecto web nuevo/src/context/AuthContext.tsx imports proyecto web nuevo/src/utils/supabase.ts"
+    },
+    {
+      "source": "file:proyecto web nuevo/src/main.tsx",
+      "target": "file:proyecto web nuevo/src/App.tsx",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7,
+      "description": "proyecto web nuevo/src/main.tsx imports proyecto web nuevo/src/App.tsx"
+    },
+    {
+      "source": "file:proyecto web nuevo/src/main.tsx",
+      "target": "file:proyecto web nuevo/src/index.css",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7,
+      "description": "proyecto web nuevo/src/main.tsx imports proyecto web nuevo/src/index.css"
+    },
+    {
+      "source": "file:proyecto web nuevo/src/utils/supabase.ts",
+      "target": "function:proyecto web nuevo/src/utils/supabase.ts:buildDynamicUsPickLotteries",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "supabase.ts contains buildDynamicUsPickLotteries"
+    },
+    {
+      "source": "file:proyecto web nuevo/src/utils/supabase.ts",
+      "target": "function:proyecto web nuevo/src/utils/supabase.ts:initMockDatabase",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "supabase.ts contains initMockDatabase"
+    },
+    {
+      "source": "file:proyecto web nuevo/src/utils/supabase.ts",
+      "target": "function:proyecto web nuevo/src/utils/supabase.ts:addAuditLog",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "supabase.ts contains addAuditLog"
+    },
+    {
+      "source": "file:proyecto web nuevo/src/utils/supabase.ts",
+      "target": "function:proyecto web nuevo/src/utils/supabase.ts:fetchUsers",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "supabase.ts contains fetchUsers"
+    },
+    {
+      "source": "file:proyecto web nuevo/src/utils/supabase.ts",
+      "target": "function:proyecto web nuevo/src/utils/supabase.ts:saveAllUsers",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "supabase.ts contains saveAllUsers"
+    },
+    {
+      "source": "file:proyecto web nuevo/src/utils/supabase.ts",
+      "target": "function:proyecto web nuevo/src/utils/supabase.ts:createUserAccount",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "supabase.ts contains createUserAccount"
+    },
+    {
+      "source": "file:proyecto web nuevo/src/utils/supabase.ts",
+      "target": "function:proyecto web nuevo/src/utils/supabase.ts:updateUserAccount",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "supabase.ts contains updateUserAccount"
+    },
+    {
+      "source": "file:proyecto web nuevo/src/utils/supabase.ts",
+      "target": "function:proyecto web nuevo/src/utils/supabase.ts:deleteUserAccount",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "supabase.ts contains deleteUserAccount"
+    },
+    {
+      "source": "file:proyecto web nuevo/src/utils/supabase.ts",
+      "target": "function:proyecto web nuevo/src/utils/supabase.ts:toggleAdminStatus",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "supabase.ts contains toggleAdminStatus"
+    },
+    {
+      "source": "file:proyecto web nuevo/src/utils/supabase.ts",
+      "target": "function:proyecto web nuevo/src/utils/supabase.ts:processRecharge",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "supabase.ts contains processRecharge"
+    },
+    {
+      "source": "file:proyecto web nuevo/src/utils/supabase.ts",
+      "target": "function:proyecto web nuevo/src/utils/supabase.ts:fetchTickets",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "supabase.ts contains fetchTickets"
+    },
+    {
+      "source": "file:proyecto web nuevo/src/utils/supabase.ts",
+      "target": "function:proyecto web nuevo/src/utils/supabase.ts:fetchLotteries",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "supabase.ts contains fetchLotteries"
+    },
+    {
+      "source": "file:proyecto web nuevo/src/utils/supabase.ts",
+      "target": "function:proyecto web nuevo/src/utils/supabase.ts:fetchAuditLogs",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "supabase.ts contains fetchAuditLogs"
+    },
+    {
+      "source": "file:proyecto web nuevo/src/utils/supabase.ts",
+      "target": "function:proyecto web nuevo/src/utils/supabase.ts:getAdminLimitsPayload",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "supabase.ts contains getAdminLimitsPayload"
+    },
+    {
+      "source": "file:proyecto web nuevo/src/utils/supabase.ts",
+      "target": "function:proyecto web nuevo/src/utils/supabase.ts:saveAdminLimitsPayload",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "supabase.ts contains saveAdminLimitsPayload"
+    },
+    {
+      "source": "file:proyecto web nuevo/src/utils/supabase.ts",
+      "target": "function:proyecto web nuevo/src/utils/supabase.ts:getAdminPayoutsPayload",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "supabase.ts contains getAdminPayoutsPayload"
+    },
+    {
+      "source": "file:proyecto web nuevo/src/utils/supabase.ts",
+      "target": "function:proyecto web nuevo/src/utils/supabase.ts:saveAdminPayoutsPayload",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "supabase.ts contains saveAdminPayoutsPayload"
+    },
+    {
+      "source": "file:proyecto web nuevo/src/utils/supabase.ts",
+      "target": "function:proyecto web nuevo/src/utils/supabase.ts:getTodayDateKeyDR",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "supabase.ts contains getTodayDateKeyDR"
+    },
+    {
+      "source": "file:proyecto web nuevo/src/utils/supabase.ts",
+      "target": "file:proyecto web nuevo/src/types.ts",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7,
+      "description": "proyecto web nuevo/src/utils/supabase.ts imports proyecto web nuevo/src/types.ts"
+    },
+    {
+      "source": "file:proyecto web nuevo/src/views/Dashboard.tsx",
+      "target": "function:proyecto web nuevo/src/views/Dashboard.tsx:buildLotteryMonitorRows",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "Dashboard.tsx contains buildLotteryMonitorRows"
+    },
+    {
+      "source": "file:proyecto web nuevo/src/views/Dashboard.tsx",
+      "target": "function:proyecto web nuevo/src/views/Dashboard.tsx:Dashboard",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "Dashboard.tsx contains Dashboard"
+    },
+    {
+      "source": "file:proyecto web nuevo/src/views/Dashboard.tsx",
+      "target": "file:proyecto web nuevo/src/context/AuthContext.tsx",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7,
+      "description": "proyecto web nuevo/src/views/Dashboard.tsx imports proyecto web nuevo/src/context/AuthContext.tsx"
+    },
+    {
+      "source": "file:proyecto web nuevo/src/views/Dashboard.tsx",
+      "target": "file:proyecto web nuevo/src/types.ts",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7,
+      "description": "proyecto web nuevo/src/views/Dashboard.tsx imports proyecto web nuevo/src/types.ts"
+    },
+    {
+      "source": "file:proyecto web nuevo/src/views/Dashboard.tsx",
+      "target": "file:proyecto web nuevo/src/utils/supabase.ts",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7,
+      "description": "proyecto web nuevo/src/views/Dashboard.tsx imports proyecto web nuevo/src/utils/supabase.ts"
+    },
+    {
+      "source": "file:proyecto web nuevo/src/views/auth/Login.tsx",
+      "target": "function:proyecto web nuevo/src/views/auth/Login.tsx:Login",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "Login.tsx contains Login"
+    },
+    {
+      "source": "file:proyecto web nuevo/src/views/auth/Login.tsx",
+      "target": "file:proyecto web nuevo/src/context/AuthContext.tsx",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7,
+      "description": "proyecto web nuevo/src/views/auth/Login.tsx imports proyecto web nuevo/src/context/AuthContext.tsx"
+    }
+  ]
+}

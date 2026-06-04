@@ -108,7 +108,7 @@ export const AppShell: React.FC<AppShellProps> = ({ children, activeTab, setActi
         padding: '24px 16px',
         transform: sidebarOpen ? 'translateX(0)' : 'translateX(-100%)',
         transition: 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-        backgroundColor: 'hsl(var(--surface))'
+        backgroundColor: 'hsl(var(--surface) / 0.85)'
       }} id="app-sidebar">
         
         {/* Sidebar Header */}
@@ -180,6 +180,15 @@ export const AppShell: React.FC<AppShellProps> = ({ children, activeTab, setActi
               <span style={{ fontSize: '0.625rem', color: 'hsl(var(--primary))', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.03em', display: 'block', lineHeight: '1.2' }}>
                 Organiza tu mundo
               </span>
+              {/* Animated gradient underline */}
+              <div style={{
+                height: '2px',
+                marginTop: '6px',
+                borderRadius: '1px',
+                background: 'linear-gradient(90deg, hsl(var(--primary)), #10b981, hsl(var(--primary)))',
+                backgroundSize: '200% 100%',
+                animation: 'gradientShift 3s ease infinite'
+              }} />
             </div>
           </div>
           <button className="btn-icon mobile-only" onClick={() => setSidebarOpen(false)} style={{ border: 'none', background: 'transparent' }}>
@@ -204,7 +213,8 @@ export const AppShell: React.FC<AppShellProps> = ({ children, activeTab, setActi
                   padding: '12px 14px',
                   borderRadius: 'var(--radius-md)',
                   border: 'none',
-                  background: isActive ? 'hsl(var(--primary) / 0.08)' : 'transparent',
+                  borderLeft: isActive ? '3px solid hsl(var(--primary))' : '3px solid transparent',
+                  background: isActive ? 'hsl(var(--primary) / 0.12)' : 'transparent',
                   color: isActive ? 'hsl(var(--primary))' : 'hsl(var(--text-secondary))',
                   cursor: 'pointer',
                   fontWeight: isActive ? 600 : 500,
@@ -239,7 +249,8 @@ export const AppShell: React.FC<AppShellProps> = ({ children, activeTab, setActi
               alignItems: 'center',
               justifyContent: 'center',
               color: 'hsl(var(--primary))',
-              fontWeight: 600
+              fontWeight: 600,
+              boxShadow: '0 0 0 3px hsl(var(--primary) / 0.15), 0 0 12px hsl(var(--primary) / 0.1)'
             }}>
               {(user?.displayName || user?.user || 'A').charAt(0).toUpperCase()}
             </div>
@@ -269,7 +280,8 @@ export const AppShell: React.FC<AppShellProps> = ({ children, activeTab, setActi
             fontWeight: 500,
             fontSize: '0.85rem',
             justifyContent: 'center',
-            transition: 'var(--transition-fast)'
+            transition: 'var(--transition-fast)',
+            boxShadow: '0 2px 8px hsl(var(--danger) / 0.08)'
           }}>
             <LogOut size={16} />
             Cerrar Sesión
@@ -318,7 +330,8 @@ export const AppShell: React.FC<AppShellProps> = ({ children, activeTab, setActi
           alignItems: 'center',
           justifyContent: 'space-between',
           padding: '0 24px',
-          backgroundColor: 'hsl(var(--surface) / 0.8)'
+          backgroundColor: 'hsl(var(--surface) / 0.7)',
+          backdropFilter: 'blur(20px)'
         }}>
           {/* Topbar Left */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
@@ -390,7 +403,8 @@ export const AppShell: React.FC<AppShellProps> = ({ children, activeTab, setActi
                 width: '7px',
                 height: '7px',
                 borderRadius: '50%',
-                backgroundColor: 'hsl(var(--danger))'
+                backgroundColor: 'hsl(var(--danger))',
+                animation: 'pulse 2s infinite'
               }} />
             </button>
 
@@ -435,7 +449,7 @@ export const AppShell: React.FC<AppShellProps> = ({ children, activeTab, setActi
                     onClick={() => setProfileDropdownOpen(false)}
                     style={{ position: 'fixed', inset: 0, zIndex: 10 }}
                   />
-                  <div className="glass-panel" style={{
+                  <div className="glass-panel-premium" style={{
                     position: 'absolute',
                     top: '110%',
                     right: 0,
@@ -519,6 +533,15 @@ export const AppShell: React.FC<AppShellProps> = ({ children, activeTab, setActi
 
       {/* Dynamic Responsive Styles Injection */}
       <style>{`
+        @keyframes gradientShift {
+          0% { background-position: 0% 50%; }
+          50% { background-position: 100% 50%; }
+          100% { background-position: 0% 50%; }
+        }
+        @keyframes pulse {
+          0%, 100% { opacity: 1; transform: scale(1); }
+          50% { opacity: 0.6; transform: scale(1.15); }
+        }
         @media (max-width: 1024px) {
           .main-content-layout {
             margin-left: 0 !important;

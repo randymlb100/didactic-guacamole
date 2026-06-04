@@ -1,0 +1,100 @@
+{
+  "nodes": [
+    {
+      "id": "file:proyecto web nuevo/README.md",
+      "type": "document",
+      "name": "README.md",
+      "summary": "Documentation file covering README.md.",
+      "tags": [
+        "docs",
+        "documentation"
+      ],
+      "complexity": "moderate",
+      "filePath": "proyecto web nuevo/README.md",
+      "lineRange": [
+        1,
+        73
+      ]
+    },
+    {
+      "id": "file:proyecto web nuevo/index.html",
+      "type": "file",
+      "name": "index.html",
+      "summary": "Source file proyecto web nuevo/index.html in the LotteryNetPro project.",
+      "tags": [
+        "markup"
+      ],
+      "complexity": "simple",
+      "filePath": "proyecto web nuevo/index.html",
+      "lineRange": [
+        1,
+        14
+      ]
+    },
+    {
+      "id": "file:proyecto web nuevo/package.json",
+      "type": "config",
+      "name": "package.json",
+      "summary": "Configuration file for package.json.",
+      "tags": [
+        "config",
+        "configuration"
+      ],
+      "complexity": "simple",
+      "filePath": "proyecto web nuevo/package.json",
+      "lineRange": [
+        1,
+        33
+      ]
+    },
+    {
+      "id": "file:proyecto web nuevo/tsconfig.app.json",
+      "type": "config",
+      "name": "tsconfig.app.json",
+      "summary": "Configuration file for tsconfig.app.json.",
+      "tags": [
+        "config",
+        "configuration"
+      ],
+      "complexity": "simple",
+      "filePath": "proyecto web nuevo/tsconfig.app.json",
+      "lineRange": [
+        1,
+        25
+      ]
+    },
+    {
+      "id": "file:proyecto web nuevo/tsconfig.json",
+      "type": "config",
+      "name": "tsconfig.json",
+      "summary": "Configuration file for tsconfig.json.",
+      "tags": [
+        "config",
+        "configuration"
+      ],
+      "complexity": "simple",
+      "filePath": "proyecto web nuevo/tsconfig.json",
+      "lineRange": [
+        1,
+        7
+      ]
+    },
+    {
+      "id": "file:proyecto web nuevo/tsconfig.node.json",
+      "type": "config",
+      "name": "tsconfig.node.json",
+      "summary": "Configuration file for tsconfig.node.json.",
+      "tags": [
+        "config",
+        "configuration"
+      ],
+      "complexity": "simple",
+      "filePath": "proyecto web nuevo/tsconfig.node.json",
+      "lineRange": [
+        1,
+        24
+      ]
+    }
+  ],
+  "edges": []
+}

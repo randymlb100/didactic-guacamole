@@ -3,6 +3,7 @@ package com.lotterynet.pro.ui.tickets
 import com.journeyapps.barcodescanner.ScanOptions
 import com.lotterynet.pro.core.model.TicketRecord
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -107,6 +108,19 @@ class TicketLookupContractsTest {
 
         assertEquals("Pagado", lookupStatusLabel(ticket))
         assertEquals("$ 25", lookupAmountLabel(ticket))
+    }
+
+    @Test
+    fun `bulk pay only includes unpaid winning tickets`() {
+        val pending = TicketRecord(id = "winner", status = "winner", total = 25.0, totalPrize = 850.0)
+        val paid = TicketRecord(id = "paid", status = "paid", total = 25.0, totalPrize = 850.0)
+        val voided = TicketRecord(id = "voided", status = "voided", total = 25.0, totalPrize = 850.0)
+        val active = TicketRecord(id = "active", status = "active", total = 25.0, totalPrize = 0.0)
+
+        assertTrue(isLookupBulkPayableTicket(pending))
+        assertFalse(isLookupBulkPayableTicket(paid))
+        assertFalse(isLookupBulkPayableTicket(voided))
+        assertFalse(isLookupBulkPayableTicket(active))
     }
 
     @Test

@@ -1,0 +1,270 @@
+{
+  "projectRoot": "C:\\Users\\Randy Cordero\\Desktop\\lotterynet_android",
+  "batchFiles": [
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/core/auth/CredentialFactory.kt",
+      "language": "kotlin",
+      "sizeLines": 47,
+      "fileCategory": "code"
+    },
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/core/auth/LocalAuthenticator.kt",
+      "language": "kotlin",
+      "sizeLines": 51,
+      "fileCategory": "code"
+    },
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/core/config/MasterCredentials.kt",
+      "language": "kotlin",
+      "sizeLines": 17,
+      "fileCategory": "code"
+    },
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/core/finance/OperationalReportModels.kt",
+      "language": "kotlin",
+      "sizeLines": 283,
+      "fileCategory": "code"
+    },
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/core/master/MasterBankProvisioner.kt",
+      "language": "kotlin",
+      "sizeLines": 192,
+      "fileCategory": "code"
+    },
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/core/master/MasterUserManager.kt",
+      "language": "kotlin",
+      "sizeLines": 203,
+      "fileCategory": "code"
+    },
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/core/model/UserRole.kt",
+      "language": "kotlin",
+      "sizeLines": 22,
+      "fileCategory": "code"
+    },
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/core/operations/OperationalScope.kt",
+      "language": "kotlin",
+      "sizeLines": 127,
+      "fileCategory": "code"
+    },
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/core/operations/TicketOwnerCanonicalization.kt",
+      "language": "kotlin",
+      "sizeLines": 55,
+      "fileCategory": "code"
+    },
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/core/operations/UserAccountOrdering.kt",
+      "language": "kotlin",
+      "sizeLines": 23,
+      "fileCategory": "code"
+    },
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/core/permissions/RolePermissions.kt",
+      "language": "kotlin",
+      "sizeLines": 82,
+      "fileCategory": "code"
+    },
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/core/repository/UsersRepository.kt",
+      "language": "kotlin",
+      "sizeLines": 14,
+      "fileCategory": "code"
+    },
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/core/storage/SalesDayTicketCache.kt",
+      "language": "kotlin",
+      "sizeLines": 112,
+      "fileCategory": "code"
+    },
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/core/sync/NativeOperationalHydration.kt",
+      "language": "kotlin",
+      "sizeLines": 505,
+      "fileCategory": "code"
+    },
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/ui/admin/redesign/components/AdminScaffold.kt",
+      "language": "kotlin",
+      "sizeLines": 216,
+      "fileCategory": "code"
+    },
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/ui/admin/redesign/screens/AdminDashboardScreen.kt",
+      "language": "kotlin",
+      "sizeLines": 292,
+      "fileCategory": "code"
+    },
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/ui/admin/redesign/screens/MasterDashboardScreen.kt",
+      "language": "kotlin",
+      "sizeLines": 330,
+      "fileCategory": "code"
+    },
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/ui/admin/redesign/uiState/DashboardUiState.kt",
+      "language": "kotlin",
+      "sizeLines": 133,
+      "fileCategory": "code"
+    },
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/ui/finance/FinancePeriodUi.kt",
+      "language": "kotlin",
+      "sizeLines": 251,
+      "fileCategory": "code"
+    },
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/ui/tickets/TicketIntentSnapshot.kt",
+      "language": "kotlin",
+      "sizeLines": 175,
+      "fileCategory": "code"
+    },
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/ui/tickets/TicketListSupport.kt",
+      "language": "kotlin",
+      "sizeLines": 971,
+      "fileCategory": "code"
+    },
+    {
+      "path": "app/src/test/java/com/lotterynet/pro/core/auth/LocalAuthenticatorContractsTest.kt",
+      "language": "kotlin",
+      "sizeLines": 45,
+      "fileCategory": "code"
+    },
+    {
+      "path": "app/src/test/java/com/lotterynet/pro/core/auth/NativeSessionAuthRepositoryTest.kt",
+      "language": "kotlin",
+      "sizeLines": 88,
+      "fileCategory": "code"
+    },
+    {
+      "path": "app/src/test/java/com/lotterynet/pro/core/auth/SupabaseAuthBridgeClientTest.kt",
+      "language": "kotlin",
+      "sizeLines": 25,
+      "fileCategory": "code"
+    },
+    {
+      "path": "app/src/test/java/com/lotterynet/pro/core/finance/LocalFinanceRepositoryContractsTest.kt",
+      "language": "kotlin",
+      "sizeLines": 418,
+      "fileCategory": "code"
+    },
+    {
+      "path": "app/src/test/java/com/lotterynet/pro/core/master/MasterBankProvisionerTest.kt",
+      "language": "kotlin",
+      "sizeLines": 92,
+      "fileCategory": "code"
+    },
+    {
+      "path": "app/src/test/java/com/lotterynet/pro/core/master/MasterUserManagerTest.kt",
+      "language": "kotlin",
+      "sizeLines": 164,
+      "fileCategory": "code"
+    },
+    {
+      "path": "app/src/test/java/com/lotterynet/pro/core/notification/WinningTicketNotifierContractsTest.kt",
+      "language": "kotlin",
+      "sizeLines": 129,
+      "fileCategory": "code"
+    },
+    {
+      "path": "app/src/test/java/com/lotterynet/pro/core/operations/OperationalScopeContractsTest.kt",
+      "language": "kotlin",
+      "sizeLines": 185,
+      "fileCategory": "code"
+    }
+  ],
+  "batchImportData": {
+    "app/src/main/java/com/lotterynet/pro/core/auth/CredentialFactory.kt": [],
+    "app/src/main/java/com/lotterynet/pro/core/auth/LocalAuthenticator.kt": [
+      "app/src/main/java/com/lotterynet/pro/core/config/MasterCredentials.kt",
+      "app/src/main/java/com/lotterynet/pro/core/model/UserRole.kt",
+      "app/src/main/java/com/lotterynet/pro/core/repository/UsersRepository.kt"
+    ],
+    "app/src/main/java/com/lotterynet/pro/core/config/MasterCredentials.kt": [],
+    "app/src/main/java/com/lotterynet/pro/core/finance/OperationalReportModels.kt": [
+      "app/src/main/java/com/lotterynet/pro/core/model/UserRole.kt"
+    ],
+    "app/src/main/java/com/lotterynet/pro/core/master/MasterBankProvisioner.kt": [
+      "app/src/main/java/com/lotterynet/pro/core/auth/CredentialFactory.kt",
+      "app/src/main/java/com/lotterynet/pro/core/model/UserRole.kt",
+      "app/src/main/java/com/lotterynet/pro/core/repository/UsersRepository.kt"
+    ],
+    "app/src/main/java/com/lotterynet/pro/core/master/MasterUserManager.kt": [
+      "app/src/main/java/com/lotterynet/pro/core/auth/CredentialFactory.kt",
+      "app/src/main/java/com/lotterynet/pro/core/model/UserRole.kt",
+      "app/src/main/java/com/lotterynet/pro/core/repository/UsersRepository.kt"
+    ],
+    "app/src/main/java/com/lotterynet/pro/core/model/UserRole.kt": [],
+    "app/src/main/java/com/lotterynet/pro/core/operations/OperationalScope.kt": [
+      "app/src/main/java/com/lotterynet/pro/core/model/UserRole.kt"
+    ],
+    "app/src/main/java/com/lotterynet/pro/core/operations/TicketOwnerCanonicalization.kt": [
+      "app/src/main/java/com/lotterynet/pro/core/model/UserRole.kt"
+    ],
+    "app/src/main/java/com/lotterynet/pro/core/operations/UserAccountOrdering.kt": [
+      "app/src/main/java/com/lotterynet/pro/core/model/UserRole.kt"
+    ],
+    "app/src/main/java/com/lotterynet/pro/core/permissions/RolePermissions.kt": [
+      "app/src/main/java/com/lotterynet/pro/core/model/UserRole.kt"
+    ],
+    "app/src/main/java/com/lotterynet/pro/core/repository/UsersRepository.kt": [],
+    "app/src/main/java/com/lotterynet/pro/core/storage/SalesDayTicketCache.kt": [
+      "app/src/main/java/com/lotterynet/pro/core/model/UserRole.kt"
+    ],
+    "app/src/main/java/com/lotterynet/pro/core/sync/NativeOperationalHydration.kt": [
+      "app/src/main/java/com/lotterynet/pro/core/model/UserRole.kt"
+    ],
+    "app/src/main/java/com/lotterynet/pro/ui/admin/redesign/components/AdminScaffold.kt": [
+      "app/src/main/java/com/lotterynet/pro/core/model/UserRole.kt"
+    ],
+    "app/src/main/java/com/lotterynet/pro/ui/admin/redesign/screens/AdminDashboardScreen.kt": [
+      "app/src/main/java/com/lotterynet/pro/core/model/UserRole.kt"
+    ],
+    "app/src/main/java/com/lotterynet/pro/ui/admin/redesign/screens/MasterDashboardScreen.kt": [
+      "app/src/main/java/com/lotterynet/pro/core/model/UserRole.kt"
+    ],
+    "app/src/main/java/com/lotterynet/pro/ui/admin/redesign/uiState/DashboardUiState.kt": [
+      "app/src/main/java/com/lotterynet/pro/core/model/UserRole.kt"
+    ],
+    "app/src/main/java/com/lotterynet/pro/ui/finance/FinancePeriodUi.kt": [
+      "app/src/main/java/com/lotterynet/pro/core/finance/LocalFinanceRepository.kt",
+      "app/src/main/java/com/lotterynet/pro/core/model/UserRole.kt"
+    ],
+    "app/src/main/java/com/lotterynet/pro/ui/tickets/TicketIntentSnapshot.kt": [
+      "app/src/main/java/com/lotterynet/pro/core/model/UserRole.kt"
+    ],
+    "app/src/main/java/com/lotterynet/pro/ui/tickets/TicketListSupport.kt": [
+      "app/src/main/java/com/lotterynet/pro/core/model/UserRole.kt"
+    ],
+    "app/src/test/java/com/lotterynet/pro/core/auth/LocalAuthenticatorContractsTest.kt": [
+      "app/src/main/java/com/lotterynet/pro/core/model/UserRole.kt",
+      "app/src/main/java/com/lotterynet/pro/core/repository/UsersRepository.kt"
+    ],
+    "app/src/test/java/com/lotterynet/pro/core/auth/NativeSessionAuthRepositoryTest.kt": [
+      "app/src/main/java/com/lotterynet/pro/core/model/UserRole.kt"
+    ],
+    "app/src/test/java/com/lotterynet/pro/core/auth/SupabaseAuthBridgeClientTest.kt": [
+      "app/src/main/java/com/lotterynet/pro/core/model/UserRole.kt"
+    ],
+    "app/src/test/java/com/lotterynet/pro/core/finance/LocalFinanceRepositoryContractsTest.kt": [
+      "app/src/main/java/com/lotterynet/pro/core/model/UserRole.kt"
+    ],
+    "app/src/test/java/com/lotterynet/pro/core/master/MasterBankProvisionerTest.kt": [
+      "app/src/main/java/com/lotterynet/pro/core/repository/UsersRepository.kt"
+    ],
+    "app/src/test/java/com/lotterynet/pro/core/master/MasterUserManagerTest.kt": [
+      "app/src/main/java/com/lotterynet/pro/core/auth/LocalAuthenticator.kt",
+      "app/src/main/java/com/lotterynet/pro/core/model/UserRole.kt",
+      "app/src/main/java/com/lotterynet/pro/core/repository/UsersRepository.kt"
+    ],
+    "app/src/test/java/com/lotterynet/pro/core/notification/WinningTicketNotifierContractsTest.kt": [
+      "app/src/main/java/com/lotterynet/pro/core/model/UserRole.kt"
+    ],
+    "app/src/test/java/com/lotterynet/pro/core/operations/OperationalScopeContractsTest.kt": [
+      "app/src/main/java/com/lotterynet/pro/core/model/UserRole.kt"
+    ]
+  }
+}

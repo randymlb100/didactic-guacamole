@@ -1,0 +1,9 @@
+{
+  "experimentalServices": {
+    "lotterynet-results": {
+      "type": "web",
+      "routePrefix": "/",
+      "buildCommand": "pip install -r requirements.txt"
+    }
+  }
+}

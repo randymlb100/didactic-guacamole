@@ -3,6 +3,7 @@ import { clean, corsHeaders, json, supabaseAdmin } from "../_shared/lotterynet-a
 
 function isAllowedKey(key: string): boolean {
   return /^(cashier_limits|cashier_prize_payouts|recharge_limits|admin_operational_limits|system_modes|manual_disabled_lotteries):[A-Za-z0-9_.:-]+$/.test(key) ||
+    /^sportsbook:(global|actor:[A-Za-z0-9_.:-]+|admin:[A-Za-z0-9_.:-]+)$/.test(key) ||
     /^sys_[A-Za-z0-9_.:-]+$/.test(key);
 }
 
@@ -41,6 +42,20 @@ function normalizeSystemModePayload(key: string, payload: Record<string, unknown
   return normalized;
 }
 
+function normalizeSportsbookPayload(key: string, payload: Record<string, unknown>): Record<string, unknown> {
+  if (!key.startsWith("sportsbook:")) return payload;
+  const normalized: Record<string, unknown> = { ...payload, configured: true };
+  const boolKeys = ["enabled", "adminEnabled", "supervisorEnabled", "cashierEnabled"];
+  for (const boolKey of boolKeys) {
+    if (typeof normalized[boolKey] !== "boolean") normalized[boolKey] = false;
+  }
+  if (!Array.isArray(normalized.enabledMarkets)) normalized.enabledMarkets = [];
+  if (!Array.isArray(normalized.allowedActorKeys)) normalized.allowedActorKeys = [];
+  if (!Array.isArray(normalized.cashierAdminKeys)) normalized.cashierAdminKeys = [];
+  if (typeof normalized.updatedAt !== "number") normalized.updatedAt = Date.now();
+  return normalized;
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (req.method !== "POST") return json({ ok: false, message: "Metodo no permitido." }, 405);
@@ -56,7 +71,10 @@ Deno.serve(async (req) => {
     }
 
     const supabase = supabaseAdmin();
-    const normalizedPayload = normalizeSystemModePayload(key, payload as Record<string, unknown>);
+    const normalizedPayload = normalizeSportsbookPayload(
+      key,
+      normalizeSystemModePayload(key, payload as Record<string, unknown>),
+    );
     const { error } = await supabase
       .from("lotterynet_master_state")
       .upsert({ config_key: key, payload: normalizedPayload, updated_at: new Date().toISOString() }, { onConflict: "config_key" });

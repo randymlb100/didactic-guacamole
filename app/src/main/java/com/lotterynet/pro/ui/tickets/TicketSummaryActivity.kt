@@ -54,8 +54,14 @@ import com.lotterynet.pro.core.storage.LocalUsersRepository
 import com.lotterynet.pro.core.catalog.StaticLotteryCatalogRepository
 import com.lotterynet.pro.core.sync.NativeOperationalSyncCoordinator
 import com.lotterynet.pro.core.sync.NativeTicketCloudSyncCoordinator
+import com.lotterynet.pro.core.sync.NativeTicketRemoteStore
 import com.lotterynet.pro.core.sync.NativeTicketSyncQueueRepository
+import com.lotterynet.pro.core.sync.ForegroundCatchUpInput
+import com.lotterynet.pro.core.sync.ForegroundCatchUpPolicy
+import com.lotterynet.pro.core.sync.matchesNativeTicketSyncOwner
+import com.lotterynet.pro.core.sync.OperationalSyncThrottle
 import com.lotterynet.pro.core.sync.resolveOperationalOwnerKey
+import com.lotterynet.pro.core.sync.resolveOperationalOwnerKeys
 import com.lotterynet.pro.ui.common.ActionTone
 import com.lotterynet.pro.ui.common.AppTopBar
 import com.lotterynet.pro.ui.common.BottomNavBar
@@ -77,6 +83,7 @@ import com.lotterynet.pro.ui.theme.LotteryNetComposeTheme
 import java.util.Locale
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.concurrent.thread
+import org.json.JSONObject
 
 internal enum class TicketSummaryStartupWork {
     LOAD_SESSION,
@@ -170,6 +177,44 @@ internal fun resolveTicketSummaryRefreshUi(
     )
 }
 
+internal fun countPendingTicketSyncForSession(
+    pendingTickets: List<JSONObject>,
+    session: ActiveSession,
+): Int {
+    val ownerKeys = resolveOperationalOwnerKeys(session)
+    if (ownerKeys.isEmpty()) return 0
+    return pendingTickets.count { json ->
+        ownerKeys.any { ownerKey -> matchesNativeTicketSyncOwner(json, ownerKey) }
+    }
+}
+
+internal fun resolveTicketSummaryForegroundCatchUpInput(
+    session: ActiveSession,
+    tickets: List<TicketRecord>,
+    lastRemoteUpdatedAt: String?,
+    remoteUpdatedAt: String?,
+    realtimeConfigured: Boolean,
+    hasRealtimeSubscription: Boolean,
+    nowEpochMs: Long,
+    force: Boolean = false,
+): ForegroundCatchUpInput {
+    val dateKey = dominicanDayKey(nowEpochMs)
+    return ForegroundCatchUpInput(
+        ownerKey = resolveOperationalOwnerKey(session),
+        dateKey = dateKey,
+        hasLocalTickets = tickets.any { ticket ->
+            ticket.drawDateKey.equals(dateKey, ignoreCase = true)
+        },
+        hasLocalResults = true,
+        ticketStampChanged = remoteUpdatedAt.isNullOrBlank() ||
+            !remoteUpdatedAt.equals(lastRemoteUpdatedAt.orEmpty(), ignoreCase = true),
+        resultsStampChanged = false,
+        realtimeConnected = !realtimeConfigured || hasRealtimeSubscription,
+        nowMs = nowEpochMs,
+        force = force,
+    )
+}
+
 class TicketSummaryActivity : AppCompatActivity() {
     private val syncHandler = Handler(Looper.getMainLooper())
     private val realtimeClient = LotterynetRealtimeClient()
@@ -178,6 +223,10 @@ class TicketSummaryActivity : AppCompatActivity() {
     private lateinit var salesRepository: LocalSalesRepository
     private lateinit var usersRepository: LocalUsersRepository
     private val catalogRepository = StaticLotteryCatalogRepository()
+    private val remoteStampStore = NativeTicketRemoteStore()
+    private val foregroundCatchUpPolicy = ForegroundCatchUpPolicy(
+        OperationalSyncThrottle(TICKET_SUMMARY_FOREGROUND_CATCH_UP_THROTTLE_MS),
+    )
     private lateinit var operationalSyncCoordinator: NativeOperationalSyncCoordinator
     private lateinit var ticketSyncQueueRepository: NativeTicketSyncQueueRepository
 
@@ -188,7 +237,7 @@ class TicketSummaryActivity : AppCompatActivity() {
     private var pendingSyncCountState by mutableStateOf(0)
     private var lastRemoteUpdatedAt: String? = null
     private val summarySyncInFlight = AtomicBoolean(false)
-    private val resumeSyncRunnable = Runnable { syncOperationalTickets(force = false) }
+    private val resumeSyncRunnable = Runnable { runForegroundCatchUp(force = false) }
     private val syncPollRunnable = object : Runnable {
         override fun run() {
             syncOperationalTickets(force = shouldForceTicketSummaryLivePoll())
@@ -256,10 +305,10 @@ class TicketSummaryActivity : AppCompatActivity() {
         }
         refreshFullTicketDataInBackground()
         syncHandler.postDelayed(
-            { syncOperationalTickets(force = true, showRefreshing = true) },
+            { runForegroundCatchUp(force = false) },
             TICKET_SUMMARY_STARTUP_SYNC_DELAY_MS,
         )
-        subscribeRealtime()
+        subscribeRealtime(reset = false)
         syncHandler.postDelayed(syncPollRunnable, resolveTicketSummaryPollIntervalMs(realtimeClient.isConfigured()))
     }
 
@@ -294,7 +343,7 @@ class TicketSummaryActivity : AppCompatActivity() {
         }
         cashiersState = usersRepository.getCashiers()
         pendingSyncCountState = if (::ticketSyncQueueRepository.isInitialized) {
-            ticketSyncQueueRepository.peekAll().size
+            countPendingTicketSyncForSession(ticketSyncQueueRepository.peekAll(), session)
         } else {
             0
         }
@@ -306,7 +355,7 @@ class TicketSummaryActivity : AppCompatActivity() {
             val nextTickets = salesRepository.getAllTickets()
             val nextCashiers = usersRepository.getCashiers()
             val nextPendingCount = if (::ticketSyncQueueRepository.isInitialized) {
-                ticketSyncQueueRepository.peekAll().size
+                countPendingTicketSyncForSession(ticketSyncQueueRepository.peekAll(), session)
             } else {
                 0
             }
@@ -318,9 +367,14 @@ class TicketSummaryActivity : AppCompatActivity() {
         }
     }
 
-    private fun syncOperationalTickets(force: Boolean, showRefreshing: Boolean = false) {
+    private fun syncOperationalTickets(
+        force: Boolean,
+        showRefreshing: Boolean = false,
+        allowPendingFlush: Boolean = force || showRefreshing,
+    ) {
         if (!::operationalSyncCoordinator.isInitialized) return
         refreshTicketData()
+        val shouldForce = force || (allowPendingFlush && pendingSyncCountState > 0)
         if (!summarySyncInFlight.compareAndSet(false, true)) return
         if (showRefreshing) {
             syncMessageState = "Refrescando servidor..."
@@ -334,7 +388,7 @@ class TicketSummaryActivity : AppCompatActivity() {
                     operationalSyncCoordinator.syncTicketsForSession(
                         session = session,
                         lastRemoteUpdatedAt = lastRemoteUpdatedAt,
-                        force = force,
+                        force = shouldForce,
                     )
                 }.onSuccess { state ->
                     lastRemoteUpdatedAt = state.remoteUpdatedAt ?: lastRemoteUpdatedAt
@@ -359,12 +413,60 @@ class TicketSummaryActivity : AppCompatActivity() {
         }
     }
 
-    private fun subscribeRealtime() {
+    private fun runForegroundCatchUp(force: Boolean) {
+        if (!::operationalSyncCoordinator.isInitialized || !::salesRepository.isInitialized) return
+        refreshTicketData()
+        val ownerKeys = resolveOperationalOwnerKeys(session)
+        if (ownerKeys.isEmpty()) return
+        thread(name = "ticket-summary-foreground-catch-up") {
+            val remoteStamps = ownerKeys.mapNotNull { ownerKey ->
+                runCatching { remoteStampStore.fetchUpdatedAtFresh(ownerKey) }.getOrNull()
+            }
+            val remoteUpdatedAt = remoteStamps.asSequence()
+                .firstOrNull { stamp -> !stamp.equals(lastRemoteUpdatedAt.orEmpty(), ignoreCase = true) }
+                ?: remoteStamps.firstOrNull()
+            val decision = foregroundCatchUpPolicy.decide(
+                resolveTicketSummaryForegroundCatchUpInput(
+                    session = session,
+                    tickets = salesRepository.getTicketsForDay(dominicanDayKey(System.currentTimeMillis())),
+                    lastRemoteUpdatedAt = lastRemoteUpdatedAt,
+                    remoteUpdatedAt = remoteUpdatedAt,
+                    realtimeConfigured = realtimeClient.isConfigured(),
+                    hasRealtimeSubscription = realtimeSubscriptions.isNotEmpty(),
+                    nowEpochMs = System.currentTimeMillis(),
+                    force = force,
+                ),
+            )
+            if (!decision.shouldRun) return@thread
+            if (decision.reconnectRealtime) {
+                runOnUiThread { subscribeRealtime(reset = true) }
+            }
+            if (decision.refreshTickets) {
+                runOnUiThread {
+                    syncOperationalTickets(
+                        force = force,
+                        showRefreshing = false,
+                        allowPendingFlush = false,
+                    )
+                }
+            } else if (remoteUpdatedAt != null) {
+                lastRemoteUpdatedAt = remoteUpdatedAt
+            }
+        }
+    }
+
+    private fun subscribeRealtime(reset: Boolean) {
         if (!realtimeClient.isConfigured()) return
-        val ownerKey = resolveOperationalOwnerKey(session)
-        if (ownerKey.isBlank()) return
-        realtimeSubscriptions += realtimeClient.subscribe(LotterynetRealtimeSubscription.ticketOwner(ownerKey)) {
-            syncOperationalTickets(force = true, showRefreshing = false)
+        if (reset) {
+            realtimeSubscriptions.forEach { it.close() }
+            realtimeSubscriptions.clear()
+        } else if (realtimeSubscriptions.isNotEmpty()) {
+            return
+        }
+        resolveOperationalOwnerKeys(session).forEach { ownerKey ->
+            realtimeSubscriptions += realtimeClient.subscribe(LotterynetRealtimeSubscription.ticketOwner(ownerKey)) {
+                runForegroundCatchUp(force = false)
+            }
         }
     }
 }
@@ -530,9 +632,10 @@ private fun TicketSummaryRoute(
 }
 
 internal const val TICKET_SUMMARY_POLL_MS = 60_000L
-internal const val TICKET_SUMMARY_REALTIME_FALLBACK_POLL_MS = 300_000L
+internal const val TICKET_SUMMARY_REALTIME_FALLBACK_POLL_MS = 120_000L
 internal const val TICKET_SUMMARY_STARTUP_SYNC_DELAY_MS = 500L
-internal const val TICKET_SUMMARY_RESUME_SYNC_DELAY_MS = 100L
+internal const val TICKET_SUMMARY_RESUME_SYNC_DELAY_MS = 1_500L
+internal const val TICKET_SUMMARY_FOREGROUND_CATCH_UP_THROTTLE_MS = 45_000L
 
 internal fun shouldForceTicketSummaryLivePoll(): Boolean = false
 

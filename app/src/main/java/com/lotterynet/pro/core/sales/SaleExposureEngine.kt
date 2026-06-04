@@ -94,40 +94,52 @@ internal fun decodeCashierLimitsForSession(raw: String?, session: ActiveSession?
         val json = raw?.takeIf { it.isNotBlank() }?.let(::JSONObject) ?: JSONObject()
         val defaults = json.optJSONObject("defaults") ?: JSONObject()
         val row = json.optJSONObject("byUser")?.optJSONObject(session?.username.orEmpty())
-        if (role == UserRole.ADMIN && row == null) return CashierLimits.noLimit()
-        val base = if (role == UserRole.ADMIN) {
-            CashierLimits.noLimit()
-        } else {
-            CashierLimits(
-                daySale = defaults.optDouble("daySale", 10000.0),
-                q = defaults.optDouble("q", 10000.0),
-                pale = defaults.optDouble("pale", defaults.optDouble("p", 500.0)),
-                superPale = defaults.optDouble("sp", defaults.optDouble("p", 500.0)),
-                t = defaults.optDouble("t", 75.0),
-                pick3Straight = defaults.optDouble("p3", defaults.optDouble("p", 500.0)),
-                pick3Box = defaults.optDouble("p3box", defaults.optDouble("p", 500.0)),
-                pick4Straight = defaults.optDouble("p4", defaults.optDouble("p", 500.0)),
-                pick4Box = defaults.optDouble("p4box", defaults.optDouble("p", 500.0)),
-            )
+        val adminSelf = json.optJSONObject("adminSelf")
+        if (role == UserRole.ADMIN) {
+            val adminLimitRow = when {
+                adminSelf.hasPositiveSaleLimit() -> adminSelf
+                row.hasPositiveSaleLimit() -> row
+                else -> return CashierLimits.noLimit()
+            }
+            return decodeCashierLimitRow(adminLimitRow, CashierLimits.noLimit())
         }
-        val rowPaleFallback = row?.optDouble("p", base.pale) ?: base.pale
-        val rowSuperPaleFallback = row?.optDouble("p", base.superPale) ?: base.superPale
-        val rowPick3StraightFallback = row?.optDouble("p", base.pick3Straight) ?: base.pick3Straight
-        val rowPick3BoxFallback = row?.optDouble("p", base.pick3Box) ?: base.pick3Box
-        val rowPick4StraightFallback = row?.optDouble("p", base.pick4Straight) ?: base.pick4Straight
-        val rowPick4BoxFallback = row?.optDouble("p", base.pick4Box) ?: base.pick4Box
-        CashierLimits(
-            daySale = row?.optDouble("daySale", base.daySale) ?: base.daySale,
-            q = row?.optDouble("q", base.q) ?: base.q,
-            pale = row?.optDouble("pale", rowPaleFallback) ?: base.pale,
-            superPale = row?.optDouble("sp", rowSuperPaleFallback) ?: base.superPale,
-            t = row?.optDouble("t", base.t) ?: base.t,
-            pick3Straight = row?.optDouble("p3", rowPick3StraightFallback) ?: base.pick3Straight,
-            pick3Box = row?.optDouble("p3box", rowPick3BoxFallback) ?: base.pick3Box,
-            pick4Straight = row?.optDouble("p4", rowPick4StraightFallback) ?: base.pick4Straight,
-            pick4Box = row?.optDouble("p4box", rowPick4BoxFallback) ?: base.pick4Box,
-        )
+
+        val base = decodeCashierLimitRow(defaults, CashierLimits())
+        decodeCashierLimitRow(row, base)
     }.getOrDefault(if (role == UserRole.ADMIN) CashierLimits.noLimit() else CashierLimits())
+}
+
+private fun JSONObject?.hasPositiveSaleLimit(): Boolean {
+    if (this == null) return false
+    return optDouble("daySale", optDouble("day_sale", 0.0)) > 0.0 ||
+        optDouble("q", optDouble("quiniela", 0.0)) > 0.0 ||
+        optDouble("pale", optDouble("p", 0.0)) > 0.0 ||
+        optDouble("sp", optDouble("superPale", optDouble("super_pale", optDouble("p", 0.0)))) > 0.0 ||
+        optDouble("t", optDouble("tripleta", 0.0)) > 0.0 ||
+        optDouble("p3", optDouble("pick3Straight", optDouble("pick3_straight", optDouble("p", 0.0)))) > 0.0 ||
+        optDouble("p3box", optDouble("pick3Box", optDouble("pick3_box", optDouble("p3", optDouble("p", 0.0))))) > 0.0 ||
+        optDouble("p4", optDouble("pick4Straight", optDouble("pick4_straight", optDouble("p", 0.0)))) > 0.0 ||
+        optDouble("p4box", optDouble("pick4Box", optDouble("pick4_box", optDouble("p4", optDouble("p", 0.0))))) > 0.0
+}
+
+private fun decodeCashierLimitRow(row: JSONObject?, base: CashierLimits): CashierLimits {
+    val rowPaleFallback = row?.optDouble("p", base.pale) ?: base.pale
+    val rowSuperPaleFallback = row?.optDouble("p", base.superPale) ?: base.superPale
+    val rowPick3StraightFallback = row?.optDouble("p", base.pick3Straight) ?: base.pick3Straight
+    val rowPick3BoxFallback = row?.optDouble("p", base.pick3Box) ?: base.pick3Box
+    val rowPick4StraightFallback = row?.optDouble("p", base.pick4Straight) ?: base.pick4Straight
+    val rowPick4BoxFallback = row?.optDouble("p", base.pick4Box) ?: base.pick4Box
+    return CashierLimits(
+        daySale = row?.optDouble("daySale", base.daySale) ?: base.daySale,
+        q = row?.optDouble("q", base.q) ?: base.q,
+        pale = row?.optDouble("pale", rowPaleFallback) ?: base.pale,
+        superPale = row?.optDouble("sp", rowSuperPaleFallback) ?: base.superPale,
+        t = row?.optDouble("t", base.t) ?: base.t,
+        pick3Straight = row?.optDouble("p3", rowPick3StraightFallback) ?: base.pick3Straight,
+        pick3Box = row?.optDouble("p3box", rowPick3BoxFallback) ?: base.pick3Box,
+        pick4Straight = row?.optDouble("p4", rowPick4StraightFallback) ?: base.pick4Straight,
+        pick4Box = row?.optDouble("p4box", rowPick4BoxFallback) ?: base.pick4Box,
+    )
 }
 
 internal fun resolveExposureOwnerKey(session: ActiveSession?): String {
@@ -138,7 +150,7 @@ internal fun resolveExposureOwnerKey(session: ActiveSession?): String {
 }
 
 internal fun resolveExposureCashierKeys(session: ActiveSession?): Set<String> {
-    if (session?.role != UserRole.CASHIER) return emptySet()
+    if (session?.role != UserRole.CASHIER && session?.role != UserRole.ADMIN) return emptySet()
     return setOfNotNull(
         session.userId.takeIf { it.isNotBlank() },
         session.username.takeIf { it.isNotBlank() },
@@ -283,7 +295,7 @@ fun resolveSaleLimitRemainingRows(
     cashierKeys: Set<String>,
     limits: CashierLimits,
 ): List<SaleLimitRemainingRow> {
-    if (role != UserRole.CASHIER) return emptyList()
+    if (role != UserRole.CASHIER && role != UserRole.ADMIN) return emptyList()
     return stagedRows
         .map { row -> resolveSaleExposureLimitBucket(row.playType, row.number) }
         .distinct()

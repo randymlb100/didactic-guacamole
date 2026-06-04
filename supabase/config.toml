@@ -69,6 +69,9 @@ verify_jwt = true
 [functions.settle-sports-ticket]
 verify_jwt = true
 
+[functions.sports-qa-seed]
+verify_jwt = true
+
 [functions.client-health-batch]
 verify_jwt = true
 
@@ -83,6 +86,9 @@ verify_jwt = true
 
 [functions.change-user-password]
 verify_jwt = false
+
+[functions.admin-user-command]
+verify_jwt = true
 
 [functions.update-master-config]
 verify_jwt = false

@@ -1,0 +1,131 @@
+{
+  "projectRoot": "C:\\Users\\Randy Cordero\\Desktop\\lotterynet_android",
+  "batchFiles": [
+    {
+      "path": "supabase/functions/_shared/lotterynet-admin.ts",
+      "language": "typescript",
+      "sizeLines": 90,
+      "fileCategory": "code"
+    },
+    {
+      "path": "supabase/functions/admin-cashier-limits/index.ts",
+      "language": "typescript",
+      "sizeLines": 30,
+      "fileCategory": "code"
+    },
+    {
+      "path": "supabase/functions/admin-manual-results-override/index.ts",
+      "language": "typescript",
+      "sizeLines": 107,
+      "fileCategory": "code"
+    },
+    {
+      "path": "supabase/functions/admin-master-state/index.ts",
+      "language": "typescript",
+      "sizeLines": 30,
+      "fileCategory": "code"
+    },
+    {
+      "path": "supabase/functions/admin-users-state/index.ts",
+      "language": "typescript",
+      "sizeLines": 38,
+      "fileCategory": "code"
+    },
+    {
+      "path": "supabase/functions/client-health-batch/index.ts",
+      "language": "typescript",
+      "sizeLines": 49,
+      "fileCategory": "code"
+    },
+    {
+      "path": "supabase/functions/get-master-config/index.ts",
+      "language": "typescript",
+      "sizeLines": 37,
+      "fileCategory": "code"
+    },
+    {
+      "path": "supabase/functions/get-results-status/index.ts",
+      "language": "typescript",
+      "sizeLines": 77,
+      "fileCategory": "code"
+    },
+    {
+      "path": "supabase/functions/get-results-v2/index.ts",
+      "language": "typescript",
+      "sizeLines": 58,
+      "fileCategory": "code"
+    },
+    {
+      "path": "supabase/functions/get-ticket-delta/index.ts",
+      "language": "typescript",
+      "sizeLines": 98,
+      "fileCategory": "code"
+    },
+    {
+      "path": "supabase/functions/get-ticket-summary/index.ts",
+      "language": "typescript",
+      "sizeLines": 90,
+      "fileCategory": "code"
+    },
+    {
+      "path": "supabase/functions/lotterynet-users-state/index.ts",
+      "language": "typescript",
+      "sizeLines": 48,
+      "fileCategory": "code"
+    },
+    {
+      "path": "supabase/functions/results-server-refresh/index.ts",
+      "language": "typescript",
+      "sizeLines": 358,
+      "fileCategory": "code"
+    },
+    {
+      "path": "supabase/functions/update-master-config/index.ts",
+      "language": "typescript",
+      "sizeLines": 32,
+      "fileCategory": "code"
+    }
+  ],
+  "batchImportData": {
+    "supabase/functions/_shared/lotterynet-admin.ts": [],
+    "supabase/functions/admin-cashier-limits/index.ts": [
+      "supabase/functions/_shared/lotterynet-admin.ts"
+    ],
+    "supabase/functions/admin-manual-results-override/index.ts": [
+      "supabase/functions/_shared/lotterynet-admin.ts"
+    ],
+    "supabase/functions/admin-master-state/index.ts": [
+      "supabase/functions/_shared/lotterynet-admin.ts"
+    ],
+    "supabase/functions/admin-users-state/index.ts": [
+      "supabase/functions/_shared/lotterynet-admin.ts"
+    ],
+    "supabase/functions/client-health-batch/index.ts": [
+      "supabase/functions/_shared/lotterynet-admin.ts"
+    ],
+    "supabase/functions/get-master-config/index.ts": [
+      "supabase/functions/_shared/lotterynet-admin.ts"
+    ],
+    "supabase/functions/get-results-status/index.ts": [
+      "supabase/functions/_shared/lotterynet-admin.ts"
+    ],
+    "supabase/functions/get-results-v2/index.ts": [
+      "supabase/functions/_shared/lotterynet-admin.ts"
+    ],
+    "supabase/functions/get-ticket-delta/index.ts": [
+      "supabase/functions/_shared/lotterynet-admin.ts"
+    ],
+    "supabase/functions/get-ticket-summary/index.ts": [
+      "supabase/functions/_shared/lotterynet-admin.ts"
+    ],
+    "supabase/functions/lotterynet-users-state/index.ts": [
+      "supabase/functions/_shared/lotterynet-admin.ts"
+    ],
+    "supabase/functions/results-server-refresh/index.ts": [
+      "supabase/functions/_shared/lotterynet-admin.ts"
+    ],
+    "supabase/functions/update-master-config/index.ts": [
+      "supabase/functions/_shared/lotterynet-admin.ts"
+    ]
+  }
+}

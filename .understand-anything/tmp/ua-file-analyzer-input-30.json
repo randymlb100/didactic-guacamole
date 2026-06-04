@@ -1,0 +1,182 @@
+{
+  "projectRoot": "C:\\Users\\Randy Cordero\\Desktop\\lotterynet_android",
+  "batchFiles": [
+    {
+      "path": "app/src/test/java/com/lotterynet/pro/ui/theme/ThemeContractsTest.kt",
+      "language": "kotlin",
+      "sizeLines": 19,
+      "fileCategory": "code"
+    },
+    {
+      "path": "app/src/test/java/com/lotterynet/pro/ui/tickets/TicketLookupContractsTest.kt",
+      "language": "kotlin",
+      "sizeLines": 132,
+      "fileCategory": "code"
+    },
+    {
+      "path": "app/src/test/java/com/lotterynet/pro/ui/update/UpdateUiContractsTest.kt",
+      "language": "kotlin",
+      "sizeLines": 69,
+      "fileCategory": "code"
+    },
+    {
+      "path": "app/src/test/java/com/lotterynet/pro/ui/users/UserAccountsStartupContractsTest.kt",
+      "language": "kotlin",
+      "sizeLines": 29,
+      "fileCategory": "code"
+    },
+    {
+      "path": "build.gradle.kts",
+      "language": "kotlin",
+      "sizeLines": 15,
+      "fileCategory": "code"
+    },
+    {
+      "path": "check_migration_status.py",
+      "language": "python",
+      "sizeLines": 254,
+      "fileCategory": "code"
+    },
+    {
+      "path": "check_supabase_sync.py",
+      "language": "python",
+      "sizeLines": 144,
+      "fileCategory": "code"
+    },
+    {
+      "path": "commonMain/io/github/jan/supabase/realtime/PostgresChangeFilter.kt",
+      "language": "kotlin",
+      "sizeLines": 57,
+      "fileCategory": "code"
+    },
+    {
+      "path": "commonMain/io/github/jan/supabase/realtime/PostgrestExtensions.kt",
+      "language": "kotlin",
+      "sizeLines": 139,
+      "fileCategory": "code"
+    },
+    {
+      "path": "docs/superpowers/mockups/lotterynet-redesign-local.css",
+      "language": "css",
+      "sizeLines": 771,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "docs/superpowers/mockups/lotterynet-redesign-local.html",
+      "language": "html",
+      "sizeLines": 427,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "gradle/gradle-daemon-jvm.properties",
+      "language": "properties",
+      "sizeLines": 13,
+      "fileCategory": "config"
+    },
+    {
+      "path": "gradle/wrapper/gradle-wrapper.jar",
+      "language": "jar",
+      "sizeLines": 159,
+      "fileCategory": "code"
+    },
+    {
+      "path": "gradle/wrapper/gradle-wrapper.properties",
+      "language": "properties",
+      "sizeLines": 7,
+      "fileCategory": "config"
+    },
+    {
+      "path": "gradlew",
+      "language": "unknown",
+      "sizeLines": 251,
+      "fileCategory": "code"
+    },
+    {
+      "path": "local.properties.example",
+      "language": "example",
+      "sizeLines": 12,
+      "fileCategory": "code"
+    },
+    {
+      "path": "proyecto web nuevo/eslint.config.js",
+      "language": "javascript",
+      "sizeLines": 22,
+      "fileCategory": "code"
+    },
+    {
+      "path": "proyecto web nuevo/scratch_diag.cjs",
+      "language": "javascript",
+      "sizeLines": 60,
+      "fileCategory": "code"
+    },
+    {
+      "path": "proyecto web nuevo/scratch_diag.js",
+      "language": "javascript",
+      "sizeLines": 57,
+      "fileCategory": "code"
+    },
+    {
+      "path": "proyecto web nuevo/scratch/check_podero_tickets.js",
+      "language": "javascript",
+      "sizeLines": 41,
+      "fileCategory": "code"
+    },
+    {
+      "path": "proyecto web nuevo/scratch/check_supabase.js",
+      "language": "javascript",
+      "sizeLines": 50,
+      "fileCategory": "code"
+    },
+    {
+      "path": "proyecto web nuevo/scratch/dump_kv.js",
+      "language": "javascript",
+      "sizeLines": 37,
+      "fileCategory": "code"
+    },
+    {
+      "path": "proyecto web nuevo/scratch/dump_results.js",
+      "language": "javascript",
+      "sizeLines": 43,
+      "fileCategory": "code"
+    },
+    {
+      "path": "proyecto web nuevo/scratch/dump_tickets.js",
+      "language": "javascript",
+      "sizeLines": 46,
+      "fileCategory": "code"
+    },
+    {
+      "path": "proyecto web nuevo/scratch/get_podero_data.js",
+      "language": "javascript",
+      "sizeLines": 49,
+      "fileCategory": "code"
+    }
+  ],
+  "batchImportData": {
+    "app/src/test/java/com/lotterynet/pro/ui/theme/ThemeContractsTest.kt": [],
+    "app/src/test/java/com/lotterynet/pro/ui/tickets/TicketLookupContractsTest.kt": [],
+    "app/src/test/java/com/lotterynet/pro/ui/update/UpdateUiContractsTest.kt": [],
+    "app/src/test/java/com/lotterynet/pro/ui/users/UserAccountsStartupContractsTest.kt": [],
+    "build.gradle.kts": [],
+    "check_migration_status.py": [],
+    "check_supabase_sync.py": [],
+    "commonMain/io/github/jan/supabase/realtime/PostgresChangeFilter.kt": [],
+    "commonMain/io/github/jan/supabase/realtime/PostgrestExtensions.kt": [],
+    "docs/superpowers/mockups/lotterynet-redesign-local.css": [],
+    "docs/superpowers/mockups/lotterynet-redesign-local.html": [],
+    "gradle/gradle-daemon-jvm.properties": [],
+    "gradle/wrapper/gradle-wrapper.jar": [],
+    "gradle/wrapper/gradle-wrapper.properties": [],
+    "gradlew": [],
+    "local.properties.example": [],
+    "proyecto web nuevo/eslint.config.js": [],
+    "proyecto web nuevo/scratch_diag.cjs": [],
+    "proyecto web nuevo/scratch_diag.js": [],
+    "proyecto web nuevo/scratch/check_podero_tickets.js": [],
+    "proyecto web nuevo/scratch/check_supabase.js": [],
+    "proyecto web nuevo/scratch/dump_kv.js": [],
+    "proyecto web nuevo/scratch/dump_results.js": [],
+    "proyecto web nuevo/scratch/dump_tickets.js": [],
+    "proyecto web nuevo/scratch/get_podero_data.js": []
+  }
+}

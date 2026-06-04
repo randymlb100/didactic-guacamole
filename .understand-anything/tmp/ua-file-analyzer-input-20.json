@@ -1,0 +1,49 @@
+{
+  "projectRoot": "C:\\Users\\Randy Cordero\\Desktop\\lotterynet_android",
+  "batchFiles": [
+    {
+      "path": "docs/qa/2026-05-05-production-readiness-audit.md",
+      "language": "markdown",
+      "sizeLines": 58,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "docs/qa/2026-05-19-apkpure-upload-info.md",
+      "language": "markdown",
+      "sizeLines": 72,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "docs/qa/2026-05-19-node-wide-smoke-production-risk.md",
+      "language": "markdown",
+      "sizeLines": 215,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "docs/qa/2026-05-23-non-sales-visual-redesign-checklist.md",
+      "language": "markdown",
+      "sizeLines": 48,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "docs/qa/cashier-old-android-performance-checklist.md",
+      "language": "markdown",
+      "sizeLines": 26,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "docs/qa/native-local-pos-checklist.md",
+      "language": "markdown",
+      "sizeLines": 26,
+      "fileCategory": "docs"
+    }
+  ],
+  "batchImportData": {
+    "docs/qa/2026-05-05-production-readiness-audit.md": [],
+    "docs/qa/2026-05-19-apkpure-upload-info.md": [],
+    "docs/qa/2026-05-19-node-wide-smoke-production-risk.md": [],
+    "docs/qa/2026-05-23-non-sales-visual-redesign-checklist.md": [],
+    "docs/qa/cashier-old-android-performance-checklist.md": [],
+    "docs/qa/native-local-pos-checklist.md": []
+  }
+}

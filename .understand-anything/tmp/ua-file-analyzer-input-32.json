@@ -1,0 +1,182 @@
+{
+  "projectRoot": "C:\\Users\\Randy Cordero\\Desktop\\lotterynet_android",
+  "batchFiles": [
+    {
+      "path": "tools/pre-release.mjs",
+      "language": "javascript",
+      "sizeLines": 122,
+      "fileCategory": "code"
+    },
+    {
+      "path": "tools/qa/admin-controls-real-flow-smoke.mjs",
+      "language": "javascript",
+      "sizeLines": 548,
+      "fileCategory": "code"
+    },
+    {
+      "path": "tools/qa/admin-self-limits-smoke.mjs",
+      "language": "javascript",
+      "sizeLines": 139,
+      "fileCategory": "code"
+    },
+    {
+      "path": "tools/qa/android-clock-security.node.test.mjs",
+      "language": "javascript",
+      "sizeLines": 180,
+      "fileCategory": "code"
+    },
+    {
+      "path": "tools/qa/bugfix-regression-smoke.mjs",
+      "language": "javascript",
+      "sizeLines": 357,
+      "fileCategory": "code"
+    },
+    {
+      "path": "tools/qa/finance-monitor-smoke.mjs",
+      "language": "javascript",
+      "sizeLines": 132,
+      "fileCategory": "code"
+    },
+    {
+      "path": "tools/qa/full_advisors_report.json",
+      "language": "json",
+      "sizeLines": 1440,
+      "fileCategory": "config"
+    },
+    {
+      "path": "tools/qa/keyboard-sales-smoke.mjs",
+      "language": "javascript",
+      "sizeLines": 379,
+      "fileCategory": "code"
+    },
+    {
+      "path": "tools/qa/payment-tolerance-smoke.mjs",
+      "language": "javascript",
+      "sizeLines": 180,
+      "fileCategory": "code"
+    },
+    {
+      "path": "tools/qa/pick-mode-results-smoke.mjs",
+      "language": "javascript",
+      "sizeLines": 427,
+      "fileCategory": "code"
+    },
+    {
+      "path": "tools/qa/podero02-ticket-stress-no-cleanup.mjs",
+      "language": "javascript",
+      "sizeLines": 409,
+      "fileCategory": "code"
+    },
+    {
+      "path": "tools/qa/production-stability-suite.mjs",
+      "language": "javascript",
+      "sizeLines": 351,
+      "fileCategory": "code"
+    },
+    {
+      "path": "tools/qa/real-flow-smoke.mjs",
+      "language": "javascript",
+      "sizeLines": 534,
+      "fileCategory": "code"
+    },
+    {
+      "path": "tools/qa/result-prize-v2-smoke.sql",
+      "language": "sql",
+      "sizeLines": 37,
+      "fileCategory": "data"
+    },
+    {
+      "path": "tools/qa/results-migration-contract.node.test.mjs",
+      "language": "javascript",
+      "sizeLines": 48,
+      "fileCategory": "code"
+    },
+    {
+      "path": "tools/qa/results-stack-diagnostic.mjs",
+      "language": "javascript",
+      "sizeLines": 192,
+      "fileCategory": "code"
+    },
+    {
+      "path": "tools/qa/sales-capacity-smoke.mjs",
+      "language": "javascript",
+      "sizeLines": 231,
+      "fileCategory": "code"
+    },
+    {
+      "path": "tools/qa/server-hardening-smoke.mjs",
+      "language": "javascript",
+      "sizeLines": 195,
+      "fileCategory": "code"
+    },
+    {
+      "path": "tools/qa/server-sales-diagnostic.mjs",
+      "language": "javascript",
+      "sizeLines": 495,
+      "fileCategory": "code"
+    },
+    {
+      "path": "tools/qa/ticket-official-winner-details.node.test.mjs",
+      "language": "javascript",
+      "sizeLines": 63,
+      "fileCategory": "code"
+    },
+    {
+      "path": "tools/qa/ticket-payload-integrity-smoke.mjs",
+      "language": "javascript",
+      "sizeLines": 297,
+      "fileCategory": "code"
+    },
+    {
+      "path": "tools/qa/workday-monitor.playwright.spec.mjs",
+      "language": "javascript",
+      "sizeLines": 330,
+      "fileCategory": "code"
+    },
+    {
+      "path": "tools/qa/workday-stress-smoke.mjs",
+      "language": "javascript",
+      "sizeLines": 704,
+      "fileCategory": "code"
+    },
+    {
+      "path": "tools/real-server-smoke.mjs",
+      "language": "javascript",
+      "sizeLines": 317,
+      "fileCategory": "code"
+    },
+    {
+      "path": "tools/real-test-credentials.local.example.json",
+      "language": "json",
+      "sizeLines": 32,
+      "fileCategory": "config"
+    }
+  ],
+  "batchImportData": {
+    "tools/pre-release.mjs": [],
+    "tools/qa/admin-controls-real-flow-smoke.mjs": [],
+    "tools/qa/admin-self-limits-smoke.mjs": [],
+    "tools/qa/android-clock-security.node.test.mjs": [],
+    "tools/qa/bugfix-regression-smoke.mjs": [],
+    "tools/qa/finance-monitor-smoke.mjs": [],
+    "tools/qa/full_advisors_report.json": [],
+    "tools/qa/keyboard-sales-smoke.mjs": [],
+    "tools/qa/payment-tolerance-smoke.mjs": [],
+    "tools/qa/pick-mode-results-smoke.mjs": [],
+    "tools/qa/podero02-ticket-stress-no-cleanup.mjs": [],
+    "tools/qa/production-stability-suite.mjs": [],
+    "tools/qa/real-flow-smoke.mjs": [],
+    "tools/qa/result-prize-v2-smoke.sql": [],
+    "tools/qa/results-migration-contract.node.test.mjs": [],
+    "tools/qa/results-stack-diagnostic.mjs": [],
+    "tools/qa/sales-capacity-smoke.mjs": [],
+    "tools/qa/server-hardening-smoke.mjs": [],
+    "tools/qa/server-sales-diagnostic.mjs": [],
+    "tools/qa/ticket-official-winner-details.node.test.mjs": [],
+    "tools/qa/ticket-payload-integrity-smoke.mjs": [],
+    "tools/qa/workday-monitor.playwright.spec.mjs": [],
+    "tools/qa/workday-stress-smoke.mjs": [],
+    "tools/real-server-smoke.mjs": [],
+    "tools/real-test-credentials.local.example.json": []
+  }
+}

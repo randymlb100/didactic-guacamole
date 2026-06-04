@@ -1,0 +1,2855 @@
+diff --git a/app/src/main/java/com/lotterynet/pro/ui/sales/SalesActivity.kt b/app/src/main/java/com/lotterynet/pro/ui/sales/SalesActivity.kt
+index c11897d..c8a1cbf 100644
+--- a/app/src/main/java/com/lotterynet/pro/ui/sales/SalesActivity.kt
++++ b/app/src/main/java/com/lotterynet/pro/ui/sales/SalesActivity.kt
+@@ -92,10 +92,12 @@ import com.lotterynet.pro.core.calendar.StaticHolidayCalendarRepository
+ import com.lotterynet.pro.core.auth.SupabaseSessionTokenProvider
+ import com.lotterynet.pro.core.catalog.StaticLotteryCatalogRepository
+ import com.lotterynet.pro.core.diagnostics.NativeCrashReporter
++import com.lotterynet.pro.core.delivery.TicketDeliveryPolicy
+ import com.lotterynet.pro.core.export.NativeBitmapExport
+ import com.lotterynet.pro.core.export.StaticExportTemplateRepository
+ import com.lotterynet.pro.core.export.TicketSecurity
+ import com.lotterynet.pro.core.format.formatWholeAmount
++import com.lotterynet.pro.core.model.ActiveSession
+ import com.lotterynet.pro.core.model.CloseState
+ import com.lotterynet.pro.core.model.LotteryCatalogItem
+ import com.lotterynet.pro.core.model.LotteryResult
+@@ -172,6 +174,10 @@ import com.lotterynet.pro.core.storage.CashierSalesLimitInputs
+ import com.lotterynet.pro.core.storage.AdminSystemModeConfig
+ import com.lotterynet.pro.core.storage.decodeAdminSystemModeConfig
+ import com.lotterynet.pro.core.storage.effectiveSystemModeConfigForSession
++import com.lotterynet.pro.core.storage.AdminBlockedSalePlay
++import com.lotterynet.pro.core.storage.firstBlockedSalePlayLabel
++import com.lotterynet.pro.core.storage.isSalePlayBlocked
++import com.lotterynet.pro.core.storage.salePlayTypeBlockLabel
+ import com.lotterynet.pro.core.storage.LocalCashierSalesLimitRepository
+ import com.lotterynet.pro.core.storage.LocalCashierPrizePayoutRepository
+ import com.lotterynet.pro.core.storage.LocalPrizeConfigRepository
+@@ -627,7 +633,15 @@ internal fun resolveVentaQrLookupChoices(): List<VentaQrLookupChoice> = listOf(
+ internal const val CASHIER_LIMIT_PULL_INTERVAL_MS: Long = 60_000L
+ internal const val SALES_EXPOSURE_REFRESH_INTERVAL_MS: Long = 60_000L
+ internal const val SALES_RESULTS_WINNER_REFRESH_INTERVAL_MS: Long = 120_000L
+-internal const val SALES_SERVER_TICKET_VALIDATION_TIMEOUT_MS: Long = 4_500L
++internal const val SALES_SERVER_TICKET_VALIDATION_TIMEOUT_MS: Long = 6_500L
++internal const val SALES_SERVER_LARGE_TICKET_VALIDATION_TIMEOUT_MS: Long = 15_000L
++
++internal fun resolveSalesServerTicketValidationTimeoutMs(playCount: Int): Long {
++    val safePlayCount = playCount.coerceAtLeast(0)
++    if (safePlayCount <= 12) return SALES_SERVER_TICKET_VALIDATION_TIMEOUT_MS
++    val adaptive = SALES_SERVER_TICKET_VALIDATION_TIMEOUT_MS + ((safePlayCount - 12) * 110L)
++    return adaptive.coerceAtMost(SALES_SERVER_LARGE_TICKET_VALIDATION_TIMEOUT_MS)
++}
+ 
+ internal fun shouldPollSalesServerAccountGuardInBackground(
+     role: UserRole,
+@@ -636,7 +650,7 @@ internal fun shouldPollSalesServerAccountGuardInBackground(
+ 
+ internal fun shouldPollSalesResultsWinnerRefreshInBackground(
+     realtimeEnabled: Boolean,
+-): Boolean = !realtimeEnabled
++): Boolean = true
+ 
+ internal enum class SalesServerAccountGuard(val message: String?) {
+     ALLOW(null),
+@@ -751,6 +765,16 @@ internal data class VentaPosLiteContract(
+     val useTightSellingLayout: Boolean,
+ )
+ 
++internal data class VentaPosLiteControlContract(
++    val visible: Boolean,
++    val enabled: Boolean,
++    val label: String,
++    val togglesPersistedMode: Boolean,
++    val reserveBottomSafePadding: Boolean,
++    val hideStatsBadges: Boolean,
++    val maxKeypadHeightDp: Int,
++)
++
+ internal enum class SaleLimitBadgeTone {
+     GREEN,
+     RED,
+@@ -769,6 +793,25 @@ internal fun resolveVentaPosLiteContract(
+     )
+ }
+ 
++internal fun resolveVentaPosLiteControlContract(
++    role: UserRole,
++    viewportWidthDp: Int,
++    viewportHeightDp: Int,
++    posLiteEnabled: Boolean,
++): VentaPosLiteControlContract {
++    val compactViewport = viewportWidthDp <= 380 || viewportHeightDp <= 680
++    val visible = role == UserRole.CASHIER || role == UserRole.ADMIN
++    return VentaPosLiteControlContract(
++        visible = visible,
++        enabled = visible,
++        label = "POS Lite",
++        togglesPersistedMode = true,
++        reserveBottomSafePadding = compactViewport || posLiteEnabled,
++        hideStatsBadges = compactViewport || posLiteEnabled,
++        maxKeypadHeightDp = if (compactViewport || posLiteEnabled) 292 else 360,
++    )
++}
++
+ internal fun resolveVentaEntryStripLayout(windowMode: LotteryNetWindowMode): VentaEntryStripLayoutContract {
+     return when (windowMode) {
+         LotteryNetWindowMode.POS_TIGHT -> VentaEntryStripLayoutContract(
+@@ -981,6 +1024,9 @@ private fun resolveCashierNaturalNumber(cashier: UserAccount): Int? {
+     }
+ }
+ 
++private fun resolveCashierCustomName(cashier: UserAccount, cashierNumber: Int?): String? {
++    val displayName = cashier.displayName?.trim()?.takeIf { it.isNotBlank() } ?: return cashier.banca
++    if (cashierNumber == null) return displayName.takeIf { !it.equals(cashier.user, ignoreCase = true) }
+ private fun resolveCashierCustomName(cashier: UserAccount, cashierNumber: Int?): String? {
+     val displayName = cashier.displayName?.trim()?.takeIf { it.isNotBlank() } ?: return cashier.banca
+     if (cashierNumber == null) return displayName.takeIf { !it.equals(cashier.user, ignoreCase = true) }
+@@ -1002,7 +1048,7 @@ internal fun resolveVentaKeyRows(
+             listOf("4", "5", "6", "-"),
+             listOf("1", "2", "3", "+"),
+             listOf("0", ".", "/", "*"),
+-            listOf("OK", "PRINT"),
++            listOf("CLR", "OK", "PRINT"),
+         )
+     }
+     return if (role == UserRole.ADMIN) {
+@@ -1010,22 +1056,24 @@ internal fun resolveVentaKeyRows(
+             listOf("7", "8", "9", "⌫"),
+             listOf("4", "5", "6", "PRINT"),
+             listOf("1", "2", "3", "SELLER"),
+-            listOf("0", "00", "OK"),
++            listOf("CLR", "0", "00", "OK"),
+         )
+     } else {
+         listOf(
+             listOf("7", "8", "9", "⌫"),
+             listOf("4", "5", "6", "PRINT"),
+             listOf("1", "2", "3", "000"),
+-            listOf("0", "00", "OK"),
++            listOf("CLR", "0", "00", "OK"),
+         )
+     }
+ }
+ 
+ internal fun resolveVentaKeyWeight(key: String, pickKeypad: Boolean = false): Float {
+     return when {
+-        key == "OK" -> 2f
+-        pickKeypad && key == "PRINT" -> 1.35f
++        pickKeypad && key == "OK" -> 1.5f
++        pickKeypad && key == "PRINT" -> 1.5f
++        pickKeypad && key == "CLR" -> 1f
++        !pickKeypad && key == "OK" -> 1f
+         else -> 1f
+     }
+ }
+@@ -1154,12 +1202,12 @@ internal fun filterPickAssistedLotteries(
+     return lotteries.filter { normalizePickLotteryType(it.type) == assistedEntry.lotteryType }
+ }
+ 
++@Suppress("UNUSED_PARAMETER")
+ internal fun filterVentaLotteryPickerForMode(
+     lotteries: List<LotteryCatalogItem>,
+     selectedLotteries: List<LotteryCatalogItem>,
+     assistedEntry: PickAssistedEntry?,
+ ): List<LotteryCatalogItem> {
+-    assistedEntry?.let { return dedupePickLotteryPickerRows(filterPickAssistedLotteries(lotteries, it)) }
+     val selectedIsPickMode = selectedLotteries.isNotEmpty() && selectedLotteries.all(::supportsPickModes)
+     return if (selectedIsPickMode) dedupePickLotteryPickerRows(lotteries.filter(::supportsPickModes)) else lotteries
+ }
+@@ -1192,41 +1240,12 @@ private fun pickLotteryPickerPriority(lottery: LotteryCatalogItem): Int {
+     }
+ }
+ 
++@Suppress("UNUSED_PARAMETER")
+ internal fun resolvePickAssistedLotterySelection(
+     currentSelection: List<String>,
+     lotteries: List<LotteryCatalogItem>,
+     assistedEntry: PickAssistedEntry?,
+-): List<String> {
+-    assistedEntry ?: return currentSelection
+-    val compatibleLotteries = filterPickAssistedLotteries(lotteries, assistedEntry)
+-    if (compatibleLotteries.isEmpty()) return emptyList()
+-    val compatibleIds = compatibleLotteries.map { it.id }
+-    val retained = currentSelection.filter { it in compatibleIds }.distinct()
+-    if (retained.isNotEmpty()) return retained
+-    resolveEquivalentPickLotterySelection(currentSelection, lotteries, compatibleLotteries)?.let { equivalent ->
+-        return listOf(equivalent.id)
+-    }
+-    return listOf(compatibleIds.first())
+-}
+-
+-private fun resolveEquivalentPickLotterySelection(
+-    currentSelection: List<String>,
+-    lotteries: List<LotteryCatalogItem>,
+-    compatibleLotteries: List<LotteryCatalogItem>,
+-): LotteryCatalogItem? {
+-    val byId = lotteries.associateBy { it.id }
+-    val currentIdentities = currentSelection
+-        .mapNotNull { selectedId -> byId[selectedId] }
+-        .mapNotNull(PickResultIdentityResolver::resolveLottery)
+-    if (currentIdentities.isEmpty()) return null
+-    return currentIdentities.firstNotNullOfOrNull { currentIdentity ->
+-        compatibleLotteries.firstOrNull { candidate ->
+-            val candidateIdentity = PickResultIdentityResolver.resolveLottery(candidate) ?: return@firstOrNull false
+-            candidateIdentity.stateCode == currentIdentity.stateCode &&
+-                candidateIdentity.canonicalKey.substringAfterLast("|") == currentIdentity.canonicalKey.substringAfterLast("|")
+-        }
+-    }
+-}
++): List<String> = currentSelection
+ 
+ internal fun filterSaleLotteriesForSystemMode(
+     lotteries: List<LotteryCatalogItem>,
+@@ -1478,6 +1497,8 @@ private fun SalesRoute(
+     var pendingPublishedResultPlay by remember { mutableStateOf<PendingPublishedResultPlay?>(null) }
+     var ticketSaveSyncStage by remember { mutableStateOf<TicketSaveSyncStage?>(null) }
+     var ticketSaveSyncDetail by remember { mutableStateOf<String?>(null) }
++    var saleSaveInFlight by remember { mutableStateOf(false) }
++    var pendingSaleSubmission by remember { mutableStateOf<SaleSubmissionIdentity?>(null) }
+     var exposureRefreshTick by remember { mutableLongStateOf(0L) }
+     val salesActionScope = rememberCoroutineScope()
+     var showAdminSellerPicker by remember { mutableStateOf(false) }
+@@ -1487,8 +1508,8 @@ private fun SalesRoute(
+     val futureSaleEnabled = false
+     var selectedDrawDay by remember { mutableStateOf(SaleDrawDay.TODAY) }
+     val limitOwnerId = session?.adminId ?: session?.userId
+-    var cashierSaleLimits by remember(limitOwnerId, session?.username) {
+-        mutableStateOf(cashierSalesLimitRepository.getUserLimits(limitOwnerId, session?.username))
++    var cashierSaleLimits by remember(limitOwnerId, session?.username, session?.role) {
++        mutableStateOf(resolveSaleLimitInputsForSession(cashierSalesLimitRepository, limitOwnerId, session))
+     }
+     val localContext = LocalContext.current
+     val realtimeClient = remember { LotterynetRealtimeClient() }
+@@ -1565,11 +1586,11 @@ private fun SalesRoute(
+                 }
+             }
+         }
+-        if (activeSession.role == UserRole.CASHIER) {
++        if (usesConfiguredSaleLimits(activeSession.role)) {
+             thread(name = "cashier-limit-pull") {
+                 val ownerKey = activeSession.adminId ?: activeSession.userId
+                 cashierLimitCloudSyncCoordinator.pullOwner(ownerKey)
+-                val nextLimits = cashierSalesLimitRepository.getUserLimits(ownerKey, activeSession.username)
++                val nextLimits = resolveSaleLimitInputsForSession(cashierSalesLimitRepository, ownerKey, activeSession)
+                 (localContext as? android.app.Activity)?.runOnUiThread {
+                     cashierSaleLimits = nextLimits
+                 }
+@@ -1579,7 +1600,7 @@ private fun SalesRoute(
+ 
+     LaunchedEffect(session?.userId, session?.adminId, session?.username, role) {
+         val activeSession = session ?: return@LaunchedEffect
+-        if (activeSession.role != UserRole.CASHIER) return@LaunchedEffect
++        if (!usesConfiguredSaleLimits(activeSession.role)) return@LaunchedEffect
+         if (realtimeEnabled) return@LaunchedEffect
+         while (true) {
+             delay(CASHIER_LIMIT_PULL_INTERVAL_MS)
+@@ -1587,7 +1608,7 @@ private fun SalesRoute(
+                 val ownerKey = activeSession.adminId ?: activeSession.userId
+                 val pulled = cashierLimitCloudSyncCoordinator.pullOwner(ownerKey)
+                 if (pulled) {
+-                    val nextLimits = cashierSalesLimitRepository.getUserLimits(ownerKey, activeSession.username)
++                    val nextLimits = resolveSaleLimitInputsForSession(cashierSalesLimitRepository, ownerKey, activeSession)
+                     (localContext as? android.app.Activity)?.runOnUiThread {
+                         cashierSaleLimits = nextLimits
+                     }
+@@ -1729,14 +1750,14 @@ private fun SalesRoute(
+                         }
+                     }
+                 }
+-                if (activeSession.role == UserRole.CASHIER) {
++                if (usesConfiguredSaleLimits(activeSession.role)) {
+                     subscriptions += realtimeClient.subscribe(
+                         LotterynetRealtimeSubscription.masterKey(cashierLimitRemoteKey(ownerKey)),
+                     ) {
+                         thread(name = "sales-realtime-cashier-limits") {
+                             val pulled = cashierLimitCloudSyncCoordinator.pullOwner(ownerKey)
+                             if (pulled) {
+-                                val nextLimits = cashierSalesLimitRepository.getUserLimits(ownerKey, activeSession.username)
++                                val nextLimits = resolveSaleLimitInputsForSession(cashierSalesLimitRepository, ownerKey, activeSession)
+                                 (localContext as? android.app.Activity)?.runOnUiThread {
+                                     cashierSaleLimits = nextLimits
+                                 }
+@@ -1783,9 +1804,7 @@ private fun SalesRoute(
+     val pickStraightBoxShortcut = remember(number) {
+         resolvePickStraightBoxShortcut(number)
+     }
+-    val effectiveSelectedLotteries = remember(selectedLotteries, pickAssistedEntry) {
+-        filterPickAssistedLotteries(selectedLotteries, pickAssistedEntry)
+-    }
++    val effectiveSelectedLotteries = selectedLotteries
+     val resolvedClassicMode = remember(classicMode, number) {
+         resolveVisibleClassicMode(
+             preferredMode = classicMode,
+@@ -1817,9 +1836,7 @@ private fun SalesRoute(
+             onDispose { }
+         } else {
+             val subscriptions = listOf(
+-                LotterynetRealtimeSubscription.resultsCache("lot_results_cache_by_day:$resultsDayKey"),
+-                LotterynetRealtimeSubscription.resultsCache("pick_results_cache_by_day:$resultsDayKey"),
+-                LotterynetRealtimeSubscription.resultsCache("manual_results_overrides_by_day:$resultsDayKey"),
++                LotterynetRealtimeSubscription.resultsDraws(resultsDayKey),
+             ).map { subscription ->
+                 realtimeClient.subscribe(subscription) {
+                     if (!resultsRealtimeRefreshInFlight.compareAndSet(false, true)) {
+@@ -1994,9 +2011,10 @@ private fun SalesRoute(
+         lastSavedTicketEpochMs,
+         exposureRefreshTick,
+         session,
++        number,
+     ) {
+         val play = validation.resolvedPlay ?: detectedPlay
+-        if (role == UserRole.CASHIER && play != null) {
++        if (usesConfiguredSaleLimits(role) && play != null) {
+             val bucket = resolveSaleExposureLimitBucket(play.playType, play.normalizedNumber)
+             val matchingRow = saleLimitRemainingRows.firstOrNull { row ->
+                 row.playType == bucket.playType && row.number == bucket.number
+@@ -2023,7 +2041,7 @@ private fun SalesRoute(
+                 pending = pendingExposure,
+             )
+         } else {
+-            val stagedLimitRow = saleLimitRemainingRows.firstOrNull()
++            val stagedLimitRow = if (number.isBlank()) saleLimitRemainingRows.firstOrNull() else null
+             val stagedBadge = resolveSaleLimitBadgeMain(
+                 role = role,
+                 row = stagedLimitRow,
+@@ -2037,7 +2055,7 @@ private fun SalesRoute(
+                 stagedBadge
+             } else {
+                 saleLimitBadgeTone = resolveSaleLimitBadgeTone(
+-                    limit = if (role == UserRole.CASHIER) resolveSaleLimitValue(selectedLottery, resolvedClassicMode, pickMode, cashierSaleLimits) else 0.0,
++                    limit = if (usesConfiguredSaleLimits(role)) resolveSaleLimitValue(selectedLottery, resolvedClassicMode, pickMode, cashierSaleLimits) else 0.0,
+                 )
+                 resolveSaleLimitBadgeMain(role, selectedLottery, resolvedClassicMode, pickMode, cashierSaleLimits)
+             }
+@@ -2106,7 +2124,7 @@ private fun SalesRoute(
+             excludedLotteryIds = pickerExcludedLotteryIds,
+         )
+     }
+-    val pickerLotteries = remember(pickerLotteryIds, lotteries, selectedLotteries, pickAssistedEntry, initialSystemModeConfig) {
++    val pickerLotteries = remember(pickerLotteryIds, lotteries, selectedLotteries, initialSystemModeConfig) {
+         val systemFiltered = filterSaleLotteriesForSystemMode(
+             lotteries = pickerLotteryIds.mapNotNull { pickerId -> lotteries.firstOrNull { it.id == pickerId } },
+             config = initialSystemModeConfig,
+@@ -2117,20 +2135,6 @@ private fun SalesRoute(
+             assistedEntry = pickAssistedEntry,
+         )
+     }
+-    LaunchedEffect(pickAssistedEntry, pickerLotteries, selectedLotteryIds) {
+-        val nextSelection = resolvePickAssistedLotterySelection(
+-            currentSelection = selectedLotteryIds,
+-            lotteries = pickerLotteries,
+-            assistedEntry = pickAssistedEntry,
+-        )
+-        if (nextSelection != selectedLotteryIds) {
+-            selectedLotteryIds = nextSelection
+-            validationMessage = nextSelection.firstOrNull()
+-                ?.let { nextId -> lotteries.firstOrNull { it.id == nextId }?.name }
+-                ?.let { "Pick seleccionado: $it" }
+-                ?: "Selecciona una lotería Pick disponible"
+-        }
+-    }
+     LaunchedEffect(initialDraft, selectedLotteryIds, lotteries, lotteryDecisionsById, initialSystemModeConfig) {
+         if (initialDraft != null || selectedLotteryIds.isNotEmpty()) return@LaunchedEffect
+         selectedLotteryIds = resolveInitialLotterySelection(
+@@ -2179,18 +2183,42 @@ private fun SalesRoute(
+         }
+     }
+     val saveTicket: suspend () -> TicketRecord? = saveTicket@{
+-        if (session == null) {
+-            validationMessage = "No hay sesión activa"
+-            null
+-        } else if (!ProductionNetworkGuard.hasValidatedInternet(localContext)) {
+-            validationMessage = ProductionNetworkGuard.NO_INTERNET_ACTION_MESSAGE
+-            ticketSaveSyncStage = TicketSaveSyncStage.PENDING
+-            ticketSaveSyncDetail = "Internet requerido para vender"
+-            null
+-        } else if (stagedRows.isEmpty()) {
+-            validationMessage = "No hay jugadas para guardar"
+-            null
+-        } else {
++        val gate = resolveSaleSaveGate(
++            isSaveInFlight = saleSaveInFlight,
++            stagedRowCount = stagedRows.size,
++        )
++        if (!gate.canStartSave) {
++            validationMessage = gate.message
++            return@saveTicket null
++        }
++        saleSaveInFlight = true
++        val saleRowsSnapshot = stagedRows.toList()
++        try {
++            if (session == null) {
++                validationMessage = "No hay sesión activa"
++                return@saveTicket null
++            } else if (!ProductionNetworkGuard.hasValidatedInternet(localContext)) {
++                validationMessage = ProductionNetworkGuard.NO_INTERNET_ACTION_MESSAGE
++                ticketSaveSyncStage = TicketSaveSyncStage.PENDING
++                ticketSaveSyncDetail = "Internet requerido para vender"
++                return@saveTicket null
++            } else if (saleRowsSnapshot.isEmpty()) {
++                validationMessage = "No hay jugadas para guardar"
++                return@saveTicket null
++            } else if (saleRowsSnapshot.any {
++                it.number.isBlank() ||
++                    it.playType.isBlank() ||
++                    it.lotteryId.isBlank() ||
++                    it.lotteryName.isBlank() ||
++                    it.amount <= 0.0
++            }) {
++                validationMessage = "Hay una jugada incompleta. Revisa numero, tipo, loteria y monto antes de vender."
++                return@saveTicket null
++            } else if (firstBlockedSalePlayLabel(saleRowsSnapshot.map { AdminBlockedSalePlay(it.playType, it.number) }, initialSystemModeConfig) != null) {
++                val blockedLabel = firstBlockedSalePlayLabel(saleRowsSnapshot.map { AdminBlockedSalePlay(it.playType, it.number) }, initialSystemModeConfig)
++                validationMessage = "$blockedLabel está bloqueado por admin. Quita esa jugada para vender."
++                return@saveTicket null
++            }
+             val refreshedResults = withContext(Dispatchers.IO) {
+                 runCatching {
+                     resultsSaleGuardOrchestrator.refreshDate(resultsDayKey, forceRemote = false).results
+@@ -2199,7 +2227,7 @@ private fun SalesRoute(
+                 }
+             }
+             val blockedResultLotteryIds = resolvePublishedResultSaleBlockLotteryIds(
+-                stagedRows = stagedRows,
++                stagedRows = saleRowsSnapshot,
+                 results = refreshedResults,
+             )
+             val sellBlockedResultLotteryIds = if (canUseAdminResultGraceForSale(role)) {
+@@ -2233,11 +2261,24 @@ private fun SalesRoute(
+                     .ifBlank { "lotería seleccionada" }
+                 validationMessage = "Resultado publicado: $warningNames. Venta permitida por gracia de admin."
+             }
+-            val total = stagedRows.sumOf { it.amount }
+-            val nowEpoch = tickUtcMs
++            val total = saleRowsSnapshot.sumOf { it.amount }
+             val ticketSeller = activeTicketSeller ?: resolveSaleTicketSeller(session, null)
++            val saleSubmission = resolveSaleSubmissionIdentity(
++                current = pendingSaleSubmission,
++                nextFingerprint = buildSaleSubmissionFingerprint(
++                    adminId = session.adminId ?: session.userId,
++                    adminUser = session.adminUser ?: session.username,
++                    sellerId = ticketSeller.sellerId,
++                    sellerUser = ticketSeller.sellerUser,
++                    drawDateKey = dayKey,
++                    rows = saleRowsSnapshot,
++                ),
++                nowEpochMs = tickUtcMs,
++            )
++            pendingSaleSubmission = saleSubmission
++            val nowEpoch = saleSubmission.createdAtEpochMs
+             val ticket = TicketRecord(
+-                id = "native-$nowEpoch",
++                id = saleSubmission.clientRequestId,
+                 serial = "NAT-${nowEpoch.toString().takeLast(8)}",
+                 sellerId = ticketSeller.sellerId,
+                 sellerUser = ticketSeller.sellerUser,
+@@ -2246,7 +2287,7 @@ private fun SalesRoute(
+                 role = ticketSeller.role,
+                 createdAtEpochMs = nowEpoch,
+                 drawDateKey = dayKey,
+-                plays = stagedRows.map { row ->
++                plays = saleRowsSnapshot.map { row ->
+                     PlayItem(
+                         number = row.number,
+                         playType = row.playType,
+@@ -2271,8 +2312,9 @@ private fun SalesRoute(
+             ticketSaveSyncStage = TicketSaveSyncStage.SYNCING
+             ticketSaveSyncDetail = "Validando venta en servidor"
+             validationMessage = "Validando venta en servidor..."
++            val validationTimeoutMs = resolveSalesServerTicketValidationTimeoutMs(saleRowsSnapshot.size)
+             val backendResponse = runCatching {
+-                withTimeout(SALES_SERVER_TICKET_VALIDATION_TIMEOUT_MS) {
++                withTimeout(validationTimeoutMs) {
+                     withContext(Dispatchers.IO) {
+                         val freshBearerToken = SupabaseSessionTokenProvider(
+                             LocalSessionRepository(localContext),
+@@ -2280,8 +2322,8 @@ private fun SalesRoute(
+                         SupabaseTicketBackendClient(
+                             edgeClient = SupabaseEdgeClient(
+                                 connectTimeoutMs = 3_000,
+-                                readTimeoutMs = SALES_SERVER_TICKET_VALIDATION_TIMEOUT_MS.toInt(),
+-                                callTimeoutMs = SALES_SERVER_TICKET_VALIDATION_TIMEOUT_MS.toInt(),
++                                readTimeoutMs = validationTimeoutMs.toInt(),
++                                callTimeoutMs = validationTimeoutMs.toInt(),
+                             ),
+                         ).createTicket(
+                             request = BackendTicketRequest(
+@@ -2294,14 +2336,14 @@ private fun SalesRoute(
+                                 actorRole = session.role.name.lowercase(Locale.US),
+                                 cashierKey = preliminarySecuredTicket.sellerId ?: session.userId,
+                                 cashierId = preliminarySecuredTicket.sellerId ?: session.userId,
+-                                sorteoId = stagedRows.firstOrNull()?.lotteryId,
++                                sorteoId = saleRowsSnapshot.firstOrNull()?.lotteryId,
+                                 drawDate = dayKey,
+                                 dayKey = dayKey,
+-                                lotteryName = stagedRows.firstOrNull()?.lotteryName,
++                                lotteryName = saleRowsSnapshot.firstOrNull()?.lotteryName,
+                                 phoneTimeIso = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.US).apply {
+                                     timeZone = TimeZone.getTimeZone("UTC")
+                                 }.format(Date(nowEpoch)),
+-                                plays = stagedRows.map { row ->
++                                plays = saleRowsSnapshot.map { row ->
+                                     BackendTicketPlay(
+                                         playType = row.playType,
+                                         number = row.number,
+@@ -2373,2055 +2415,120 @@ private fun SalesRoute(
+                 }
+             }
+             stagedRows.clear()
++            pendingSaleSubmission = null
+             number = ""
+             amount = ""
+-            selectedAdminSellerId = resolvePostTicketAdminSellerId(role, selectedAdminSellerId)
+-            val nextClassicMode = resolvePostTicketClassicMode(resolvedClassicMode)
+-            classicMode = nextClassicMode
+-            selectedLotteryIds = resolvePostTicketLotterySelection(
+-                currentSelection = selectedLotteryIds,
+-                availableLotteryIds = pickerLotteryIds,
+-                classicMode = nextClassicMode,
+-                preferredLotteryIds = preferredPickLotteryIds,
+-            )
+-            saleDraftRepository.clear(session)
+-            validationMessage = "Ticket guardado. Sincronizando servidor..."
+-            lastSavedTicketEpochMs = securedTicket.createdAtEpochMs
+-            securedTicket
+-        }
+-    }
+-    val onClassicModeChange: (String) -> Unit = {
+-        val transition = resolveClassicModeTransition(
+-            nextMode = it,
+-            currentSelection = selectedLotteryIds,
+-            fallbackLotteryId = selectedLottery?.id,
+-        )
+-        classicMode = it
+-        selectedLotteryIds = transition.selection
+-        number = ""
+-        validationMessage = transition.message
+-    }
+-    val onPickModeChange: (PickPlayMode) -> Unit = {
+-        pickMode = it
+-        number = ""
+-        validationMessage = null
+-    }
+-    val onOpenLots = {
+-        lotteryPickerTarget = resolveLotteryPickerTargetForLotsButton(
+-            classicMode = resolvedClassicMode,
+-            selectedLotteryIds = selectedLotteryIds,
+-        )
+-        validationMessage = null
+-    }
+-    val sharePreviewTicketImage: (TicketRecord, Boolean) -> Unit = { ticket, whatsappOnly ->
+-        val bancaName = resolveTicketOutputBancaName(
+-            ticket = ticket,
+-            defaultBancaName = banca.orEmpty().ifBlank { "LotteryNet" },
+-            accounts = usersRepository.getAdmins() + usersRepository.getSupervisors() + usersRepository.getCashiers(),
+-        )
+-        val envelope = exportRepository.buildTicketWhatsAppShare(ticket, bancaName)
+-        val title = envelope.title
+-        val fileName = envelope.fileName ?: "ticket-${ticket.id}.png"
+-        val renderKey = ticketRenderCacheKey(ticket, bancaName = bancaName, logoUri = bancaLogoUri.orEmpty())
+-        val cachedUri = renderCache.getUriIfPresent(renderKey)
+-        if (cachedUri != null) {
+-            validationMessage = NativeBitmapExport.shareImageUris(
+-                context = localContext,
+-                uris = listOf(cachedUri),
+-                title = title,
+-                whatsappOnly = whatsappOnly,
+-            ).message
+-            printPreviewTicket = null
+-        } else {
+-            validationMessage = "Preparando imagen del ticket..."
+-            thread(name = "native-ticket-share-render") {
+-                val bitmap = runCatching {
+-                    NativeBitmapExport.renderOfficialTicketBitmap(
+-                        context = localContext,
+-                        ticket = ticket,
+-                        bancaName = bancaName,
+-                        securityCode = TicketSecurity.resolveSecurityCode(ticket, bancaName),
+-                        bancaLogoUri = bancaLogoUri,
+-                    )
+-                }.getOrNull()
+-                if (bitmap == null) {
+-                    (localContext as? android.app.Activity)?.runOnUiThread {
+-                        validationMessage = "No se pudo preparar la imagen del ticket"
+-                    }
+-                    return@thread
+-                }
+-                val uri = renderCache.saveBitmap(renderKey, bitmap)
+-                (localContext as? android.app.Activity)?.runOnUiThread {
+-                    validationMessage = if (uri != null) {
+-                        NativeBitmapExport.shareImageUris(
+-                            context = localContext,
+-                            uris = listOf(uri),
+-                            title = title,
+-                            whatsappOnly = whatsappOnly,
+-                        ).message
+-                    } else {
+-                        NativeBitmapExport.shareBitmap(
+-                            context = localContext,
+-                            bitmap = bitmap,
+-                            fileName = fileName,
+-                            title = title,
+-                            text = "",
+-                            whatsappOnly = whatsappOnly,
+-                        ).message
++                        }
+                     }
+-                    printPreviewTicket = null
+                 }
+             }
+         }
+     }
+-    fun applyLigar(target: LigarBuildTarget, confirmedAmount: String): Boolean {
+-        val ligarAmount = parseLigarAmountForConfirmation(confirmedAmount)
+-        if (ligarAmount == null) {
+-            validationMessage = "Escribe el monto para ligar"
+-            return false
+-        }
+-        val ligar = saleValidator.buildLigarRows(
+-            existing = stagedRows.toList(),
+-            amount = ligarAmount,
+-            target = target,
+-        )
+-        if (ligar.quinielaCount == 0 && ligar.paleCount == 0 && ligar.tripletaCount == 0) {
+-            validationMessage = if (ligar.blockedCount > 0) {
+-                "Ligar no agregó jugadas nuevas; ya existían o quedaron bloqueadas"
+-            } else {
+-                "Agrega al menos 2 quinielas por lotería para ligar"
+-            }
+-            return false
+-        }
+-        stagedRows.clear()
+-        stagedRows.addAll(ligar.rows)
+-        validationMessage = buildString {
+-            append("Ligar agregó ")
+-            append(ligar.quinielaCount + ligar.paleCount + ligar.tripletaCount)
+-            append(" jugadas")
+-            if (ligar.quinielaCount > 0) append(" · ${ligar.quinielaCount} quiniela")
+-            if (ligar.paleCount > 0) append(" · ${ligar.paleCount} pale")
+-            if (ligar.tripletaCount > 0) append(" · ${ligar.tripletaCount} tripleta")
+-            if (ligar.blockedCount > 0) append(" · ${ligar.blockedCount} omitidas")
+-        }
+-        return true
+-    }
+-    val onOpenLigar = {
+-        if (selectedLottery?.let { supportsPickModes(it) } == true) {
+-            val nextPickMode = if (pickMode == PickPlayMode.BOX) PickPlayMode.STRAIGHT else PickPlayMode.BOX
+-            pickMode = nextPickMode
+-            validationMessage = activeModeLabel(selectedLottery, resolvedClassicMode, nextPickMode)
+-        } else if (resolvedClassicMode != "Q") {
+-            validationMessage = "Esta acción solo aplica a Pick o a quinielas para ligar"
+-        } else {
+-            ligarAmountDraft = resolveLigarAmountPromptState(amount).initialAmount
+-            showLigarTargetDialog = true
+-        }
+-    }
+-    val canToggleSuperPale = selectedLottery?.let { lottery ->
+-        lottery.playCapabilities.supportsQuiniela ||
+-            lottery.playCapabilities.supportsPale ||
+-            lottery.playCapabilities.supportsTripleta
+-    } == true
+-    val onToggleOrConfigureSuperPale = {
+-        if (resolvedClassicMode == "SP") {
+-            classicMode = "Q"
+-            selectedLotteryIds = selectedLotteryIds.take(1)
+-            number = ""
+-            validationMessage = "Super Pale desactivado"
+-        } else {
+-            val activation = resolveSuperPaleActivationState(selectedLotteryIds)
+-            if (!activation.canActivate) {
+-                validationMessage = activation.message
+-                lotteryPickerTarget = LotteryPickerTarget.PRIMARY
+-            } else {
+-                classicMode = "SP"
+-                selectedLotteryIds = activation.selection
+-                number = ""
+-                validationMessage = activation.message
+-            }
+-        }
+-    }
+-    val superPaleSecondaryState = remember(selectedLotteryIds, lotteries, resolvedClassicMode) {
+-        resolveSuperPaleSecondaryState(
+-            selectedLotteryIds = selectedLotteryIds,
+-            availableLotteryIds = lotteries.map { it.id },
+-            classicMode = resolvedClassicMode,
+-        )
+-    }
+-    val supportsPickModes = selectedLottery?.let { supportsPickModes(it) } == true
+-    val quickActionContract = remember(
+-        supportsPickModes,
+-        resolvedClassicMode,
+-        pickMode,
+-        stagedRows.size,
+-        canToggleSuperPale,
+-    ) {
+-        resolveQuickActionContract(
+-            supportsPickModes = supportsPickModes,
+-            classicMode = resolvedClassicMode,
+-            pickMode = pickMode,
+-            canLigar = canRunSecondaryAction(
+-                lottery = selectedLottery,
+-                classicMode = resolvedClassicMode,
+-                stagedRows = stagedRows,
+-            ),
+-            canToggleSuperPale = canToggleSuperPale,
+-            superPaleEnabled = resolvedClassicMode == "SP",
+-        )
+-    }
+-    val ticketPrintOpenContract = remember(
+-        stagedRows.size,
+-        latestTicket?.id,
+-        validation.isValid,
+-        number,
+-        amount,
+-        pendingDuplicatePlay,
+-        pendingPublishedResultPlay,
+-    ) {
+-        resolveTicketPrintOpenContract(
+-            stagedRowCount = stagedRows.size,
+-            hasLatestTicket = latestTicket != null,
+-            currentEntryValid = validation.isValid,
+-            number = number,
+-            amount = amount,
+-            hasPendingConfirmation = pendingDuplicatePlay != null || pendingPublishedResultPlay != null,
+-        )
+-    }
+-    val trustedClockLabel = remember(tickUtcMs, territory) {
+-        formatTrustedTime(
+-            nowUtcMs = tickUtcMs,
+-            trustedClockRepository = trustedClockRepository,
+-            territory = territory,
+-        )
++}
++
++@Composable
++private fun LotteryChip(
++    lottery: LotteryCatalogItem,
++    selected: Boolean,
++    decision: com.lotterynet.pro.core.model.LotteryCloseDecision,
++    onClick: () -> Unit,
++) {
++    val visual = rememberLotteryNetVisualSpec()
++    val accent = when (decision.state) {
++        CloseState.CLOSED -> lossColor()
++        CloseState.DANGER -> Color(0xFFC2410C)
++        CloseState.WARNING -> warningColor()
++        else -> colorFromHex(lottery.colorHex)
+     }
+-    fun stageValidatedPlay(
+-        validResult: SaleValidationResult,
+-        lotteriesForPlay: List<LotteryCatalogItem>,
+-    ) {
+-        val previousRows = stagedRows.toList()
+-        val merged = saleValidator.mergeIntoRows(
+-            existing = previousRows,
+-            validation = validResult,
+-            selectedLotteries = lotteriesForPlay,
+-        )
+-        val prioritizedRows = prioritizeNewestRows(
+-            previousRows = previousRows,
+-            mergedRows = merged,
+-        )
+-        stagedRows.clear()
+-        stagedRows.addAll(prioritizedRows)
+-        val nextEntryState = resolvePostAddCarryState(amount)
+-        activeInput = nextEntryState.activeInput
+-        number = nextEntryState.number
+-        amount = nextEntryState.amount
+-        replaceAmountOnNextDigit = nextEntryState.replaceAmountOnNextDigit
+-        validationMessage = null
+-    }
+-    fun stageAfterSaleWarnings(
+-        checkedValidation: SaleValidationResult,
+-        checkedLotteries: List<LotteryCatalogItem>,
+-        checkedAmount: Double,
++    val selectedBackground = Color(0xFF111111)
++    val selectedContent = Color.White
++    Surface(
++        onClick = onClick,
++        shape = RoundedCornerShape(8.dp),
++        color = if (selected) selectedBackground else visual.colors.panel,
++        contentColor = if (selected) selectedContent else visual.colors.ink,
++        border = BorderStroke(1.dp, if (selected) accent else visual.colors.border),
+     ) {
+-        val duplicateRows = findDuplicateStagedRows(
+-            existingRows = stagedRows.toList(),
+-            validation = checkedValidation,
+-            selectedLotteries = checkedLotteries,
+-        )
+-        if (duplicateRows.isNotEmpty()) {
+-            pendingDuplicatePlay = PendingDuplicatePlay(
+-                validation = checkedValidation,
+-                selectedLotteries = checkedLotteries,
+-                existingRow = duplicateRows.first(),
++        Row(
++            modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp),
++            horizontalArrangement = Arrangement.spacedBy(6.dp),
++            verticalAlignment = Alignment.CenterVertically,
++        ) {
++            LotteryLogo(
++                assetPath = lottery.logoAssetPath,
++                fallback = lottery.name,
++                modifier = Modifier.size(18.dp),
++                tintColor = if (selected) selectedContent else Color.Transparent,
++            )
++            Column {
++                Text(
++                    lottery.name,
++                    maxLines = 1,
++                    overflow = TextOverflow.Ellipsis,
++                    style = MaterialTheme.typography.labelLarge,
++                    color = if (selected) selectedContent else visual.colors.ink,
++                )
++                Text(
++                    text = decision.reason ?: "Disponible",
++                    style = MaterialTheme.typography.labelSmall,
++                    color = if (selected) selectedContent.copy(alpha = 0.72f) else visual.colors.muted,
++                )
++            }
++            CompactStatusBadge(
++                label = lotteryDecisionPill(decision),
++                tone = accent,
+             )
+-            validationMessage = resolveDuplicatePlayPromptText(duplicateRows.first(), checkedAmount)
+-        } else {
+-            stageValidatedPlay(checkedValidation, checkedLotteries)
+         }
+     }
++}
+ 
+-    val onAddPlay = {
+-        val straightBoxShortcut = resolvePickStraightBoxShortcut(number)
+-        if (straightBoxShortcut != null && selectedLottery?.let { supportsPickModes(it) } == true) {
+-            val straightDraft = draft.copy(
+-                numberInput = straightBoxShortcut.digits + "S",
+-                pickMode = PickPlayMode.STRAIGHT,
+-            )
+-            val boxDraft = draft.copy(
+-                numberInput = straightBoxShortcut.digits + "B",
+-                pickMode = PickPlayMode.BOX,
+-            )
+-            val straightValidation = saleValidator.validate(straightDraft, effectiveSelectedLotteries)
+-            val boxValidation = saleValidator.validate(boxDraft, effectiveSelectedLotteries)
+-            val normalizedAmount = straightValidation.normalizedAmount ?: boxValidation.normalizedAmount
+-            if (!straightValidation.isValid || !boxValidation.isValid || normalizedAmount == null) {
+-                validationMessage = straightValidation.errorMessage ?: boxValidation.errorMessage ?: "Completa S+B antes de agregar"
+-            } else {
+-                val straightLimitError = straightValidation.resolvedPlay?.let { play ->
+-                    saleExposureEngine.resolveLimitError(
+-                        session = session,
+-                        dayKey = dayKey,
+-                        play = play,
+-                        amount = normalizedAmount,
+-                        lotteries = effectiveSelectedLotteries,
+-                        stagedRows = stagedRows.toList(),
+-                    )
+-                }
+-                val rowsAfterStraight = saleValidator.mergeIntoRows(
+-                    existing = stagedRows.toList(),
+-                    validation = straightValidation,
+-                    selectedLotteries = effectiveSelectedLotteries,
++@Composable
++private fun SelectedLotteryMetaSection(
++    selectedLotteries: List<LotteryCatalogItem>,
++    closePolicy: LotteryClosePolicy,
++    territory: LotteryTerritory,
++    manualClosedLotteryIds: Set<String>,
++    calendarClosedLotteryIds: Set<String>,
++    nowUtcMs: Long,
++    allowAdminAfterCloseGrace: Boolean = false,
++) {
++    CompactPanel(alt = true) {
++        SectionHeader(title = "Loterías activas", meta = "${selectedLotteries.size} seleccionadas")
++        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
++            selectedLotteries.forEach { lottery ->
++                val decision = closePolicy.resolveCloseDecision(
++                    lottery = lottery,
++                    operationTerritory = territory,
++                    manualClosedLotteryIds = manualClosedLotteryIds,
++                    calendarClosedLotteryIds = calendarClosedLotteryIds,
++                    allowAdminAfterCloseGrace = allowAdminAfterCloseGrace,
++                    nowUtcMs = nowUtcMs,
+                 )
+-                val boxLimitError = boxValidation.resolvedPlay?.let { play ->
+-                    saleExposureEngine.resolveLimitError(
+-                        session = session,
+-                        dayKey = dayKey,
+-                        play = play,
+-                        amount = normalizedAmount,
+-                        lotteries = effectiveSelectedLotteries,
+-                        stagedRows = rowsAfterStraight,
++                val tone = lotteryDecisionTone(lottery, decision)
++                Row(
++                    modifier = Modifier.fillMaxWidth(),
++                    horizontalArrangement = Arrangement.spacedBy(8.dp),
++                    verticalAlignment = Alignment.CenterVertically,
++                ) {
++                    LotteryLogo(
++                        assetPath = lottery.logoAssetPath,
++                        fallback = lottery.name,
++                        modifier = Modifier.size(26.dp),
++                        tintColor = Color.Transparent,
+                     )
+-                }
+-                val duplicateStraight = findDuplicateStagedRows(stagedRows.toList(), straightValidation, effectiveSelectedLotteries)
+-                val duplicateBox = findDuplicateStagedRows(stagedRows.toList(), boxValidation, effectiveSelectedLotteries)
+-                when {
+-                    straightLimitError != null -> validationMessage = straightLimitError
+-                    boxLimitError != null -> validationMessage = boxLimitError
+-                    duplicateStraight.isNotEmpty() || duplicateBox.isNotEmpty() -> {
+-                        validationMessage = "S+B tiene una jugada repetida; agrega Straight o Box separado para confirmar"
+-                    }
+-                    role == UserRole.ADMIN && effectiveSelectedLotteries.any { it.id in publishedResultLotteryIds } -> {
+-                        validationMessage = "Resultado publicado: agrega Straight y Box separado para confirmar"
+-                    }
+-                    else -> {
+-                        val rowsAfterBoth = saleValidator.mergeIntoRows(
+-                            existing = rowsAfterStraight,
+-                            validation = boxValidation,
+-                            selectedLotteries = effectiveSelectedLotteries,
++                    Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
++                        Text(
++                            text = lottery.name,
++                            style = MaterialTheme.typography.labelLarge,
++                            color = rememberLotteryNetVisualSpec().colors.ink,
+                         )
+-                        stagedRows.clear()
+-                        stagedRows.addAll(prioritizeNewestRows(stagedRows.toList(), rowsAfterBoth))
+-                        val nextEntryState = resolvePostAddCarryState(amount)
+-                        activeInput = nextEntryState.activeInput
+-                        number = nextEntryState.number
+-                        amount = nextEntryState.amount
+-                        replaceAmountOnNextDigit = nextEntryState.replaceAmountOnNextDigit
+-                        validationMessage = null
+-                    }
+-                }
+-            }
+-        } else if (validation.isValid) {
+-            val resolvedPlay = validation.resolvedPlay
+-            val normalizedAmount = validation.normalizedAmount
+-            if (resolvedPlay == null || normalizedAmount == null) {
+-                validationMessage = "La jugada no se pudo validar. Intenta de nuevo."
+-            } else {
+-                val limitError = saleExposureEngine.resolveLimitError(
+-                    session = session,
+-                    dayKey = dayKey,
+-                    play = resolvedPlay,
+-                    amount = normalizedAmount,
+-                    lotteries = effectiveSelectedLotteries,
+-                    stagedRows = stagedRows.toList(),
+-                )
+-                if (limitError != null) {
+-                    validationMessage = limitError
+-                } else {
+-                    val publishedLotteries = if (role == UserRole.ADMIN) {
+-                        effectiveSelectedLotteries.filter { it.id in publishedResultLotteryIds }
+-                    } else {
+-                        emptyList()
+-                    }
+-                    if (publishedLotteries.isNotEmpty()) {
+-                        pendingPublishedResultPlay = PendingPublishedResultPlay(
+-                            validation = validation,
+-                            selectedLotteries = effectiveSelectedLotteries,
+-                            normalizedAmount = normalizedAmount,
+-                            lotteryNames = publishedLotteries.map { it.name },
++                        Text(
++                            text = lotteryDecisionSubtitle(decision),
++                            style = MaterialTheme.typography.bodySmall,
++                            color = rememberLotteryNetVisualSpec().colors.muted,
+                         )
+-                        validationMessage = "Resultado publicado: confirma si deseas vender"
+-                    } else {
+-                        stageAfterSaleWarnings(validation, effectiveSelectedLotteries, normalizedAmount)
+                     }
+-                }
+-            }
+-        } else {
+-            validationMessage = if (pickAssistedEntry != null && effectiveSelectedLotteries.isEmpty()) {
+-                "Selecciona loterías ${pickAssistedEntry.lotteryType.replace("Pick", "Pick ")} para esta jugada"
+-            } else {
+-                validation.errorMessage
+-            }
+-        }
+-    }
+-    val onApplyKey: (String) -> Unit = { key ->
+-        val isPickKey = selectedLottery?.let { supportsPickModes(it) } == true
+-        if (isPickKey && activeInput == SaleInputTarget.NUMBER && key in setOf("-", "+", "/", "*")) {
+-            val nextNumber = applyPickModeSymbolToNumber(number, key)
+-            number = nextNumber
+-            when (key) {
+-                "-" -> {
+-                    pickMode = PickPlayMode.STRAIGHT
+-                    activeInput = resolvePickModeKeyNextInput(nextNumber, PickPlayMode.STRAIGHT, activeInput)
+-                }
+-                "+" -> {
+-                    pickMode = PickPlayMode.BOX
+-                    activeInput = resolvePickModeKeyNextInput(nextNumber, PickPlayMode.BOX, activeInput)
+-                }
+-                "/" -> validationMessage = "Ligar Pick marcado con /"
+-                "*" -> validationMessage = "S+B listo: agrega monto y OK"
+-            }
+-        } else {
+-            val nextState = applySaleKeypadInput(
+-                activeInput = activeInput,
+-                key = key,
+-                number = number,
+-                amount = amount,
+-                replaceAmountOnNextDigit = replaceAmountOnNextDigit,
+-            )
+-            number = nextState.number
+-            amount = nextState.amount
+-            activeInput = nextState.activeInput
+-            replaceAmountOnNextDigit = nextState.replaceAmountOnNextDigit
+-        }
+-    }
+-    if (showLigarTargetDialog) {
+-        val ligarTargets = resolveLigarBuildTargets(stagedRows.toList())
+-        AlertDialog(
+-            onDismissRequest = { showLigarTargetDialog = false },
+-            title = { Text("Ligar jugadas") },
+-            text = {
+-                Column {
+-                    Text("Confirma el monto para la liga. Puedes dejar el actual o escribir uno nuevo.")
+-                    Spacer(modifier = Modifier.height(8.dp))
+-                    OutlinedTextField(
+-                        value = ligarAmountDraft,
+-                        onValueChange = { input ->
+-                            ligarAmountDraft = input
+-                                .filter { char -> char.isDigit() || char == '.' || char == ',' }
+-                                .take(8)
+-                        },
+-                        label = { Text("Monto") },
+-                        singleLine = true,
+-                        keyboardOptions = KeyboardOptions(
+-                            keyboardType = KeyboardType.Decimal,
+-                            imeAction = ImeAction.Done,
+-                        ),
+-                        modifier = Modifier.fillMaxWidth(),
+-                    )
+-                    Spacer(modifier = Modifier.height(8.dp))
+-                    Text("Elige qué tipo de liga quieres generar según las jugadas actuales.")
+-                    if (ligarTargets.isEmpty()) {
+-                        Text("Agrega palé, tripleta o por lo menos 2 quinielas.")
+-                    }
+-                    ligarTargets.forEach { target ->
+-                        TextButton(
+-                            onClick = {
+-                                if (applyLigar(target, ligarAmountDraft)) {
+-                                    showLigarTargetDialog = false
+-                                }
+-                            },
+-                        ) {
+-                            Text(
+-                                when (target) {
+-                                    LigarBuildTarget.QUINIELA -> "Quiniela"
+-                                    LigarBuildTarget.PALE -> "Pale"
+-                                    LigarBuildTarget.TRIPLETA -> "Tripleta"
+-                                },
+-                            )
+-                        }
+-                    }
+-                }
+-            },
+-            confirmButton = {},
+-            dismissButton = {
+-                TextButton(
+-                    onClick = {
+-                        showLigarTargetDialog = false
+-                    },
+-                ) {
+-                    Text("Cancelar")
+-                }
+-            },
+-        )
+-    }
+-    if (showClearStagedRowsDialog) {
+-        AlertDialog(
+-            onDismissRequest = { showClearStagedRowsDialog = false },
+-            title = { Text("Limpiar jugadas") },
+-            text = {
+-                Text("Se borraran ${stagedRows.size} jugada(s) cargadas de esta venta. Los tickets ya impresos o guardados no se tocan.")
+-            },
+-            confirmButton = {
+-                TextButton(
+-                    onClick = {
+-                        val removedCount = stagedRows.size
+-                        stagedRows.clear()
+-                        showClearStagedRowsDialog = false
+-                        validationMessage = if (removedCount > 0) "Lista de jugadas limpiada" else null
+-                    },
+-                ) {
+-                    Text("Limpiar")
+-                }
+-            },
+-            dismissButton = {
+-                TextButton(onClick = { showClearStagedRowsDialog = false }) {
+-                    Text("Cancelar")
+-                }
+-            },
+-        )
+-    }
+-    pendingPublishedResultPlay?.let { pending ->
+-        AlertDialog(
+-            onDismissRequest = { pendingPublishedResultPlay = null },
+-            title = { Text("Resultado publicado") },
+-            text = {
+-                Text(
+-                    "Ya hay resultado para ${pending.lotteryNames.joinToString(", ")}. " +
+-                        "Solo admin puede vender en esta gracia. ¿Quieres agregar la jugada?",
+-                )
+-            },
+-            confirmButton = {
+-                TextButton(
+-                    onClick = {
+-                        val confirmed = pendingPublishedResultPlay ?: return@TextButton
+-                        pendingPublishedResultPlay = null
+-                        stageAfterSaleWarnings(
+-                            checkedValidation = confirmed.validation,
+-                            checkedLotteries = confirmed.selectedLotteries,
+-                            checkedAmount = confirmed.normalizedAmount,
+-                        )
+-                    },
+-                ) {
+-                    Text("Vender")
+-                }
+-            },
+-            dismissButton = {
+-                TextButton(
+-                    onClick = {
+-                        pendingPublishedResultPlay = null
+-                        validationMessage = "Jugada no agregada"
+-                    },
+-                ) {
+-                    Text("No")
+-                }
+-            },
+-        )
+-    }
+-    pendingDuplicatePlay?.let { pending ->
+-        AlertDialog(
+-            onDismissRequest = { pendingDuplicatePlay = null },
+-            title = { Text("Jugada repetida") },
+-            text = {
+-                Text(
+-                    resolveDuplicatePlayPromptText(
+-                        existingRow = pending.existingRow,
+-                        amountToAdd = pending.validation.normalizedAmount ?: 0.0,
+-                    ),
+-                )
+-            },
+-            confirmButton = {
+-                TextButton(
+-                    onClick = {
+-                        val confirmed = pendingDuplicatePlay ?: return@TextButton
+-                        pendingDuplicatePlay = null
+-                        stageValidatedPlay(confirmed.validation, confirmed.selectedLotteries)
+-                    },
+-                ) {
+-                    Text("Si, sumar")
+-                }
+-            },
+-            dismissButton = {
+-                TextButton(
+-                    onClick = {
+-                        pendingDuplicatePlay = null
+-                        validationMessage = "Jugada repetida no modificada"
+-                    },
+-                ) {
+-                    Text("No")
+-                }
+-            },
+-        )
+-    }
+-    val ticketSaveSyncContract = ticketSaveSyncStage?.let { stage ->
+-        resolveTicketSaveSyncUiContract(stage = stage, detail = ticketSaveSyncDetail)
+-    }
+-    CompositionLocalProvider(
+-        LocalTextStyle provides LocalTextStyle.current.copy(fontWeight = FontWeight.Bold),
+-    ) {
+-    Scaffold(
+-        modifier = Modifier.fillMaxSize(),
+-        containerColor = visual.colors.background,
+-        contentWindowInsets = WindowInsets.safeDrawing,
+-    ) { innerPadding ->
+-        Surface(
+-            modifier = Modifier
+-                .fillMaxSize()
+-                .padding(innerPadding),
+-            color = visual.colors.background,
+-        ) {
+-            BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+-            if (showQrLookupChoices) {
+-                val choices = resolveVentaQrLookupChoices()
+-                AlertDialog(
+-                    onDismissRequest = { showQrLookupChoices = false },
+-                    title = { Text("Escanear QR") },
+-                    text = {
+-                        Text("Elige que quieres hacer con el ticket escaneado.")
+-                    },
+-                    confirmButton = {
+-                        val payChoice = choices.first { it.lookupMode == "pagar" }
+-                        TextButton(
+-                            onClick = {
+-                                showQrLookupChoices = false
+-                                localContext.startActivity(
+-                                    Intent(localContext, TicketLookupActivity::class.java).apply {
+-                                        putExtra(TicketLookupActivity.EXTRA_MODE, payChoice.lookupMode)
+-                                        putExtra(TicketLookupActivity.EXTRA_AUTO_SCAN, payChoice.autoScan)
+-                                    },
+-                                )
+-                            },
+-                        ) {
+-                            Text(payChoice.label)
+-                        }
+-                    },
+-                    dismissButton = {
+-                        val copyChoice = choices.first { it.lookupMode == "duplicar" }
+-                        TextButton(
+-                            onClick = {
+-                                showQrLookupChoices = false
+-                                localContext.startActivity(
+-                                    Intent(localContext, TicketLookupActivity::class.java).apply {
+-                                        putExtra(TicketLookupActivity.EXTRA_MODE, copyChoice.lookupMode)
+-                                        putExtra(TicketLookupActivity.EXTRA_AUTO_SCAN, copyChoice.autoScan)
+-                                    },
+-                                )
+-                            },
+-                        ) {
+-                            Text(copyChoice.label)
+-                        }
+-                    },
+-                )
+-            }
+-            val compact = maxWidth < 760.dp
+-            val saleModeContract = remember(visual.windowMode, initialSystemModeConfig.posLiteEnabled) {
+-                resolveVentaPosLiteContract(
+-                    windowMode = visual.windowMode,
+-                    posLiteEnabled = initialSystemModeConfig.posLiteEnabled,
+-                )
+-            }
+-            val saleWindowMode = saleModeContract.windowMode
+-            val stagedListMaxHeight = when {
+-                stagedRows.isEmpty() -> maxHeight * 0.18f
+-                saleModeContract.useTightSellingLayout -> maxHeight * 0.46f
+-                compact -> maxHeight * 0.42f
+-                else -> maxHeight * 0.46f
+-            }
+-            val stagedListMinHeight = when {
+-                saleModeContract.useTightSellingLayout -> 104.dp
+-                compact -> 96.dp
+-                else -> 118.dp
+-            }
+-            Column(
+-                modifier = Modifier
+-                    .fillMaxSize(),
+-            ) {
+-                AppTopBar(
+-                    spec = ScreenChromeSpec(
+-                        title = "Venta",
+-                        subtitle = "${banca ?: session?.banca ?: "LotteryNet"} · ${session?.username ?: "Operador"}",
+-                        activeBottomTab = NativeBottomTab.SALE,
+-                        rightAction = ScreenChromeAction(
+-                            icon = Icons.Rounded.QrCodeScanner,
+-                            contentDescription = "Escanear ticket",
+-                            label = resolveVentaQrLookupActionContract().label,
+-                            onClick = { showQrLookupChoices = true },
+-                        ),
+-                    ),
+-                    onOpenMenu = { openShellMenu(localContext) },
+-                )
+-                val bodyModifier = Modifier
+-                    .padding(horizontal = visual.sizes.screenPaddingH)
+-                    .fillMaxWidth()
+-                    .weight(1f, fill = true)
+-                    .heightIn(min = stagedListMinHeight, max = stagedListMaxHeight)
+-                VentaStagedList(
+-                    stagedRows = stagedRows,
+-                    modifier = bodyModifier,
+-                    windowMode = saleWindowMode,
+-                    onRemoveRow = { rowId -> stagedRows.removeAll { it.id == rowId } },
+-                    onClearRows = { showClearStagedRowsDialog = true },
+-                )
+-                VentaFixedComposer(
+-                    lottery = selectedLottery,
+-                    lotteryDecision = selectedLottery?.id?.let(lotteryDecisionsById::get),
+-                    selectedLotteries = selectedLotteries,
+-                    drawDayContract = drawDayContract,
+-                    selectedDrawDay = selectedDrawDay,
+-                    futureSaleEnabled = futureSaleEnabled,
+-                    canUseFutureSale = false,
+-                    number = number,
+-                    amount = amount,
+-                    classicMode = resolvedClassicMode,
+-                    pickMode = pickMode,
+-                    activeInput = activeInput,
+-                    validation = validation,
+-                    numberHasError = numberAdvanceState.showNumberError,
+-                    todayTicketCount = todayTicketCount,
+-                    todayActorSold = todayActorSold,
+-                    feedbackMessage = liveFeedbackMessage,
+-                    feedbackIsError = liveFeedbackIsError,
+-                    ticketSaveSyncContract = ticketSaveSyncContract,
+-                    quickActionContract = quickActionContract,
+-                    secondaryState = superPaleSecondaryState,
+-                    clockLabel = trustedClockLabel,
+-                    limitBadgeMain = saleLimitBadgeMain,
+-                    limitBadgeSub = if (role == UserRole.CASHIER) "tope" else "admin",
+-                    limitBadgeTone = saleLimitBadgeTone,
+-                    role = role,
+-                    sellerKeyLabel = activeTicketSeller?.displayLabel ?: "Cajero",
+-                    sellerDelegationActive = selectedAdminSeller != null,
+-                    canOpenOfficialTicket = ticketPrintOpenContract.showAction,
+-                    onActivateInput = { target ->
+-                        if (target == SaleInputTarget.AMOUNT && !numberAdvanceState.canAdvanceToAmount) {
+-                            validationMessage = if (number.isBlank()) "Digite la jugada primero." else validation.errorMessage
+-                        } else {
+-                            activeInput = target
+-                        }
+-                    },
+-                    onOpenLots = onOpenLots,
+-                    onToggleFutureSale = {
+-                        selectedDrawDay = SaleDrawDay.TODAY
+-                        validationMessage = "Venta futura fue retirada."
+-                    },
+-                    onSelectDrawDay = { nextMode ->
+-                        if (canUseFutureSaleControls(role, futureSaleEnabled)) {
+-                            if (nextMode != selectedDrawDay && stagedRows.isNotEmpty()) {
+-                                stagedRows.clear()
+-                                validationMessage = "Se limpiaron las jugadas al cambiar el día de venta."
+-                            }
+-                            selectedDrawDay = nextMode
+-                        }
+-                    },
+-                    onOpenLigar = onOpenLigar,
+-                    onToggleOrConfigureSuperPale = onToggleOrConfigureSuperPale,
+-                    onPickModeKey = { nextMode ->
+-                        val symbol = if (nextMode == PickPlayMode.BOX) "+" else "-"
+-                        val nextNumber = applyPickModeSymbolToNumber(number, symbol)
+-                        pickMode = nextMode
+-                        number = nextNumber
+-                        activeInput = resolvePickModeKeyNextInput(nextNumber, nextMode, activeInput)
+-                        validationMessage = null
+-                    },
+-                    onAddPlay = onAddPlay,
+-                    onOpenOfficialTicket = {
+-                        val currentMessage = validationMessage
+-                        if (ticketPrintOpenContract.stageCurrentPlayBeforeSave) {
+-                            onAddPlay()
+-                        }
+-                        val waitsForConfirmation = pendingDuplicatePlay != null || pendingPublishedResultPlay != null
+-                        val shouldSaveTicket = !waitsForConfirmation &&
+-                            (ticketPrintOpenContract.saveBeforeOpen || stagedRows.isNotEmpty())
+-                        if (shouldSaveTicket) {
+-                            salesActionScope.launch {
+-                                val ticket = saveTicket()
+-                                if (ticket != null) {
+-                                    printPreviewTicket = ticket
+-                                } else {
+-                                    val nextMessage = validationMessage
+-                                    validationMessage = when {
+-                                        waitsForConfirmation -> nextMessage
+-                                        !nextMessage.isNullOrBlank() && nextMessage != currentMessage -> nextMessage
+-                                        !ticketPrintOpenContract.fallbackMessage.isNullOrBlank() -> ticketPrintOpenContract.fallbackMessage
+-                                        !validation.errorMessage.isNullOrBlank() -> validation.errorMessage
+-                                        else -> "No hay ticket disponible para abrir"
+-                                    }
+-                                }
+-                            }
+-                        } else {
+-                            val ticket = if (ticketPrintOpenContract.openLatestTicket) latestTicket else null
+-                            if (ticket != null) {
+-                                printPreviewTicket = ticket
+-                            } else {
+-                                val nextMessage = validationMessage
+-                                validationMessage = when {
+-                                    waitsForConfirmation -> nextMessage
+-                                    !nextMessage.isNullOrBlank() && nextMessage != currentMessage -> nextMessage
+-                                    !ticketPrintOpenContract.fallbackMessage.isNullOrBlank() -> ticketPrintOpenContract.fallbackMessage
+-                                    !validation.errorMessage.isNullOrBlank() -> validation.errorMessage
+-                                    else -> "No hay ticket disponible para abrir"
+-                                }
+-                            }
+-                        }
+-                    },
+-                    onOpenSellerPicker = {
+-                        showAdminSellerPicker = true
+-                        thread(name = "native-admin-seller-refresh") {
+-                            val result = NativeUsersBootstrapper(usersRepository).bootstrap(forceRemoteRefresh = true)
+-                            (localContext as? android.app.Activity)?.runOnUiThread {
+-                                userDirectoryRefreshTick += 1
+-                                if (!result.ok) {
+-                                    validationMessage = "No se pudo actualizar cajeros desde servidor"
+-                                }
+-                            }
+-                        }
+-                    },
+-                    onApplyKey = onApplyKey,
+-                    total = stagedRows.sumOf { it.amount },
+-                    windowMode = saleWindowMode,
+-                )
+-            }
+-            if (showAdminSellerPicker) {
+-                AlertDialog(
+-                    onDismissRequest = { showAdminSellerPicker = false },
+-                    title = { Text("Vender como cajero") },
+-                    text = {
+-                        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+-                            if (adminSellerRows.isEmpty()) {
+-                                Text("No hay cajeros para esta banca.")
+-                            } else {
+-                                LazyColumn(
+-                                    modifier = Modifier.heightIn(max = 420.dp),
+-                                    verticalArrangement = Arrangement.spacedBy(2.dp),
+-                                ) {
+-                                    items(adminSellerRows) { row ->
+-                                        val cashier = row.account
+-                                        TextButton(
+-                                            onClick = {
+-                                                if (!row.enabled) return@TextButton
+-                                                selectedAdminSellerId = cashier.id
+-                                                showAdminSellerPicker = false
+-                                                validationMessage = "Vendedor: ${row.title}"
+-                                            },
+-                                            modifier = Modifier
+-                                                .fillMaxWidth()
+-                                                .height(52.dp),
+-                                            enabled = row.enabled,
+-                                        ) {
+-                                            Row(
+-                                                modifier = Modifier.fillMaxWidth(),
+-                                                horizontalArrangement = Arrangement.SpaceBetween,
+-                                                verticalAlignment = Alignment.CenterVertically,
+-                                            ) {
+-                                                Column(
+-                                                    modifier = Modifier.weight(1f),
+-                                                    verticalArrangement = Arrangement.spacedBy(1.dp),
+-                                                ) {
+-                                                    Text(
+-                                                        text = row.title,
+-                                                        style = MaterialTheme.typography.titleSmall.copy(
+-                                                            fontWeight = if (row.selected) FontWeight.Black else FontWeight.ExtraBold,
+-                                                        ),
+-                                                        color = if (row.enabled) visual.colors.ink else visual.colors.muted,
+-                                                        maxLines = 1,
+-                                                        overflow = TextOverflow.Ellipsis,
+-                                                    )
+-                                                    Text(
+-                                                        text = row.subtitle,
+-                                                        style = MaterialTheme.typography.labelSmall,
+-                                                        color = visual.colors.muted,
+-                                                        maxLines = 1,
+-                                                        overflow = TextOverflow.Ellipsis,
+-                                                    )
+-                                                }
+-                                                if (row.selected) {
+-                                                    Text(
+-                                                        text = "Activo",
+-                                                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+-                                                        color = Color(0xFF059669),
+-                                                    )
+-                                                }
+-                                            }
+-                                        }
+-                                    }
+-                                }
+-                            }
+-                        }
+-                    },
+-                    confirmButton = {
+-                        TextButton(onClick = { showAdminSellerPicker = false }) {
+-                            Text("Cerrar")
+-                        }
+-                    },
+-                )
+-            }
+-            lotteryPickerTarget?.let { pickerTarget ->
+-                VentaLotteryPickerOverlay(
+-                    target = pickerTarget,
+-                    superPaleEnabled = resolvedClassicMode == "SP",
+-                    selectedLotteryIds = selectedLotteryIds,
+-                    lotteries = pickerLotteries,
+-                    decisionsByLotteryId = lotteryDecisionsById,
+-                    onDismiss = { lotteryPickerTarget = null },
+-                    onSelectTarget = { lotteryPickerTarget = it },
+-                    onSelectLottery = { lottery ->
+-                        val nextSelection = applyLotteryPickerSelection(
+-                            current = selectedLotteryIds,
+-                            selectedLotteryId = lottery.id,
+-                            selectedLotteryType = lottery.type,
+-                            currentSelectionTypes = selectedLotteries.map { it.type },
+-                            target = pickerTarget,
+-                            classicMode = resolvedClassicMode,
+-                        )
+-                        selectedLotteryIds = nextSelection
+-                        validationMessage = when {
+-                            resolvedClassicMode != "SP" && lottery.id in nextSelection ->
+-                                "${lottery.name} agregada"
+-                            resolvedClassicMode != "SP" ->
+-                                "${lottery.name} quitada"
+-                            resolvedClassicMode == "SP" && nextSelection.size < 2 -> "Super Pale activo: falta la 2da lotería"
+-                            resolvedClassicMode == "SP" && pickerTarget == LotteryPickerTarget.SECONDARY -> "Super Pale listo"
+-                            else -> "${lottery.name} seleccionada"
+-                        }
+-                        if (resolvedClassicMode == "SP") {
+-                            lotteryPickerTarget = null
+-                        }
+-                    },
+-                )
+-            }
+-            printPreviewTicket?.let { ticket ->
+-                val outputBancaName = resolveTicketOutputBancaName(
+-                    ticket = ticket,
+-                    defaultBancaName = banca.orEmpty().ifBlank { "LotteryNet" },
+-                    accounts = usersRepository.getAdmins() + usersRepository.getSupervisors() + usersRepository.getCashiers(),
+-                )
+-                SalePrintPreviewOverlay(
+-                    ticket = ticket,
+-                    bancaName = outputBancaName,
+-                    bancaLogoUri = bancaLogoUri,
+-                    onDismiss = { printPreviewTicket = null },
+-                    onQuickThermal = {
+-                        validationMessage = "Enviando a impresora..."
+-                        thread(name = "native-ticket-thermal-print") {
+-                            val prefs = LocalThermalPrinterRepository(localContext).getPrefs()
+-                            val content = ThermalTicketRenderer().renderTicket(
+-                                ticket = ticket,
+-                                bancaName = outputBancaName,
+-                                prefs = prefs,
+-                            )
+-                            val printTargets = resolveSaleThermalPrintTargets(
+-                                hasBluetoothPrinter = prefs.selectedPrinterAddress.isNotBlank(),
+-                                hasIntegratedPrinter = IntegratedThermalPrinter.isAvailable(localContext),
+-                            )
+-                            var printResult = BluetoothThermalPrinter.PrintResult(
+-                                success = false,
+-                                message = "No hay impresora conectada",
+-                            )
+-                            for (target in printTargets) {
+-                                printResult = when (target) {
+-                                    SaleThermalPrintTarget.BLUETOOTH -> BluetoothThermalPrinter.printText(
+-                                        context = localContext,
+-                                        content = content,
+-                                        prefs = prefs,
+-                                    )
+-                                    SaleThermalPrintTarget.INTEGRATED -> IntegratedThermalPrinter.printText(
+-                                        context = localContext,
+-                                        content = content,
+-                                    )
+-                                    SaleThermalPrintTarget.NONE -> BluetoothThermalPrinter.PrintResult(
+-                                        success = false,
+-                                        message = "No hay impresora conectada",
+-                                    )
+-                                }
+-                                if (printResult.success) break
+-                            }
+-                            (localContext as? android.app.Activity)?.runOnUiThread {
+-                                val flow = resolveSaleThermalPrintResult(
+-                                    success = printResult.success,
+-                                    message = printResult.message,
+-                                )
+-                                validationMessage = flow.message
+-                                if (flow.closePreview) {
+-                                    printPreviewTicket = null
+-                                }
+-                                if (flow.openPrinterSettings) {
+-                                    localContext.startActivity(Intent(localContext, PrinterActivity::class.java).apply {
+-                                        putExtra(PrinterActivity.EXTRA_TICKET_ID, ticket.id)
+-                                        putExtra(PrinterActivity.EXTRA_TICKET_EPOCH, ticket.createdAtEpochMs)
+-                                        putExtra(PrinterActivity.EXTRA_THERMAL_TITLE, "Ticket")
+-                                    })
+-                                }
+-                            }
+-                        }
+-                    },
+-                    onOpenOfficial = {
+-                        localContext.startActivity(Intent(localContext, TicketOfficialActivity::class.java).apply {
+-                            putExtra(TicketOfficialActivity.EXTRA_TICKET_ID, ticket.id)
+-                            putExtra(TicketOfficialActivity.EXTRA_TICKET_EPOCH, ticket.createdAtEpochMs)
+-                            putExtra(TicketOfficialActivity.EXTRA_BANCA_NAME, outputBancaName)
+-                        })
+-                    },
+-                    onShareWhatsApp = {
+-                        sharePreviewTicketImage(ticket, true)
+-                    },
+-                    onShareImage = {
+-                        sharePreviewTicketImage(ticket, false)
+-                    },
+-                )
+-            }
+-        }
+-    }
+-    }
+-    }
+-}
+-
+-@Composable
+-private fun VentaStagedList(
+-    stagedRows: List<SaleStagedRow>,
+-    modifier: Modifier = Modifier,
+-    windowMode: LotteryNetWindowMode,
+-    onRemoveRow: (String) -> Unit,
+-    onClearRows: () -> Unit,
+-) {
+-    val visual = rememberLotteryNetVisualSpec()
+-    val listLayout = resolveVentaStagedListLayout(windowMode)
+-    val listState = rememberLazyListState()
+-    var previousCount by remember { mutableStateOf(stagedRows.size) }
+-    var previousFirstRowId by remember { mutableStateOf(stagedRows.firstOrNull()?.id) }
+-    val currentFirstRowId = stagedRows.firstOrNull()?.id
+-    LaunchedEffect(stagedRows.size, currentFirstRowId) {
+-        val action = resolveStagedPlayScrollAction(
+-            previousCount = previousCount,
+-            currentCount = stagedRows.size,
+-            previousFirstRowId = previousFirstRowId,
+-            currentFirstRowId = currentFirstRowId,
+-        )
+-        previousCount = stagedRows.size
+-        previousFirstRowId = currentFirstRowId
+-        if (action == StagedPlayScrollAction.ScrollToFirst && stagedRows.isNotEmpty()) {
+-            listState.scrollToItem(0)
+-        }
+-    }
+-    Surface(
+-        modifier = modifier.fillMaxWidth(),
+-        color = Color(0xFFF8FBFF),
+-    ) {
+-        Column(modifier = Modifier.fillMaxWidth()) {
+-            Surface(
+-                modifier = Modifier.fillMaxWidth(),
+-                color = Color(0xFFF2F7FC),
+-            ) {
+-                Row(
+-                    modifier = Modifier
+-                        .fillMaxWidth()
+-                        .padding(horizontal = 8.dp, vertical = listLayout.headerVerticalPaddingDp.dp),
+-                    verticalAlignment = Alignment.CenterVertically,
+-                ) {
+-                    Text("Lotería", modifier = Modifier.weight(1.05f), style = MaterialTheme.typography.labelSmall, color = visual.colors.muted)
+-                    Text("Tipo", modifier = Modifier.width(42.dp), style = MaterialTheme.typography.labelSmall, color = visual.colors.muted, textAlign = TextAlign.Center)
+-                    Text("Jugada", modifier = Modifier.weight(1.55f), style = MaterialTheme.typography.labelSmall, color = visual.colors.muted, textAlign = TextAlign.End)
+-                    Text("Monto", modifier = Modifier.weight(0.95f), style = MaterialTheme.typography.labelSmall, color = visual.colors.muted, textAlign = TextAlign.End)
+-                    if (stagedRows.isNotEmpty()) {
+-                        IconButton(
+-                            onClick = onClearRows,
+-                            modifier = Modifier.size(48.dp),
+-                        ) {
+-                            Icon(
+-                                imageVector = Icons.Rounded.RemoveCircleOutline,
+-                                contentDescription = "Limpiar lista de jugadas",
+-                                tint = lossColor(),
+-                            )
+-                        }
+-                    } else {
+-                        Spacer(modifier = Modifier.width(48.dp))
+-                    }
+-                }
+-            }
+-            if (stagedRows.isEmpty()) {
+-                Box(
+-                    modifier = Modifier
+-                        .fillMaxWidth()
+-                        .height(if (windowMode == LotteryNetWindowMode.POS_TIGHT) 76.dp else 92.dp)
+-                        .padding(horizontal = 8.dp),
+-                    contentAlignment = Alignment.Center,
+-                ) {
+-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+-                        Text(
+-                            text = "Sin jugadas",
+-                            style = MaterialTheme.typography.titleSmall,
+-                            color = visual.colors.ink,
+-                            fontWeight = FontWeight.Bold,
+-                            textAlign = TextAlign.Center,
+-                        )
+-                        Spacer(modifier = Modifier.height(2.dp))
+-                        Text(
+-                            text = "Número -> monto -> Q/P/T",
+-                            style = MaterialTheme.typography.labelSmall,
+-                            color = visual.colors.muted,
+-                            textAlign = TextAlign.Center,
+-                        )
+-                    }
+-                }
+-            } else {
+-                LazyColumn(
+-                    modifier = Modifier
+-                        .fillMaxWidth()
+-                        .weight(1f, fill = true),
+-                    state = listState,
+-                    reverseLayout = shouldReverseVentaStagedListForLatestPlay(),
+-                ) {
+-                    items(stagedRows, key = { it.id }) { row ->
+-                        Row(
+-                            modifier = Modifier
+-                                .fillMaxWidth()
+-                                .background(Color.White)
+-                                .padding(horizontal = 8.dp, vertical = listLayout.rowVerticalPaddingDp.dp),
+-                            verticalAlignment = Alignment.CenterVertically,
+-                        ) {
+-                            Text(row.lotteryName, modifier = Modifier.weight(1.05f), style = MaterialTheme.typography.labelMedium, color = visual.colors.ink, maxLines = 1, overflow = TextOverflow.Ellipsis)
+-                            Text(row.label, modifier = Modifier.width(42.dp), style = MaterialTheme.typography.labelSmall, color = visual.colors.muted, textAlign = TextAlign.Center)
+-                            Text(
+-                                row.displayNumber,
+-                                modifier = Modifier.weight(1.55f),
+-                                style = MaterialTheme.typography.titleSmall.copy(
+-                                    fontFamily = FontFamily.Monospace,
+-                                    fontWeight = FontWeight(listLayout.numberWeight),
+-                                ),
+-                                color = Color(0xFF020617),
+-                                textAlign = TextAlign.End,
+-                                maxLines = 1,
+-                            )
+-                            Text(formatMoney(row.amount), modifier = Modifier.weight(0.95f), style = MaterialTheme.typography.labelLarge.copy(fontFamily = FontFamily.Monospace), color = gainColor(), textAlign = TextAlign.End)
+-                            Surface(
+-                                onClick = { onRemoveRow(row.id) },
+-                                modifier = Modifier.width(48.dp),
+-                                color = Color(0xFFFEF2F2),
+-                                shape = RoundedCornerShape(7.dp),
+-                            ) {
+-                                Box(modifier = Modifier.padding(vertical = 3.dp), contentAlignment = Alignment.Center) {
+-                                    Text("×", color = lossColor(), style = MaterialTheme.typography.labelMedium, textAlign = TextAlign.Center)
+-                                }
+-                            }
+-                        }
+-                        HorizontalDivider(color = visual.colors.border.copy(alpha = listLayout.separatorAlpha))
+-                    }
+-                }
+-            }
+-        }
+-    }
+-}
+-
+-@Composable
+-private fun VentaFixedComposer(
+-    lottery: LotteryCatalogItem?,
+-    lotteryDecision: com.lotterynet.pro.core.model.LotteryCloseDecision?,
+-    selectedLotteries: List<LotteryCatalogItem>,
+-    drawDayContract: SaleDrawDayContract,
+-    selectedDrawDay: SaleDrawDay,
+-    futureSaleEnabled: Boolean,
+-    canUseFutureSale: Boolean,
+-    number: String,
+-    amount: String,
+-    classicMode: String,
+-    pickMode: PickPlayMode,
+-    activeInput: SaleInputTarget,
+-    validation: com.lotterynet.pro.core.model.SaleValidationResult,
+-    numberHasError: Boolean,
+-    todayTicketCount: Int,
+-    todayActorSold: Double,
+-    feedbackMessage: String?,
+-    feedbackIsError: Boolean,
+-    ticketSaveSyncContract: TicketSaveSyncUiContract?,
+-    quickActionContract: QuickActionContract,
+-    secondaryState: SuperPaleSecondaryState,
+-    clockLabel: String,
+-    limitBadgeMain: String,
+-    limitBadgeSub: String,
+-    limitBadgeTone: SaleLimitBadgeTone,
+-    role: UserRole,
+-    sellerKeyLabel: String,
+-    sellerDelegationActive: Boolean,
+-    canOpenOfficialTicket: Boolean,
+-    onActivateInput: (SaleInputTarget) -> Unit,
+-    onOpenLots: () -> Unit,
+-    onToggleFutureSale: () -> Unit,
+-    onSelectDrawDay: (SaleDrawDay) -> Unit,
+-    onOpenLigar: () -> Unit,
+-    onToggleOrConfigureSuperPale: () -> Unit,
+-    onPickModeKey: (PickPlayMode) -> Unit,
+-    onAddPlay: () -> Unit,
+-    onOpenOfficialTicket: () -> Unit,
+-    onOpenSellerPicker: () -> Unit,
+-    onApplyKey: (String) -> Unit,
+-    total: Double,
+-    windowMode: LotteryNetWindowMode,
+-) {
+-    val visual = rememberLotteryNetVisualSpec()
+-    val keypadLayout = resolveVentaKeypadLayout(windowMode)
+-    val entryLayout = resolveVentaEntryStripLayout(windowMode)
+-    Surface(
+-        modifier = Modifier.fillMaxWidth(),
+-        color = Color.White,
+-        shadowElevation = 0.dp,
+-    ) {
+-        Column {
+-            if (canUseFutureSale) {
+-                VentaDrawDaySelector(
+-                    selectedDrawDay = selectedDrawDay,
+-                    futureSaleEnabled = futureSaleEnabled,
+-                    contract = drawDayContract,
+-                    onToggleFutureSale = onToggleFutureSale,
+-                    onSelectDrawDay = onSelectDrawDay,
+-                )
+-            }
+-            VentaLotMetaBlock(
+-                lottery = lottery,
+-                lotteryDecision = lotteryDecision,
+-                selectedLotteries = selectedLotteries,
+-                classicMode = classicMode,
+-                pickMode = pickMode,
+-                validation = validation,
+-                secondaryState = secondaryState,
+-            )
+-            Row(
+-                modifier = Modifier
+-                    .fillMaxWidth()
+-                    .padding(horizontal = 4.dp, vertical = 1.dp),
+-                horizontalArrangement = Arrangement.spacedBy(entryLayout.itemSpacingDp.dp),
+-                verticalAlignment = Alignment.CenterVertically,
+-            ) {
+-                VentaInputDisplay(
+-                    modifier = Modifier.weight(entryLayout.jugadaWeight),
+-                    label = "Jugada",
+-                    value = number,
+-                    active = activeInput == SaleInputTarget.NUMBER,
+-                    accent = visual.colors.tickets,
+-                    error = numberHasError,
+-                    valueAlign = TextAlign.Start,
+-                    onClick = { onActivateInput(SaleInputTarget.NUMBER) },
+-                )
+-                VentaMiniStatus(
+-                    title = "Límite",
+-                    main = limitBadgeMain,
+-                    sub = limitBadgeSub,
+-                    widthDp = entryLayout.limitWidthDp,
+-                    mainFontSp = entryLayout.limitFontSp,
+-                    tone = limitBadgeTone,
+-                )
+-                VentaInputDisplay(
+-                    modifier = Modifier.weight(entryLayout.montoWeight),
+-                    label = "Monto",
+-                    value = amount,
+-                    active = activeInput == SaleInputTarget.AMOUNT,
+-                    accent = gainColor(),
+-                    valueAlign = TextAlign.End,
+-                    onClick = { onActivateInput(SaleInputTarget.AMOUNT) },
+-                )
+-            }
+-            VentaQuickActions(
+-                contract = quickActionContract,
+-                onOpenLots = onOpenLots,
+-                onOpenLigar = onOpenLigar,
+-                onToggleOrConfigureSuperPale = onToggleOrConfigureSuperPale,
+-            )
+-            Spacer(modifier = Modifier.height(1.dp))
+-            if (shouldShowVentaInlineFeedbackBanner(feedbackMessage, feedbackIsError, numberHasError)) {
+-                Text(
+-                    text = feedbackMessage.orEmpty(),
+-                    modifier = Modifier
+-                        .fillMaxWidth()
+-                        .background(if (feedbackIsError) Color(0xFFFEF2F2) else Color(0xFFEAFBF2))
+-                        .padding(horizontal = 7.dp, vertical = 3.dp),
+-                    style = MaterialTheme.typography.labelSmall,
+-                    color = if (feedbackIsError) lossColor() else gainColor(),
+-                )
+-            }
+-            if (keypadLayout.totalAboveKeypad) {
+-                CompactTotalBar(
+-                    total = total,
+-                    label = "Total jugada",
+-                    modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp),
+-                )
+-            }
+-            VentaKeypad(
+-                activeInput = activeInput,
+-                todayTicketCount = todayTicketCount,
+-                todayActorSold = todayActorSold,
+-                windowMode = windowMode,
+-                role = role,
+-                sellerKeyLabel = sellerKeyLabel,
+-                sellerDelegationActive = sellerDelegationActive,
+-                canOpenOfficialTicket = canOpenOfficialTicket,
+-                pickKeypad = lottery?.let { supportsPickModes(it) } == true,
+-                pickMode = pickMode,
+-                onSelectTarget = onActivateInput,
+-                onApplyKey = onApplyKey,
+-                onPickModeKey = onPickModeKey,
+-                onAddPlay = onAddPlay,
+-                onOpenOfficialTicket = onOpenOfficialTicket,
+-                onOpenSellerPicker = onOpenSellerPicker,
+-            )
+-        }
+-    }
+-}
+-
+-@Composable
+-private fun VentaDrawDaySelector(
+-    selectedDrawDay: SaleDrawDay,
+-    futureSaleEnabled: Boolean,
+-    contract: SaleDrawDayContract,
+-    onToggleFutureSale: () -> Unit,
+-    onSelectDrawDay: (SaleDrawDay) -> Unit,
+-) {
+-    val visual = rememberLotteryNetVisualSpec()
+-    Row(
+-        modifier = Modifier
+-            .fillMaxWidth()
+-            .background(if (contract.isFuture) Color(0xFFFFFBEB) else Color(0xFFF8FAFC))
+-            .padding(horizontal = 6.dp, vertical = 2.dp),
+-        horizontalArrangement = Arrangement.spacedBy(6.dp),
+-        verticalAlignment = Alignment.CenterVertically,
+-    ) {
+-        TextButton(
+-            onClick = onToggleFutureSale,
+-            modifier = Modifier.height(34.dp),
+-        ) {
+-            Text(
+-                text = if (futureSaleEnabled) "Futura ON" else "Futura OFF",
+-                style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Black),
+-                color = if (futureSaleEnabled) Color(0xFF92400E) else visual.colors.ink,
+-            )
+-        }
+-        if (futureSaleEnabled) {
+-            listOf(SaleDrawDay.TODAY to "Hoy", SaleDrawDay.TOMORROW to "Mañana").forEach { (mode, label) ->
+-                val active = selectedDrawDay == mode
+-                TextButton(
+-                    onClick = { onSelectDrawDay(mode) },
+-                    modifier = Modifier.height(34.dp),
+-                ) {
+-                    Text(
+-                        text = label,
+-                        style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Black),
+-                        color = if (active) gainColor() else visual.colors.ink,
+-                    )
+-                }
+-            }
+-            Text(
+-                text = contract.subtitle,
+-                modifier = Modifier.weight(1f),
+-                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.ExtraBold),
+-                color = if (contract.isFuture) Color(0xFF92400E) else visual.colors.muted,
+-                maxLines = 1,
+-                overflow = TextOverflow.Ellipsis,
+-                textAlign = TextAlign.End,
+-            )
+-        } else {
+-            Spacer(modifier = Modifier.weight(1f))
+-        }
+-    }
+-}
+-
+-@Composable
+-private fun VentaLotMetaBlock(
+-    lottery: LotteryCatalogItem?,
+-    lotteryDecision: com.lotterynet.pro.core.model.LotteryCloseDecision?,
+-    selectedLotteries: List<LotteryCatalogItem>,
+-    classicMode: String,
+-    pickMode: PickPlayMode,
+-    validation: com.lotterynet.pro.core.model.SaleValidationResult,
+-    secondaryState: SuperPaleSecondaryState,
+-) {
+-    val visual = rememberLotteryNetVisualSpec()
+-    val modeLabel = lottery?.let { activeModeShortLabel(it, classicMode, pickMode) } ?: "Sin modo"
+-    val pillLabel = when {
+-        classicMode == "SP" && secondaryState.requiresSecondarySelection -> "Elige 2"
+-        validation.isValid -> "Lista"
+-        else -> "Abierta"
+-    }
+-    val pillTone = when {
+-        classicMode == "SP" && secondaryState.requiresSecondarySelection -> Color(0xFFC2410C)
+-        validation.isValid -> gainColor()
+-        else -> Color(0xFF166534)
+-    }
+-    Column(
+-        modifier = Modifier
+-            .fillMaxWidth()
+-            .background(Color(0xFFFBFCFE))
+-            .padding(horizontal = 6.dp, vertical = 1.dp),
+-        verticalArrangement = Arrangement.spacedBy(0.dp),
+-    ) {
+-        Row(
+-            modifier = Modifier.fillMaxWidth(),
+-            horizontalArrangement = Arrangement.spacedBy(6.dp),
+-            verticalAlignment = Alignment.CenterVertically,
+-        ) {
+-            Column(modifier = Modifier.weight(1f)) {
+-                Text(
+-                    text = selectedLotteries.joinToString(" · ") { it.name }.ifBlank { "Sin lotería" },
+-                    style = MaterialTheme.typography.labelLarge,
+-                    color = visual.colors.ink,
+-                    maxLines = 1,
+-                    overflow = TextOverflow.Ellipsis,
+-                )
+-            }
+-            CompactStatusBadge(
+-                label = pillLabel,
+-                tone = pillTone,
+-            )
+-        }
+-        Row(
+-            modifier = Modifier.fillMaxWidth(),
+-            horizontalArrangement = Arrangement.SpaceBetween,
+-            verticalAlignment = Alignment.CenterVertically,
+-        ) {
+-            Text(
+-                text = modeLabel,
+-                style = MaterialTheme.typography.labelMedium,
+-                color = visual.colors.muted,
+-                maxLines = 1,
+-                overflow = TextOverflow.Ellipsis,
+-            )
+-            lottery?.let {
+-                Text(
+-                    text = formatLotteryClock12(lotteryDecision?.closeTime ?: it.baseCloseTime),
+-                    style = MaterialTheme.typography.labelSmall.copy(fontFamily = FontFamily.Monospace),
+-                    color = visual.colors.neutral,
+-                    maxLines = 1,
+-                )
+-            }
+-        }
+-    }
+-}
+-
+-@Composable
+-private fun VentaQuickActions(
+-    contract: QuickActionContract,
+-    onOpenLots: () -> Unit,
+-    onOpenLigar: () -> Unit,
+-    onToggleOrConfigureSuperPale: () -> Unit,
+-) {
+-    Row(
+-        modifier = Modifier
+-            .fillMaxWidth()
+-            .padding(horizontal = 3.dp, vertical = 1.dp),
+-        horizontalArrangement = Arrangement.spacedBy(2.dp),
+-    ) {
+-        CompactActionButton(
+-            label = contract.lotsLabel,
+-            onClick = onOpenLots,
+-            modifier = Modifier.weight(1f),
+-            tone = contract.lotsTone,
+-        )
+-        CompactActionButton(
+-            label = contract.ligarLabel,
+-            onClick = onOpenLigar,
+-            modifier = Modifier.weight(1f),
+-            enabled = contract.ligarEnabled,
+-            tone = contract.ligarTone,
+-        )
+-        if (contract.superPaleVisible) {
+-            CompactActionButton(
+-                label = contract.superPaleLabel,
+-                onClick = onToggleOrConfigureSuperPale,
+-                modifier = Modifier.weight(1f),
+-                active = contract.superPaleLabel == "SP Activo",
+-                tone = ActionTone.Success,
+-            )
+-        }
+-    }
+-}
+-
+-@Composable
+-private fun VentaLotteryPickerOverlay(
+-    target: LotteryPickerTarget,
+-    superPaleEnabled: Boolean,
+-    selectedLotteryIds: List<String>,
+-    lotteries: List<LotteryCatalogItem>,
+-    decisionsByLotteryId: Map<String, com.lotterynet.pro.core.model.LotteryCloseDecision>,
+-    onDismiss: () -> Unit,
+-    onSelectTarget: (LotteryPickerTarget) -> Unit,
+-    onSelectLottery: (LotteryCatalogItem) -> Unit,
+-) {
+-    val visual = rememberLotteryNetVisualSpec()
+-    val overflow = resolveOverflowLayoutContract(visual.windowMode)
+-    BoxWithConstraints(
+-        modifier = Modifier
+-            .fillMaxSize()
+-            .background(Color(0x7A101A24))
+-            .padding(horizontal = overflow.sheetHorizontalPadding, vertical = overflow.sheetVerticalPadding),
+-        contentAlignment = Alignment.BottomCenter,
+-    ) {
+-        val maxSheetHeight = maxHeight * overflow.sheetMaxHeightFraction
+-        val maxListHeight = maxHeight * overflow.listMaxHeightFraction
+-        Surface(
+-            modifier = Modifier
+-                .fillMaxWidth()
+-                .widthIn(max = 560.dp)
+-                .heightIn(max = maxSheetHeight),
+-            shape = RoundedCornerShape(12.dp),
+-            color = Color.White,
+-            border = BorderStroke(1.dp, visual.colors.border),
+-            shadowElevation = 4.dp,
+-        ) {
+-            Column(
+-                modifier = Modifier.padding(horizontal = 10.dp, vertical = 10.dp),
+-                verticalArrangement = Arrangement.spacedBy(overflow.compactSpacing),
+-            ) {
+-                Row(
+-                    modifier = Modifier.fillMaxWidth(),
+-                    horizontalArrangement = Arrangement.SpaceBetween,
+-                    verticalAlignment = Alignment.CenterVertically,
+-                ) {
+-                    Column(modifier = Modifier.weight(1f)) {
+-                        Text(
+-                            text = if (target == LotteryPickerTarget.SECONDARY) "Seleccionar 2da loteria" else "Seleccionar loteria",
+-                            style = MaterialTheme.typography.titleMedium,
+-                            color = visual.colors.ink,
+-                            fontWeight = FontWeight.Bold,
+-                        )
+-                        Text(
+-                            text = "La que cierra primero sale arriba",
+-                            style = MaterialTheme.typography.bodySmall,
+-                            color = visual.colors.muted,
+-                        )
+-                    }
+-                    CompactActionButton(
+-                        label = "Cerrar",
+-                        onClick = onDismiss,
+-                        tone = ActionTone.Primary,
+-                    )
+-                }
+-                if (superPaleEnabled) {
+-                    Row(
+-                        modifier = Modifier.fillMaxWidth(),
+-                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+-                    ) {
+-                        CompactActionButton(
+-                            label = "Principal",
+-                            onClick = { onSelectTarget(LotteryPickerTarget.PRIMARY) },
+-                            modifier = Modifier.weight(1f),
+-                            tone = ActionTone.Warning,
+-                            active = target == LotteryPickerTarget.PRIMARY,
+-                        )
+-                        CompactActionButton(
+-                            label = "2da loteria",
+-                            onClick = { onSelectTarget(LotteryPickerTarget.SECONDARY) },
+-                            modifier = Modifier.weight(1f),
+-                            active = target == LotteryPickerTarget.SECONDARY,
+-                        )
+-                    }
+-                }
+-                if (lotteries.isEmpty()) {
+-                    Surface(
+-                        modifier = Modifier.fillMaxWidth(),
+-                        shape = RoundedCornerShape(10.dp),
+-                        color = Color(0xFFF8FAFC),
+-                        border = BorderStroke(1.dp, visual.colors.border),
+-                    ) {
+-                        Text(
+-                            text = "No hay loterías disponibles para venta ahora mismo.",
+-                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 10.dp),
+-                            style = MaterialTheme.typography.bodyMedium,
+-                            color = visual.colors.muted,
+-                        )
+-                    }
+-                } else {
+-                    LazyColumn(
+-                        modifier = Modifier
+-                            .fillMaxWidth()
+-                            .weight(1f, fill = false)
+-                            .heightIn(min = 0.dp, max = maxListHeight),
+-                        verticalArrangement = Arrangement.spacedBy(5.dp),
+-                    ) {
+-                        items(lotteries) { lottery ->
+-                            val decision = decisionsByLotteryId[lottery.id]
+-                            val isSelected = lottery.id in selectedLotteryIds
+-                            val accent = when (decision?.state) {
+-                                CloseState.DANGER -> Color(0xFFC2410C)
+-                                CloseState.WARNING -> warningColor()
+-                                else -> gainColor()
+-                            }
+-                            Surface(
+-                                onClick = { onSelectLottery(lottery) },
+-                                shape = RoundedCornerShape(10.dp),
+-                                color = if (isSelected) Color(0xFFDC2626) else Color.White,
+-                                contentColor = if (isSelected) Color.White else visual.colors.ink,
+-                                border = BorderStroke(1.dp, if (isSelected) Color(0xFF991B1B) else visual.colors.border),
+-                            ) {
+-                                Row(
+-                                    modifier = Modifier
+-                                        .fillMaxWidth()
+-                                        .padding(horizontal = 9.dp, vertical = 8.dp),
+-                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+-                                    verticalAlignment = Alignment.CenterVertically,
+-                                ) {
+-                                    LotteryLogo(
+-                                        assetPath = lottery.logoAssetPath,
+-                                        fallback = lottery.name,
+-                                        modifier = Modifier.size(24.dp),
+-                                        tintColor = Color.Transparent,
+-                                    )
+-                                    Column(modifier = Modifier.weight(1f)) {
+-                                        Text(
+-                                            text = lottery.name,
+-                                            style = MaterialTheme.typography.labelLarge,
+-                                            color = if (isSelected) Color.White else visual.colors.ink,
+-                                            maxLines = 1,
+-                                            overflow = TextOverflow.Ellipsis,
+-                                        )
+-                                        Text(
+-                                            text = decision?.reason ?: "Disponible",
+-                                            style = MaterialTheme.typography.bodySmall,
+-                                            color = if (isSelected) Color.White.copy(alpha = 0.78f) else visual.colors.muted,
+-                                            maxLines = 1,
+-                                            overflow = TextOverflow.Ellipsis,
+-                                        )
+-                                    }
+-                                    Column(horizontalAlignment = Alignment.End) {
+-                                        if (isSelected) {
+-                                            CompactStatusBadge(
+-                                                label = if (selectedLotteryIds.firstOrNull() == lottery.id) "Activa" else "SP",
+-                                                tone = accent,
+-                                            )
+-                                            Spacer(modifier = Modifier.height(4.dp))
+-                                        }
+-                                        Text(
+-                                            text = formatLotteryClock12(decision?.closeTime ?: lottery.baseCloseTime),
+-                                            style = MaterialTheme.typography.labelMedium.copy(fontFamily = FontFamily.Monospace),
+-                                            color = if (isSelected) Color.White else accent,
+-                                        )
+-                                    }
+-                                }
+-                            }
+-                        }
+-                    }
+-                }
+-            }
+-        }
+-    }
+-}
+-
+-@Composable
+-private fun VentaInputDisplay(
+-    modifier: Modifier,
+-    label: String,
+-    value: String,
+-    active: Boolean,
+-    accent: Color,
+-    error: Boolean = false,
+-    valueAlign: TextAlign,
+-    onClick: () -> Unit,
+-) {
+-    val visual = rememberLotteryNetVisualSpec()
+-    val borderColor = when {
+-        error -> lossColor()
+-        active -> accent
+-        else -> visual.colors.border
+-    }
+-    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(2.dp)) {
+-        Text(
+-            label,
+-            modifier = Modifier.fillMaxWidth(),
+-            style = MaterialTheme.typography.labelSmall,
+-            color = visual.colors.muted,
+-            textAlign = valueAlign,
+-        )
+-        Surface(
+-            onClick = onClick,
+-            shape = RoundedCornerShape(8.dp),
+-            color = when {
+-                error -> Color(0xFFFFECE8)
+-                active -> Color(0xFFEAF2FF)
+-                else -> visual.colors.panelAlt
+-            },
+-            border = BorderStroke(if (error) 2.dp else 1.5.dp, borderColor),
+-        ) {
+-            Row(
+-                modifier = Modifier
+-                    .fillMaxWidth()
+-                    .height(if (visual.windowMode == LotteryNetWindowMode.POS_TIGHT) 28.dp else 34.dp)
+-                    .padding(horizontal = 8.dp, vertical = 3.dp),
+-                verticalAlignment = Alignment.CenterVertically,
+-            ) {
+-                Text(
+-                    text = value,
+-                    modifier = Modifier.weight(1f),
+-                    style = MaterialTheme.typography.titleMedium.copy(
+-                        fontFamily = FontFamily.Monospace,
+-                        fontWeight = FontWeight.ExtraBold,
+-                        color = visual.colors.ink,
+-                    ),
+-                    textAlign = valueAlign,
+-                    maxLines = 1,
+-                    overflow = TextOverflow.Ellipsis,
+-                )
+-                if (active) {
+-                    Box(
+-                        modifier = Modifier
+-                            .width(2.dp)
+-                            .height(if (visual.windowMode == com.lotterynet.pro.ui.common.LotteryNetWindowMode.POS_TIGHT) 14.dp else 18.dp)
+-                            .background(accent),
+-                    )
+-                }
+-            }
+-        }
+-    }
+-}
+-
+-@Composable
+-private fun VentaMiniStatus(
+-    title: String,
+-    main: String,
+-    sub: String,
+-    widthDp: Int,
+-    mainFontSp: Int,
+-    tone: SaleLimitBadgeTone,
+-) {
+-    val visual = rememberLotteryNetVisualSpec()
+-    val mainColor = when (tone) {
+-        SaleLimitBadgeTone.GREEN -> visual.colors.gain
+-        SaleLimitBadgeTone.RED -> visual.colors.loss
+-        SaleLimitBadgeTone.NEUTRAL -> visual.colors.neutral
+-    }
+-    Column(
+-        modifier = Modifier.width(widthDp.dp),
+-        verticalArrangement = Arrangement.spacedBy(2.dp),
+-        horizontalAlignment = Alignment.CenterHorizontally,
+-    ) {
+-        Text(title, style = MaterialTheme.typography.labelSmall, color = visual.colors.muted, fontWeight = FontWeight.Bold)
+-        Surface(
+-            modifier = Modifier.fillMaxWidth(),
+-            color = Color(0xFFF8FAFC),
+-            border = BorderStroke(1.dp, visual.colors.border),
+-            shape = RoundedCornerShape(7.dp),
+-        ) {
+-            Column(
+-                modifier = Modifier
+-                    .fillMaxWidth()
+-                    .height(if (visual.windowMode == LotteryNetWindowMode.POS_TIGHT) 28.dp else 34.dp)
+-                    .padding(horizontal = 2.dp, vertical = 2.dp),
+-                horizontalAlignment = Alignment.CenterHorizontally,
+-                verticalArrangement = Arrangement.Center,
+-            ) {
+-                Text(
+-                    main,
+-                    style = MaterialTheme.typography.titleMedium.copy(
+-                        fontFamily = FontFamily.Monospace,
+-                        fontSize = mainFontSp.sp,
+-                        fontWeight = FontWeight.ExtraBold,
+-                    ),
+-                    color = mainColor,
+-                    maxLines = 1,
+-                    overflow = TextOverflow.Ellipsis,
+-                )
+-                Text(sub, style = MaterialTheme.typography.labelSmall, color = visual.colors.muted, fontWeight = FontWeight.Bold)
+-            }
+-        }
+-    }
+-}
+-
+-@Composable
+-private fun VentaKeypad(
+-    activeInput: SaleInputTarget,
+-    todayTicketCount: Int,
+-    todayActorSold: Double,
+-    windowMode: LotteryNetWindowMode,
+-    role: UserRole,
+-    sellerKeyLabel: String,
+-    sellerDelegationActive: Boolean,
+-    canOpenOfficialTicket: Boolean,
+-    pickKeypad: Boolean,
+-    pickMode: PickPlayMode,
+-    onSelectTarget: (SaleInputTarget) -> Unit,
+-    onApplyKey: (String) -> Unit,
+-    onPickModeKey: (PickPlayMode) -> Unit,
+-    onAddPlay: () -> Unit,
+-    onOpenOfficialTicket: () -> Unit,
+-    onOpenSellerPicker: () -> Unit,
+-) {
+-    val visual = rememberLotteryNetVisualSpec()
+-    val keypadLayout = resolveVentaKeypadLayout(windowMode)
+-    val keypadShape = RoundedCornerShape(10.dp)
+-    val keypadLine = Color(0xFFE5ECF4)
+-    val sellerKeyVisual = resolveVentaSellerKeyVisualContract(sellerDelegationActive)
+-    val keys = resolveVentaKeyRows(role, pickKeypad = pickKeypad)
+-    val keyHeightDp = if (pickKeypad && windowMode == LotteryNetWindowMode.POS_TIGHT) {
+-        (keypadLayout.keyHeightDp - 5).coerceAtLeast(39)
+-    } else if (pickKeypad) {
+-        (keypadLayout.keyHeightDp - 4).coerceAtLeast(42)
+-    } else {
+-        keypadLayout.keyHeightDp
+-    }
+-    Surface(
+-        modifier = Modifier
+-            .fillMaxWidth()
+-            .padding(horizontal = 0.dp, vertical = 0.dp),
+-        shape = keypadShape,
+-        color = keypadLine,
+-        border = BorderStroke(0.75.dp, keypadLine),
+-    ) {
+-        Column(
+-            modifier = Modifier.padding(0.dp),
+-            verticalArrangement = Arrangement.spacedBy(keypadLayout.keySpacingDp.dp),
+-        ) {
+-            if (keypadLayout.showStatsBadges) {
+-                Row(
+-                    modifier = Modifier.fillMaxWidth(),
+-                    horizontalArrangement = Arrangement.spacedBy(3.dp),
+-                ) {
+-                    CompactStatusBadge(label = "$todayTicketCount hoy", tone = visual.colors.tickets)
+-                    CompactStatusBadge(label = "$${formatMoney(todayActorSold)}", tone = gainColor())
+-                }
+-            }
+-            keys.forEachIndexed { rowIndex, row ->
+-                Row(
+-                    modifier = Modifier.fillMaxWidth(),
+-                    horizontalArrangement = Arrangement.spacedBy(keypadLayout.keySpacingDp.dp),
+-                ) {
+-                    row.forEachIndexed { columnIndex, key ->
+-                        val keyVisual = resolveVentaKeyVisualContract(key)
+-                        val pickKeySelected = (key == "-" && pickMode == PickPlayMode.STRAIGHT) ||
+-                            (key == "+" && pickMode == PickPlayMode.BOX)
+-                        val pickCommandKey = pickKeypad && key in setOf("-", "+", "/", "*")
+-                        Surface(
+-                            onClick = {
+-                                when (key) {
+-                                    "PRINT" -> onOpenOfficialTicket()
+-                                    "SELLER" -> onOpenSellerPicker()
+-                                    "-" -> onPickModeKey(PickPlayMode.STRAIGHT)
+-                                    "+" -> onPickModeKey(PickPlayMode.BOX)
+-                                    "OK" -> if (activeInput == SaleInputTarget.NUMBER) {
+-                                        onSelectTarget(SaleInputTarget.AMOUNT)
+-                                    } else {
+-                                        onAddPlay()
+-                                    }
+-                                    else -> onApplyKey(key)
+-                                }
+-                            },
+-                            modifier = Modifier
+-                                .weight(resolveVentaKeyWeight(key, pickKeypad = pickKeypad))
+-                                .height(keyHeightDp.dp),
+-                            color = when (key) {
+-                                "OK" -> Color(0xFF1FC98B)
+-                                "PRINT" -> Color(0xFF0F172A)
+-                                "SELLER" -> if (sellerKeyVisual.backgroundTone == "blue") Color(0xFF2563EB) else Color(0xFF0F172A)
+-                                "-", "+" -> if (pickKeySelected) Color(0xFF2563EB) else Color(0xFFEFF6FF)
+-                                "/", "*" -> Color(0xFFEFF6FF)
+-                                "⌫" -> Color(0xFFDC2626)
+-                                else -> Color(0xFFFDFEFF)
+-                            },
+-                            border = BorderStroke(0.75.dp, keypadLine),
+-                            shape = ventaKeyShape(
+-                                rowIndex = rowIndex,
+-                                columnIndex = columnIndex,
+-                                rowCount = keys.size,
+-                                columnCount = row.size,
+-                            ),
+-                        ) {
+-                            Box(
+-                                modifier = Modifier
+-                                    .fillMaxSize(),
+-                                contentAlignment = Alignment.Center,
+-                            ) {
+-                                if (key == "PRINT") {
+-                                    Row(
+-                                        verticalAlignment = Alignment.CenterVertically,
+-                                        horizontalArrangement = Arrangement.spacedBy(4.dp),
+-                                    ) {
+-                                        Icon(
+-                                            imageVector = Icons.Rounded.Print,
+-                                            contentDescription = null,
+-                                            tint = Color.White,
+-                                            modifier = Modifier.size(if (keypadLayout.showStatsBadges) 13.dp else 12.dp),
+-                                        )
+-                                        Text(
+-                                            text = "PRINT",
+-                                            style = MaterialTheme.typography.labelMedium.copy(
+-                                                fontSize = keypadLayout.commandKeyFontSp.sp,
+-                                                fontWeight = FontWeight.ExtraBold,
+-                                            ),
+-                                            color = Color.White,
+-                                            textAlign = TextAlign.Center,
+-                                        )
+-                                    }
+-                                } else if (key == "SELLER" && sellerKeyVisual.iconOnly) {
+-                                    Icon(
+-                                        imageVector = Icons.AutoMirrored.Rounded.FormatListBulleted,
+-                                        contentDescription = "Elegir cajero",
+-                                        tint = Color.White,
+-                                        modifier = Modifier.size(22.dp),
+-                                    )
+-                                } else if (keyVisual.useIcon) {
+-                                    Icon(
+-                                        imageVector = Icons.AutoMirrored.Rounded.Backspace,
+-                                        contentDescription = keyVisual.contentDescription,
+-                                        tint = Color.White,
+-                                        modifier = Modifier.size(20.dp),
+-                                    )
+-                                } else if (pickCommandKey) {
+-                                    Column(
+-                                        horizontalAlignment = Alignment.CenterHorizontally,
+-                                        verticalArrangement = Arrangement.Center,
+-                                    ) {
+-                                        Text(
+-                                            text = key,
+-                                            style = MaterialTheme.typography.titleMedium.copy(
+-                                                fontFamily = FontFamily.Monospace,
+-                                                fontSize = (keypadLayout.numberKeyFontSp - 2).coerceAtLeast(17).sp,
+-                                                fontWeight = FontWeight.Black,
+-                                            ),
+-                                            color = if (pickKeySelected) Color.White else Color(0xFF1E40AF),
+-                                            textAlign = TextAlign.Center,
+-                                            maxLines = 1,
+-                                        )
+-                                        Text(
+-                                            text = when (key) {
+-                                                "-" -> "STR"
+-                                                "+" -> "BOX"
+-                                                "/" -> "LIG"
+-                                                "*" -> "S+B"
+-                                                else -> ""
+-                                            },
+-                                            style = MaterialTheme.typography.labelSmall.copy(
+-                                                fontSize = (keypadLayout.commandKeyFontSp - 2).coerceAtLeast(9).sp,
+-                                                fontWeight = FontWeight.ExtraBold,
+-                                            ),
+-                                            color = if (pickKeySelected) Color.White else Color(0xFF1E40AF),
+-                                            textAlign = TextAlign.Center,
+-                                            maxLines = 1,
+-                                        )
+-                                    }
+-                                } else {
+-                                    val isNumberKey = key.all { it.isDigit() }
+-                                    val label = when (key) {
+-                                        "OK" -> if (keypadLayout.showStatsBadges) "OK\nENTER" else "OK"
+-                                        "SELLER" -> sellerKeyLabel.ifBlank { "Cajero" }
+-                                        else -> key
+-                                    }
+-                                    Text(
+-                                        text = label,
+-                                        style = if (isNumberKey) {
+-                                            MaterialTheme.typography.headlineSmall.copy(
+-                                                fontFamily = FontFamily.Monospace,
+-                                                fontSize = keypadLayout.numberKeyFontSp.sp,
+-                                                fontWeight = FontWeight.Black,
+-                                            )
+-                                        } else {
+-                                            MaterialTheme.typography.labelMedium.copy(
+-                                                fontSize = keypadLayout.commandKeyFontSp.sp,
+-                                                fontWeight = FontWeight.ExtraBold,
+-                                            )
+-                                        },
+-                                        color = when (key) {
+-                                            "OK" -> Color.White
+-                                            "SELLER" -> Color.White
+-                                            "⌫" -> Color.White
+-                                            else -> visual.colors.ink
+-                                        },
+-                                        textAlign = TextAlign.Center,
+-                                    )
+-                                }
+-                            }
+-                        }
+-                    }
+-                }
+-            }
+-        }
+-    }
+-}
+-
+-@Composable
+-private fun LotteryChip(
+-    lottery: LotteryCatalogItem,
+-    selected: Boolean,
+-    decision: com.lotterynet.pro.core.model.LotteryCloseDecision,
+-    onClick: () -> Unit,
+-) {
+-    val visual = rememberLotteryNetVisualSpec()
+-    val accent = when (decision.state) {
+-        CloseState.CLOSED -> lossColor()
+-        CloseState.DANGER -> Color(0xFFC2410C)
+-        CloseState.WARNING -> warningColor()
+-        else -> colorFromHex(lottery.colorHex)
+-    }
+-    val selectedBackground = Color(0xFF111111)
+-    val selectedContent = Color.White
+-    Surface(
+-        onClick = onClick,
+-        shape = RoundedCornerShape(8.dp),
+-        color = if (selected) selectedBackground else visual.colors.panel,
+-        contentColor = if (selected) selectedContent else visual.colors.ink,
+-        border = BorderStroke(1.dp, if (selected) accent else visual.colors.border),
+-    ) {
+-        Row(
+-            modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp),
+-            horizontalArrangement = Arrangement.spacedBy(6.dp),
+-            verticalAlignment = Alignment.CenterVertically,
+-        ) {
+-            LotteryLogo(
+-                assetPath = lottery.logoAssetPath,
+-                fallback = lottery.name,
+-                modifier = Modifier.size(18.dp),
+-                tintColor = if (selected) selectedContent else Color.Transparent,
+-            )
+-            Column {
+-                Text(
+-                    lottery.name,
+-                    maxLines = 1,
+-                    overflow = TextOverflow.Ellipsis,
+-                    style = MaterialTheme.typography.labelLarge,
+-                    color = if (selected) selectedContent else visual.colors.ink,
+-                )
+-                Text(
+-                    text = decision.reason ?: "Disponible",
+-                    style = MaterialTheme.typography.labelSmall,
+-                    color = if (selected) selectedContent.copy(alpha = 0.72f) else visual.colors.muted,
+-                )
+-            }
+-            CompactStatusBadge(
+-                label = lotteryDecisionPill(decision),
+-                tone = accent,
+-            )
+-        }
+-    }
+-}
+-
+-@Composable
+-private fun SelectedLotteryMetaSection(
+-    selectedLotteries: List<LotteryCatalogItem>,
+-    closePolicy: LotteryClosePolicy,
+-    territory: LotteryTerritory,
+-    manualClosedLotteryIds: Set<String>,
+-    calendarClosedLotteryIds: Set<String>,
+-    nowUtcMs: Long,
+-    allowAdminAfterCloseGrace: Boolean = false,
+-) {
+-    CompactPanel(alt = true) {
+-        SectionHeader(title = "Loterías activas", meta = "${selectedLotteries.size} seleccionadas")
+-        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+-            selectedLotteries.forEach { lottery ->
+-                val decision = closePolicy.resolveCloseDecision(
+-                    lottery = lottery,
+-                    operationTerritory = territory,
+-                    manualClosedLotteryIds = manualClosedLotteryIds,
+-                    calendarClosedLotteryIds = calendarClosedLotteryIds,
+-                    allowAdminAfterCloseGrace = allowAdminAfterCloseGrace,
+-                    nowUtcMs = nowUtcMs,
+-                )
+-                val tone = lotteryDecisionTone(lottery, decision)
+-                Row(
+-                    modifier = Modifier.fillMaxWidth(),
+-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+-                    verticalAlignment = Alignment.CenterVertically,
+-                ) {
+-                    LotteryLogo(
+-                        assetPath = lottery.logoAssetPath,
+-                        fallback = lottery.name,
+-                        modifier = Modifier.size(26.dp),
+-                        tintColor = Color.Transparent,
+-                    )
+-                    Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+-                        Text(
+-                            text = lottery.name,
+-                            style = MaterialTheme.typography.labelLarge,
+-                            color = rememberLotteryNetVisualSpec().colors.ink,
+-                        )
+-                        Text(
+-                            text = lotteryDecisionSubtitle(decision),
+-                            style = MaterialTheme.typography.bodySmall,
+-                            color = rememberLotteryNetVisualSpec().colors.muted,
+-                        )
+-                    }
+-                    CompactStatusBadge(label = lotteryDecisionPill(decision), tone = tone)
++                    CompactStatusBadge(label = lotteryDecisionPill(decision), tone = tone)
+                 }
+             }
+         }
+@@ -4737,11 +2844,23 @@ private fun SalePrintPreviewOverlay(
+     val securityCode = remember(ticket.id, bancaName) {
+         TicketSecurity.resolveSecurityCode(ticket, bancaName)
+     }
+-    val renderBitmapPreview = remember(ticket) { shouldRenderSaleDeliveryBitmapPreview(ticket) }
+-    val bitmap = remember(ticket.id, ticket.createdAtEpochMs, bancaName, securityCode, bancaLogoUri, localContext, renderBitmapPreview) {
++    val estimatedHeight = remember(ticket.id, ticket.plays, securityCode) {
++        NativeBitmapExport.estimateOfficialTicketBitmapHeight(ticket, securityCode)
++    }
++    val renderBitmapPreview = remember(ticket.id, ticket.plays, estimatedHeight) {
++        shouldRenderSaleDeliveryBitmapPreview(ticket) &&
++            TicketDeliveryPolicy.shouldRenderPreviewBitmap(ticket, estimatedHeight)
++    }
++    var bitmap by remember(ticket.id) { mutableStateOf<android.graphics.Bitmap?>(null) }
++    var previewRendering by remember(ticket.id) { mutableStateOf(renderBitmapPreview) }
++    LaunchedEffect(ticket.id, renderBitmapPreview, bancaName, securityCode, bancaLogoUri) {
++        bitmap = null
+         if (!renderBitmapPreview) {
+-            null
+-        } else {
++            previewRendering = false
++            return@LaunchedEffect
++        }
++        previewRendering = true
++        bitmap = withContext(Dispatchers.IO) {
+             runCatching {
+                 NativeBitmapExport.renderOfficialTicketBitmap(
+                     context = localContext,
+@@ -4752,6 +2871,7 @@ private fun SalePrintPreviewOverlay(
+                 )
+             }.getOrNull()
+         }
++        previewRendering = false
+     }
+ 
+     Box(
+@@ -4770,46 +2890,66 @@ private fun SalePrintPreviewOverlay(
+             CompactAdaptiveGrid(itemCount = 4, columns = 2) { index, itemModifier ->
+                 when (index) {
+                     0 -> CompactActionButton(
+-                        label = "Imprimir",
++                        label = if (previewRendering) "Preparando" else "Imprimir",
+                         onClick = onQuickThermal,
+                         modifier = itemModifier,
+                         icon = Icons.Rounded.Print,
+                         tone = ActionTone.Primary,
++                        enabled = !previewRendering,
+                     )
+                     1 -> CompactActionButton(
+-                        label = "WhatsApp",
++                        label = if (previewRendering) "Preparando" else "WhatsApp",
+                         onClick = onShareWhatsApp,
+                         modifier = itemModifier,
+                         icon = Icons.Rounded.Share,
+                         tone = ActionTone.Success,
++                        enabled = !previewRendering,
+                     )
+                     2 -> CompactActionButton(
+-                        label = "Compartir",
++                        label = if (previewRendering) "Preparando" else "Compartir",
+                         onClick = onShareImage,
+                         modifier = itemModifier,
+                         icon = Icons.Rounded.Share,
+                         tone = ActionTone.Secondary,
++                        enabled = !previewRendering,
+                     )
+                     else -> CompactActionButton(
+-                        label = "Ticket oficial",
++                        label = if (previewRendering) "Preparando" else "Ticket oficial",
+                         onClick = onOpenOfficial,
+                         modifier = itemModifier,
+                         icon = Icons.Rounded.PointOfSale,
+                         tone = ActionTone.Warning,
++                        enabled = !previewRendering,
+                     )
+                 }
+             }
+             CompactPanel(alt = true, contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 6.dp, vertical = 6.dp)) {
+-                if (bitmap != null) {
++                if (previewRendering) {
++                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
++                        Text(
++                            text = "Preparando preview",
++                            style = MaterialTheme.typography.titleSmall,
++                            color = visual.colors.ink,
++                            fontWeight = FontWeight.Bold,
++                        )
++                        Text(
++                            text = "El ticket se esta preparando sin bloquear la pantalla.",
++                            style = MaterialTheme.typography.bodySmall,
++                            color = visual.colors.muted,
++                        )
++                    }
++                } else {
++                    val readyBitmap = bitmap
++                    if (readyBitmap != null) {
+                     Image(
+-                        bitmap = bitmap.asImageBitmap(),
++                        bitmap = readyBitmap.asImageBitmap(),
+                         contentDescription = "Preview de ticket",
+                         modifier = Modifier
+                             .fillMaxWidth()
+                             .heightIn(max = if (visual.windowMode == LotteryNetWindowMode.POS_TIGHT) 230.dp else 300.dp),
+                         contentScale = ContentScale.Fit,
+                     )
+-                } else {
++                    } else {
+                     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                         Text(
+                             text = "Ticket listo",
+@@ -4828,6 +2968,7 @@ private fun SalePrintPreviewOverlay(
+                             color = visual.colors.muted,
+                         )
+                     }
++                    }
+                 }
+             }
+             CompactActionButton(
+@@ -5029,6 +3170,7 @@ private fun QuickActionsRow(
+                         onClick = onOpenOfficialTicket,
+                         modifier = itemModifier,
+                         icon = Icons.Rounded.PointOfSale,
++                        enabled = canOpenOfficialTicket,
+                     )
+                 }
+             }
+@@ -5037,6 +3179,7 @@ private fun QuickActionsRow(
+                 onClick = onOpenOfficialTicket,
+                 modifier = itemModifier,
+                 icon = Icons.Rounded.PointOfSale,
++                enabled = canOpenOfficialTicket,
+             )
+         }
+     }
+@@ -5227,6 +3370,37 @@ internal fun activeTypeCode(lottery: LotteryCatalogItem?, classicMode: String, p
+     }
+ }
+ 
++private fun resolveSaleLimitInputsForSession(
++    repository: LocalCashierSalesLimitRepository,
++    ownerId: String?,
++    session: ActiveSession?,
++): CashierSalesLimitInputs {
++    return if (session?.role == UserRole.ADMIN) {
++        repository.getAdminSelfLimits(ownerId) ?: noSaleLimitInputs()
++    } else {
++        repository.getUserLimits(ownerId, session?.username)
++    }
++}
++
++private fun noSaleLimitInputs(): CashierSalesLimitInputs {
++    return CashierSalesLimitInputs(
++        daySale = 0.0,
++        payout = 0.0,
++        quiniela = 0.0,
++        pale = 0.0,
++        superPale = 0.0,
++        tripleta = 0.0,
++        pick3Straight = 0.0,
++        pick3Box = 0.0,
++        pick4Straight = 0.0,
++        pick4Box = 0.0,
++    )
++}
++
++private fun usesConfiguredSaleLimits(role: UserRole): Boolean {
++    return role == UserRole.CASHIER || role == UserRole.ADMIN
++}
++
+ internal fun resolveSaleLimitBadgeMain(
+     role: UserRole,
+     classicMode: String,
+@@ -5235,7 +3409,7 @@ internal fun resolveSaleLimitBadgeMain(
+     sold: Double = 0.0,
+     pending: Double = 0.0,
+ ): String {
+-    if (role != UserRole.CASHIER) return "Sin tope"
++    if (!usesConfiguredSaleLimits(role)) return "Sin tope"
+     val limit = when (classicMode.uppercase(Locale.US)) {
+         "Q" -> limits.quiniela
+         "P" -> limits.pale
+@@ -5255,7 +3429,7 @@ private fun resolveSaleLimitBadgeMain(
+     sold: Double = 0.0,
+     pending: Double = 0.0,
+ ): String {
+-    if (role != UserRole.CASHIER) return "Sin tope"
++    if (!usesConfiguredSaleLimits(role)) return "Sin tope"
+     val limit = resolveSaleLimitValue(lottery, classicMode, pickMode, limits)
+     return formatSaleLimitBadge(limit, sold, pending)
+ }
+@@ -5265,7 +3439,7 @@ internal fun resolveSaleLimitBadgeMain(
+     row: SaleLimitRemainingRow?,
+     currentAmount: Double? = null,
+ ): String? {
+-    if (role != UserRole.CASHIER) return "Sin tope"
++    if (!usesConfiguredSaleLimits(role)) return "Sin tope"
+     if (row == null) return null
+     val pending = resolveSaleLimitPendingPreview(
+         stagedPending = row.pending,
+@@ -5286,7 +3460,7 @@ internal fun resolveSaleLimitBadgeTone(
+ internal fun resolveSaleLimitPendingPreview(
+     stagedPending: Double,
+     currentAmount: Double?,
+-): Double = stagedPending + (currentAmount ?: 0.0).coerceAtLeast(0.0)
++): Double = stagedPending
+ 
+ private fun resolveSaleLimitValue(
+     lottery: LotteryCatalogItem?,

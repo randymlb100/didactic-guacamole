@@ -1,0 +1,140 @@
+{
+  "projectRoot": "C:\\Users\\Randy Cordero\\Desktop\\lotterynet_android",
+  "batchFiles": [
+    {
+      "path": "BUSQUEDA_BUGS_EXHAUSTIVA.md",
+      "language": "markdown",
+      "sizeLines": 327,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "MIGRACION_ASSETS_INVENTARIO.md",
+      "language": "markdown",
+      "sizeLines": 138,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "MIGRACION_KOTLIN_EJECUCION_TOTAL.md",
+      "language": "markdown",
+      "sizeLines": 1437,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "MIGRACION_KOTLIN_PLAN.md",
+      "language": "markdown",
+      "sizeLines": 193,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "MIGRACION_KOTLIN_TECNICO_01.md",
+      "language": "markdown",
+      "sizeLines": 304,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "MIGRACION_KOTLIN_TECNICO_02.md",
+      "language": "markdown",
+      "sizeLines": 189,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "PLAN_VERIFICACION_BUGS.md",
+      "language": "markdown",
+      "sizeLines": 281,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "README.md",
+      "language": "markdown",
+      "sizeLines": 2,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "README.txt",
+      "language": "txt",
+      "sizeLines": 156,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "REPORTE_FINAL_BUGS.md",
+      "language": "markdown",
+      "sizeLines": 347,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "VERIFICACION_ESTATICA_BUGS.md",
+      "language": "markdown",
+      "sizeLines": 447,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "build.bat",
+      "language": "batch",
+      "sizeLines": 58,
+      "fileCategory": "script"
+    },
+    {
+      "path": "buildWrap.bat",
+      "language": "batch",
+      "sizeLines": 20,
+      "fileCategory": "script"
+    },
+    {
+      "path": "gradle.properties",
+      "language": "properties",
+      "sizeLines": 16,
+      "fileCategory": "config"
+    },
+    {
+      "path": "gradlew.bat",
+      "language": "batch",
+      "sizeLines": 117,
+      "fileCategory": "script"
+    },
+    {
+      "path": "package.json",
+      "language": "json",
+      "sizeLines": 34,
+      "fileCategory": "config"
+    },
+    {
+      "path": "render.yaml",
+      "language": "yaml",
+      "sizeLines": 18,
+      "fileCategory": "config"
+    },
+    {
+      "path": "requirements.txt",
+      "language": "txt",
+      "sizeLines": 6,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "skills-lock.json",
+      "language": "json",
+      "sizeLines": 17,
+      "fileCategory": "config"
+    }
+  ],
+  "batchImportData": {
+    "BUSQUEDA_BUGS_EXHAUSTIVA.md": [],
+    "MIGRACION_ASSETS_INVENTARIO.md": [],
+    "MIGRACION_KOTLIN_EJECUCION_TOTAL.md": [],
+    "MIGRACION_KOTLIN_PLAN.md": [],
+    "MIGRACION_KOTLIN_TECNICO_01.md": [],
+    "MIGRACION_KOTLIN_TECNICO_02.md": [],
+    "PLAN_VERIFICACION_BUGS.md": [],
+    "README.md": [],
+    "README.txt": [],
+    "REPORTE_FINAL_BUGS.md": [],
+    "VERIFICACION_ESTATICA_BUGS.md": [],
+    "build.bat": [],
+    "buildWrap.bat": [],
+    "gradle.properties": [],
+    "gradlew.bat": [],
+    "package.json": [],
+    "render.yaml": [],
+    "requirements.txt": [],
+    "skills-lock.json": []
+  }
+}

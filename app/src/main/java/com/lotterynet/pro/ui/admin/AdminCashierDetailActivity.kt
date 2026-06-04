@@ -51,9 +51,14 @@ import com.lotterynet.pro.core.storage.LocalRechargeRepository
 import com.lotterynet.pro.core.storage.LocalSalesRepository
 import com.lotterynet.pro.core.storage.LocalSessionRepository
 import com.lotterynet.pro.core.storage.LocalUsersRepository
+import com.lotterynet.pro.core.storage.matchesSalesActorTicket
+import com.lotterynet.pro.core.sync.ForegroundCatchUpInput
+import com.lotterynet.pro.core.sync.ForegroundCatchUpPolicy
 import com.lotterynet.pro.core.sync.NativeOperationalSyncCoordinator
 import com.lotterynet.pro.core.sync.NativeTicketCloudSyncCoordinator
+import com.lotterynet.pro.core.sync.NativeTicketRemoteStore
 import com.lotterynet.pro.core.sync.NativeTicketSyncQueueRepository
+import com.lotterynet.pro.core.sync.OperationalSyncThrottle
 import com.lotterynet.pro.core.sync.resolveOperationalOwnerKey
 import com.lotterynet.pro.ui.common.CompactActionButton
 import com.lotterynet.pro.ui.common.CompactEmptyState
@@ -81,6 +86,10 @@ class AdminCashierDetailActivity : AppCompatActivity() {
     private val syncHandler = Handler(Looper.getMainLooper())
     private val realtimeClient = LotterynetRealtimeClient()
     private val realtimeSubscriptions = mutableListOf<LotterynetRealtimeClient.SubscriptionHandle>()
+    private val remoteStampStore = NativeTicketRemoteStore()
+    private val foregroundCatchUpPolicy = ForegroundCatchUpPolicy(
+        OperationalSyncThrottle(CASHIER_DETAIL_FOREGROUND_CATCH_UP_THROTTLE_MS),
+    )
     private val cashierDetailSyncInFlight = AtomicBoolean(false)
     private lateinit var actorId: String
     private lateinit var actorUser: String
@@ -95,6 +104,7 @@ class AdminCashierDetailActivity : AppCompatActivity() {
     private var ticketsState by mutableStateOf<List<TicketRecord>>(emptyList())
     private var syncMessageState by mutableStateOf("Sincronizando cajero...")
     private var lastRemoteUpdatedAt: String? = null
+    private val resumeSyncRunnable = Runnable { runForegroundCatchUp(force = false) }
     private val syncPollRunnable = object : Runnable {
         override fun run() {
             syncCashierDetail(force = false)
@@ -189,11 +199,21 @@ class AdminCashierDetailActivity : AppCompatActivity() {
             }
         }
         syncCashierDetail(force = true)
-        subscribeRealtime()
+        subscribeRealtime(reset = false)
         syncHandler.postDelayed(syncPollRunnable, resolveCashierDetailPollIntervalMs(realtimeClient.isConfigured()))
     }
 
+    override fun onResume() {
+        super.onResume()
+        if (::salesRepository.isInitialized) {
+            refreshCashierDetailData()
+            syncHandler.removeCallbacks(resumeSyncRunnable)
+            syncHandler.postDelayed(resumeSyncRunnable, CASHIER_DETAIL_RESUME_SYNC_DELAY_MS)
+        }
+    }
+
     override fun onDestroy() {
+        syncHandler.removeCallbacks(resumeSyncRunnable)
         syncHandler.removeCallbacks(syncPollRunnable)
         realtimeSubscriptions.forEach { it.close() }
         realtimeSubscriptions.clear()
@@ -202,8 +222,14 @@ class AdminCashierDetailActivity : AppCompatActivity() {
     }
 
     private fun refreshCashierDetailData() {
-        summaryState = financeRepository.getActorSummary(dayKey, actorId, actorLabel).summary
-        ticketsState = salesRepository.getTicketsForActor(dayKey, actorId).sortedByDescending { it.createdAtEpochMs }
+        val actorLookup = actorUser.ifBlank { actorLabel }
+        summaryState = financeRepository.getActorSummary(dayKey, actorId, actorLookup).summary
+        ticketsState = salesRepository.getTicketsForDay(dayKey)
+            .filter { ticket ->
+                matchesSalesActorTicket(ticket, actorId) ||
+                    matchesSalesActorTicket(ticket, actorUser)
+            }
+            .sortedByDescending { it.createdAtEpochMs }
     }
 
     private fun syncCashierDetail(force: Boolean) {
@@ -233,8 +259,49 @@ class AdminCashierDetailActivity : AppCompatActivity() {
         }
     }
 
-    private fun subscribeRealtime() {
+    private fun runForegroundCatchUp(force: Boolean) {
+        val active = session ?: return
+        if (!::salesRepository.isInitialized) return
+        refreshCashierDetailData()
+        val ownerKey = resolveOperationalOwnerKey(active)
+        if (ownerKey.isBlank()) return
+        thread(name = "cashier-detail-foreground-catch-up") {
+            val remoteUpdatedAt = runCatching { remoteStampStore.fetchUpdatedAtFresh(ownerKey) }.getOrNull()
+            val decision = foregroundCatchUpPolicy.decide(
+                resolveCashierDetailForegroundCatchUpInput(
+                    session = active,
+                    tickets = salesRepository.getTicketsForDay(dayKey),
+                    dayKey = dayKey,
+                    actorId = actorId,
+                    actorUser = actorUser,
+                    lastRemoteUpdatedAt = lastRemoteUpdatedAt,
+                    remoteUpdatedAt = remoteUpdatedAt,
+                    realtimeConfigured = realtimeClient.isConfigured(),
+                    hasRealtimeSubscription = realtimeSubscriptions.isNotEmpty(),
+                    nowEpochMs = System.currentTimeMillis(),
+                    force = force,
+                ),
+            )
+            if (!decision.shouldRun) return@thread
+            if (decision.reconnectRealtime) {
+                runOnUiThread { subscribeRealtime(reset = true) }
+            }
+            if (decision.refreshTickets) {
+                runOnUiThread { syncCashierDetail(force = force || decision.refreshTickets) }
+            } else if (remoteUpdatedAt != null) {
+                lastRemoteUpdatedAt = remoteUpdatedAt
+            }
+        }
+    }
+
+    private fun subscribeRealtime(reset: Boolean) {
         if (!realtimeClient.isConfigured()) return
+        if (reset) {
+            realtimeSubscriptions.forEach { it.close() }
+            realtimeSubscriptions.clear()
+        } else if (realtimeSubscriptions.isNotEmpty()) {
+            return
+        }
         val ownerKey = resolveOperationalOwnerKey(session)
         if (ownerKey.isBlank()) return
         realtimeSubscriptions += realtimeClient.subscribe(LotterynetRealtimeSubscription.ticketOwner(ownerKey)) {
@@ -288,9 +355,41 @@ class AdminCashierDetailActivity : AppCompatActivity() {
 
 internal const val CASHIER_DETAIL_POLL_MS = 60_000L
 internal const val CASHIER_DETAIL_REALTIME_FALLBACK_POLL_MS = 300_000L
+internal const val CASHIER_DETAIL_RESUME_SYNC_DELAY_MS = 100L
+internal const val CASHIER_DETAIL_FOREGROUND_CATCH_UP_THROTTLE_MS = 10_000L
 
 internal fun resolveCashierDetailPollIntervalMs(realtimeEnabled: Boolean): Long {
     return if (realtimeEnabled) CASHIER_DETAIL_REALTIME_FALLBACK_POLL_MS else CASHIER_DETAIL_POLL_MS
+}
+
+internal fun resolveCashierDetailForegroundCatchUpInput(
+    session: ActiveSession,
+    tickets: List<TicketRecord>,
+    dayKey: String,
+    actorId: String,
+    actorUser: String,
+    lastRemoteUpdatedAt: String?,
+    remoteUpdatedAt: String?,
+    realtimeConfigured: Boolean,
+    hasRealtimeSubscription: Boolean,
+    nowEpochMs: Long,
+    force: Boolean = false,
+): ForegroundCatchUpInput {
+    return ForegroundCatchUpInput(
+        ownerKey = resolveOperationalOwnerKey(session),
+        dateKey = dayKey,
+        hasLocalTickets = tickets.any { ticket ->
+            ticket.drawDateKey.equals(dayKey, ignoreCase = true) &&
+                (matchesSalesActorTicket(ticket, actorId) || matchesSalesActorTicket(ticket, actorUser))
+        },
+        hasLocalResults = true,
+        ticketStampChanged = remoteUpdatedAt.isNullOrBlank() ||
+            !remoteUpdatedAt.equals(lastRemoteUpdatedAt.orEmpty(), ignoreCase = true),
+        resultsStampChanged = false,
+        realtimeConnected = !realtimeConfigured || hasRealtimeSubscription,
+        nowMs = nowEpochMs,
+        force = force,
+    )
 }
 
 @Composable

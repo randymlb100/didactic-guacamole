@@ -7,6 +7,7 @@ const corsHeaders = {
 };
 
 type JsonMap = Record<string, unknown>;
+type SupabaseAdminClient = ReturnType<typeof createClient<any, "public", any>>;
 
 function json(status: number, body: unknown): Response {
   return new Response(JSON.stringify(body ?? {}), {
@@ -22,6 +23,12 @@ function clean(value: unknown): string {
 function number(value: unknown): number {
   const n = Number(value);
   return Number.isFinite(n) ? n : 0;
+}
+
+function bool(value: unknown): boolean {
+  if (value === true) return true;
+  const raw = clean(value).toLowerCase();
+  return raw === "true" || raw === "1" || raw === "yes";
 }
 
 function epoch(value: unknown): number {
@@ -180,7 +187,7 @@ function appTicketFromOfficial(ticket: JsonMap, items: JsonMap[]): JsonMap {
   };
 }
 
-async function ownerLookupKeys(admin: ReturnType<typeof createClient>, ownerKey: string): Promise<string[]> {
+async function ownerLookupKeys(admin: SupabaseAdminClient, ownerKey: string): Promise<string[]> {
   const keys = new Set([ownerKey].map(clean).filter(Boolean));
   const { data, error } = await admin
     .from("profiles")
@@ -198,7 +205,22 @@ async function ownerLookupKeys(admin: ReturnType<typeof createClient>, ownerKey:
   return Array.from(keys);
 }
 
-async function latestUpdatedAtForOwner(admin: ReturnType<typeof createClient>, ownerKey: string, ownerKeys: string[]): Promise<string | null> {
+async function snapshotUpdatedAtForOwner(admin: SupabaseAdminClient, ownerKey: string): Promise<string | null> {
+  const { data: snapshot, error: snapshotError } = await admin
+    .from("lotterynet_tickets_by_owner")
+    .select("updated_at")
+    .eq("owner_key", ownerKey)
+    .maybeSingle();
+  if (snapshotError) throw new Error(snapshotError.message);
+  return clean((snapshot as JsonMap | null)?.updated_at) || null;
+}
+
+async function latestUpdatedAtForOwner(
+  admin: SupabaseAdminClient,
+  ownerKey: string,
+  ownerKeys: string[],
+  snapshotStamp: string | null = null,
+): Promise<string | null> {
   const stamps: string[] = [];
   const latestByColumn = async (column: "admin_key" | "cashier_key", orderColumn: "server_created_at" | "updated_at"): Promise<JsonMap | null> => {
     const { data, error } = await admin
@@ -232,13 +254,6 @@ async function latestUpdatedAtForOwner(admin: ReturnType<typeof createClient>, o
     if (updatedRowCreatedStamp) stamps.push(updatedRowCreatedStamp);
   }
 
-  const { data: snapshot, error: snapshotError } = await admin
-    .from("lotterynet_tickets_by_owner")
-    .select("updated_at")
-    .eq("owner_key", ownerKey)
-    .maybeSingle();
-  if (snapshotError) throw new Error(snapshotError.message);
-  const snapshotStamp = clean((snapshot as JsonMap | null)?.updated_at);
   if (snapshotStamp) stamps.push(snapshotStamp);
 
   return stamps.sort().at(-1) ?? null;
@@ -252,7 +267,7 @@ function chunk<T>(values: T[], size: number): T[][] {
   return chunks;
 }
 
-async function officialItemsByTicket(admin: ReturnType<typeof createClient>, ids: string[]): Promise<Map<string, JsonMap[]>> {
+async function officialItemsByTicket(admin: SupabaseAdminClient, ids: string[]): Promise<Map<string, JsonMap[]>> {
   const itemsByTicket = new Map<string, JsonMap[]>();
   for (const idChunk of chunk(ids, 35)) {
     const { data, error } = await admin
@@ -271,7 +286,11 @@ async function officialItemsByTicket(admin: ReturnType<typeof createClient>, ids
   return itemsByTicket;
 }
 
-async function officialTicketsForOwner(admin: ReturnType<typeof createClient>, ownerKeys: string[]): Promise<JsonMap[]> {
+async function officialTicketsForOwner(
+  admin: SupabaseAdminClient,
+  ownerKeys: string[],
+  includeItems = true,
+): Promise<JsonMap[]> {
   const since = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString();
   const selectColumns = "id,client_request_id,ticket_code,total_amount,monto,status,estado,payout_amount,admin_key,cashier_key,lottery_name,lottery_endpoint,server_created_at,created_at,updated_at";
   const fetchByColumn = async (column: "admin_key" | "cashier_key"): Promise<JsonMap[]> => {
@@ -295,6 +314,7 @@ async function officialTicketsForOwner(admin: ReturnType<typeof createClient>, o
     .sort((a, b) => clean(b.server_created_at ?? b.created_at).localeCompare(clean(a.server_created_at ?? a.created_at)))
     .slice(0, 300);
   if (tickets.length === 0) return [];
+  if (!includeItems) return tickets.map((ticket) => appTicketFromOfficial(ticket, []));
 
   const ids = tickets.map((ticket: JsonMap) => clean(ticket.id)).filter(Boolean);
   const itemsByTicket = await officialItemsByTicket(admin, ids);
@@ -307,7 +327,7 @@ Deno.serve(async (req: Request) => {
 
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL");
-    const serviceRole = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    const serviceRole = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? Deno.env.get("SUPABASE_SECRET_KEY");
     if (!supabaseUrl || !serviceRole) return json(500, { ok: false, message: "Servidor no configurado" });
 
     const admin = createClient(supabaseUrl, serviceRole, { auth: { persistSession: false } });
@@ -318,7 +338,15 @@ Deno.serve(async (req: Request) => {
     const ownerKeys = await ownerLookupKeys(admin, ownerKey);
 
     if (action === "updated-at") {
-      return json(200, { ok: true, ownerKey, updatedAt: await latestUpdatedAtForOwner(admin, ownerKey, ownerKeys) });
+      const snapshotStamp = await snapshotUpdatedAtForOwner(admin, ownerKey);
+      if (!bool(body.includeOfficialStamp)) {
+        return json(200, { ok: true, ownerKey, updatedAt: snapshotStamp });
+      }
+      return json(200, {
+        ok: true,
+        ownerKey,
+        updatedAt: await latestUpdatedAtForOwner(admin, ownerKey, ownerKeys, snapshotStamp),
+      });
     }
 
     const { data, error } = await admin
@@ -347,7 +375,8 @@ Deno.serve(async (req: Request) => {
     }
 
     const deletedIds = new Set(payloadDeletedIds(basePayload));
-    const officialTickets = await officialTicketsForOwner(admin, ownerKeys);
+    const includeItems = action !== "summary" && body.includeItems !== false;
+    const officialTickets = await officialTicketsForOwner(admin, ownerKeys, includeItems);
     const payload = {
       ...basePayload,
       schemaVersion: Number(basePayload.schemaVersion ?? 2),

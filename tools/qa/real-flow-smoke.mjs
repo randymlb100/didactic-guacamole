@@ -8,8 +8,20 @@ const CREDENTIAL_FILE = process.env.LOTTERYNET_CREDENTIAL_FILE || new URL("contr
 const LOG_FILE = new URL(`./real-flow-smoke-${new Date().toISOString().replace(/[:.]/g, "-")}.log`, import.meta.url);
 
 const runId = `qa${Date.now()}`;
+const runSeed = Number(runId.replace(/\D/g, "").slice(-8));
 const fakeIsoDate = "2026-01-15";
 const fakeDayKey = "15-01-2026";
+const qaLotteryId = `97${runId.slice(-6)}`;
+const qaLotteryName = `QA Flujo Sin Resultado ${runId.slice(-6)}`;
+const qaAdminLotteryId = `96${runId.slice(-6)}`;
+const qaAdminLotteryName = `QA Admin Sin Tope ${runId.slice(-6)}`;
+const qaN1 = String((runSeed % 90) + 10).padStart(2, "0");
+const qaN2 = String(((runSeed + 17) % 90) + 10).padStart(2, "0");
+const qaN3 = String(((runSeed + 34) % 90) + 10).padStart(2, "0");
+const qaQuiniela = qaN3;
+const qaPale = `${qaN2}${qaN3}`;
+const qaTripleta = `${qaN1}${qaN2}${qaN3}`;
+const qaResultNumber = `${qaN1}-${qaN2}-${qaN3}`;
 const adminUsername = "podero02";
 const cashierPrefix = "bancae";
 const testSupervisorUser = `sup${runId.slice(-6)}`;
@@ -18,6 +30,8 @@ const testSupervisorPassword = `Sup${runId.slice(-6)}!`;
 const logLines = [];
 const createdClientIds = [];
 let originalUsersPayload = null;
+let originalResultsPayload = null;
+let originalResultsExisted = false;
 let usersPayloadWasChanged = false;
 let cleanupBearerToken = API_KEY;
 
@@ -143,7 +157,7 @@ async function saveUsersPayload(payload, token = API_KEY) {
   );
   if (direct.ok) return { route: "supabase-rest" };
 
-  log("BUG guardado directo de usuarios bloqueado; probando fallback Edge", {
+  log("INFO guardado directo de usuarios bloqueado; probando fallback Edge", {
     status: direct.status,
     body: direct.text,
   });
@@ -179,6 +193,17 @@ async function upsertResults(payload) {
   );
 }
 
+async function fetchResultsPayload() {
+  const result = await requestJson(
+    "results fetch",
+    "GET",
+    `${SUPABASE_URL}/rest/v1/lotterynet_results_by_day?result_date=eq.${encodeURIComponent(fakeDayKey)}&select=payload`,
+  );
+  if (!result.ok) throw new Error(`No se pudo leer resultados QA: ${result.text}`);
+  originalResultsExisted = Array.isArray(result.json) && result.json.length > 0;
+  originalResultsPayload = result.json?.[0]?.payload ?? null;
+}
+
 async function deleteResults() {
   return requestJson(
     "results cleanup",
@@ -187,6 +212,11 @@ async function deleteResults() {
     undefined,
     API_KEY,
   );
+}
+
+async function restoreResults() {
+  if (!originalResultsExisted) return deleteResults();
+  return upsertResults(originalResultsPayload);
 }
 
 async function login(username, password) {
@@ -261,7 +291,7 @@ function setUserBlocked(payload, username, blocked) {
   return next;
 }
 
-function play(playType, number, amount, lotteryId = "1", lotteryName = "La Primera Día") {
+function play(playType, number, amount, lotteryId = qaLotteryId, lotteryName = qaLotteryName) {
   return { playType, number, amount, potentialPayout: 0, lotteryId, lotteryName };
 }
 
@@ -323,6 +353,7 @@ async function main() {
   const credentialsText = await readFile(CREDENTIAL_FILE, "utf8");
   const credentials = parseCredentials(credentialsText);
   originalUsersPayload = await fetchUsersPayload();
+  await fetchResultsPayload();
 
   const admin = findAccount(originalUsersPayload, adminUsername);
   const cashiers = credentials
@@ -374,9 +405,9 @@ async function main() {
       entry.account,
       admin,
       [
-        play("Q", "32", 3),
-        play("P", "3225", 1),
-        play("T", "112232", 1),
+        play("Q", qaQuiniela, 3),
+        play("P", qaPale, 1),
+        play("T", qaTripleta, 1),
       ],
       entry.account.user,
     );
@@ -392,7 +423,7 @@ async function main() {
     adminSession,
     admin,
     admin,
-    [play("T", "112232", 76)],
+    [play("T", qaTripleta, 76, qaAdminLotteryId, qaAdminLotteryName)],
     "admin-no-tope",
   );
   ok(adminTicket.result.json?.ok === true, "admin vende Tripleta 76 sin tope de cajero", {
@@ -405,7 +436,7 @@ async function main() {
     cashierSessions[0].session,
     cashierSessions[0].account,
     admin,
-    [play("T", "112232", 76)],
+    [play("T", qaTripleta, 76)],
     "cashier-limit-block",
   );
   ok(limitTicket.result.json?.ok === false && limitTicket.result.status === 409, "cajero queda bloqueado por tope Tripleta 75", {
@@ -430,6 +461,8 @@ async function main() {
   const resultPayload = [
     { id: "1", name: "La Primera Día", number: "11-22-32", status: "published" },
     { id: "2", name: "Anguila Mañana", number: "60-93-48", status: "published" },
+    { id: qaLotteryId, name: qaLotteryName, number: qaResultNumber, status: "published" },
+    { id: qaAdminLotteryId, name: qaAdminLotteryName, number: qaResultNumber, status: "published" },
   ];
   const resultUpsert = await upsertResults(resultPayload);
   ok(resultUpsert.ok, "resultado falso guardado y dispara validacion automatica", {
@@ -450,7 +483,7 @@ async function main() {
     cashierSessions[1].session,
     cashierSessions[1].account,
     admin,
-    [play("Q", "32", 1)],
+    [play("Q", "32", 1, "1", "La Primera Día")],
     "published-result-block",
   );
   ok(blockedByPublished.result.json?.ok === false && blockedByPublished.result.status === 409, "loteria con resultado publicado bloquea venta nueva", {
@@ -524,8 +557,8 @@ try {
     }
   }
   try {
-    await deleteResults();
-    log("CLEANUP resultados falsos borrados");
+    await restoreResults();
+    log(originalResultsExisted ? "CLEANUP resultados originales restaurados" : "CLEANUP resultados falsos borrados");
   } catch (error) {
     log("BUG no se pudo borrar resultado falso", { message: error?.message });
   }

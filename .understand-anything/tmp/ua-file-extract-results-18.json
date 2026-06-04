@@ -1,0 +1,39 @@
+{
+  "scriptCompleted": true,
+  "filesAnalyzed": 4,
+  "filesSkipped": [],
+  "results": [
+    {
+      "path": "app/src/main/res/xml/backup_rules.xml",
+      "language": "xml",
+      "fileCategory": "config",
+      "totalLines": 8,
+      "nonEmptyLines": 8,
+      "metrics": {}
+    },
+    {
+      "path": "app/src/main/res/xml/data_extraction_rules.xml",
+      "language": "xml",
+      "fileCategory": "config",
+      "totalLines": 18,
+      "nonEmptyLines": 17,
+      "metrics": {}
+    },
+    {
+      "path": "app/src/main/res/xml/file_paths.xml",
+      "language": "xml",
+      "fileCategory": "config",
+      "totalLines": 15,
+      "nonEmptyLines": 15,
+      "metrics": {}
+    },
+    {
+      "path": "app/src/main/res/xml/network_security_config.xml",
+      "language": "xml",
+      "fileCategory": "config",
+      "totalLines": 13,
+      "nonEmptyLines": 12,
+      "metrics": {}
+    }
+  ]
+}

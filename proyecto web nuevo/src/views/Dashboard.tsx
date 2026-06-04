@@ -39,6 +39,7 @@ import {
 
 interface DashboardProps {
   activeTab: string;
+  setActiveTab?: (tab: string) => void;
 }
 
 interface MonitorRow {
@@ -242,6 +243,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeTab }) => {
   const [dashboardDateFilter, setDashboardDateFilter] = useState<'today' | 'yesterday' | 'all'>('today');
   const [finanzasDateFilter, setFinanzasDateFilter] = useState<'today' | 'yesterday' | 'all'>('today');
   const [annulModalOpen, setAnnulModalOpen] = useState(false);
+  const [annulTimer, setAnnulTimer] = useState(Date.now());
   const [selectedTicketForAnnul, setSelectedTicketForAnnul] = useState<TicketRecord | null>(null);
   const [selectedTicketForDetail, setSelectedTicketForDetail] = useState<TicketRecord | null>(null);
   const [selectedTicketForDelete, setSelectedTicketForDelete] = useState<TicketRecord | null>(null);
@@ -531,7 +533,41 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeTab }) => {
 
   const handleAnnulTicket = async (ticket: TicketRecord) => {
     if (!user) return;
+    
+    // Check 2-minute cashier annulment time limit window
+    const nowEpochMs = Date.now();
+    const elapsedMs = nowEpochMs - Number(ticket.createdAtEpochMs);
+    const canBypassTimeLimit = user.role === 'ADMIN' || user.role === 'MASTER' || user.role === 'SUPERVISOR';
+    
+    if (!canBypassTimeLimit && elapsedMs > 120000) {
+      alert('Error de Paridad: El tiempo límite de 2 minutos para anular el ticket ha expirado.');
+      return;
+    }
+
     try {
+      // Perform database updates on tickets table
+      if (isSupabaseConfigured && supabase) {
+        const { error: ticketErr } = await supabase
+          .from('tickets')
+          .update({ status: 'cancelled' })
+          .eq('id', ticket.id);
+        if (ticketErr) throw ticketErr;
+
+        // Sync to lotterynet_kv cache
+        const { data: kvData } = await supabase
+          .from('lotterynet_kv')
+          .select('payload')
+          .eq('key', `ticket:${ticket.id}`)
+          .maybeSingle();
+        
+        if (kvData && kvData.payload) {
+          const updatedPayload = { ...kvData.payload, status: 'cancelled' };
+          await supabase
+            .from('lotterynet_kv')
+            .upsert({ key: `ticket:${ticket.id}`, payload: updatedPayload });
+        }
+      }
+
       const updatedTickets = [...tickets];
       const ticketIdx = updatedTickets.findIndex(t => t.id === ticket.id);
       if (ticketIdx !== -1) {
@@ -568,7 +604,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeTab }) => {
       alert('Ticket anulado con éxito.');
     } catch (e) {
       console.error(e);
-      alert('Error anulando el ticket.');
+      alert('Error al anular el ticket en la base de datos.');
     }
   };
 
@@ -619,6 +655,29 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeTab }) => {
   const handlePayWinner = async (ticket: TicketRecord) => {
     if (!user) return;
     try {
+      // Perform database updates on tickets table
+      if (isSupabaseConfigured && supabase) {
+        const { error: ticketErr } = await supabase
+          .from('tickets')
+          .update({ status: 'paid' })
+          .eq('id', ticket.id);
+        if (ticketErr) throw ticketErr;
+
+        // Sync to lotterynet_kv cache
+        const { data: kvData } = await supabase
+          .from('lotterynet_kv')
+          .select('payload')
+          .eq('key', `ticket:${ticket.id}`)
+          .maybeSingle();
+        
+        if (kvData && kvData.payload) {
+          const updatedPayload = { ...kvData.payload, status: 'paid' };
+          await supabase
+            .from('lotterynet_kv')
+            .upsert({ key: `ticket:${ticket.id}`, payload: updatedPayload });
+        }
+      }
+
       const updatedTickets = [...tickets];
       const ticketIdx = updatedTickets.findIndex(t => t.id === ticket.id);
       if (ticketIdx !== -1) {
@@ -645,7 +704,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeTab }) => {
       alert('Premio pagado con éxito.');
     } catch (e) {
       console.error(e);
-      alert('Error procesando el pago del premio.');
+      alert('Error al registrar el pago del premio en el servidor.');
     }
   };
 
@@ -684,6 +743,16 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeTab }) => {
       alert('Error registrando el resultado de lotería.');
     }
   };
+
+  // Dynamic countdown timer effect for annulment window parity
+  useEffect(() => {
+    if (!annulModalOpen) return;
+    setAnnulTimer(Date.now());
+    const interval = setInterval(() => {
+      setAnnulTimer(Date.now());
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [annulModalOpen]);
 
   // Load limits when tab is active
   useEffect(() => {
@@ -1659,7 +1728,19 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeTab }) => {
             sportsComisiones = sportsSalesAmt * normalizeRate(cashier.commissionRate);
           }
 
-          const tkRecargas = cashier.rechargesAssignedBalance || 0;
+          const cashierRecharges = audits.filter(a => a.action === 'PROCESS_RECHARGE' && a.details.includes("asignado a " + cashier.user))
+            .filter(a => {
+              if (dashboardDateFilter === 'today') {
+                return isSameLocalDate(a.timestampMs, 0);
+              } else if (dashboardDateFilter === 'yesterday') {
+                return isSameLocalDate(a.timestampMs, 1);
+              }
+              return true; // all
+            });
+          const tkRecargas = cashierRecharges.reduce((sum, a) => {
+            const match = a.details.match(/\$([0-9.]+)/);
+            return sum + (match ? parseFloat(match[1]) : 0);
+          }, 0);
           const tkCaja = (tkSales + sportsSalesAmt) + tkRecargas - (tkComisiones + sportsComisiones) - (tkPremiosPagados + sportsPaidAmt) - (tkPremiosPendientes + sportsWonAmt);
           return sum + tkCaja;
         }, 0);
@@ -3883,16 +3964,37 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeTab }) => {
                 const premiosPagados = loteriaPremiosPagados + deportesPremiosPagados;
                 const premiosPendientes = loteriaPremiosPendientes + deportesPremiosPendientes;
 
-                let recargas = 0;
-                const cashierScope = user.role === 'MASTER'
-                  ? users.filter(u => u.role === 'CASHIER')
-                  : users.filter(u => u.role === 'CASHIER' && (user.role === 'ADMIN' ? u.adminId === user.id : u.supervisorIds.includes(user.id)));
-                if (cuadreCashierFilter === 'all') {
-                  recargas = cashierScope.reduce((acc, c) => acc + c.rechargesAssignedBalance, 0);
-                } else {
-                  const targetCashier = cashierScope.find(u => u.user === cuadreCashierFilter);
-                  recargas = targetCashier?.rechargesAssignedBalance || 0;
-                }
+                const scopedRecharges = audits.filter(a => a.action === 'PROCESS_RECHARGE')
+                  .filter(a => {
+                    const timestamp = Number(a.timestampMs || 0);
+                    if (!timestamp) return false;
+                    
+                    const dateLimit = cuadrePeriod === 'today' ? 1 : cuadrePeriod === 'week' ? 7 : cuadrePeriod === 'month' ? 30 : 0;
+                    if (dateLimit > 0) {
+                      return (Date.now() - timestamp) <= (dateLimit * 86400000);
+                    } else if (cuadrePeriod === 'manual') {
+                      const from = new Date(cuadreDateFrom).getTime();
+                      const to = new Date(cuadreDateTo).getTime() + 86400000;
+                      return timestamp >= from && timestamp <= to;
+                    }
+                    return true;
+                  })
+                  .filter(a => {
+                    const cashierScope = user.role === 'MASTER'
+                      ? users.filter(u => u.role === 'CASHIER')
+                      : users.filter(u => u.role === 'CASHIER' && (user.role === 'ADMIN' ? u.adminId === user.id : u.supervisorIds.includes(user.id)));
+                    if (cuadreCashierFilter === 'all') {
+                      return cashierScope.some(c => a.details.includes("asignado a " + c.user));
+                    } else {
+                      return a.details.includes("asignado a " + cuadreCashierFilter);
+                    }
+                  });
+
+                const recargas = scopedRecharges.reduce((sum, a) => {
+                  const match = a.details.match(/\$([0-9.]+)/);
+                  const val = match ? parseFloat(match[1]) : 0;
+                  return sum + val;
+                }, 0);
 
                 const cajaDisponible = ventasBrutas + recargas - comisiones - premiosPagados - premiosPendientes;
                 const beneficioNeto = ventasBrutas + recargas - comisiones - premiosPagados - premiosPendientes;
@@ -3984,7 +4086,21 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeTab }) => {
                               const totalSales = tkSales + spSales;
                               const totalComisiones = tkComisiones + spComisiones;
                               const totalPremios = tkPremiosPagados + spPremiosPagados;
-                              const tkRecargas = cashier.rechargesAssignedBalance || 0;
+                              const cashierRecharges = audits.filter(a => a.action === 'PROCESS_RECHARGE' && a.details.includes("asignado a " + cashier.user))
+                                .filter(a => {
+                                  const timestamp = Number(a.timestampMs || 0);
+                                  if (!timestamp) return false;
+                                  
+                                  const dateLimit = cuadrePeriod === 'today' ? 1 : cuadrePeriod === 'week' ? 7 : cuadrePeriod === 'month' ? 30 : 0;
+                                  if (dateLimit > 0) {
+                                    return (Date.now() - timestamp) <= (dateLimit * 86400000);
+                                  }
+                                  return true;
+                                });
+                              const tkRecargas = cashierRecharges.reduce((sum, a) => {
+                                const match = a.details.match(/\$([0-9.]+)/);
+                                return sum + (match ? parseFloat(match[1]) : 0);
+                              }, 0);
                               const tkCaja = totalSales + tkRecargas - totalComisiones - totalPremios - (tkPremiosPendientes + spPremiosPendientes);
 
                               return (
@@ -5467,9 +5583,42 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeTab }) => {
                 <span style={{ color: 'hsl(var(--text-secondary))' }}>Monto:</span>
                 <strong>${selectedTicketForAnnul.total.toFixed(2)}</strong>
               </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <span style={{ color: 'hsl(var(--text-secondary))' }}>Hora:</span>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
+                <span style={{ color: 'hsl(var(--text-secondary))' }}>Hora Emisión:</span>
                 <strong>{new Date(selectedTicketForAnnul.createdAtEpochMs).toLocaleTimeString()}</strong>
+              </div>
+              
+              {/* Parity checks: void limit window feedback */}
+              <div style={{ borderTop: '1px solid hsl(var(--border))', marginTop: '8px', paddingTop: '8px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                {(() => {
+                  const ticketTime = Number(selectedTicketForAnnul.createdAtEpochMs);
+                  const elapsed = annulTimer - ticketTime;
+                  const isTimeLimitExceeded = elapsed > 120000;
+                  const remainingSecs = Math.max(0, Math.floor((120000 - elapsed) / 1000));
+                  const canBypass = user.role === 'ADMIN' || user.role === 'MASTER' || user.role === 'SUPERVISOR';
+                  
+                  if (!canBypass) {
+                    if (isTimeLimitExceeded) {
+                      return (
+                        <div style={{ color: 'hsl(var(--danger))', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <span>⚠️ Límite de 2 minutos superado. Bloqueado.</span>
+                        </div>
+                      );
+                    } else {
+                      return (
+                        <div style={{ color: 'hsl(var(--primary))', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <span>⏱️ Ventana de anulación activa: {remainingSecs}s restantes.</span>
+                        </div>
+                      );
+                    }
+                  } else {
+                    return (
+                      <div style={{ color: 'hsl(var(--success))', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <span>✓ Permiso gerencial ({user.role}): Omitiendo límite de 2m.</span>
+                      </div>
+                    );
+                  }
+                })()}
               </div>
             </div>
 
@@ -5477,6 +5626,13 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeTab }) => {
               <button
                 className="btn btn-primary"
                 style={{ flex: 1, backgroundColor: 'hsl(var(--danger))', border: 'none' }}
+                disabled={(() => {
+                  const ticketTime = Number(selectedTicketForAnnul.createdAtEpochMs);
+                  const elapsed = annulTimer - ticketTime;
+                  const isTimeLimitExceeded = elapsed > 120000;
+                  const canBypass = user.role === 'ADMIN' || user.role === 'MASTER' || user.role === 'SUPERVISOR';
+                  return !canBypass && isTimeLimitExceeded;
+                })()}
                 onClick={() => handleAnnulTicket(selectedTicketForAnnul)}
               >
                 Confirmar Anulación

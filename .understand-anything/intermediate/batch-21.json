@@ -1,0 +1,233 @@
+{
+  "nodes": [
+    {
+      "id": "file:docs/supabase/2026-05-06_lotterynet_backend_migration_blueprint.sql",
+      "type": "table",
+      "name": "2026-05-06_lotterynet_backend_migration_blueprint.sql",
+      "summary": "Supabase integration file used by the app/server for remote data, ticket, result, or configuration workflows.",
+      "tags": [
+        "data",
+        "printing",
+        "supabase",
+        "database"
+      ],
+      "complexity": "complex",
+      "filePath": "docs/supabase/2026-05-06_lotterynet_backend_migration_blueprint.sql",
+      "lineRange": [
+        1,
+        520
+      ]
+    },
+    {
+      "id": "file:docs/supabase/2026-05-13-realtime-cutover-checklist.md",
+      "type": "document",
+      "name": "2026-05-13-realtime-cutover-checklist.md",
+      "summary": "Supabase integration file used by the app/server for remote data, ticket, result, or configuration workflows.",
+      "tags": [
+        "docs",
+        "sync",
+        "supabase",
+        "documentation"
+      ],
+      "complexity": "simple",
+      "filePath": "docs/supabase/2026-05-13-realtime-cutover-checklist.md",
+      "lineRange": [
+        1,
+        54
+      ]
+    },
+    {
+      "id": "file:docs/supabase/2026-05-13-realtime-final-rollout.sql",
+      "type": "table",
+      "name": "2026-05-13-realtime-final-rollout.sql",
+      "summary": "Supabase integration file used by the app/server for remote data, ticket, result, or configuration workflows.",
+      "tags": [
+        "data",
+        "sync",
+        "supabase",
+        "database"
+      ],
+      "complexity": "moderate",
+      "filePath": "docs/supabase/2026-05-13-realtime-final-rollout.sql",
+      "lineRange": [
+        1,
+        78
+      ]
+    },
+    {
+      "id": "file:docs/supabase/2026-05-13-realtime-rollout-checklist.md",
+      "type": "document",
+      "name": "2026-05-13-realtime-rollout-checklist.md",
+      "summary": "Supabase integration file used by the app/server for remote data, ticket, result, or configuration workflows.",
+      "tags": [
+        "docs",
+        "sync",
+        "supabase",
+        "documentation"
+      ],
+      "complexity": "simple",
+      "filePath": "docs/supabase/2026-05-13-realtime-rollout-checklist.md",
+      "lineRange": [
+        1,
+        11
+      ]
+    },
+    {
+      "id": "file:docs/supabase/2026-05-13-realtime-rollout.sql",
+      "type": "table",
+      "name": "2026-05-13-realtime-rollout.sql",
+      "summary": "Supabase integration file used by the app/server for remote data, ticket, result, or configuration workflows.",
+      "tags": [
+        "data",
+        "sync",
+        "supabase",
+        "database"
+      ],
+      "complexity": "simple",
+      "filePath": "docs/supabase/2026-05-13-realtime-rollout.sql",
+      "lineRange": [
+        1,
+        7
+      ]
+    },
+    {
+      "id": "file:docs/supabase/2026-05-13-supabase-functions-multi-banca.md",
+      "type": "document",
+      "name": "2026-05-13-supabase-functions-multi-banca.md",
+      "summary": "Supabase integration file used by the app/server for remote data, ticket, result, or configuration workflows.",
+      "tags": [
+        "docs",
+        "supabase",
+        "documentation"
+      ],
+      "complexity": "moderate",
+      "filePath": "docs/supabase/2026-05-13-supabase-functions-multi-banca.md",
+      "lineRange": [
+        1,
+        68
+      ]
+    },
+    {
+      "id": "file:docs/supabase/2026-05-14-render-cache-webhooks.sql",
+      "type": "table",
+      "name": "2026-05-14-render-cache-webhooks.sql",
+      "summary": "Supabase integration file used by the app/server for remote data, ticket, result, or configuration workflows.",
+      "tags": [
+        "data",
+        "supabase",
+        "database"
+      ],
+      "complexity": "simple",
+      "filePath": "docs/supabase/2026-05-14-render-cache-webhooks.sql",
+      "lineRange": [
+        1,
+        31
+      ]
+    },
+    {
+      "id": "file:docs/supabase/2026-05-14-supabase-cutover.sql",
+      "type": "table",
+      "name": "2026-05-14-supabase-cutover.sql",
+      "summary": "Supabase integration file used by the app/server for remote data, ticket, result, or configuration workflows.",
+      "tags": [
+        "data",
+        "supabase",
+        "database"
+      ],
+      "complexity": "moderate",
+      "filePath": "docs/supabase/2026-05-14-supabase-cutover.sql",
+      "lineRange": [
+        1,
+        112
+      ]
+    },
+    {
+      "id": "file:docs/supabase/edge_functions_base.md",
+      "type": "document",
+      "name": "edge_functions_base.md",
+      "summary": "Supabase integration file used by the app/server for remote data, ticket, result, or configuration workflows.",
+      "tags": [
+        "docs",
+        "supabase",
+        "documentation"
+      ],
+      "complexity": "moderate",
+      "filePath": "docs/supabase/edge_functions_base.md",
+      "lineRange": [
+        1,
+        171
+      ]
+    },
+    {
+      "id": "file:docs/supabase/kotlin_edge_function_examples.md",
+      "type": "document",
+      "name": "kotlin_edge_function_examples.md",
+      "summary": "Supabase integration file used by the app/server for remote data, ticket, result, or configuration workflows.",
+      "tags": [
+        "docs",
+        "supabase",
+        "documentation"
+      ],
+      "complexity": "moderate",
+      "filePath": "docs/supabase/kotlin_edge_function_examples.md",
+      "lineRange": [
+        1,
+        89
+      ]
+    },
+    {
+      "id": "file:docs/supabase/production-call-volume-hardening.md",
+      "type": "document",
+      "name": "production-call-volume-hardening.md",
+      "summary": "Supabase integration file used by the app/server for remote data, ticket, result, or configuration workflows.",
+      "tags": [
+        "docs",
+        "supabase",
+        "documentation"
+      ],
+      "complexity": "simple",
+      "filePath": "docs/supabase/production-call-volume-hardening.md",
+      "lineRange": [
+        1,
+        53
+      ]
+    },
+    {
+      "id": "file:docs/supabase/production-server-first-multibanca.md",
+      "type": "document",
+      "name": "production-server-first-multibanca.md",
+      "summary": "Supabase integration file used by the app/server for remote data, ticket, result, or configuration workflows.",
+      "tags": [
+        "docs",
+        "supabase",
+        "documentation"
+      ],
+      "complexity": "moderate",
+      "filePath": "docs/supabase/production-server-first-multibanca.md",
+      "lineRange": [
+        1,
+        151
+      ]
+    },
+    {
+      "id": "file:docs/supabase/realtime_number_limits_and_ticket_backend.md",
+      "type": "document",
+      "name": "realtime_number_limits_and_ticket_backend.md",
+      "summary": "Supabase integration file used by the app/server for remote data, ticket, result, or configuration workflows.",
+      "tags": [
+        "docs",
+        "ticket",
+        "sync",
+        "supabase",
+        "documentation"
+      ],
+      "complexity": "moderate",
+      "filePath": "docs/supabase/realtime_number_limits_and_ticket_backend.md",
+      "lineRange": [
+        1,
+        69
+      ]
+    }
+  ],
+  "edges": []
+}

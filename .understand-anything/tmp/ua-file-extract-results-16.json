@@ -1,0 +1,1973 @@
+{
+  "scriptCompleted": true,
+  "filesAnalyzed": 19,
+  "filesSkipped": [],
+  "results": [
+    {
+      "path": "BUSQUEDA_BUGS_EXHAUSTIVA.md",
+      "language": "markdown",
+      "fileCategory": "docs",
+      "totalLines": 327,
+      "nonEmptyLines": 248,
+      "sections": [
+        {
+          "heading": "Búsqueda Exhaustiva de Bugs Adicionales",
+          "level": 1,
+          "line": 1
+        },
+        {
+          "heading": "📊 ANÁLISIS DE ELEMENTOS CON `display:none`",
+          "level": 2,
+          "line": 8
+        },
+        {
+          "heading": "Lista Completa de Elementos No-Visibles por Defecto",
+          "level": 3,
+          "line": 10
+        },
+        {
+          "heading": "🟡 ELEMENTOS A REVISAR EN DETALLE",
+          "level": 2,
+          "line": 34
+        },
+        {
+          "heading": "1. `.adm-caj-body` - POTENCIAL PROBLEMA",
+          "level": 3,
+          "line": 36
+        },
+        {
+          "heading": "2. `.venta-quick-badge` - ELEMENTO OCULTO",
+          "level": 3,
+          "line": 60
+        },
+        {
+          "heading": "3. `.sale-recent` - ELEMENTO OCULTO EN MOBILE",
+          "level": 3,
+          "line": 85
+        },
+        {
+          "heading": "4. `#scr-vender .vfoot` - FOOTER OCULTO",
+          "level": 3,
+          "line": 117
+        },
+        {
+          "heading": "🔴 PROBLEMA ENCONTRADO: `.sale-recent`",
+          "level": 2,
+          "line": 146
+        },
+        {
+          "heading": "Ubicación Exacta del Conflicto",
+          "level": 3,
+          "line": 148
+        },
+        {
+          "heading": "🔴 OTRO PROBLEMA POTENCIAL: `tr-foot`",
+          "level": 2,
+          "line": 180
+        },
+        {
+          "heading": "📋 BÚSQUEDA COMPLETA DE CONFLICTOS",
+          "level": 2,
+          "line": 200
+        },
+        {
+          "heading": "Patrón: CSS Base + Clase `.on` + JS Manipulation",
+          "level": 3,
+          "line": 202
+        },
+        {
+          "heading": "🎯 RESUMEN DE BUGS ENCONTRADOS",
+          "level": 2,
+          "line": 228
+        },
+        {
+          "heading": "🧪 PRUEBA ESPECÍFICA PARA BUG #3 (`.sale-recent`)",
+          "level": 2,
+          "line": 240
+        },
+        {
+          "heading": "Flujo de Ejecución Problemático",
+          "level": 3,
+          "line": 242
+        },
+        {
+          "heading": "🔧 SOLUCIÓN SUGERIDA PARA BUG #3",
+          "level": 2,
+          "line": 264
+        },
+        {
+          "heading": "📍 BUSQUEDA ADICIONAL DE POTENCIALES",
+          "level": 2,
+          "line": 293
+        },
+        {
+          "heading": "Elementos que Podrían Tener el Mismo Problema",
+          "level": 3,
+          "line": 295
+        },
+        {
+          "heading": "✅ CONCLUSIONES",
+          "level": 2,
+          "line": 310
+        },
+        {
+          "heading": "Bugs Confirmados",
+          "level": 3,
+          "line": 312
+        },
+        {
+          "heading": "Bugs Potenciales (Requieren Verificación)",
+          "level": 3,
+          "line": 317
+        },
+        {
+          "heading": "Recomendación Final",
+          "level": 3,
+          "line": 321
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "sectionCount": 23
+      }
+    },
+    {
+      "path": "MIGRACION_ASSETS_INVENTARIO.md",
+      "language": "markdown",
+      "fileCategory": "docs",
+      "totalLines": 138,
+      "nonEmptyLines": 99,
+      "sections": [
+        {
+          "heading": "Inventario De Assets Para Migracion Kotlin",
+          "level": 1,
+          "line": 1
+        },
+        {
+          "heading": "Conclusión rápida",
+          "level": 2,
+          "line": 3
+        },
+        {
+          "heading": "Assets detectados con Python",
+          "level": 2,
+          "line": 17
+        },
+        {
+          "heading": "Catálogo y marca",
+          "level": 3,
+          "line": 23
+        },
+        {
+          "heading": "Recargas",
+          "level": 3,
+          "line": 28
+        },
+        {
+          "heading": "Ticket y compartir",
+          "level": 3,
+          "line": 37
+        },
+        {
+          "heading": "Sonidos POS",
+          "level": 3,
+          "line": 44
+        },
+        {
+          "heading": "Fuentes e iconografía del flujo web legado",
+          "level": 3,
+          "line": 48
+        },
+        {
+          "heading": "Librerías del flujo web",
+          "level": 3,
+          "line": 53
+        },
+        {
+          "heading": "Qué sí conviene migrar",
+          "level": 2,
+          "line": 58
+        },
+        {
+          "heading": "Necesarios desde ya",
+          "level": 3,
+          "line": 60
+        },
+        {
+          "heading": "Necesarios mientras conviva el WebView",
+          "level": 3,
+          "line": 67
+        },
+        {
+          "heading": "De referencia para rehacer en nativo",
+          "level": 3,
+          "line": 74
+        },
+        {
+          "heading": "Ticket térmico editable con preview",
+          "level": 2,
+          "line": 80
+        },
+        {
+          "heading": "Decisión correcta para la migración",
+          "level": 2,
+          "line": 117
+        },
+        {
+          "heading": "Sí migrar a Kotlin",
+          "level": 3,
+          "line": 119
+        },
+        {
+          "heading": "No rehacer todavía",
+          "level": 3,
+          "line": 127
+        },
+        {
+          "heading": "Orden recomendado",
+          "level": 2,
+          "line": 132
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "sectionCount": 18
+      }
+    },
+    {
+      "path": "MIGRACION_KOTLIN_EJECUCION_TOTAL.md",
+      "language": "markdown",
+      "fileCategory": "docs",
+      "totalLines": 1437,
+      "nonEmptyLines": 1065,
+      "sections": [
+        {
+          "heading": "Migracion Kotlin Ejecucion Total",
+          "level": 1,
+          "line": 1
+        },
+        {
+          "heading": "Actualizacion reciente de ejecucion",
+          "level": 2,
+          "line": 3
+        },
+        {
+          "heading": "2026-04-16",
+          "level": 3,
+          "line": 5
+        },
+        {
+          "heading": "Plan de migracion total",
+          "level": 2,
+          "line": 47
+        },
+        {
+          "heading": "Hecho",
+          "level": 3,
+          "line": 49
+        },
+        {
+          "heading": "En curso real",
+          "level": 3,
+          "line": 63
+        },
+        {
+          "heading": "Sigue pendiente",
+          "level": 3,
+          "line": 71
+        },
+        {
+          "heading": "Punto exacto desde donde seguir",
+          "level": 3,
+          "line": 80
+        },
+        {
+          "heading": "Objetivo",
+          "level": 2,
+          "line": 93
+        },
+        {
+          "heading": "Principio rector",
+          "level": 2,
+          "line": 108
+        },
+        {
+          "heading": "Estado actual que condiciona el plan",
+          "level": 2,
+          "line": 119
+        },
+        {
+          "heading": "Multi-banca y ownership",
+          "level": 3,
+          "line": 121
+        },
+        {
+          "heading": "Catalogo de loterias",
+          "level": 3,
+          "line": 136
+        },
+        {
+          "heading": "Venta",
+          "level": 3,
+          "line": 162
+        },
+        {
+          "heading": "Resultados",
+          "level": 3,
+          "line": 201
+        },
+        {
+          "heading": "Finanza y cuadre",
+          "level": 3,
+          "line": 222
+        },
+        {
+          "heading": "Ticket termico e impresion",
+          "level": 3,
+          "line": 236
+        },
+        {
+          "heading": "Roles y alcance funcional",
+          "level": 3,
+          "line": 244
+        },
+        {
+          "heading": "Matriz de funciones por perfil",
+          "level": 3,
+          "line": 262
+        },
+        {
+          "heading": "`master`",
+          "level": 4,
+          "line": 266
+        },
+        {
+          "heading": "`admin`",
+          "level": 4,
+          "line": 291
+        },
+        {
+          "heading": "`cashier`",
+          "level": 4,
+          "line": 332
+        },
+        {
+          "heading": "Reglas cruzadas por perfil",
+          "level": 4,
+          "line": 362
+        },
+        {
+          "heading": "Reloj interno, feriados y cierres",
+          "level": 3,
+          "line": 370
+        },
+        {
+          "heading": "Meta arquitectonica final",
+          "level": 2,
+          "line": 393
+        },
+        {
+          "heading": "Modulos que se van a migrar",
+          "level": 2,
+          "line": 416
+        },
+        {
+          "heading": "1. Sesion y login",
+          "level": 3,
+          "line": 418
+        },
+        {
+          "heading": "2. Catalogo de loterias",
+          "level": 3,
+          "line": 442
+        },
+        {
+          "heading": "3. Venta",
+          "level": 3,
+          "line": 482
+        },
+        {
+          "heading": "4. Ticket oficial",
+          "level": 3,
+          "line": 553
+        },
+        {
+          "heading": "5. Ticket termico",
+          "level": 3,
+          "line": 587
+        },
+        {
+          "heading": "6. Resultados",
+          "level": 3,
+          "line": 611
+        },
+        {
+          "heading": "7. Finanza",
+          "level": 3,
+          "line": 667
+        },
+        {
+          "heading": "8. Cuadre y turno",
+          "level": 3,
+          "line": 690
+        },
+        {
+          "heading": "9. Admin operativo",
+          "level": 3,
+          "line": 718
+        },
+        {
+          "heading": "10. Master administrativo",
+          "level": 3,
+          "line": 741
+        },
+        {
+          "heading": "Estrategia de ejecucion por fases",
+          "level": 2,
+          "line": 758
+        },
+        {
+          "heading": "Fase 1. Cerrar entrada nativa",
+          "level": 3,
+          "line": 760
+        },
+        {
+          "heading": "Fase 2. Sacar el catalogo de loterias de index.html",
+          "level": 3,
+          "line": 777
+        },
+        {
+          "heading": "Fase 3. Migrar venta",
+          "level": 3,
+          "line": 795
+        },
+        {
+          "heading": "Fase 4. Migrar tickets oficiales",
+          "level": 3,
+          "line": 815
+        },
+        {
+          "heading": "Fase 5. Migrar ticket termico e impresion",
+          "level": 3,
+          "line": 835
+        },
+        {
+          "heading": "Fase 6. Migrar resultados",
+          "level": 3,
+          "line": 854
+        },
+        {
+          "heading": "Fase 7. Migrar finanza y cuadre",
+          "level": 3,
+          "line": 873
+        },
+        {
+          "heading": "Fase 8. Migrar admin operativo",
+          "level": 3,
+          "line": 893
+        },
+        {
+          "heading": "Fase 9. Reducir o retirar el WebView",
+          "level": 3,
+          "line": 913
+        },
+        {
+          "heading": "Orden de ejecucion real recomendado",
+          "level": 2,
+          "line": 926
+        },
+        {
+          "heading": "Dependencias entre modulos",
+          "level": 2,
+          "line": 941
+        },
+        {
+          "heading": "Multi-banca atraviesa todo",
+          "level": 3,
+          "line": 943
+        },
+        {
+          "heading": "Calendario y reloj atraviesan venta y resultados",
+          "level": 3,
+          "line": 956
+        },
+        {
+          "heading": "Ingestion de resultados atraviesa resultados y admin",
+          "level": 3,
+          "line": 966
+        },
+        {
+          "heading": "Venta depende de",
+          "level": 3,
+          "line": 976
+        },
+        {
+          "heading": "Ticket oficial depende de",
+          "level": 3,
+          "line": 983
+        },
+        {
+          "heading": "Ticket termico depende de",
+          "level": 3,
+          "line": 989
+        },
+        {
+          "heading": "Resultados dependen de",
+          "level": 3,
+          "line": 995
+        },
+        {
+          "heading": "Finanza depende de",
+          "level": 3,
+          "line": 1001
+        },
+        {
+          "heading": "Cuadre depende de",
+          "level": 3,
+          "line": 1008
+        },
+        {
+          "heading": "Admin depende de",
+          "level": 3,
+          "line": 1014
+        },
+        {
+          "heading": "Reglas para convivir con el WebView sin romper produccion",
+          "level": 2,
+          "line": 1022
+        },
+        {
+          "heading": "Checklist de validacion por modulo",
+          "level": 2,
+          "line": 1035
+        },
+        {
+          "heading": "Venta",
+          "level": 3,
+          "line": 1037
+        },
+        {
+          "heading": "Ticket oficial",
+          "level": 3,
+          "line": 1059
+        },
+        {
+          "heading": "Ticket termico",
+          "level": 3,
+          "line": 1067
+        },
+        {
+          "heading": "Resultados",
+          "level": 3,
+          "line": 1074
+        },
+        {
+          "heading": "Finanza y cuadre",
+          "level": 3,
+          "line": 1087
+        },
+        {
+          "heading": "Estado de ejecucion real",
+          "level": 2,
+          "line": 1095
+        },
+        {
+          "heading": "Estado validado al 2026-04-16",
+          "level": 3,
+          "line": 1097
+        },
+        {
+          "heading": "Base nativa ya levantada",
+          "level": 3,
+          "line": 1110
+        },
+        {
+          "heading": "Modulos ya adelantados",
+          "level": 3,
+          "line": 1130
+        },
+        {
+          "heading": "Login y shell",
+          "level": 4,
+          "line": 1132
+        },
+        {
+          "heading": "Catalogo y calendario",
+          "level": 4,
+          "line": 1141
+        },
+        {
+          "heading": "Venta",
+          "level": 4,
+          "line": 1153
+        },
+        {
+          "heading": "Tickets",
+          "level": 4,
+          "line": 1171
+        },
+        {
+          "heading": "Resultados",
+          "level": 4,
+          "line": 1195
+        },
+        {
+          "heading": "Impresion",
+          "level": 4,
+          "line": 1218
+        },
+        {
+          "heading": "Ultima tanda cerrada",
+          "level": 3,
+          "line": 1232
+        },
+        {
+          "heading": "Punto exacto donde quedo la migracion",
+          "level": 3,
+          "line": 1265
+        },
+        {
+          "heading": "Siguiente bloque de ejecucion recomendado",
+          "level": 3,
+          "line": 1277
+        },
+        {
+          "heading": "Bloque siguiente A: venta con paridad real",
+          "level": 4,
+          "line": 1279
+        },
+        {
+          "heading": "Bloque siguiente B: tickets operativos",
+          "level": 4,
+          "line": 1291
+        },
+        {
+          "heading": "Bloque siguiente C: resultados oficiales",
+          "level": 4,
+          "line": 1300
+        },
+        {
+          "heading": "Regla para continuar desde aqui",
+          "level": 3,
+          "line": 1311
+        },
+        {
+          "heading": "Punto real despues de esta tanda",
+          "level": 3,
+          "line": 1322
+        },
+        {
+          "heading": "Paridad ya lograda en captura POS",
+          "level": 3,
+          "line": 1332
+        },
+        {
+          "heading": "Paridad operativa ya lograda en export y salida",
+          "level": 3,
+          "line": 1343
+        },
+        {
+          "heading": "Paridad ya lograda en impresion termica",
+          "level": 3,
+          "line": 1352
+        },
+        {
+          "heading": "Siguiente seccion despues de esta tanda",
+          "level": 3,
+          "line": 1363
+        },
+        {
+          "heading": "Siguiente seccion real del plan",
+          "level": 3,
+          "line": 1373
+        },
+        {
+          "heading": "Lo que sigue ahora",
+          "level": 2,
+          "line": 1384
+        },
+        {
+          "heading": "Bloque inmediato 1",
+          "level": 3,
+          "line": 1386
+        },
+        {
+          "heading": "Bloque inmediato 2",
+          "level": 3,
+          "line": 1395
+        },
+        {
+          "heading": "Bloque inmediato 3",
+          "level": 3,
+          "line": 1401
+        },
+        {
+          "heading": "Bloque inmediato 4",
+          "level": 3,
+          "line": 1407
+        },
+        {
+          "heading": "Criterio de exito",
+          "level": 2,
+          "line": 1413
+        },
+        {
+          "heading": "Siguiente accion correcta",
+          "level": 2,
+          "line": 1429
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "sectionCount": 95
+      }
+    },
+    {
+      "path": "MIGRACION_KOTLIN_PLAN.md",
+      "language": "markdown",
+      "fileCategory": "docs",
+      "totalLines": 193,
+      "nonEmptyLines": 142,
+      "sections": [
+        {
+          "heading": "Plan De Migracion A Kotlin",
+          "level": 1,
+          "line": 1
+        },
+        {
+          "heading": "Estado actual",
+          "level": 2,
+          "line": 3
+        },
+        {
+          "heading": "Objetivo",
+          "level": 2,
+          "line": 9
+        },
+        {
+          "heading": "Principios",
+          "level": 2,
+          "line": 19
+        },
+        {
+          "heading": "Orden recomendado",
+          "level": 2,
+          "line": 27
+        },
+        {
+          "heading": "Fase 0: Congelar y ordenar la base actual",
+          "level": 3,
+          "line": 29
+        },
+        {
+          "heading": "Fase 1: Crear arquitectura nativa sin mover todo todavia",
+          "level": 3,
+          "line": 50
+        },
+        {
+          "heading": "Fase 2: Migrar primero login y shell principal",
+          "level": 3,
+          "line": 82
+        },
+        {
+          "heading": "Fase 3: Migrar venta",
+          "level": 3,
+          "line": 100
+        },
+        {
+          "heading": "Fase 4: Migrar tickets e impresion",
+          "level": 3,
+          "line": 116
+        },
+        {
+          "heading": "Fase 5: Migrar resultados",
+          "level": 3,
+          "line": 126
+        },
+        {
+          "heading": "Fase 6: Migrar admin y finanza",
+          "level": 3,
+          "line": 135
+        },
+        {
+          "heading": "Fase 7: Reducir el WebView a legado o retirarlo",
+          "level": 3,
+          "line": 145
+        },
+        {
+          "heading": "Primera iteracion recomendada",
+          "level": 2,
+          "line": 153
+        },
+        {
+          "heading": "Riesgos",
+          "level": 2,
+          "line": 163
+        },
+        {
+          "heading": "Reglas para no romper produccion",
+          "level": 2,
+          "line": 171
+        },
+        {
+          "heading": "Siguiente paso inmediato",
+          "level": 2,
+          "line": 184
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "sectionCount": 17
+      }
+    },
+    {
+      "path": "MIGRACION_KOTLIN_TECNICO_01.md",
+      "language": "markdown",
+      "fileCategory": "docs",
+      "totalLines": 304,
+      "nonEmptyLines": 202,
+      "sections": [
+        {
+          "heading": "Migracion Kotlin Tecnico 01",
+          "level": 1,
+          "line": 1
+        },
+        {
+          "heading": "Alcance",
+          "level": 2,
+          "line": 3
+        },
+        {
+          "heading": "Hallazgos base",
+          "level": 2,
+          "line": 18
+        },
+        {
+          "heading": "Login y sesion actual",
+          "level": 2,
+          "line": 33
+        },
+        {
+          "heading": "Claves principales de sesion",
+          "level": 3,
+          "line": 35
+        },
+        {
+          "heading": "Flujo actual de login",
+          "level": 3,
+          "line": 51
+        },
+        {
+          "heading": "Persistencia de sesion",
+          "level": 3,
+          "line": 70
+        },
+        {
+          "heading": "Implicacion para Kotlin",
+          "level": 3,
+          "line": 82
+        },
+        {
+          "heading": "Almacenamiento local detectado",
+          "level": 2,
+          "line": 94
+        },
+        {
+          "heading": "Implicacion para Kotlin",
+          "level": 3,
+          "line": 122
+        },
+        {
+          "heading": "Sync con Supabase",
+          "level": 2,
+          "line": 132
+        },
+        {
+          "heading": "Entrada remota",
+          "level": 3,
+          "line": 134
+        },
+        {
+          "heading": "Pull live",
+          "level": 3,
+          "line": 145
+        },
+        {
+          "heading": "Push live",
+          "level": 3,
+          "line": 160
+        },
+        {
+          "heading": "Presencia",
+          "level": 3,
+          "line": 184
+        },
+        {
+          "heading": "Implicacion para Kotlin",
+          "level": 3,
+          "line": 195
+        },
+        {
+          "heading": "Venta actual",
+          "level": 2,
+          "line": 206
+        },
+        {
+          "heading": "Render de venta",
+          "level": 3,
+          "line": 208
+        },
+        {
+          "heading": "Confirmacion de venta",
+          "level": 3,
+          "line": 221
+        },
+        {
+          "heading": "Implicacion para Kotlin",
+          "level": 3,
+          "line": 232
+        },
+        {
+          "heading": "Resultados",
+          "level": 2,
+          "line": 243
+        },
+        {
+          "heading": "Orden tecnico recomendado",
+          "level": 2,
+          "line": 256
+        },
+        {
+          "heading": "Paso 1",
+          "level": 3,
+          "line": 258
+        },
+        {
+          "heading": "Paso 2",
+          "level": 3,
+          "line": 273
+        },
+        {
+          "heading": "Paso 3",
+          "level": 3,
+          "line": 284
+        },
+        {
+          "heading": "Paso 4",
+          "level": 3,
+          "line": 291
+        },
+        {
+          "heading": "Proximo documento",
+          "level": 2,
+          "line": 297
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "sectionCount": 27
+      }
+    },
+    {
+      "path": "MIGRACION_KOTLIN_TECNICO_02.md",
+      "language": "markdown",
+      "fileCategory": "docs",
+      "totalLines": 189,
+      "nonEmptyLines": 138,
+      "sections": [
+        {
+          "heading": "Migracion Kotlin Tecnico 02",
+          "level": 1,
+          "line": 1
+        },
+        {
+          "heading": "Objetivo",
+          "level": 2,
+          "line": 3
+        },
+        {
+          "heading": "Entidades base",
+          "level": 2,
+          "line": 7
+        },
+        {
+          "heading": "Roles",
+          "level": 3,
+          "line": 9
+        },
+        {
+          "heading": "Usuario",
+          "level": 3,
+          "line": 18
+        },
+        {
+          "heading": "Sesion",
+          "level": 3,
+          "line": 34
+        },
+        {
+          "heading": "Venta",
+          "level": 3,
+          "line": 54
+        },
+        {
+          "heading": "Jugada",
+          "level": 4,
+          "line": 56
+        },
+        {
+          "heading": "Ticket",
+          "level": 4,
+          "line": 66
+        },
+        {
+          "heading": "Resultados",
+          "level": 3,
+          "line": 82
+        },
+        {
+          "heading": "Presencia",
+          "level": 3,
+          "line": 96
+        },
+        {
+          "heading": "Repositorios iniciales",
+          "level": 2,
+          "line": 105
+        },
+        {
+          "heading": "`SessionRepository`",
+          "level": 3,
+          "line": 107
+        },
+        {
+          "heading": "`UsersRepository`",
+          "level": 3,
+          "line": 116
+        },
+        {
+          "heading": "`SalesRepository`",
+          "level": 3,
+          "line": 124
+        },
+        {
+          "heading": "`ResultsRepository`",
+          "level": 3,
+          "line": 133
+        },
+        {
+          "heading": "`PresenceRepository`",
+          "level": 3,
+          "line": 141
+        },
+        {
+          "heading": "`SyncRepository`",
+          "level": 3,
+          "line": 148
+        },
+        {
+          "heading": "Reglas de implementacion inicial",
+          "level": 2,
+          "line": 157
+        },
+        {
+          "heading": "Primera ejecucion real",
+          "level": 2,
+          "line": 165
+        },
+        {
+          "heading": "Siguiente paso",
+          "level": 2,
+          "line": 179
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "sectionCount": 21
+      }
+    },
+    {
+      "path": "PLAN_VERIFICACION_BUGS.md",
+      "language": "markdown",
+      "fileCategory": "docs",
+      "totalLines": 281,
+      "nonEmptyLines": 222,
+      "sections": [
+        {
+          "heading": "Plan de Verificación de Bugs - LotteryNet",
+          "level": 1,
+          "line": 1
+        },
+        {
+          "heading": "1. BUGS ARREGLADOS (Verificación Requerida)",
+          "level": 2,
+          "line": 8
+        },
+        {
+          "heading": "Bug #1: Barra de Menú Inferior No Aparecía (`#bnav`)",
+          "level": 3,
+          "line": 10
+        },
+        {
+          "heading": "Bug #2: Panel de Ligadas/Números No Se Abría (`#ov-ligar`)",
+          "level": 3,
+          "line": 32
+        },
+        {
+          "heading": "2. ELEMENTOS CON `.on` CLASS VERIFICADOS (Sin Cambios Necesarios)",
+          "level": 2,
+          "line": 53
+        },
+        {
+          "heading": "3. PLAN DE PRUEBAS FUNCIONALES",
+          "level": 2,
+          "line": 63
+        },
+        {
+          "heading": "A. Verificación de Navegación",
+          "level": 3,
+          "line": 65
+        },
+        {
+          "heading": "B. Verificación de Panel de Ligadas",
+          "level": 3,
+          "line": 96
+        },
+        {
+          "heading": "C. Verificación de Responsive",
+          "level": 3,
+          "line": 127
+        },
+        {
+          "heading": "4. BÚSQUEDA DE BUGS ADICIONALES",
+          "level": 2,
+          "line": 146
+        },
+        {
+          "heading": "A. Elementos Similares a Revisar",
+          "level": 3,
+          "line": 148
+        },
+        {
+          "heading": "B. Casos Edge",
+          "level": 3,
+          "line": 156
+        },
+        {
+          "heading": "C. Problemas Potenciales Relacionados",
+          "level": 3,
+          "line": 163
+        },
+        {
+          "heading": "5. CHECKLIST DE VALIDACIÓN",
+          "level": 2,
+          "line": 191
+        },
+        {
+          "heading": "Pre-Deploy",
+          "level": 3,
+          "line": 193
+        },
+        {
+          "heading": "Funcional",
+          "level": 3,
+          "line": 203
+        },
+        {
+          "heading": "Regresión",
+          "level": 3,
+          "line": 210
+        },
+        {
+          "heading": "6. PROCEDIMIENTO DE TESTING",
+          "level": 2,
+          "line": 218
+        },
+        {
+          "heading": "Paso 1: Setup",
+          "level": 3,
+          "line": 220
+        },
+        {
+          "heading": "Paso 2: Pruebas Básicas",
+          "level": 3,
+          "line": 226
+        },
+        {
+          "heading": "Paso 3: Pruebas Visuales",
+          "level": 3,
+          "line": 236
+        },
+        {
+          "heading": "Paso 4: Pruebas de Interacción",
+          "level": 3,
+          "line": 241
+        },
+        {
+          "heading": "Paso 5: Pruebas de Rendimiento",
+          "level": 3,
+          "line": 246
+        },
+        {
+          "heading": "7. REGISTRO DE EJECUCIÓN",
+          "level": 2,
+          "line": 258
+        },
+        {
+          "heading": "8. PRÓXIMOS PASOS Si Se Encuentran Bugs",
+          "level": 2,
+          "line": 268
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "sectionCount": 25
+      }
+    },
+    {
+      "path": "README.md",
+      "language": "markdown",
+      "fileCategory": "docs",
+      "totalLines": 2,
+      "nonEmptyLines": 2,
+      "sections": [
+        {
+          "heading": "lotterynet-scraper",
+          "level": 1,
+          "line": 1
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "sectionCount": 1
+      }
+    },
+    {
+      "path": "README.txt",
+      "language": "txt",
+      "fileCategory": "docs",
+      "totalLines": 156,
+      "nonEmptyLines": 138,
+      "metrics": {}
+    },
+    {
+      "path": "REPORTE_FINAL_BUGS.md",
+      "language": "markdown",
+      "fileCategory": "docs",
+      "totalLines": 347,
+      "nonEmptyLines": 271,
+      "sections": [
+        {
+          "heading": "Reporte Final de Bugs Encontrados y Arreglados",
+          "level": 1,
+          "line": 1
+        },
+        {
+          "heading": "📊 RESUMEN EJECUTIVO",
+          "level": 2,
+          "line": 8
+        },
+        {
+          "heading": "🐛 BUG #1: BARRA DE MENÚ INFERIOR NO APARECÍA",
+          "level": 2,
+          "line": 18
+        },
+        {
+          "heading": "Descripción",
+          "level": 3,
+          "line": 20
+        },
+        {
+          "heading": "Causa Raíz",
+          "level": 3,
+          "line": 23
+        },
+        {
+          "heading": "Líneas Modificadas",
+          "level": 3,
+          "line": 28
+        },
+        {
+          "heading": "Cambios Exactos",
+          "level": 3,
+          "line": 33
+        },
+        {
+          "heading": "Línea 5217 - Before",
+          "level": 4,
+          "line": 35
+        },
+        {
+          "heading": "Línea 5217 - After",
+          "level": 4,
+          "line": 40
+        },
+        {
+          "heading": "Línea 5505 - Before",
+          "level": 4,
+          "line": 45
+        },
+        {
+          "heading": "Línea 5505 - After",
+          "level": 4,
+          "line": 50
+        },
+        {
+          "heading": "Línea 12407 - Before",
+          "level": 4,
+          "line": 55
+        },
+        {
+          "heading": "Línea 12407 - After",
+          "level": 4,
+          "line": 63
+        },
+        {
+          "heading": "Verificación",
+          "level": 3,
+          "line": 71
+        },
+        {
+          "heading": "🐛 BUG #2: PANEL DE LIGADAS NO SE ABRÍA",
+          "level": 2,
+          "line": 78
+        },
+        {
+          "heading": "Descripción",
+          "level": 3,
+          "line": 80
+        },
+        {
+          "heading": "Causa Raíz",
+          "level": 3,
+          "line": 83
+        },
+        {
+          "heading": "Líneas Modificadas",
+          "level": 3,
+          "line": 88
+        },
+        {
+          "heading": "Cambios Exactos",
+          "level": 3,
+          "line": 92
+        },
+        {
+          "heading": "Línea 11571 - Before",
+          "level": 4,
+          "line": 94
+        },
+        {
+          "heading": "Línea 11571 - After",
+          "level": 4,
+          "line": 102
+        },
+        {
+          "heading": "Línea 11575 - Before",
+          "level": 4,
+          "line": 111
+        },
+        {
+          "heading": "Línea 11575 - After",
+          "level": 4,
+          "line": 118
+        },
+        {
+          "heading": "Verificación",
+          "level": 3,
+          "line": 126
+        },
+        {
+          "heading": "🐛 BUG #3: PANEL DE TICKETS RECIENTES NO SE MOSTRABA EN TABLET",
+          "level": 2,
+          "line": 133
+        },
+        {
+          "heading": "Descripción",
+          "level": 3,
+          "line": 135
+        },
+        {
+          "heading": "Causa Raíz",
+          "level": 3,
+          "line": 138
+        },
+        {
+          "heading": "Líneas Modificadas",
+          "level": 3,
+          "line": 144
+        },
+        {
+          "heading": "Cambios Exactos",
+          "level": 3,
+          "line": 148
+        },
+        {
+          "heading": "Línea 1086 - CSS Base",
+          "level": 4,
+          "line": 150
+        },
+        {
+          "heading": "Línea 7118 - JavaScript",
+          "level": 4,
+          "line": 164
+        },
+        {
+          "heading": "Verificación",
+          "level": 3,
+          "line": 178
+        },
+        {
+          "heading": "🔍 BÚSQUEDA EXHAUSTIVA REALIZADA",
+          "level": 2,
+          "line": 185
+        },
+        {
+          "heading": "Archivo Analizado",
+          "level": 3,
+          "line": 187
+        },
+        {
+          "heading": "Patrones Buscados",
+          "level": 3,
+          "line": 190
+        },
+        {
+          "heading": "Elementos Revisos",
+          "level": 3,
+          "line": 198
+        },
+        {
+          "heading": "Patrón Problemático Identificado",
+          "level": 3,
+          "line": 204
+        },
+        {
+          "heading": "📈 IMPACTO DE LOS ARREGLOS",
+          "level": 2,
+          "line": 219
+        },
+        {
+          "heading": "Antes (Bugs)",
+          "level": 3,
+          "line": 221
+        },
+        {
+          "heading": "Después (Arreglado)",
+          "level": 3,
+          "line": 227
+        },
+        {
+          "heading": "Cambios Totales",
+          "level": 3,
+          "line": 233
+        },
+        {
+          "heading": "✅ CHECKLIST DE VALIDACIÓN",
+          "level": 2,
+          "line": 241
+        },
+        {
+          "heading": "Verificación Estática",
+          "level": 3,
+          "line": 243
+        },
+        {
+          "heading": "Lógica de Negocio",
+          "level": 3,
+          "line": 251
+        },
+        {
+          "heading": "Patrones de Código",
+          "level": 3,
+          "line": 257
+        },
+        {
+          "heading": "Compatibilidad",
+          "level": 3,
+          "line": 263
+        },
+        {
+          "heading": "🎓 LECCIONES APRENDIDAS",
+          "level": 2,
+          "line": 271
+        },
+        {
+          "heading": "Antipatrones Encontrados",
+          "level": 3,
+          "line": 273
+        },
+        {
+          "heading": "Patrones Correctos",
+          "level": 3,
+          "line": 284
+        },
+        {
+          "heading": "📋 PROCEDIMIENTO DE DEPLOYMENT",
+          "level": 2,
+          "line": 301
+        },
+        {
+          "heading": "Pre-Deployment",
+          "level": 3,
+          "line": 303
+        },
+        {
+          "heading": "Testing Recomendado",
+          "level": 3,
+          "line": 310
+        },
+        {
+          "heading": "Post-Deployment",
+          "level": 3,
+          "line": 317
+        },
+        {
+          "heading": "🏆 CONCLUSIÓN",
+          "level": 2,
+          "line": 324
+        },
+        {
+          "heading": "Bugs Encontrados: 3",
+          "level": 3,
+          "line": 326
+        },
+        {
+          "heading": "Método de Búsqueda:",
+          "level": 3,
+          "line": 331
+        },
+        {
+          "heading": "Confianza: **95%+**",
+          "level": 3,
+          "line": 334
+        },
+        {
+          "heading": "Recomendación Final:",
+          "level": 3,
+          "line": 337
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "sectionCount": 58
+      }
+    },
+    {
+      "path": "VERIFICACION_ESTATICA_BUGS.md",
+      "language": "markdown",
+      "fileCategory": "docs",
+      "totalLines": 447,
+      "nonEmptyLines": 351,
+      "sections": [
+        {
+          "heading": "Verificación Estática de Bugs - LotteryNet",
+          "level": 1,
+          "line": 1
+        },
+        {
+          "heading": "📋 RESUMEN EJECUTIVO",
+          "level": 2,
+          "line": 8
+        },
+        {
+          "heading": "1️⃣ BUG #1: BARRA DE MENÚ INFERIOR (`#bnav`)",
+          "level": 2,
+          "line": 18
+        },
+        {
+          "heading": "Verificación de CSS",
+          "level": 3,
+          "line": 20
+        },
+        {
+          "heading": "Verificación Función `showBnav()` - Línea 12397",
+          "level": 3,
+          "line": 33
+        },
+        {
+          "heading": "Verificación Logout - Línea 5217",
+          "level": 3,
+          "line": 65
+        },
+        {
+          "heading": "Verificación Reset Login - Línea 5505",
+          "level": 3,
+          "line": 96
+        },
+        {
+          "heading": "Resumen Bug #1",
+          "level": 3,
+          "line": 129
+        },
+        {
+          "heading": "2️⃣ BUG #2: PANEL DE LIGADAS (`#ov-ligar`)",
+          "level": 2,
+          "line": 138
+        },
+        {
+          "heading": "Verificación de CSS",
+          "level": 3,
+          "line": 140
+        },
+        {
+          "heading": "Verificación Función `openLigar()` - Línea 11571",
+          "level": 3,
+          "line": 151
+        },
+        {
+          "heading": "Verificación Función `closeLigar()` - Línea 11575",
+          "level": 3,
+          "line": 187
+        },
+        {
+          "heading": "Resumen Bug #2",
+          "level": 3,
+          "line": 212
+        },
+        {
+          "heading": "3️⃣ OTRAS VERIFICACIONES",
+          "level": 2,
+          "line": 220
+        },
+        {
+          "heading": "Elementos con `.on` Class Verificados",
+          "level": 3,
+          "line": 222
+        },
+        {
+          "heading": "4️⃣ ANÁLISIS DE IMPACTO",
+          "level": 2,
+          "line": 236
+        },
+        {
+          "heading": "Cambios de Código",
+          "level": 3,
+          "line": 238
+        },
+        {
+          "heading": "Líneas Exactas Modificadas",
+          "level": 3,
+          "line": 243
+        },
+        {
+          "heading": "5️⃣ VALIDACIÓN DE SINTAXIS",
+          "level": 2,
+          "line": 254
+        },
+        {
+          "heading": "Verificación de Paréntesis y Llaves",
+          "level": 3,
+          "line": 256
+        },
+        {
+          "heading": "Verificación de getElementById/G Calls",
+          "level": 3,
+          "line": 277
+        },
+        {
+          "heading": "6️⃣ VALIDACIÓN DE LÓGICA",
+          "level": 2,
+          "line": 288
+        },
+        {
+          "heading": "Camino de Ejecución #1: Login → Vender",
+          "level": 3,
+          "line": 290
+        },
+        {
+          "heading": "Camino de Ejecución #2: Abrir Ligadas",
+          "level": 3,
+          "line": 301
+        },
+        {
+          "heading": "Camino de Ejecución #3: Cerrar Ligadas",
+          "level": 3,
+          "line": 310
+        },
+        {
+          "heading": "7️⃣ BÚSQUEDA DE EFECTOS SECUNDARIOS",
+          "level": 2,
+          "line": 323
+        },
+        {
+          "heading": "¿Hay otros usos de `#bnav` que pudieran fallar?",
+          "level": 3,
+          "line": 325
+        },
+        {
+          "heading": "¿Hay otros usos de `#ov-ligar` que pudieran fallar?",
+          "level": 3,
+          "line": 339
+        },
+        {
+          "heading": "8️⃣ COMPATIBILIDAD",
+          "level": 2,
+          "line": 352
+        },
+        {
+          "heading": "Compatibilidad de classList",
+          "level": 3,
+          "line": 354
+        },
+        {
+          "heading": "9️⃣ TEST CASES SUGERIDOS",
+          "level": 2,
+          "line": 371
+        },
+        {
+          "heading": "Test 1: Barra de Navegación Aparece",
+          "level": 3,
+          "line": 373
+        },
+        {
+          "heading": "Test 2: Barra de Navegación Desaparece en Login",
+          "level": 3,
+          "line": 382
+        },
+        {
+          "heading": "Test 3: Panel de Ligadas Abre",
+          "level": 3,
+          "line": 391
+        },
+        {
+          "heading": "Test 4: Panel de Ligadas Cierra",
+          "level": 3,
+          "line": 400
+        },
+        {
+          "heading": "🔟 CONCLUSIÓN",
+          "level": 2,
+          "line": 411
+        },
+        {
+          "heading": "✅ VEREDICTO FINAL",
+          "level": 2,
+          "line": 426
+        },
+        {
+          "heading": "STATUS: READY FOR PRODUCTION ✅",
+          "level": 3,
+          "line": 428
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "sectionCount": 38
+      }
+    },
+    {
+      "path": "build.bat",
+      "language": "batch",
+      "fileCategory": "script",
+      "totalLines": 58,
+      "nonEmptyLines": 49,
+      "metrics": {}
+    },
+    {
+      "path": "buildWrap.bat",
+      "language": "batch",
+      "fileCategory": "script",
+      "totalLines": 20,
+      "nonEmptyLines": 14,
+      "metrics": {}
+    },
+    {
+      "path": "gradle.properties",
+      "language": "properties",
+      "fileCategory": "config",
+      "totalLines": 16,
+      "nonEmptyLines": 16,
+      "metrics": {}
+    },
+    {
+      "path": "gradlew.bat",
+      "language": "batch",
+      "fileCategory": "script",
+      "totalLines": 117,
+      "nonEmptyLines": 95,
+      "metrics": {}
+    },
+    {
+      "path": "package.json",
+      "language": "json",
+      "fileCategory": "config",
+      "totalLines": 34,
+      "nonEmptyLines": 34,
+      "sections": [
+        {
+          "heading": "name",
+          "level": 1,
+          "line": 2
+        },
+        {
+          "heading": "private",
+          "level": 1,
+          "line": 3
+        },
+        {
+          "heading": "version",
+          "level": 1,
+          "line": 4
+        },
+        {
+          "heading": "description",
+          "level": 1,
+          "line": 5
+        },
+        {
+          "heading": "type",
+          "level": 1,
+          "line": 6
+        },
+        {
+          "heading": "scripts",
+          "level": 1,
+          "line": 7
+        },
+        {
+          "heading": "engines",
+          "level": 1,
+          "line": 13
+        },
+        {
+          "heading": "main",
+          "level": 1,
+          "line": 16
+        },
+        {
+          "heading": "directories",
+          "level": 1,
+          "line": 17
+        },
+        {
+          "heading": "repository",
+          "level": 1,
+          "line": 20
+        },
+        {
+          "heading": "keywords",
+          "level": 1,
+          "line": 24
+        },
+        {
+          "heading": "author",
+          "level": 1,
+          "line": 25
+        },
+        {
+          "heading": "license",
+          "level": 1,
+          "line": 26
+        },
+        {
+          "heading": "bugs",
+          "level": 1,
+          "line": 27
+        },
+        {
+          "heading": "homepage",
+          "level": 1,
+          "line": 30
+        },
+        {
+          "heading": "devDependencies",
+          "level": 1,
+          "line": 31
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "sectionCount": 16
+      }
+    },
+    {
+      "path": "render.yaml",
+      "language": "yaml",
+      "fileCategory": "config",
+      "totalLines": 18,
+      "nonEmptyLines": 16,
+      "sections": [
+        {
+          "heading": "services",
+          "level": 1,
+          "line": 1
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "sectionCount": 1
+      }
+    },
+    {
+      "path": "requirements.txt",
+      "language": "txt",
+      "fileCategory": "docs",
+      "totalLines": 6,
+      "nonEmptyLines": 6,
+      "metrics": {}
+    },
+    {
+      "path": "skills-lock.json",
+      "language": "json",
+      "fileCategory": "config",
+      "totalLines": 17,
+      "nonEmptyLines": 17,
+      "sections": [
+        {
+          "heading": "version",
+          "level": 1,
+          "line": 2
+        },
+        {
+          "heading": "skills",
+          "level": 1,
+          "line": 3
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "sectionCount": 2
+      }
+    }
+  ]
+}

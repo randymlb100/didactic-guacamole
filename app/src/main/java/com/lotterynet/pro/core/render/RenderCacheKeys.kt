@@ -22,6 +22,15 @@ fun ticketRenderCacheKey(ticket: TicketRecord, bancaName: String, logoUri: Strin
             append(play.number).append(':')
             append(play.amount).append(';')
         }
+        ticket.winningDetails.forEach { detail ->
+            append("win:")
+            append(detail.lotteryName).append(':')
+            append(detail.playType).append(':')
+            append(detail.playedNumber).append(':')
+            append(detail.resultNumber).append(':')
+            append(detail.hitPosition).append(':')
+            append(detail.payoutAmount).append(';')
+        }
     }
     return "ticket-${sha256Short(raw)}"
 }

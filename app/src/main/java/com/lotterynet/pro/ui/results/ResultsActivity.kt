@@ -62,6 +62,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -70,6 +71,8 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.safeDrawing
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import com.lotterynet.pro.core.calendar.LotteryClosePolicy
 import com.lotterynet.pro.core.calendar.LotteryTimeZones
 import com.lotterynet.pro.core.calendar.StaticHolidayCalendarRepository
@@ -558,6 +561,8 @@ private fun ResultsRoute(
     val stableBoardUtcMs = remember(selectedDate) { trustedClockRepository.getTrustedUtcMs() }
     var lastAutoRefreshStartedMs by remember { mutableStateOf<Long?>(null) }
     val realtimeRefreshInFlight = remember { AtomicBoolean(false) }
+    val foregroundCatchUpInFlight = remember { AtomicBoolean(false) }
+    val lifecycleOwner = LocalLifecycleOwner.current
     var selectedModeWindow by remember(systemModeConfig) {
         mutableStateOf(resolveResultsModeWindowTabs(systemModeConfig).firstOrNull() ?: ResultsModeWindow.LOTTERY)
     }
@@ -690,15 +695,52 @@ private fun ResultsRoute(
         )
     }
 
+    DisposableEffect(lifecycleOwner, selectedDate) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event != Lifecycle.Event.ON_RESUME) return@LifecycleEventObserver
+            val resumeDate = selectedDate
+            if (!shouldRunResultsForegroundCatchUp(resumeDate, todayOffset(0))) return@LifecycleEventObserver
+            if (!foregroundCatchUpInFlight.compareAndSet(false, true)) return@LifecycleEventObserver
+            scope.launch {
+                try {
+                    kotlinx.coroutines.delay(RESULTS_FOREGROUND_CATCH_UP_DELAY_MS)
+                    runResultsRefresh(
+                        date = resumeDate,
+                        forceRemote = true,
+                        allowLive = false,
+                        timeoutMs = RESULTS_FOREGROUND_CATCH_UP_TIMEOUT_MS,
+                        orchestrator = orchestrator,
+                        ticketReconciler = ticketReconciler,
+                        onApplied = { refresh, reconcile ->
+                            applyRefreshForDate(
+                                resumeDate,
+                                refresh,
+                                reconcile,
+                                showMessage = refresh.updated || reconcile.updated > 0,
+                            )
+                        },
+                        onFailure = { error ->
+                            crashReporter.recordHandled("ResultsActivity.foregroundCatchUp", error)
+                        },
+                    )
+                } finally {
+                    foregroundCatchUpInFlight.set(false)
+                }
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+        }
+    }
+
     DisposableEffect(selectedDate) {
         if (!realtimeClient.isConfigured()) {
             onDispose { }
         } else {
             val realtimeDate = selectedDate
             val subscriptions = listOf(
-                LotterynetRealtimeSubscription.resultsCache("lot_results_cache_by_day:$realtimeDate"),
-                LotterynetRealtimeSubscription.resultsCache("pick_results_cache_by_day:$realtimeDate"),
-                LotterynetRealtimeSubscription.resultsCache("manual_results_overrides_by_day:$realtimeDate"),
+                LotterynetRealtimeSubscription.resultsDraws(realtimeDate),
             ).map { subscription ->
                 realtimeClient.subscribe(subscription) {
                     if (!realtimeRefreshInFlight.compareAndSet(false, true)) {
@@ -708,7 +750,7 @@ private fun ResultsRoute(
                         try {
                             runResultsRefresh(
                                 date = realtimeDate,
-                                forceRemote = false,
+                                forceRemote = shouldForceRemoteOnResultsRealtime(),
                                 allowLive = false,
                                 timeoutMs = RESULTS_REALTIME_REFRESH_TIMEOUT_MS,
                                 orchestrator = orchestrator,
@@ -789,10 +831,12 @@ private fun ResultsRoute(
     }
 
     LaunchedEffect(selectedDate, boardRows, tickUtcMs) {
+        val hasWaitingResult = boardRows.any { row -> row.stateTone == ResultsStateTone.WAITING_SYNC }
+        val hasRecoverableNoDrawResult = boardRows.any { row -> row.stateTone == ResultsStateTone.NO_DRAW }
         val shouldAutoRefresh = shouldAutoRefreshResultsFromServer(
             selectedDateIsToday = selectedDate == todayOffset(0),
-            hasWaitingResult = boardRows.any { row -> row.stateTone == ResultsStateTone.WAITING_SYNC },
-            hasRecoverableNoDrawResult = boardRows.any { row -> row.stateTone == ResultsStateTone.NO_DRAW },
+            hasWaitingResult = hasWaitingResult,
+            hasRecoverableNoDrawResult = hasRecoverableNoDrawResult,
             realtimeEnabled = realtimeEnabled,
         )
         if (!shouldAutoRefresh || isRefreshing) return@LaunchedEffect
@@ -807,7 +851,10 @@ private fun ResultsRoute(
         try {
             runResultsRefresh(
                 date = autoRefreshDate,
-                forceRemote = true,
+                forceRemote = shouldForceRemoteForResultsAutoRefresh(
+                    hasWaitingResult = hasWaitingResult,
+                    hasRecoverableNoDrawResult = hasRecoverableNoDrawResult,
+                ),
                 allowLive = true,
                 timeoutMs = RESULTS_AUTO_REFRESH_TIMEOUT_MS,
                 orchestrator = orchestrator,
@@ -1035,6 +1082,8 @@ private const val RESULTS_AUTO_REFRESH_DELAY_MS = 60_000L
 private const val RESULTS_AUTO_REFRESH_TIMEOUT_MS = 15_000L
 private const val RESULTS_REALTIME_REFRESH_TIMEOUT_MS = 12_000L
 private const val RESULTS_MANUAL_REFRESH_TIMEOUT_MS = 20_000L
+private const val RESULTS_FOREGROUND_CATCH_UP_DELAY_MS = 750L
+private const val RESULTS_FOREGROUND_CATCH_UP_TIMEOUT_MS = 12_000L
 
 private suspend fun runResultsRefresh(
     date: String,
@@ -2418,7 +2467,15 @@ private fun todayOffset(offsetDays: Int): String {
 }
 
 internal fun shouldForceRemoteOnInitialResultsLoad(selectedDate: String, today: String): Boolean {
-    return false
+    return selectedDate == today
+}
+
+internal fun shouldForceRemoteOnResultsRealtime(): Boolean {
+    return true
+}
+
+internal fun shouldRunResultsForegroundCatchUp(selectedDate: String, today: String): Boolean {
+    return selectedDate == today
 }
 
 internal fun shouldSkipInitialResultsHydration(
@@ -2426,7 +2483,8 @@ internal fun shouldSkipInitialResultsHydration(
     today: String,
     hasCompleteLocalResults: Boolean,
 ): Boolean {
-    return hasCompleteLocalResults && dayDiffFromToday(selectedDate = selectedDate, today = today) < -2
+    if (!hasCompleteLocalResults) return false
+    return selectedDate != today
 }
 
 internal fun shouldApplyResultsRefreshForSelectedDate(
@@ -3036,7 +3094,16 @@ internal fun shouldAutoRefreshResultsFromServer(
     hasRecoverableNoDrawResult: Boolean,
     realtimeEnabled: Boolean,
 ): Boolean {
-    return selectedDateIsToday && (hasRecoverableNoDrawResult || hasWaitingResult)
+    if (!selectedDateIsToday) return false
+    if (realtimeEnabled) return false
+    return hasWaitingResult || hasRecoverableNoDrawResult
+}
+
+internal fun shouldForceRemoteForResultsAutoRefresh(
+    hasWaitingResult: Boolean,
+    hasRecoverableNoDrawResult: Boolean,
+): Boolean {
+    return hasRecoverableNoDrawResult || hasWaitingResult
 }
 
 internal fun shouldPublishResultForDraw(

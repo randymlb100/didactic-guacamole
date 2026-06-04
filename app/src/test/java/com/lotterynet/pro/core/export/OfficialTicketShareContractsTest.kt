@@ -2,6 +2,7 @@ package com.lotterynet.pro.core.export
 
 import com.lotterynet.pro.core.model.PlayItem
 import com.lotterynet.pro.core.model.TicketRecord
+import com.lotterynet.pro.core.model.WinningPlayDetail
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -105,6 +106,150 @@ class OfficialTicketShareContractsTest {
         )
 
         assertTrue("height=$height", height <= 3_900)
+    }
+
+    @Test
+    fun `official ticket winner details keep every prize for long share image`() {
+        val ticket = sampleTicket().copy(
+            status = "winner",
+            totalPrize = 9_000.0,
+            winningDetails = (1..30).map { index ->
+                WinningPlayDetail(
+                    lotteryName = "Loteria $index",
+                    playType = "Q",
+                    playedNumber = index.toString().padStart(2, '0'),
+                    resultNumber = "$index-10-20",
+                    hitPosition = "1",
+                    amount = 25.0,
+                    payoutAmount = 1_800.0,
+                )
+            },
+        )
+
+        val visible = NativeBitmapExport.officialTicketWinnerDetails(ticket)
+        val meta = NativeBitmapExport.winnerDetailsMeta(ticket)
+        val height = NativeBitmapExport.estimateOfficialTicketBitmapHeight(ticket)
+
+        assertEquals(30, visible.size)
+        assertEquals("30 premios", meta)
+        assertTrue("height=$height", height > 3_100)
+    }
+
+    @Test
+    fun `official ticket winner details are grouped by lottery and result`() {
+        val ticket = sampleTicket().copy(
+            status = "winner",
+            totalPrize = 3_600.0,
+            winningDetails = listOf(
+                WinningPlayDetail(
+                    lotteryName = "Anguila 10 AM",
+                    playType = "P4",
+                    playedNumber = "1475",
+                    resultNumber = "1475",
+                    hitPosition = "straight",
+                    amount = 4.0,
+                    payoutAmount = 2_000.0,
+                ),
+                WinningPlayDetail(
+                    lotteryName = "Anguila 10 AM",
+                    playType = "P4BOX",
+                    playedNumber = "1475",
+                    resultNumber = "1475",
+                    hitPosition = "box",
+                    amount = 4.0,
+                    payoutAmount = 1_600.0,
+                ),
+            ),
+        )
+
+        val groups = NativeBitmapExport.groupOfficialTicketWinnerDetails(ticket)
+        val html = StaticExportTemplateRepository().buildOfficialTicketPreviewHtml(ticket, "LotteryNet", "ABC123")
+
+        assertEquals(1, groups.size)
+        assertEquals("Anguila 10 AM", groups.single().lotteryName)
+        assertEquals("1475", groups.single().resultNumber)
+        assertEquals(3_600.0, groups.single().totalPayout, 0.001)
+        assertTrue(html.contains("Premios del ticket"))
+        assertTrue(html.contains("Ganador 1475"))
+        assertTrue(html.contains("P4BOX"))
+    }
+
+    @Test
+    fun `official ticket winner block shows total prize and each individual prize`() {
+        val details = (1..4).map { index ->
+            WinningPlayDetail(
+                lotteryName = "Loteka",
+                playType = "Q",
+                playedNumber = "88",
+                resultNumber = "88-28-33",
+                hitPosition = "1",
+                amount = 100.0,
+                payoutAmount = 7_200.0,
+            )
+        }
+        val ticket = sampleTicket().copy(
+            status = "winner",
+            total = 400.0,
+            totalPrize = 28_800.0,
+            winningDetails = details,
+        )
+
+        val html = StaticExportTemplateRepository().buildOfficialTicketPreviewHtml(ticket, "LotteryNet", "ABC123")
+
+        assertEquals(28_800.0, NativeBitmapExport.winnerPrizeTotalAmount(ticket), 0.001)
+        assertEquals("$ 28,800 total", NativeBitmapExport.winnerPrizeTotalMeta(ticket))
+        assertTrue(html.contains("$ 28,800"))
+        assertEquals(4, Regex("\\$ 7,200").findAll(html).count())
+    }
+
+    @Test
+    fun `official ticket single winner groups do not duplicate individual prize amounts`() {
+        val details = listOf(
+            "Loteka" to "88-28-33",
+            "Anguila Tarde" to "04-56-50",
+            "King Lottery Noche" to "98-55-68",
+            "Primera Noche" to "80-67-69",
+        ).map { (lottery, result) ->
+            WinningPlayDetail(
+                lotteryName = lottery,
+                playType = "Q",
+                playedNumber = result.take(2),
+                resultNumber = result,
+                hitPosition = "1",
+                amount = 100.0,
+                payoutAmount = 7_200.0,
+            )
+        }
+        val ticket = sampleTicket().copy(
+            status = "winner",
+            total = 400.0,
+            totalPrize = 28_800.0,
+            winningDetails = details,
+        )
+
+        val html = StaticExportTemplateRepository().buildOfficialTicketPreviewHtml(ticket, "LotteryNet", "ABC123")
+
+        assertTrue(html.contains("$ 28,800"))
+        assertEquals(4, NativeBitmapExport.groupOfficialTicketWinnerDetails(ticket).size)
+        assertEquals(4, Regex("\\$ 7,200").findAll(html).count())
+    }
+
+    @Test
+    fun `official ticket whatsapp preview groups plays with lottery subtotals`() {
+        val ticket = sampleTicket().copy(
+            total = 300.0,
+            plays = listOf(
+                PlayItem(lotteryId = "primera", lotteryName = "Primera PM", playType = "Q", number = "58", amount = 100.0),
+                PlayItem(lotteryId = "primera", lotteryName = "Primera PM", playType = "Q", number = "88", amount = 100.0),
+                PlayItem(lotteryId = "loteka", lotteryName = "Loteka", playType = "Q", number = "58", amount = 100.0),
+            ),
+        )
+
+        val html = StaticExportTemplateRepository().buildOfficialTicketPreviewHtml(ticket, "LotteryNet", "ABC123")
+
+        assertTrue(html.contains("2 jugadas · $ 200"))
+        assertTrue(html.contains("1 jugadas · $ 100"))
+        assertTrue(html.contains("ticket-lot-total"))
     }
 
     @Test

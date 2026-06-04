@@ -11,7 +11,7 @@ class LotterynetRealtimeSubscriptionTest {
             LotterynetRealtimeSubscription.usersGlobal().channelName,
             LotterynetRealtimeSubscription.masterKey("owner").channelName,
             LotterynetRealtimeSubscription.ticketOwner("admin-1").channelName,
-            LotterynetRealtimeSubscription.resultsCache("lot_results_cache_by_day:13-05-2026").channelName,
+            LotterynetRealtimeSubscription.resultsDraws("13-05-2026").channelName,
         )
         assertTrue(names.contains("users-global"))
         assertTrue(names.contains("tickets-admin-1"))
@@ -23,5 +23,14 @@ class LotterynetRealtimeSubscriptionTest {
         assertEquals("public", subscription.schema)
         assertEquals("lotterynet_tickets_by_owner", subscription.table)
         assertEquals("owner_key=eq.admin-1", subscription.filter)
+    }
+
+    @Test
+    fun `results subscription targets normalized result draws by day`() {
+        val subscription = LotterynetRealtimeSubscription.resultsDraws("29-05-2026")
+
+        assertEquals("public", subscription.schema)
+        assertEquals("result_draws", subscription.table)
+        assertEquals("result_day_key=eq.29-05-2026", subscription.filter)
     }
 }

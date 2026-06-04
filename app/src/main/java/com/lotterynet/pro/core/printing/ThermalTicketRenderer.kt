@@ -8,10 +8,13 @@ import android.graphics.RectF
 import android.graphics.Typeface
 import com.google.zxing.BarcodeFormat
 import com.google.zxing.MultiFormatWriter
+import com.lotterynet.pro.core.delivery.TicketDeliveryPolicy
 import com.lotterynet.pro.core.export.NativeBitmapExport
 import com.lotterynet.pro.core.export.TicketSecurity
 import com.lotterynet.pro.core.finance.FinanceSummary
 import com.lotterynet.pro.core.model.ThermalPrinterPrefs
+import com.lotterynet.pro.core.model.SportsbookTicketRecord
+import com.lotterynet.pro.core.model.SportsbookTicketStatus
 import com.lotterynet.pro.core.model.TicketRecord
 import com.lotterynet.pro.core.model.effectiveDrawDateKey
 import com.lotterynet.pro.core.model.formatPlayDisplayNumber
@@ -211,6 +214,183 @@ internal object ThermalLineStyling {
 }
 
 class ThermalTicketRenderer {
+    fun renderCompactShareBitmap(
+        ticket: TicketRecord,
+        bancaName: String,
+        drawTimesByLottery: Map<String, String> = emptyMap(),
+    ): Bitmap {
+        val shareWidth = resolveCompactShareLineWidth(ticket)
+        val prefs = ThermalPrinterPrefs(
+            paperWidth = "80",
+            widthMode = if (shareWidth > 42) "custom" else "wide",
+            customChars = shareWidth.toString(),
+            headerScale = "compact",
+            serialScale = "compact",
+            lotteryScale = "compact",
+            playTypeScale = "compact",
+            playNumberScale = "compact",
+            amountScale = "compact",
+            securityScale = "compact",
+            totalScale = "compact",
+            previewZoom = "90",
+            showOriginal = true,
+            showSecurity = true,
+            showFooter = false,
+        )
+        return renderTextBitmap(
+            renderCompactShareText(ticket, bancaName, drawTimesByLottery),
+            prefs,
+            drawTopRule = false,
+            inkColor = Color.BLACK,
+        )
+    }
+
+    internal fun renderCompactShareText(
+        ticket: TicketRecord,
+        bancaName: String,
+        drawTimesByLottery: Map<String, String> = emptyMap(),
+    ): String {
+        val width = resolveCompactShareLineWidth(ticket)
+        val useAbbreviatedLotteryNames = width > 42
+        val lines = mutableListOf<String>()
+        val serial = ticket.serial?.takeIf { it.isNotBlank() } ?: ticket.id
+        val sellerLabel = ticket.sellerUser?.takeIf { it.isNotBlank() }
+            ?: ticket.adminUser?.takeIf { it.isNotBlank() }
+        val groupedPlays = ticket.plays.groupBy { play ->
+            val primary = formatThermalLotteryName(play.lotteryName.orEmpty().ifBlank { "Loteria" })
+            val secondary = play.secondaryLotteryName.orEmpty().trim()
+            val primaryLabel = compactShareLotteryName(primary, useAbbreviatedLotteryNames)
+            val secondaryLabel = secondary
+                .takeIf { it.isNotBlank() }
+                ?.let { compactShareLotteryName(formatThermalLotteryName(it), useAbbreviatedLotteryNames) }
+            if (secondaryLabel != null) "$primaryLabel / $secondaryLabel" else primaryLabel
+        }
+        val groupSubtotals = groupedPlays.mapValues { (_, plays) -> plays.sumOf { it.amount } }
+        val showLotterySubtotals = groupSubtotals.size > 1
+
+        lines += center(bancaName.uppercase(Locale.getDefault()).take(width), width)
+        lines += center("ORIGINAL - ACTIVO", width)
+        lines += divider(width, "minimal")
+        lines += ThermalLineStyling.bold(serial.take(width), "compact")
+        lines += "${NativeBitmapExport.formatDateForTicket(ticket.createdAtEpochMs)}  ${NativeBitmapExport.formatTimeForTicket(ticket.createdAtEpochMs)}"
+        sellerLabel?.let { lines += "VENDEDOR: ${it.take(width - 10)}" }
+        val drawLabel = NativeBitmapExport
+            .formatDrawDateForTicket(ticket.effectiveDrawDateKey(), resolveThermalTicketDrawTimeLabel(ticket, drawTimesByLottery))
+            .uppercase(Locale.getDefault())
+        thermalWrapWords("SORTEO $drawLabel", width).forEach { lines += ThermalLineStyling.bold(it, "compact") }
+        lines += divider(width, "minimal")
+
+        groupedPlays.forEach { (lotteryName, plays) ->
+            lines += ThermalLineStyling.lottery(lotteryName.take(width), "compact")
+            lines += "${plays.size} JUGADAS"
+            lines += compactThreeColumnHeader(width)
+            val cellWidth = (width - 2) / 3
+            plays.chunked(3).forEach { row ->
+                lines += row.map { play -> compactPlayCell(play, cellWidth) }
+                    .joinToString(" ")
+                    .padEnd(width)
+            }
+            if (showLotterySubtotals) {
+                val subtotalText = "SUBTOTAL ${lotteryName.take(12)}: ${formatThermalMoney(groupSubtotals.getValue(lotteryName))}"
+                lines += ThermalLineStyling.bold(center(subtotalText, width), "compact")
+                lines += divider(width, "minimal")
+            }
+        }
+
+        if (showLotterySubtotals) {
+            lines += ThermalLineStyling.bold("RESUMEN", "compact")
+            groupSubtotals.forEach { (lotteryName, subtotal) ->
+                lines += ThermalLineStyling.playMoneyRow(
+                    lotteryName.take((width * 0.62f).toInt()),
+                    formatThermalMoney(subtotal),
+                    width,
+                    "compact",
+                )
+            }
+            lines += divider(width, "minimal")
+        } else {
+            lines += divider(width, "minimal")
+        }
+
+        val totalToPlay = ticket.total.takeIf { it > 0.0 } ?: ticket.plays.sumOf { it.amount }
+        lines += ThermalLineStyling.bold(alignMoney("JUGADAS", ticket.plays.size.toDouble(), width), "compact")
+        lines += ThermalLineStyling.bold(alignMoney("TOTAL A JUGAR", totalToPlay, width), "compact")
+        lines += divider(width, "minimal")
+
+        val securityCode = TicketSecurity.resolveSecurityCode(ticket, bancaName)
+        if (securityCode.isNotBlank()) {
+            lines += ThermalLineStyling.bold(center("VERIFICACION: $securityCode", width), "compact")
+        }
+
+        lines += ThermalLineStyling.qr(buildTicketQrPayload(ticket, securityCode))
+        lines += ""
+        lines += ""
+        lines += ""
+        lines += ""
+        lines += ""
+        lines += ""
+        return lines.joinToString("\n")
+            .normalizeThermalText()
+    }
+
+    fun renderTicketChunks(
+        ticket: TicketRecord,
+        bancaName: String,
+        prefs: ThermalPrinterPrefs,
+        drawTimesByLottery: Map<String, String> = emptyMap(),
+        printMark: TicketPrintMark = if (prefs.showOriginal) TicketPrintMark.ORIGINAL else TicketPrintMark.NONE,
+    ): List<String> {
+        val estimatedLines = renderTicket(
+            ticket = ticket,
+            bancaName = bancaName,
+            prefs = prefs,
+            drawTimesByLottery = drawTimesByLottery,
+            printMark = printMark,
+        ).lineSequence().count()
+        if (ticket.plays.size <= TicketDeliveryPolicy.MAX_SINGLE_IMAGE_PLAYS && estimatedLines <= 160) {
+            return listOf(
+                renderTicket(
+                    ticket = ticket,
+                    bancaName = bancaName,
+                    prefs = prefs,
+                    drawTimesByLottery = drawTimesByLottery,
+                    printMark = printMark,
+                ),
+            )
+        }
+        val pages = TicketDeliveryPolicy.buildPages(ticket)
+        if (pages.isEmpty()) {
+            return listOf(
+                renderTicket(
+                    ticket = ticket,
+                    bancaName = bancaName,
+                    prefs = prefs,
+                    drawTimesByLottery = drawTimesByLottery,
+                    printMark = printMark,
+                ),
+            )
+        }
+        return pages.map { page ->
+            val pageTotal = page.plays.sumOf { it.amount }
+            val pageTicket = ticket.copy(
+                serial = listOfNotNull(ticket.serial, "P${page.index + 1}-${page.totalPages}")
+                    .joinToString("-"),
+                plays = page.plays,
+                subtotal = pageTotal,
+                total = pageTotal,
+                winningDetails = if (page.index == pages.lastIndex) ticket.winningDetails else emptyList(),
+                totalPrize = if (page.index == pages.lastIndex) ticket.totalPrize else 0.0,
+            )
+            renderTicket(
+                ticket = pageTicket,
+                bancaName = bancaName,
+                prefs = prefs,
+                drawTimesByLottery = drawTimesByLottery,
+                printMark = printMark,
+            )
+        }
+    }
+
     fun renderTicket(
         ticket: TicketRecord,
         bancaName: String,
@@ -278,11 +458,67 @@ class ThermalTicketRenderer {
                     compact = plays.size >= 20,
                 )
             }
+            lines += ThermalLineStyling.playMoneyRow("MONTO LOTERIA", formatThermalMoney(plays.sumOf { it.amount }), width)
             lines += divider(width, "minimal")
         }
 
+        val winnerDetails = ticket.winningDetails
+            .filter { detail ->
+                detail.lotteryName.isNotBlank() ||
+                detail.playedNumber.isNotBlank() ||
+                    detail.resultNumber.isNotBlank() ||
+                    detail.payoutAmount > 0.0
+            }
+        if (winnerDetails.isNotEmpty()) {
+            lines += ThermalLineStyling.bold("PREMIOS DEL TICKET", "compact")
+            winnerDetails
+                .groupBy { detail ->
+                    listOf(
+                        detail.lotteryName.ifBlank { "Loteria" },
+                        detail.resultNumber.ifBlank { "-" },
+                    ).joinToString("|")
+                }
+                .forEach { (_, details) ->
+                    val first = details.first()
+                    val groupPrize = details.sumOf { it.payoutAmount }
+                    thermalWrapWords(formatThermalLotteryName(first.lotteryName), width).forEach { line ->
+                        lines += ThermalLineStyling.lottery(line, "compact")
+                    }
+                    val resultLine = "RESULTADO ${first.resultNumber.ifBlank { "-" }}"
+                    lines += if (details.size > 1) {
+                        ThermalLineStyling.playMoneyRow(resultLine, formatThermalMoney(groupPrize), width)
+                    } else {
+                        resultLine
+                    }
+                    details.forEach { detail ->
+                        lines += "ACIERTO ${winningHitLabel(detail.hitPosition).uppercase(Locale.US)}"
+                        lines += renderPlayLines(
+                            typeText = playTypeText(detail.playType, prefs.typeLabelMode),
+                            number = formatThermalPlayNumber(detail.playedNumber, detail.playType),
+                            amount = detail.amount,
+                            width = width,
+                            prefs = prefs,
+                            compact = true,
+                        )
+                        lines += ThermalLineStyling.playMoneyRow("PREMIO", formatThermalMoney(detail.payoutAmount), width)
+                    }
+                }
+            if (ticket.winningDetails.size > winnerDetails.size) {
+                lines += "...${winnerDetails.size} de ${ticket.winningDetails.size} premios"
+            }
+            lines += divider(width, "minimal")
+        }
+
+        if (winnerDetails.isNotEmpty()) {
+            lines += ThermalLineStyling.totalMoneyRow(
+                label = "PREMIO",
+                amount = formatThermalMoney(ticket.totalPrize.takeIf { it > 0.0 } ?: winnerDetails.sumOf { it.payoutAmount }),
+                width = width,
+                scale = stableTotalScale(prefs.totalScale),
+            )
+        }
         lines += ThermalLineStyling.totalMoneyRow(
-            label = "TOTAL",
+            label = if (winnerDetails.isNotEmpty()) "JUGADO" else "TOTAL",
             amount = formatThermalMoney(ticket.total),
             width = width,
             scale = stableTotalScale(prefs.totalScale),
@@ -332,6 +568,72 @@ class ThermalTicketRenderer {
             .normalizeThermalText()
     }
 
+    fun renderSportsbookTicket(
+        ticket: SportsbookTicketRecord,
+        bancaName: String,
+        prefs: ThermalPrinterPrefs,
+        printMark: TicketPrintMark = if (prefs.showOriginal) TicketPrintMark.ORIGINAL else TicketPrintMark.NONE,
+    ): String {
+        val width = resolveLineWidth(prefs)
+        val lines = mutableListOf<String>()
+        val statusLabel = when (ticket.status) {
+            SportsbookTicketStatus.PAID -> "PAGADO"
+            SportsbookTicketStatus.WON -> "GANADOR"
+            SportsbookTicketStatus.LOST -> "PERDIDO"
+            SportsbookTicketStatus.VOID -> "ANULADO"
+            else -> "ACTIVO"
+        }
+        val markLabel = when (printMark) {
+            TicketPrintMark.ORIGINAL -> "ORIGINAL"
+            TicketPrintMark.COPIA -> "COPIA"
+            TicketPrintMark.NONE -> null
+        }
+
+        lines += ThermalLineStyling.title(bancaName.uppercase(Locale.getDefault()), narrowPresenceScale(prefs.headerScale))
+        lines += ThermalLineStyling.center(listOfNotNull("DEPORTE", markLabel, statusLabel).joinToString(" · "))
+        lines += divider(width, prefs.separator)
+        lines += ThermalLineStyling.bold(ticket.ticketCode, prefs.serialScale)
+        if (prefs.showDateTime && ticket.soldAtEpochMs > 0L) {
+            lines += "${NativeBitmapExport.formatDateForTicket(ticket.soldAtEpochMs)}  ${NativeBitmapExport.formatTimeForTicket(ticket.soldAtEpochMs)}"
+        }
+        ticket.sellerUsername.takeIf { it.isNotBlank() }?.let {
+            lines += padRight("VENDEDOR:", 10) + it.take(width - 10)
+        }
+        lines += divider(width, prefs.separator)
+        lines += ThermalLineStyling.bold("SELECCIONES", "compact")
+        val legs = ticket.legs.ifEmpty {
+            listOf(
+                com.lotterynet.pro.core.model.SportsbookTicketLegRecord(
+                    eventLabel = "Ticket deportivo",
+                    marketTitle = ticket.ticketType,
+                    selectionLabel = "Sin detalle",
+                    decimalOdds = ticket.decimalOdds,
+                    status = ticket.status,
+                ),
+            )
+        }
+        legs.forEachIndexed { index, leg ->
+            if (index > 0) lines += divider(width, "minimal")
+            thermalWrapWords(leg.eventLabel.ifBlank { "Evento" }.uppercase(Locale.US), width).forEach { line ->
+                lines += ThermalLineStyling.lottery(line, "compact")
+            }
+            thermalWrapWords("${leg.marketTitle}: ${leg.selectionLabel}", width).forEach { line ->
+                lines += ThermalLineStyling.bold(line, "compact")
+            }
+            lines += ThermalLineStyling.playMoneyRow("CUOTA", "%.2f".format(Locale.US, leg.decimalOdds), width, "compact")
+        }
+        lines += divider(width, prefs.separator)
+        lines += ThermalLineStyling.playMoneyRow("TIPO", ticket.ticketType.uppercase(Locale.US), width)
+        lines += ThermalLineStyling.playMoneyRow("CUOTA TOTAL", "%.2f".format(Locale.US, ticket.decimalOdds), width)
+        lines += ThermalLineStyling.totalMoneyRow("APOSTADO", formatThermalMoney(ticket.stake), width, stableTotalScale(prefs.totalScale))
+        lines += ThermalLineStyling.totalMoneyRow("PAGO POSIBLE", formatThermalMoney(ticket.potentialPayout), width, stableTotalScale(prefs.totalScale))
+        lines += ThermalLineStyling.footer("Validar antes de pagar")
+        lines += ""
+        lines += ""
+        lines += ""
+        return lines.joinToString("\n").normalizeThermalText()
+    }
+
     private fun buildTicketQrPayload(ticket: TicketRecord, securityCode: String): String {
         val serial = ticket.serial?.takeIf { it.isNotBlank() } ?: ticket.id
         val code = securityCode.ifBlank { ticket.securityCode.orEmpty().ifBlank { ticket.id } }
@@ -342,6 +644,21 @@ class ThermalTicketRenderer {
             formatThermalMoney(ticket.total),
             ticket.createdAtEpochMs.toString(),
         ).joinToString("|")
+    }
+
+    private fun winningHitLabel(raw: String): String {
+        return when (raw.trim().lowercase(Locale.US)) {
+            "1" -> "primera"
+            "2" -> "segunda"
+            "3" -> "tercera"
+            "1-2" -> "pale 1-2"
+            "1-3" -> "pale 1-3"
+            "2-3" -> "pale 2-3"
+            "sp" -> "super pale"
+            "back" -> "ultimo par"
+            "" -> "ganadora"
+            else -> raw
+        }
     }
 
     private fun resolveThermalTicketDrawTimeLabel(
@@ -611,6 +928,75 @@ class ThermalTicketRenderer {
         )
     }
 
+    private fun compactThreeColumnHeader(width: Int): String {
+        val cellWidth = (width - 2) / 3
+        return List(3) { compactHeaderCell(cellWidth) }.joinToString(" ")
+    }
+
+    private fun compactPlayCell(play: com.lotterynet.pro.core.model.PlayItem, width: Int): String {
+        val amount = formatThermalMoney(play.amount).take(width)
+        val label = listOf(
+            playTypeText(play.playType, "short"),
+            formatThermalPlayNumber(play.number, play.playType),
+        ).joinToString(" ").trim()
+        val amountWidth = amount.length.coerceAtLeast(4).coerceAtMost((width / 2).coerceAtLeast(4))
+        val labelWidth = (width - amountWidth - 1).coerceAtLeast(1)
+        val safeLabel = label.take(labelWidth).padEnd(labelWidth)
+        return "$safeLabel ${amount.padStart(amountWidth)}".take(width).padEnd(width)
+    }
+
+    private fun compactHeaderCell(width: Int): String {
+        val amountWidth = 5.coerceAtMost((width / 2).coerceAtLeast(4))
+        val labelWidth = (width - amountWidth - 1).coerceAtLeast(1)
+        return "JUGADA".take(labelWidth).padEnd(labelWidth) + " " + "MONTO".take(amountWidth).padStart(amountWidth)
+    }
+
+    private fun resolveCompactShareLineWidth(ticket: TicketRecord): Int {
+        val lotteryCount = ticket.plays
+            .map { play ->
+                listOf(play.lotteryName, play.secondaryLotteryName)
+                    .filterNotNull()
+                    .joinToString("/")
+                    .ifBlank { "Loteria" }
+            }
+            .distinct()
+            .size
+        return when {
+            ticket.plays.size >= 100 || lotteryCount >= 6 -> 60
+            ticket.plays.size >= 70 || lotteryCount >= 4 -> 52
+            else -> 42
+        }
+    }
+
+    private fun compactShareLotteryName(name: String, abbreviated: Boolean): String {
+        if (!abbreviated) return name
+        val normalized = name.uppercase(Locale.US).replace(Regex("\\s+"), " ").trim()
+        val time = Regex("""\b(\d{1,2})(?::(\d{2}))?\s*(AM|PM)\b""").find(normalized)?.let { match ->
+            val hour = match.groupValues[1]
+            val minute = match.groupValues[2].takeIf { it.isNotBlank() }
+            val suffix = match.groupValues[3]
+            if (minute == null || minute == "00") "$hour$suffix" else "$hour:$minute$suffix"
+        } ?: when {
+            Regex("\\b(AM|DIA|MANANA)\\b").containsMatchIn(normalized) -> "AM"
+            Regex("\\b(PM|TARDE|NOCHE)\\b").containsMatchIn(normalized) -> "PM"
+            else -> null
+        }
+        val prefix = when {
+            "LOTEKA" in normalized -> "LK"
+            "LEIDSA" in normalized -> "LEIDSA"
+            "NACIONAL" in normalized -> "LN"
+            "ANGUIL" in normalized -> "ANG"
+            "KING" in normalized -> "KING"
+            "PRIMERA" in normalized -> "PRI"
+            "LA SUERTE" in normalized -> "SUERTE"
+            "REAL" in normalized -> "REAL"
+            "NEW YORK" in normalized -> "NY"
+            "FLORIDA" in normalized -> "FL"
+            else -> normalized.split(" ").filter { it.isNotBlank() }.take(2).joinToString(" ") { it.take(4) }
+        }
+        return listOfNotNull(prefix, time).joinToString(" ").take(24)
+    }
+
     private fun formatThermalPlayNumber(number: String, playType: String): String {
         val normalizedPlayType = playType.uppercase(Locale.getDefault())
         if (normalizedPlayType in setOf("P3", "P3BOX", "P4", "P4BOX")) {
@@ -631,6 +1017,8 @@ class ThermalTicketRenderer {
     private fun renderTextBitmap(
         content: String,
         prefs: ThermalPrinterPrefs,
+        drawTopRule: Boolean = true,
+        inkColor: Int = Color.parseColor("#111827"),
     ): Bitmap {
         val textSize = when (prefs.previewZoom) {
             "130" -> 32f
@@ -648,8 +1036,12 @@ class ThermalTicketRenderer {
             .toList()
             .ifEmpty { listOf("") }
             .map(ThermalLineStyling::parse)
-        val width = when (prefs.paperWidth) {
-            "80" -> 760
+        val width = when {
+            prefs.widthMode == "custom" -> {
+                val chars = prefs.customChars.toIntOrNull()?.coerceIn(24, 80) ?: 42
+                (chars * 15 + padding.toInt() * 2).coerceAtLeast(if (prefs.paperWidth == "80") 760 else 560)
+            }
+            prefs.paperWidth == "80" -> 760
             else -> 560
         }
         val height = (
@@ -658,11 +1050,13 @@ class ThermalTicketRenderer {
         return Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888).also { bitmap ->
             val canvas = Canvas(bitmap)
             canvas.drawColor(Color.WHITE)
-            val dividerPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.parseColor("#E5E7EB") }
-            canvas.drawRect(0f, 0f, width.toFloat(), 10f, dividerPaint)
+            if (drawTopRule) {
+                val dividerPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.parseColor("#E5E7EB") }
+                canvas.drawRect(0f, 0f, width.toFloat(), 10f, dividerPaint)
+            }
             var y = padding
             styledLines.forEach { line ->
-                val paint = paintForStyle(line.style, line.scale, textSize, typeface)
+                val paint = paintForStyle(line.style, line.scale, textSize, typeface, inkColor)
                 val lineHeight = styledLineHeight(line.style, line.scale, textSize)
                 if (line.style == ThermalLineStyle.QR) {
                     val qrSize = (lineHeight * 0.78f).toInt().coerceAtLeast(96)
@@ -711,6 +1105,7 @@ class ThermalTicketRenderer {
         scale: String,
         baseTextSize: Float,
         typeface: Typeface,
+        inkColor: Int = Color.parseColor("#111827"),
     ): Paint {
         val size = resolveTextSize(style, scale, baseTextSize)
         val align = when (style) {
@@ -733,7 +1128,7 @@ class ThermalTicketRenderer {
             else -> typeface
         }
         return Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = Color.parseColor("#111827")
+            color = inkColor
             textSize = size
             textAlign = align
             this.typeface = styledTypeface

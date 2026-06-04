@@ -1,0 +1,163 @@
+{
+  "projectRoot": "C:\\Users\\Randy Cordero\\Desktop\\lotterynet_android",
+  "batchFiles": [
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/LotteryNetApp.kt",
+      "language": "kotlin",
+      "sizeLines": 133,
+      "fileCategory": "code"
+    },
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/core/auth/NativeSessionAuthRepository.kt",
+      "language": "kotlin",
+      "sizeLines": 112,
+      "fileCategory": "code"
+    },
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/core/auth/SupabaseSessionTokenProvider.kt",
+      "language": "kotlin",
+      "sizeLines": 106,
+      "fileCategory": "code"
+    },
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/core/diagnostics/NativeCrashReporter.kt",
+      "language": "kotlin",
+      "sizeLines": 146,
+      "fileCategory": "code"
+    },
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/core/master/IssuedCredentialServerVerifier.kt",
+      "language": "kotlin",
+      "sizeLines": 20,
+      "fileCategory": "code"
+    },
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/core/master/MasterBankManager.kt",
+      "language": "kotlin",
+      "sizeLines": 132,
+      "fileCategory": "code"
+    },
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/core/master/MasterCloudSyncCoordinator.kt",
+      "language": "kotlin",
+      "sizeLines": 243,
+      "fileCategory": "code"
+    },
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/core/master/MasterServerStatusChecker.kt",
+      "language": "kotlin",
+      "sizeLines": 67,
+      "fileCategory": "code"
+    },
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/core/model/OperationalFeedback.kt",
+      "language": "kotlin",
+      "sizeLines": 25,
+      "fileCategory": "code"
+    },
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/core/repository/NativeAuthRepository.kt",
+      "language": "kotlin",
+      "sizeLines": 7,
+      "fileCategory": "code"
+    },
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/core/repository/NativeBootstrapRepository.kt",
+      "language": "kotlin",
+      "sizeLines": 7,
+      "fileCategory": "code"
+    },
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/core/repository/SessionRepository.kt",
+      "language": "kotlin",
+      "sizeLines": 15,
+      "fileCategory": "code"
+    },
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/core/storage/LocalAlertsRepository.kt",
+      "language": "kotlin",
+      "sizeLines": 75,
+      "fileCategory": "code"
+    },
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/core/storage/LocalAuditRepository.kt",
+      "language": "kotlin",
+      "sizeLines": 66,
+      "fileCategory": "code"
+    },
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/core/storage/LocalMasterConfigRepository.kt",
+      "language": "kotlin",
+      "sizeLines": 75,
+      "fileCategory": "code"
+    },
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/core/storage/LocalPresenceRepository.kt",
+      "language": "kotlin",
+      "sizeLines": 27,
+      "fileCategory": "code"
+    },
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/core/storage/LocalRechargeLimitRepository.kt",
+      "language": "kotlin",
+      "sizeLines": 73,
+      "fileCategory": "code"
+    },
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/core/storage/LocalUsersDeletedRepository.kt",
+      "language": "kotlin",
+      "sizeLines": 316,
+      "fileCategory": "code"
+    }
+  ],
+  "batchImportData": {
+    "app/src/main/java/com/lotterynet/pro/LotteryNetApp.kt": [
+      "app/src/main/java/com/lotterynet/pro/core/diagnostics/NativeCrashReporter.kt",
+      "app/src/main/java/com/lotterynet/pro/core/update/UpdateManager.kt"
+    ],
+    "app/src/main/java/com/lotterynet/pro/core/auth/NativeSessionAuthRepository.kt": [
+      "app/src/main/java/com/lotterynet/pro/core/model/UserRole.kt",
+      "app/src/main/java/com/lotterynet/pro/core/repository/NativeAuthRepository.kt",
+      "app/src/main/java/com/lotterynet/pro/core/repository/SessionRepository.kt",
+      "app/src/main/java/com/lotterynet/pro/core/storage/LocalUsersRepository.kt",
+      "app/src/main/java/com/lotterynet/pro/core/sync/NativeUsersBootstrapper.kt"
+    ],
+    "app/src/main/java/com/lotterynet/pro/core/auth/SupabaseSessionTokenProvider.kt": [
+      "app/src/main/java/com/lotterynet/pro/core/repository/SessionRepository.kt"
+    ],
+    "app/src/main/java/com/lotterynet/pro/core/diagnostics/NativeCrashReporter.kt": [],
+    "app/src/main/java/com/lotterynet/pro/core/master/IssuedCredentialServerVerifier.kt": [
+      "app/src/main/java/com/lotterynet/pro/core/auth/SupabaseAuthBridgeClient.kt",
+      "app/src/main/java/com/lotterynet/pro/core/repository/UsersRepository.kt"
+    ],
+    "app/src/main/java/com/lotterynet/pro/core/master/MasterBankManager.kt": [
+      "app/src/main/java/com/lotterynet/pro/core/auth/CredentialFactory.kt",
+      "app/src/main/java/com/lotterynet/pro/core/storage/LocalUsersDeletedRepository.kt",
+      "app/src/main/java/com/lotterynet/pro/core/storage/LocalUsersRepository.kt"
+    ],
+    "app/src/main/java/com/lotterynet/pro/core/master/MasterCloudSyncCoordinator.kt": [
+      "app/src/main/java/com/lotterynet/pro/core/storage/LocalAlertsRepository.kt",
+      "app/src/main/java/com/lotterynet/pro/core/storage/LocalAuditRepository.kt",
+      "app/src/main/java/com/lotterynet/pro/core/storage/LocalCashierSalesLimitRepository.kt",
+      "app/src/main/java/com/lotterynet/pro/core/storage/LocalMasterConfigRepository.kt",
+      "app/src/main/java/com/lotterynet/pro/core/storage/LocalPresenceRepository.kt",
+      "app/src/main/java/com/lotterynet/pro/core/storage/LocalRechargeLimitRepository.kt",
+      "app/src/main/java/com/lotterynet/pro/core/storage/LocalUsersDeletedRepository.kt",
+      "app/src/main/java/com/lotterynet/pro/core/storage/LocalUsersRepository.kt",
+      "app/src/main/java/com/lotterynet/pro/core/storage/UsersStorageKeys.kt",
+      "app/src/main/java/com/lotterynet/pro/core/users/SupabaseUsersRemoteStore.kt",
+      "app/src/main/java/com/lotterynet/pro/core/users/UsersRemoteStore.kt"
+    ],
+    "app/src/main/java/com/lotterynet/pro/core/master/MasterServerStatusChecker.kt": [],
+    "app/src/main/java/com/lotterynet/pro/core/model/OperationalFeedback.kt": [],
+    "app/src/main/java/com/lotterynet/pro/core/repository/NativeAuthRepository.kt": [],
+    "app/src/main/java/com/lotterynet/pro/core/repository/NativeBootstrapRepository.kt": [],
+    "app/src/main/java/com/lotterynet/pro/core/repository/SessionRepository.kt": [],
+    "app/src/main/java/com/lotterynet/pro/core/storage/LocalAlertsRepository.kt": [],
+    "app/src/main/java/com/lotterynet/pro/core/storage/LocalAuditRepository.kt": [],
+    "app/src/main/java/com/lotterynet/pro/core/storage/LocalMasterConfigRepository.kt": [],
+    "app/src/main/java/com/lotterynet/pro/core/storage/LocalPresenceRepository.kt": [],
+    "app/src/main/java/com/lotterynet/pro/core/storage/LocalRechargeLimitRepository.kt": [],
+    "app/src/main/java/com/lotterynet/pro/core/storage/LocalUsersDeletedRepository.kt": []
+  }
+}

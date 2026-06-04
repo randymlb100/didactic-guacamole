@@ -1,0 +1,4 @@
+.tmp-*
+scratch/
+docs/
+*.log

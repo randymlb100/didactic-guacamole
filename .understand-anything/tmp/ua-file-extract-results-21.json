@@ -1,0 +1,900 @@
+{
+  "scriptCompleted": true,
+  "filesAnalyzed": 13,
+  "filesSkipped": [],
+  "results": [
+    {
+      "path": "docs/supabase/2026-05-06_lotterynet_backend_migration_blueprint.sql",
+      "language": "sql",
+      "fileCategory": "data",
+      "totalLines": 520,
+      "nonEmptyLines": 464,
+      "definitions": [
+        {
+          "name": "public",
+          "kind": "table",
+          "fields": [
+            "code",
+            "label",
+            "rank"
+          ],
+          "startLine": 40,
+          "endLine": 44
+        },
+        {
+          "name": "public",
+          "kind": "table",
+          "fields": [
+            "code",
+            "label",
+            "description",
+            "created_at"
+          ],
+          "startLine": 53,
+          "endLine": 58
+        },
+        {
+          "name": "public",
+          "kind": "table",
+          "fields": [
+            "id",
+            "usuario_legacy_id",
+            "role",
+            "username",
+            "display_name",
+            "status",
+            "parent_user_id",
+            "admin_owner_id",
+            "banca_id",
+            "phone",
+            "commission_rate",
+            "max_recharge_limit",
+            "can_void_after_window",
+            "created_by",
+            "created_at",
+            "updated_at"
+          ],
+          "startLine": 68,
+          "endLine": 85
+        },
+        {
+          "name": "public",
+          "kind": "table",
+          "fields": [
+            "user_id",
+            "permission_code",
+            "granted_by",
+            "active",
+            "created_at"
+          ],
+          "startLine": 87,
+          "endLine": 94
+        },
+        {
+          "name": "public",
+          "kind": "table",
+          "fields": [
+            "id",
+            "admin_id",
+            "name",
+            "address",
+            "phone",
+            "active",
+            "timezone",
+            "created_at",
+            "updated_at"
+          ],
+          "startLine": 96,
+          "endLine": 106
+        },
+        {
+          "name": "public",
+          "kind": "table",
+          "fields": [
+            "admin_id",
+            "master_id",
+            "active",
+            "max_recharge_balance",
+            "maintenance_locked",
+            "created_at",
+            "updated_at"
+          ],
+          "startLine": 119,
+          "endLine": 127
+        },
+        {
+          "name": "public",
+          "kind": "table",
+          "fields": [
+            "user_id",
+            "admin_id",
+            "can_approve_void",
+            "can_block_cashier",
+            "can_recharge_cashier",
+            "created_at"
+          ],
+          "startLine": 129,
+          "endLine": 136
+        },
+        {
+          "name": "public",
+          "kind": "table",
+          "fields": [
+            "user_id",
+            "admin_id",
+            "supervisor_id",
+            "recarga_tx_limit",
+            "active",
+            "created_at"
+          ],
+          "startLine": 138,
+          "endLine": 145
+        },
+        {
+          "name": "public",
+          "kind": "table",
+          "fields": [
+            "id",
+            "code",
+            "name",
+            "country_code",
+            "timezone",
+            "active",
+            "result_source",
+            "created_at",
+            "updated_at"
+          ],
+          "startLine": 147,
+          "endLine": 157
+        },
+        {
+          "name": "public",
+          "kind": "table",
+          "fields": [
+            "id",
+            "lottery_id",
+            "code",
+            "name",
+            "draw_time_local",
+            "timezone",
+            "active",
+            "created_at",
+            "updated_at"
+          ],
+          "startLine": 159,
+          "endLine": 170
+        },
+        {
+          "name": "public",
+          "kind": "table",
+          "fields": [
+            "id",
+            "sorteo_id",
+            "weekday",
+            "close_minutes_before",
+            "close_time_override",
+            "active",
+            "created_at"
+          ],
+          "startLine": 172,
+          "endLine": 180
+        },
+        {
+          "name": "public",
+          "kind": "table",
+          "fields": [
+            "id",
+            "sorteo_id",
+            "draw_date",
+            "closed_at",
+            "closed_by",
+            "reason"
+          ],
+          "startLine": 182,
+          "endLine": 190
+        },
+        {
+          "name": "public",
+          "kind": "table",
+          "fields": [
+            "id",
+            "admin_id",
+            "banca_id",
+            "lottery_id",
+            "sorteo_id",
+            "play_type",
+            "number_value",
+            "max_amount",
+            "blocked",
+            "active",
+            "created_at",
+            "updated_at"
+          ],
+          "startLine": 222,
+          "endLine": 235
+        },
+        {
+          "name": "public",
+          "kind": "table",
+          "fields": [
+            "id",
+            "lottery_id",
+            "sorteo_id",
+            "draw_date",
+            "primera",
+            "segunda",
+            "tercera",
+            "source",
+            "raw_payload",
+            "published_at",
+            "processed_at"
+          ],
+          "startLine": 239,
+          "endLine": 252
+        },
+        {
+          "name": "public",
+          "kind": "table",
+          "fields": [
+            "id",
+            "admin_id",
+            "play_type",
+            "rule_code",
+            "multiplier",
+            "active",
+            "created_at"
+          ],
+          "startLine": 254,
+          "endLine": 263
+        },
+        {
+          "name": "public",
+          "kind": "table",
+          "fields": [
+            "id",
+            "ticket_id",
+            "paid_by",
+            "amount",
+            "status",
+            "reference",
+            "created_at"
+          ],
+          "startLine": 265,
+          "endLine": 274
+        },
+        {
+          "name": "public",
+          "kind": "table",
+          "fields": [
+            "owner_id",
+            "available",
+            "locked",
+            "updated_at"
+          ],
+          "startLine": 276,
+          "endLine": 281
+        },
+        {
+          "name": "public",
+          "kind": "table",
+          "fields": [
+            "id",
+            "from_user_id",
+            "to_user_id",
+            "movement_type",
+            "amount",
+            "before_balance",
+            "after_balance",
+            "reference",
+            "status",
+            "metadata",
+            "created_at"
+          ],
+          "startLine": 283,
+          "endLine": 295
+        },
+        {
+          "name": "public",
+          "kind": "table",
+          "fields": [
+            "id",
+            "actor_id",
+            "actor_role",
+            "action",
+            "entity_table",
+            "entity_id",
+            "ip",
+            "user_agent",
+            "metadata",
+            "created_at"
+          ],
+          "startLine": 305,
+          "endLine": 316
+        },
+        {
+          "name": "public",
+          "kind": "table",
+          "fields": [
+            "id",
+            "user_id",
+            "device_id",
+            "device_name",
+            "app_version",
+            "authorized",
+            "last_seen_at",
+            "created_at"
+          ],
+          "startLine": 318,
+          "endLine": 328
+        },
+        {
+          "name": "public",
+          "kind": "table",
+          "fields": [
+            "value",
+            "updated_by",
+            "updated_at"
+          ],
+          "startLine": 330,
+          "endLine": 335
+        },
+        {
+          "name": "public",
+          "kind": "table",
+          "fields": [
+            "id",
+            "recipient_id",
+            "title",
+            "body",
+            "read_at",
+            "metadata",
+            "created_at"
+          ],
+          "startLine": 342,
+          "endLine": 350
+        },
+        {
+          "name": "public",
+          "kind": "table",
+          "fields": [
+            "id",
+            "function_name",
+            "actor_id",
+            "request_id",
+            "status",
+            "duration_ms",
+            "metadata",
+            "created_at"
+          ],
+          "startLine": 352,
+          "endLine": 361
+        },
+        {
+          "name": "tickets_ticket_code_uq",
+          "kind": "index",
+          "fields": [],
+          "startLine": 207,
+          "endLine": 207
+        },
+        {
+          "name": "tickets_profile_created_idx",
+          "kind": "index",
+          "fields": [],
+          "startLine": 208,
+          "endLine": 208
+        },
+        {
+          "name": "tickets_admin_draw_idx",
+          "kind": "index",
+          "fields": [],
+          "startLine": 209,
+          "endLine": 209
+        },
+        {
+          "name": "tickets_status_idx",
+          "kind": "index",
+          "fields": [],
+          "startLine": 210,
+          "endLine": 210
+        },
+        {
+          "name": "ticket_items_ticket_idx",
+          "kind": "index",
+          "fields": [],
+          "startLine": 219,
+          "endLine": 219
+        },
+        {
+          "name": "ticket_items_number_sorteo_idx",
+          "kind": "index",
+          "fields": [],
+          "startLine": 220,
+          "endLine": 220
+        },
+        {
+          "name": "limites_lookup_idx",
+          "kind": "index",
+          "fields": [],
+          "startLine": 237,
+          "endLine": 237
+        },
+        {
+          "name": "profiles_role_admin_idx",
+          "kind": "index",
+          "fields": [],
+          "startLine": 516,
+          "endLine": 516
+        },
+        {
+          "name": "cajeros_admin_supervisor_idx",
+          "kind": "index",
+          "fields": [],
+          "startLine": 517,
+          "endLine": 517
+        },
+        {
+          "name": "movimientos_balance_to_created_idx",
+          "kind": "index",
+          "fields": [],
+          "startLine": 518,
+          "endLine": 518
+        },
+        {
+          "name": "auditoria_actor_created_idx",
+          "kind": "index",
+          "fields": [],
+          "startLine": 519,
+          "endLine": 519
+        },
+        {
+          "name": "resultados_sorteo_date_idx",
+          "kind": "index",
+          "fields": [],
+          "startLine": 520,
+          "endLine": 520
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "definitionCount": 35
+      }
+    },
+    {
+      "path": "docs/supabase/2026-05-13-realtime-cutover-checklist.md",
+      "language": "markdown",
+      "fileCategory": "docs",
+      "totalLines": 54,
+      "nonEmptyLines": 48,
+      "sections": [
+        {
+          "heading": "LotteryNet Realtime Cutover",
+          "level": 1,
+          "line": 1
+        },
+        {
+          "heading": "Goal",
+          "level": 2,
+          "line": 3
+        },
+        {
+          "heading": "Execute in order",
+          "level": 2,
+          "line": 6
+        },
+        {
+          "heading": "What Realtime is for here",
+          "level": 2,
+          "line": 34
+        },
+        {
+          "heading": "What Realtime is not for here",
+          "level": 2,
+          "line": 40
+        },
+        {
+          "heading": "Smoke test",
+          "level": 2,
+          "line": 45
+        },
+        {
+          "heading": "Rollback",
+          "level": 2,
+          "line": 53
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "sectionCount": 7
+      }
+    },
+    {
+      "path": "docs/supabase/2026-05-13-realtime-final-rollout.sql",
+      "language": "sql",
+      "fileCategory": "data",
+      "totalLines": 78,
+      "nonEmptyLines": 74,
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "definitionCount": 0
+      }
+    },
+    {
+      "path": "docs/supabase/2026-05-13-realtime-rollout-checklist.md",
+      "language": "markdown",
+      "fileCategory": "docs",
+      "totalLines": 11,
+      "nonEmptyLines": 10,
+      "sections": [
+        {
+          "heading": "Supabase Realtime Rollout Checklist",
+          "level": 1,
+          "line": 1
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "sectionCount": 1
+      }
+    },
+    {
+      "path": "docs/supabase/2026-05-13-realtime-rollout.sql",
+      "language": "sql",
+      "fileCategory": "data",
+      "totalLines": 7,
+      "nonEmptyLines": 6,
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "definitionCount": 0
+      }
+    },
+    {
+      "path": "docs/supabase/2026-05-13-supabase-functions-multi-banca.md",
+      "language": "markdown",
+      "fileCategory": "docs",
+      "totalLines": 68,
+      "nonEmptyLines": 58,
+      "sections": [
+        {
+          "heading": "LotteryNet Supabase Functions Multi-Banca",
+          "level": 1,
+          "line": 1
+        },
+        {
+          "heading": "Purpose",
+          "level": 2,
+          "line": 3
+        },
+        {
+          "heading": "Functions added",
+          "level": 2,
+          "line": 6
+        },
+        {
+          "heading": "`admin-users-state`",
+          "level": 3,
+          "line": 8
+        },
+        {
+          "heading": "`admin-master-state`",
+          "level": 3,
+          "line": 16
+        },
+        {
+          "heading": "`admin-cashier-limits`",
+          "level": 3,
+          "line": 23
+        },
+        {
+          "heading": "`admin-manual-results-override`",
+          "level": 3,
+          "line": 31
+        },
+        {
+          "heading": "Security model",
+          "level": 2,
+          "line": 39
+        },
+        {
+          "heading": "Why this split is correct",
+          "level": 2,
+          "line": 49
+        },
+        {
+          "heading": "What still stays out of Supabase Functions",
+          "level": 2,
+          "line": 54
+        },
+        {
+          "heading": "Suggested next cut",
+          "level": 2,
+          "line": 60
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "sectionCount": 11
+      }
+    },
+    {
+      "path": "docs/supabase/2026-05-14-render-cache-webhooks.sql",
+      "language": "sql",
+      "fileCategory": "data",
+      "totalLines": 31,
+      "nonEmptyLines": 27,
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "definitionCount": 0
+      }
+    },
+    {
+      "path": "docs/supabase/2026-05-14-supabase-cutover.sql",
+      "language": "sql",
+      "fileCategory": "data",
+      "totalLines": 112,
+      "nonEmptyLines": 103,
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "definitionCount": 0
+      }
+    },
+    {
+      "path": "docs/supabase/edge_functions_base.md",
+      "language": "markdown",
+      "fileCategory": "docs",
+      "totalLines": 171,
+      "nonEmptyLines": 144,
+      "sections": [
+        {
+          "heading": "LotteryNet Pro Edge Functions Base",
+          "level": 1,
+          "line": 1
+        },
+        {
+          "heading": "Variables",
+          "level": 2,
+          "line": 6
+        },
+        {
+          "heading": "Shared `index.ts` Pattern",
+          "level": 2,
+          "line": 18
+        },
+        {
+          "heading": "`create-ticket`",
+          "level": 2,
+          "line": 73
+        },
+        {
+          "heading": "Function Responsibilities",
+          "level": 2,
+          "line": 149
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "sectionCount": 5
+      }
+    },
+    {
+      "path": "docs/supabase/kotlin_edge_function_examples.md",
+      "language": "markdown",
+      "fileCategory": "docs",
+      "totalLines": 89,
+      "nonEmptyLines": 80,
+      "sections": [
+        {
+          "heading": "Kotlin Compose Edge Function Examples",
+          "level": 1,
+          "line": 1
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "sectionCount": 1
+      }
+    },
+    {
+      "path": "docs/supabase/production-call-volume-hardening.md",
+      "language": "markdown",
+      "fileCategory": "docs",
+      "totalLines": 53,
+      "nonEmptyLines": 39,
+      "sections": [
+        {
+          "heading": "Production Call Volume Hardening",
+          "level": 1,
+          "line": 1
+        },
+        {
+          "heading": "Evidencia Observada",
+          "level": 2,
+          "line": 5
+        },
+        {
+          "heading": "Documentacion Usada",
+          "level": 2,
+          "line": 12
+        },
+        {
+          "heading": "Cambios Implementados En Codigo",
+          "level": 2,
+          "line": 21
+        },
+        {
+          "heading": "Nuevas APIs Preparadas",
+          "level": 2,
+          "line": 31
+        },
+        {
+          "heading": "Siguiente Cierre Recomendado",
+          "level": 2,
+          "line": 40
+        },
+        {
+          "heading": "Criterios De Exito",
+          "level": 2,
+          "line": 47
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "sectionCount": 7
+      }
+    },
+    {
+      "path": "docs/supabase/production-server-first-multibanca.md",
+      "language": "markdown",
+      "fileCategory": "docs",
+      "totalLines": 151,
+      "nonEmptyLines": 118,
+      "sections": [
+        {
+          "heading": "LotteryNet Produccion Server-First Multi-Banca",
+          "level": 1,
+          "line": 1
+        },
+        {
+          "heading": "Objetivo",
+          "level": 2,
+          "line": 3
+        },
+        {
+          "heading": "Fuente de verdad",
+          "level": 2,
+          "line": 9
+        },
+        {
+          "heading": "Flujo de venta",
+          "level": 2,
+          "line": 16
+        },
+        {
+          "heading": "Flujo de resultados y premios",
+          "level": 2,
+          "line": 24
+        },
+        {
+          "heading": "Flujo de pago",
+          "level": 2,
+          "line": 41
+        },
+        {
+          "heading": "Flujo de anulacion/eliminacion",
+          "level": 2,
+          "line": 50
+        },
+        {
+          "heading": "Bloqueo offline y sesion",
+          "level": 2,
+          "line": 58
+        },
+        {
+          "heading": "Roles",
+          "level": 2,
+          "line": 65
+        },
+        {
+          "heading": "Verificacion operativa",
+          "level": 2,
+          "line": 72
+        },
+        {
+          "heading": "Checklist de produccion",
+          "level": 2,
+          "line": 108
+        },
+        {
+          "heading": "Recuperacion",
+          "level": 2,
+          "line": 120
+        },
+        {
+          "heading": "Estado de despliegue",
+          "level": 2,
+          "line": 129
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "sectionCount": 13
+      }
+    },
+    {
+      "path": "docs/supabase/realtime_number_limits_and_ticket_backend.md",
+      "language": "markdown",
+      "fileCategory": "docs",
+      "totalLines": 69,
+      "nonEmptyLines": 54,
+      "sections": [
+        {
+          "heading": "Backend de tickets, limites y antifraude",
+          "level": 1,
+          "line": 1
+        },
+        {
+          "heading": "Llamada Kotlin",
+          "level": 2,
+          "line": 11
+        },
+        {
+          "heading": "Realtime para limites",
+          "level": 2,
+          "line": 31
+        },
+        {
+          "heading": "Reglas antifraude activas",
+          "level": 2,
+          "line": 51
+        },
+        {
+          "heading": "Tablas principales",
+          "level": 2,
+          "line": 62
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "sectionCount": 5
+      }
+    }
+  ]
+}

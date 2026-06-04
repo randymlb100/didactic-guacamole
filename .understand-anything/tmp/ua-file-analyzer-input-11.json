@@ -1,0 +1,50 @@
+{
+  "projectRoot": "C:\\Users\\Randy Cordero\\Desktop\\lotterynet_android",
+  "batchFiles": [
+    {
+      "path": "app.py",
+      "language": "python",
+      "sizeLines": 1409,
+      "fileCategory": "code"
+    },
+    {
+      "path": "scraper/render_app_test.py",
+      "language": "python",
+      "sizeLines": 452,
+      "fileCategory": "code"
+    },
+    {
+      "path": "scraper/scrape_and_save.py",
+      "language": "python",
+      "sizeLines": 2030,
+      "fileCategory": "code"
+    },
+    {
+      "path": "scraper/scrape_and_save_test.py",
+      "language": "python",
+      "sizeLines": 801,
+      "fileCategory": "code"
+    },
+    {
+      "path": "tests_app_contracts.py",
+      "language": "python",
+      "sizeLines": 50,
+      "fileCategory": "code"
+    }
+  ],
+  "batchImportData": {
+    "app.py": [
+      "scraper/scrape_and_save.py"
+    ],
+    "scraper/render_app_test.py": [
+      "app.py"
+    ],
+    "scraper/scrape_and_save.py": [],
+    "scraper/scrape_and_save_test.py": [
+      "scraper/scrape_and_save.py"
+    ],
+    "tests_app_contracts.py": [
+      "app.py"
+    ]
+  }
+}

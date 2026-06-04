@@ -464,6 +464,13 @@ class UserAccountsFormattingTest {
     }
 
     @Test
+    fun `admin and master edit their own sales limit scope`() {
+        assertTrue(accountUsesAdminSelfSalesLimits(UserAccount(id = "admin", user = "admin1", role = UserRole.ADMIN)))
+        assertTrue(accountUsesAdminSelfSalesLimits(UserAccount(id = "master", user = "master1", role = UserRole.MASTER)))
+        assertFalse(accountUsesAdminSelfSalesLimits(UserAccount(id = "cashier", user = "cajero1", role = UserRole.CASHIER)))
+    }
+
+    @Test
     fun `cashier selector uses natural number order before names`() {
         val accounts = listOf(
             UserAccount(id = "ten", user = "cajero10", role = UserRole.CASHIER, displayName = "Cajero 10"),

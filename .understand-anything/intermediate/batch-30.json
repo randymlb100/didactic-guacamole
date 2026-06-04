@@ -1,0 +1,930 @@
+{
+  "nodes": [
+    {
+      "id": "file:app/src/test/java/com/lotterynet/pro/ui/theme/ThemeContractsTest.kt",
+      "type": "file",
+      "name": "ThemeContractsTest.kt",
+      "summary": "Source file app/src/test/java/com/lotterynet/pro/ui/theme/ThemeContractsTest.kt containing 1 class(es).",
+      "tags": [
+        "code",
+        "test",
+        "ui"
+      ],
+      "complexity": "simple",
+      "filePath": "app/src/test/java/com/lotterynet/pro/ui/theme/ThemeContractsTest.kt",
+      "lineRange": [
+        1,
+        19
+      ]
+    },
+    {
+      "id": "file:app/src/test/java/com/lotterynet/pro/ui/tickets/TicketLookupContractsTest.kt",
+      "type": "file",
+      "name": "TicketLookupContractsTest.kt",
+      "summary": "Source file app/src/test/java/com/lotterynet/pro/ui/tickets/TicketLookupContractsTest.kt containing 1 class(es).",
+      "tags": [
+        "code",
+        "test",
+        "ui",
+        "ticket"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/test/java/com/lotterynet/pro/ui/tickets/TicketLookupContractsTest.kt",
+      "lineRange": [
+        1,
+        132
+      ]
+    },
+    {
+      "id": "class:app/src/test/java/com/lotterynet/pro/ui/tickets/TicketLookupContractsTest.kt:TicketLookupContractsTest",
+      "type": "class",
+      "name": "TicketLookupContractsTest",
+      "summary": "Class TicketLookupContractsTest in TicketLookupContractsTest.kt.",
+      "tags": [
+        "class",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/test/java/com/lotterynet/pro/ui/tickets/TicketLookupContractsTest.kt",
+      "lineRange": [
+        11,
+        90
+      ]
+    },
+    {
+      "id": "file:app/src/test/java/com/lotterynet/pro/ui/update/UpdateUiContractsTest.kt",
+      "type": "file",
+      "name": "UpdateUiContractsTest.kt",
+      "summary": "Source file app/src/test/java/com/lotterynet/pro/ui/update/UpdateUiContractsTest.kt containing 1 class(es).",
+      "tags": [
+        "code",
+        "test",
+        "ui"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/test/java/com/lotterynet/pro/ui/update/UpdateUiContractsTest.kt",
+      "lineRange": [
+        1,
+        69
+      ]
+    },
+    {
+      "id": "class:app/src/test/java/com/lotterynet/pro/ui/update/UpdateUiContractsTest.kt:UpdateUiContractsTest",
+      "type": "class",
+      "name": "UpdateUiContractsTest",
+      "summary": "Class UpdateUiContractsTest in UpdateUiContractsTest.kt.",
+      "tags": [
+        "class",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/test/java/com/lotterynet/pro/ui/update/UpdateUiContractsTest.kt",
+      "lineRange": [
+        11,
+        70
+      ]
+    },
+    {
+      "id": "file:app/src/test/java/com/lotterynet/pro/ui/users/UserAccountsStartupContractsTest.kt",
+      "type": "file",
+      "name": "UserAccountsStartupContractsTest.kt",
+      "summary": "Source file app/src/test/java/com/lotterynet/pro/ui/users/UserAccountsStartupContractsTest.kt containing 1 class(es).",
+      "tags": [
+        "code",
+        "test",
+        "ui"
+      ],
+      "complexity": "simple",
+      "filePath": "app/src/test/java/com/lotterynet/pro/ui/users/UserAccountsStartupContractsTest.kt",
+      "lineRange": [
+        1,
+        29
+      ]
+    },
+    {
+      "id": "class:app/src/test/java/com/lotterynet/pro/ui/users/UserAccountsStartupContractsTest.kt:UserAccountsStartupContractsTest",
+      "type": "class",
+      "name": "UserAccountsStartupContractsTest",
+      "summary": "Class UserAccountsStartupContractsTest in UserAccountsStartupContractsTest.kt.",
+      "tags": [
+        "class",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/test/java/com/lotterynet/pro/ui/users/UserAccountsStartupContractsTest.kt",
+      "lineRange": [
+        7,
+        30
+      ]
+    },
+    {
+      "id": "file:build.gradle.kts",
+      "type": "file",
+      "name": "build.gradle.kts",
+      "summary": "Source file build.gradle.kts in the LotteryNetPro project.",
+      "tags": [
+        "code"
+      ],
+      "complexity": "simple",
+      "filePath": "build.gradle.kts",
+      "lineRange": [
+        1,
+        15
+      ]
+    },
+    {
+      "id": "file:check_migration_status.py",
+      "type": "file",
+      "name": "check_migration_status.py",
+      "summary": "Source file check_migration_status.py containing 1 class(es) and 4 function(s).",
+      "tags": [
+        "code"
+      ],
+      "complexity": "complex",
+      "filePath": "check_migration_status.py",
+      "lineRange": [
+        1,
+        254
+      ]
+    },
+    {
+      "id": "function:check_migration_status.py:path_exists",
+      "type": "function",
+      "name": "path_exists",
+      "summary": "Function path_exists in check_migration_status.py.",
+      "tags": [
+        "function",
+        "python"
+      ],
+      "complexity": "moderate",
+      "filePath": "check_migration_status.py",
+      "lineRange": [
+        201,
+        202
+      ]
+    },
+    {
+      "id": "function:check_migration_status.py:file_contains_all",
+      "type": "function",
+      "name": "file_contains_all",
+      "summary": "Function file_contains_all in check_migration_status.py.",
+      "tags": [
+        "function",
+        "python"
+      ],
+      "complexity": "moderate",
+      "filePath": "check_migration_status.py",
+      "lineRange": [
+        205,
+        216
+      ]
+    },
+    {
+      "id": "function:check_migration_status.py:check_item",
+      "type": "function",
+      "name": "check_item",
+      "summary": "Function check_item in check_migration_status.py.",
+      "tags": [
+        "function",
+        "python"
+      ],
+      "complexity": "moderate",
+      "filePath": "check_migration_status.py",
+      "lineRange": [
+        219,
+        224
+      ]
+    },
+    {
+      "id": "function:check_migration_status.py:main",
+      "type": "function",
+      "name": "main",
+      "summary": "Function main in check_migration_status.py.",
+      "tags": [
+        "function",
+        "python"
+      ],
+      "complexity": "moderate",
+      "filePath": "check_migration_status.py",
+      "lineRange": [
+        227,
+        250
+      ]
+    },
+    {
+      "id": "file:check_supabase_sync.py",
+      "type": "file",
+      "name": "check_supabase_sync.py",
+      "summary": "Supabase integration file used by the app/server for remote data, ticket, result, or configuration workflows.",
+      "tags": [
+        "code",
+        "sync",
+        "supabase"
+      ],
+      "complexity": "moderate",
+      "filePath": "check_supabase_sync.py",
+      "lineRange": [
+        1,
+        144
+      ]
+    },
+    {
+      "id": "function:check_supabase_sync.py:load_supabase_config",
+      "type": "function",
+      "name": "load_supabase_config",
+      "summary": "Function load_supabase_config in check_supabase_sync.py.",
+      "tags": [
+        "function",
+        "python"
+      ],
+      "complexity": "moderate",
+      "filePath": "check_supabase_sync.py",
+      "lineRange": [
+        13,
+        19
+      ]
+    },
+    {
+      "id": "function:check_supabase_sync.py:fetch_rows",
+      "type": "function",
+      "name": "fetch_rows",
+      "summary": "Function fetch_rows in check_supabase_sync.py.",
+      "tags": [
+        "function",
+        "python"
+      ],
+      "complexity": "moderate",
+      "filePath": "check_supabase_sync.py",
+      "lineRange": [
+        30,
+        33
+      ]
+    },
+    {
+      "id": "function:check_supabase_sync.py:fetch_value",
+      "type": "function",
+      "name": "fetch_value",
+      "summary": "Function fetch_value in check_supabase_sync.py.",
+      "tags": [
+        "function",
+        "python"
+      ],
+      "complexity": "moderate",
+      "filePath": "check_supabase_sync.py",
+      "lineRange": [
+        36,
+        47
+      ]
+    },
+    {
+      "id": "function:check_supabase_sync.py:get_ticket_rows_by_admin",
+      "type": "function",
+      "name": "get_ticket_rows_by_admin",
+      "summary": "Function get_ticket_rows_by_admin in check_supabase_sync.py.",
+      "tags": [
+        "function",
+        "python"
+      ],
+      "complexity": "moderate",
+      "filePath": "check_supabase_sync.py",
+      "lineRange": [
+        50,
+        62
+      ]
+    },
+    {
+      "id": "function:check_supabase_sync.py:normalize_value_set",
+      "type": "function",
+      "name": "normalize_value_set",
+      "summary": "Function normalize_value_set in check_supabase_sync.py.",
+      "tags": [
+        "function",
+        "python"
+      ],
+      "complexity": "moderate",
+      "filePath": "check_supabase_sync.py",
+      "lineRange": [
+        65,
+        66
+      ]
+    },
+    {
+      "id": "function:check_supabase_sync.py:main",
+      "type": "function",
+      "name": "main",
+      "summary": "Function main in check_supabase_sync.py.",
+      "tags": [
+        "function",
+        "python"
+      ],
+      "complexity": "moderate",
+      "filePath": "check_supabase_sync.py",
+      "lineRange": [
+        69,
+        140
+      ]
+    },
+    {
+      "id": "file:commonMain/io/github/jan/supabase/realtime/PostgresChangeFilter.kt",
+      "type": "file",
+      "name": "PostgresChangeFilter.kt",
+      "summary": "Supabase integration file used by the app/server for remote data, ticket, result, or configuration workflows.",
+      "tags": [
+        "code",
+        "sync",
+        "supabase"
+      ],
+      "complexity": "simple",
+      "filePath": "commonMain/io/github/jan/supabase/realtime/PostgresChangeFilter.kt",
+      "lineRange": [
+        1,
+        57
+      ]
+    },
+    {
+      "id": "function:commonMain/io/github/jan/supabase/realtime/PostgresChangeFilter.kt:filter",
+      "type": "function",
+      "name": "filter",
+      "summary": "Function filter in PostgresChangeFilter.kt.",
+      "tags": [
+        "function",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "commonMain/io/github/jan/supabase/realtime/PostgresChangeFilter.kt",
+      "lineRange": [
+        29,
+        48
+      ]
+    },
+    {
+      "id": "function:commonMain/io/github/jan/supabase/realtime/PostgresChangeFilter.kt:filter",
+      "type": "function",
+      "name": "filter",
+      "summary": "Function filter in PostgresChangeFilter.kt.",
+      "tags": [
+        "function",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "commonMain/io/github/jan/supabase/realtime/PostgresChangeFilter.kt",
+      "lineRange": [
+        50,
+        58
+      ]
+    },
+    {
+      "id": "class:commonMain/io/github/jan/supabase/realtime/PostgresChangeFilter.kt:PostgresChangeFilter",
+      "type": "class",
+      "name": "PostgresChangeFilter",
+      "summary": "Class PostgresChangeFilter in PostgresChangeFilter.kt.",
+      "tags": [
+        "class",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "commonMain/io/github/jan/supabase/realtime/PostgresChangeFilter.kt",
+      "lineRange": [
+        11,
+        58
+      ]
+    },
+    {
+      "id": "file:commonMain/io/github/jan/supabase/realtime/PostgrestExtensions.kt",
+      "type": "file",
+      "name": "PostgrestExtensions.kt",
+      "summary": "Supabase integration file used by the app/server for remote data, ticket, result, or configuration workflows.",
+      "tags": [
+        "code",
+        "sync",
+        "supabase"
+      ],
+      "complexity": "moderate",
+      "filePath": "commonMain/io/github/jan/supabase/realtime/PostgrestExtensions.kt",
+      "lineRange": [
+        1,
+        140
+      ]
+    },
+    {
+      "id": "file:docs/superpowers/mockups/lotterynet-redesign-local.css",
+      "type": "file",
+      "name": "lotterynet-redesign-local.css",
+      "summary": "Source file docs/superpowers/mockups/lotterynet-redesign-local.css in the LotteryNetPro project.",
+      "tags": [
+        "markup"
+      ],
+      "complexity": "complex",
+      "filePath": "docs/superpowers/mockups/lotterynet-redesign-local.css",
+      "lineRange": [
+        1,
+        771
+      ]
+    },
+    {
+      "id": "file:docs/superpowers/mockups/lotterynet-redesign-local.html",
+      "type": "file",
+      "name": "lotterynet-redesign-local.html",
+      "summary": "Source file docs/superpowers/mockups/lotterynet-redesign-local.html in the LotteryNetPro project.",
+      "tags": [
+        "markup"
+      ],
+      "complexity": "complex",
+      "filePath": "docs/superpowers/mockups/lotterynet-redesign-local.html",
+      "lineRange": [
+        1,
+        427
+      ]
+    },
+    {
+      "id": "file:gradle/gradle-daemon-jvm.properties",
+      "type": "config",
+      "name": "gradle-daemon-jvm.properties",
+      "summary": "Configuration file for gradle-daemon-jvm.properties.",
+      "tags": [
+        "config",
+        "configuration"
+      ],
+      "complexity": "simple",
+      "filePath": "gradle/gradle-daemon-jvm.properties",
+      "lineRange": [
+        1,
+        13
+      ]
+    },
+    {
+      "id": "file:gradle/wrapper/gradle-wrapper.jar",
+      "type": "file",
+      "name": "gradle-wrapper.jar",
+      "summary": "Source file gradle/wrapper/gradle-wrapper.jar in the LotteryNetPro project.",
+      "tags": [
+        "code"
+      ],
+      "complexity": "moderate",
+      "filePath": "gradle/wrapper/gradle-wrapper.jar",
+      "lineRange": [
+        1,
+        160
+      ]
+    },
+    {
+      "id": "file:gradle/wrapper/gradle-wrapper.properties",
+      "type": "config",
+      "name": "gradle-wrapper.properties",
+      "summary": "Configuration file for gradle-wrapper.properties.",
+      "tags": [
+        "config",
+        "configuration"
+      ],
+      "complexity": "simple",
+      "filePath": "gradle/wrapper/gradle-wrapper.properties",
+      "lineRange": [
+        1,
+        7
+      ]
+    },
+    {
+      "id": "file:gradlew",
+      "type": "file",
+      "name": "gradlew",
+      "summary": "Source file gradlew in the LotteryNetPro project.",
+      "tags": [
+        "code"
+      ],
+      "complexity": "complex",
+      "filePath": "gradlew",
+      "lineRange": [
+        1,
+        251
+      ]
+    },
+    {
+      "id": "file:local.properties.example",
+      "type": "file",
+      "name": "local.properties.example",
+      "summary": "Source file local.properties.example in the LotteryNetPro project.",
+      "tags": [
+        "code"
+      ],
+      "complexity": "simple",
+      "filePath": "local.properties.example",
+      "lineRange": [
+        1,
+        12
+      ]
+    },
+    {
+      "id": "file:proyecto web nuevo/eslint.config.js",
+      "type": "file",
+      "name": "eslint.config.js",
+      "summary": "Source file proyecto web nuevo/eslint.config.js in the LotteryNetPro project.",
+      "tags": [
+        "code"
+      ],
+      "complexity": "simple",
+      "filePath": "proyecto web nuevo/eslint.config.js",
+      "lineRange": [
+        1,
+        22
+      ]
+    },
+    {
+      "id": "file:proyecto web nuevo/scratch_diag.cjs",
+      "type": "file",
+      "name": "scratch_diag.cjs",
+      "summary": "Source file proyecto web nuevo/scratch_diag.cjs in the LotteryNetPro project.",
+      "tags": [
+        "code"
+      ],
+      "complexity": "simple",
+      "filePath": "proyecto web nuevo/scratch_diag.cjs",
+      "lineRange": [
+        1,
+        60
+      ]
+    },
+    {
+      "id": "file:proyecto web nuevo/scratch_diag.js",
+      "type": "file",
+      "name": "scratch_diag.js",
+      "summary": "Source file proyecto web nuevo/scratch_diag.js in the LotteryNetPro project.",
+      "tags": [
+        "code"
+      ],
+      "complexity": "simple",
+      "filePath": "proyecto web nuevo/scratch_diag.js",
+      "lineRange": [
+        1,
+        57
+      ]
+    },
+    {
+      "id": "file:proyecto web nuevo/scratch/check_podero_tickets.js",
+      "type": "file",
+      "name": "check_podero_tickets.js",
+      "summary": "Source file proyecto web nuevo/scratch/check_podero_tickets.js containing 2 function(s).",
+      "tags": [
+        "code",
+        "ticket"
+      ],
+      "complexity": "simple",
+      "filePath": "proyecto web nuevo/scratch/check_podero_tickets.js",
+      "lineRange": [
+        1,
+        41
+      ]
+    },
+    {
+      "id": "function:proyecto web nuevo/scratch/check_podero_tickets.js:checkPoderoTickets",
+      "type": "function",
+      "name": "checkPoderoTickets",
+      "summary": "Function checkPoderoTickets in check_podero_tickets.js.",
+      "tags": [
+        "function",
+        "javascript"
+      ],
+      "complexity": "moderate",
+      "filePath": "proyecto web nuevo/scratch/check_podero_tickets.js",
+      "lineRange": [
+        19,
+        39
+      ]
+    },
+    {
+      "id": "file:proyecto web nuevo/scratch/check_supabase.js",
+      "type": "file",
+      "name": "check_supabase.js",
+      "summary": "Supabase integration file used by the app/server for remote data, ticket, result, or configuration workflows.",
+      "tags": [
+        "code",
+        "supabase"
+      ],
+      "complexity": "simple",
+      "filePath": "proyecto web nuevo/scratch/check_supabase.js",
+      "lineRange": [
+        1,
+        50
+      ]
+    },
+    {
+      "id": "function:proyecto web nuevo/scratch/check_supabase.js:testConnection",
+      "type": "function",
+      "name": "testConnection",
+      "summary": "Function testConnection in check_supabase.js.",
+      "tags": [
+        "function",
+        "javascript"
+      ],
+      "complexity": "moderate",
+      "filePath": "proyecto web nuevo/scratch/check_supabase.js",
+      "lineRange": [
+        27,
+        48
+      ]
+    },
+    {
+      "id": "file:proyecto web nuevo/scratch/dump_kv.js",
+      "type": "file",
+      "name": "dump_kv.js",
+      "summary": "Source file proyecto web nuevo/scratch/dump_kv.js containing 2 function(s).",
+      "tags": [
+        "code"
+      ],
+      "complexity": "simple",
+      "filePath": "proyecto web nuevo/scratch/dump_kv.js",
+      "lineRange": [
+        1,
+        37
+      ]
+    },
+    {
+      "id": "function:proyecto web nuevo/scratch/dump_kv.js:dumpKV",
+      "type": "function",
+      "name": "dumpKV",
+      "summary": "Function dumpKV in dump_kv.js.",
+      "tags": [
+        "function",
+        "javascript"
+      ],
+      "complexity": "moderate",
+      "filePath": "proyecto web nuevo/scratch/dump_kv.js",
+      "lineRange": [
+        19,
+        35
+      ]
+    },
+    {
+      "id": "file:proyecto web nuevo/scratch/dump_results.js",
+      "type": "file",
+      "name": "dump_results.js",
+      "summary": "Source file proyecto web nuevo/scratch/dump_results.js containing 2 function(s).",
+      "tags": [
+        "code",
+        "results"
+      ],
+      "complexity": "simple",
+      "filePath": "proyecto web nuevo/scratch/dump_results.js",
+      "lineRange": [
+        1,
+        43
+      ]
+    },
+    {
+      "id": "function:proyecto web nuevo/scratch/dump_results.js:dumpResults",
+      "type": "function",
+      "name": "dumpResults",
+      "summary": "Function dumpResults in dump_results.js.",
+      "tags": [
+        "function",
+        "javascript"
+      ],
+      "complexity": "moderate",
+      "filePath": "proyecto web nuevo/scratch/dump_results.js",
+      "lineRange": [
+        19,
+        41
+      ]
+    },
+    {
+      "id": "file:proyecto web nuevo/scratch/dump_tickets.js",
+      "type": "file",
+      "name": "dump_tickets.js",
+      "summary": "Source file proyecto web nuevo/scratch/dump_tickets.js containing 2 function(s).",
+      "tags": [
+        "code",
+        "ticket"
+      ],
+      "complexity": "simple",
+      "filePath": "proyecto web nuevo/scratch/dump_tickets.js",
+      "lineRange": [
+        1,
+        46
+      ]
+    },
+    {
+      "id": "function:proyecto web nuevo/scratch/dump_tickets.js:dumpTickets",
+      "type": "function",
+      "name": "dumpTickets",
+      "summary": "Function dumpTickets in dump_tickets.js.",
+      "tags": [
+        "function",
+        "javascript"
+      ],
+      "complexity": "moderate",
+      "filePath": "proyecto web nuevo/scratch/dump_tickets.js",
+      "lineRange": [
+        19,
+        44
+      ]
+    },
+    {
+      "id": "file:proyecto web nuevo/scratch/get_podero_data.js",
+      "type": "file",
+      "name": "get_podero_data.js",
+      "summary": "Source file proyecto web nuevo/scratch/get_podero_data.js containing 2 function(s).",
+      "tags": [
+        "code"
+      ],
+      "complexity": "simple",
+      "filePath": "proyecto web nuevo/scratch/get_podero_data.js",
+      "lineRange": [
+        1,
+        49
+      ]
+    },
+    {
+      "id": "function:proyecto web nuevo/scratch/get_podero_data.js:getPoderoData",
+      "type": "function",
+      "name": "getPoderoData",
+      "summary": "Function getPoderoData in get_podero_data.js.",
+      "tags": [
+        "function",
+        "javascript"
+      ],
+      "complexity": "moderate",
+      "filePath": "proyecto web nuevo/scratch/get_podero_data.js",
+      "lineRange": [
+        19,
+        47
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "source": "file:app/src/test/java/com/lotterynet/pro/ui/tickets/TicketLookupContractsTest.kt",
+      "target": "class:app/src/test/java/com/lotterynet/pro/ui/tickets/TicketLookupContractsTest.kt:TicketLookupContractsTest",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "TicketLookupContractsTest.kt contains TicketLookupContractsTest"
+    },
+    {
+      "source": "file:app/src/test/java/com/lotterynet/pro/ui/update/UpdateUiContractsTest.kt",
+      "target": "class:app/src/test/java/com/lotterynet/pro/ui/update/UpdateUiContractsTest.kt:UpdateUiContractsTest",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "UpdateUiContractsTest.kt contains UpdateUiContractsTest"
+    },
+    {
+      "source": "file:app/src/test/java/com/lotterynet/pro/ui/users/UserAccountsStartupContractsTest.kt",
+      "target": "class:app/src/test/java/com/lotterynet/pro/ui/users/UserAccountsStartupContractsTest.kt:UserAccountsStartupContractsTest",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "UserAccountsStartupContractsTest.kt contains UserAccountsStartupContractsTest"
+    },
+    {
+      "source": "file:check_migration_status.py",
+      "target": "function:check_migration_status.py:path_exists",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "check_migration_status.py contains path_exists"
+    },
+    {
+      "source": "file:check_migration_status.py",
+      "target": "function:check_migration_status.py:file_contains_all",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "check_migration_status.py contains file_contains_all"
+    },
+    {
+      "source": "file:check_migration_status.py",
+      "target": "function:check_migration_status.py:check_item",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "check_migration_status.py contains check_item"
+    },
+    {
+      "source": "file:check_migration_status.py",
+      "target": "function:check_migration_status.py:main",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "check_migration_status.py contains main"
+    },
+    {
+      "source": "file:check_supabase_sync.py",
+      "target": "function:check_supabase_sync.py:load_supabase_config",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "check_supabase_sync.py contains load_supabase_config"
+    },
+    {
+      "source": "file:check_supabase_sync.py",
+      "target": "function:check_supabase_sync.py:fetch_rows",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "check_supabase_sync.py contains fetch_rows"
+    },
+    {
+      "source": "file:check_supabase_sync.py",
+      "target": "function:check_supabase_sync.py:fetch_value",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "check_supabase_sync.py contains fetch_value"
+    },
+    {
+      "source": "file:check_supabase_sync.py",
+      "target": "function:check_supabase_sync.py:get_ticket_rows_by_admin",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "check_supabase_sync.py contains get_ticket_rows_by_admin"
+    },
+    {
+      "source": "file:check_supabase_sync.py",
+      "target": "function:check_supabase_sync.py:normalize_value_set",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "check_supabase_sync.py contains normalize_value_set"
+    },
+    {
+      "source": "file:check_supabase_sync.py",
+      "target": "function:check_supabase_sync.py:main",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "check_supabase_sync.py contains main"
+    },
+    {
+      "source": "file:commonMain/io/github/jan/supabase/realtime/PostgresChangeFilter.kt",
+      "target": "function:commonMain/io/github/jan/supabase/realtime/PostgresChangeFilter.kt:filter",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "PostgresChangeFilter.kt contains filter"
+    },
+    {
+      "source": "file:commonMain/io/github/jan/supabase/realtime/PostgresChangeFilter.kt",
+      "target": "function:commonMain/io/github/jan/supabase/realtime/PostgresChangeFilter.kt:filter",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "PostgresChangeFilter.kt contains filter"
+    },
+    {
+      "source": "file:commonMain/io/github/jan/supabase/realtime/PostgresChangeFilter.kt",
+      "target": "class:commonMain/io/github/jan/supabase/realtime/PostgresChangeFilter.kt:PostgresChangeFilter",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "PostgresChangeFilter.kt contains PostgresChangeFilter"
+    },
+    {
+      "source": "file:proyecto web nuevo/scratch/check_podero_tickets.js",
+      "target": "function:proyecto web nuevo/scratch/check_podero_tickets.js:checkPoderoTickets",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "check_podero_tickets.js contains checkPoderoTickets"
+    },
+    {
+      "source": "file:proyecto web nuevo/scratch/check_supabase.js",
+      "target": "function:proyecto web nuevo/scratch/check_supabase.js:testConnection",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "check_supabase.js contains testConnection"
+    },
+    {
+      "source": "file:proyecto web nuevo/scratch/dump_kv.js",
+      "target": "function:proyecto web nuevo/scratch/dump_kv.js:dumpKV",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "dump_kv.js contains dumpKV"
+    },
+    {
+      "source": "file:proyecto web nuevo/scratch/dump_results.js",
+      "target": "function:proyecto web nuevo/scratch/dump_results.js:dumpResults",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "dump_results.js contains dumpResults"
+    },
+    {
+      "source": "file:proyecto web nuevo/scratch/dump_tickets.js",
+      "target": "function:proyecto web nuevo/scratch/dump_tickets.js:dumpTickets",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "dump_tickets.js contains dumpTickets"
+    },
+    {
+      "source": "file:proyecto web nuevo/scratch/get_podero_data.js",
+      "target": "function:proyecto web nuevo/scratch/get_podero_data.js:getPoderoData",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "get_podero_data.js contains getPoderoData"
+    }
+  ]
+}

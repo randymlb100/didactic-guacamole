@@ -4,6 +4,7 @@ import com.lotterynet.pro.core.model.PlayItem
 import com.lotterynet.pro.core.model.RechargeRecord
 import com.lotterynet.pro.core.model.TicketRecord
 import com.lotterynet.pro.core.model.UserRole
+import com.lotterynet.pro.core.model.WinningPlayDetail
 import com.lotterynet.pro.core.model.effectiveDrawDateKey
 import com.lotterynet.pro.core.model.isPendingWinnerStatus
 import org.json.JSONArray
@@ -127,6 +128,20 @@ internal fun ticketRecordToWebCompatibleJson(
         put("total", ticket.total)
         put("totalPrize", ticket.totalPrize)
         put("totalPremio", ticket.totalPrize)
+        put(
+            "winningDetails",
+            JSONArray(ticket.winningDetails.map { detail ->
+                JSONObject().apply {
+                    put("lotteryName", detail.lotteryName)
+                    put("playType", detail.playType)
+                    put("playedNumber", detail.playedNumber)
+                    put("resultNumber", detail.resultNumber)
+                    put("hitPosition", detail.hitPosition)
+                    put("amount", detail.amount)
+                    put("payoutAmount", detail.payoutAmount)
+                }
+            }),
+        )
         put("bancaNombre", banca.orEmpty())
         put("adminId", ticket.adminId.orEmpty())
         put("adminUser", ticket.adminUser.orEmpty())
@@ -192,14 +207,24 @@ internal fun mergeTicketsPreferImported(
     existing: List<TicketRecord>,
     imported: List<TicketRecord>,
 ): List<TicketRecord> {
-    val byId = linkedMapOf<String, TicketRecord>()
+    val byIdentity = linkedMapOf<String, TicketRecord>()
     existing.forEach { ticket ->
-        if (ticket.id.isNotBlank()) byId[ticket.id] = ticket
+        ticket.ticketMergeIdentityKey()?.let { key -> byIdentity[key] = ticket }
     }
     imported.forEach { ticket ->
-        if (ticket.id.isNotBlank()) byId[ticket.id] = resolveTicketMergeWinner(byId[ticket.id], ticket)
+        ticket.ticketMergeIdentityKey()?.let { key ->
+            byIdentity[key] = resolveTicketMergeWinner(byIdentity[key], ticket)
+        }
     }
-    return byId.values.sortedByDescending { it.createdAtEpochMs }
+    return byIdentity.values.sortedByDescending { it.createdAtEpochMs }
+}
+
+private fun TicketRecord.ticketMergeIdentityKey(): String? {
+    return serial
+        ?.trim()
+        ?.takeIf { it.isNotBlank() }
+        ?.let { "serial:${it.lowercase(Locale.US)}" }
+        ?: id.trim().takeIf { it.isNotBlank() }?.let { "id:${it.lowercase(Locale.US)}" }
 }
 
 private fun resolveTicketMergeWinner(existing: TicketRecord?, imported: TicketRecord): TicketRecord {
@@ -312,11 +337,18 @@ internal fun mergeRechargesPreferImported(
 
 private fun webTicketToRecord(json: JSONObject): TicketRecord? {
     val id = json.stringOrNull("id") ?: return null
-    val plays = json.optJSONArray("items")?.toPlayItems().orEmpty()
+    val itemsArray = json.optJSONArray("items") ?: JSONArray()
+    val plays = itemsArray.toPlayItems()
     val createdAtMs = json.resolveEpochMs()
     val total = json.numberValue("total")
         ?: json.numberValue("tot")
         ?: plays.sumOf { it.amount }
+    val status = json.stringOrNull("status")
+        ?: json.stringOrNull("st")
+        ?: "active"
+    if (plays.isEmpty() && total > 0.0 && !status.isRemoteTicketTombstone() && !status.isTerminalTicketStatus()) {
+        return null
+    }
     val sellerId = json.stringOrNull("vendedorId") ?: json.stringOrNull("cajeroId")
     val sellerUser = json.stringOrNull("vendedorNombre")
     val role = UserRole.fromRaw(json.stringOrNull("vendedorRol"))
@@ -338,11 +370,58 @@ private fun webTicketToRecord(json: JSONObject): TicketRecord? {
         discount = json.numberValue("discount") ?: 0.0,
         total = total,
         totalPrize = json.numberValue("totalPremio") ?: json.numberValue("totalPrize") ?: 0.0,
+        winningDetails = json.optJSONArray("winningDetails")?.toWinningDetails()
+            ?: itemsArray.toWinningDetails(),
         note = json.stringOrNull("note"),
-        status = json.stringOrNull("status")
-            ?: json.stringOrNull("st")
-            ?: "active",
+        status = status,
     )
+}
+
+private fun String.isRemoteTicketTombstone(): Boolean {
+    return lowercase(Locale.US) in setOf("deleted", "voided", "cancelled", "canceled", "anulado", "borrado")
+}
+
+private fun String.isTerminalTicketStatus(): Boolean {
+    return lowercase(Locale.US) in setOf(
+        "paid",
+        "pagado",
+        "paid_out",
+        "payout",
+        "cobrado",
+        "premio_pagado",
+        "winner",
+        "winning",
+        "ganador",
+    )
+}
+
+private fun JSONArray.toWinningDetails(): List<WinningPlayDetail> {
+    return buildList {
+        for (index in 0 until length()) {
+            val item = optJSONObject(index) ?: continue
+            val explicitWinner = item.optBoolean("isWinner", false)
+            val payout = item.numberValue("payoutAmount") ?: item.numberValue("payout") ?: 0.0
+            if (!explicitWinner && payout <= 0.0) continue
+            add(
+                WinningPlayDetail(
+                    lotteryName = item.stringOrNull("lotteryName")
+                        ?: item.stringOrNull("lotName")
+                        ?: "",
+                    playType = item.stringOrNull("playType")
+                        ?: item.stringOrNull("type")
+                        ?: "",
+                    playedNumber = item.stringOrNull("playedNumber")
+                        ?: item.stringOrNull("number")
+                        ?: item.stringOrNull("nums")
+                        ?: "",
+                    resultNumber = item.stringOrNull("resultNumber") ?: "",
+                    hitPosition = item.stringOrNull("hitPosition") ?: "",
+                    amount = item.numberValue("amount") ?: item.numberValue("amt") ?: 0.0,
+                    payoutAmount = payout,
+                ),
+            )
+        }
+    }
 }
 
 private fun webRechargeToRecord(json: JSONObject): RechargeRecord? {

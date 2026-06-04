@@ -25,6 +25,7 @@ import com.lotterynet.pro.ui.recharge.RecargasActivity
 import com.lotterynet.pro.ui.results.ResultsActivity
 import com.lotterynet.pro.ui.sales.SalesActivity
 import com.lotterynet.pro.ui.shell.ShellActivity
+import com.lotterynet.pro.ui.sportsbook.SportsbookActivity
 import com.lotterynet.pro.ui.tickets.TicketLookupActivity
 import com.lotterynet.pro.ui.tickets.TicketOfficialActivity
 import com.lotterynet.pro.ui.tickets.TicketSummaryActivity
@@ -44,6 +45,7 @@ enum class NativeDestination(
     OPERATIONAL_REPORT(OperationalReportActivity::class.java.name),
     RESULTS(ResultsActivity::class.java.name),
     RECHARGE(RecargasActivity::class.java.name),
+    SPORTSBOOK(SportsbookActivity::class.java.name),
     PRINTER(PrinterActivity::class.java.name),
     ADMIN_WINNERS(AdminWinnersActivity::class.java.name),
     USER_ACCOUNTS(UserAccountsActivity::class.java.name),
@@ -79,6 +81,9 @@ fun allowedNativeDestinations(role: UserRole): Set<NativeDestination> {
         if (canRolePerform(role, RoleCapability.VIEW_REPORTS)) add(NativeDestination.OPERATIONAL_REPORT)
         if (canRolePerform(role, RoleCapability.VIEW_RESULTS)) add(NativeDestination.RESULTS)
         if (canRolePerform(role, RoleCapability.SELL_RECHARGES)) add(NativeDestination.RECHARGE)
+        if (role in setOf(UserRole.MASTER, UserRole.ADMIN, UserRole.SUPERVISOR, UserRole.CASHIER)) {
+            add(NativeDestination.SPORTSBOOK)
+        }
         if (canRolePerform(role, RoleCapability.PRINT)) add(NativeDestination.PRINTER)
         if (canRolePerform(role, RoleCapability.MANAGE_USERS)) add(NativeDestination.USER_ACCOUNTS)
         if (canRolePerform(role, RoleCapability.MANAGE_LIMITS)) add(NativeDestination.ADMIN_LIMITS)
@@ -208,6 +213,7 @@ fun intentForDestination(context: Context, destination: NativeDestination): Inte
         NativeDestination.OPERATIONAL_REPORT -> Intent(context, OperationalReportActivity::class.java)
         NativeDestination.RESULTS -> Intent(context, ResultsActivity::class.java)
         NativeDestination.RECHARGE -> Intent(context, RecargasActivity::class.java)
+        NativeDestination.SPORTSBOOK -> Intent(context, SportsbookActivity::class.java)
         NativeDestination.PRINTER -> Intent(context, PrinterActivity::class.java)
         NativeDestination.ADMIN_WINNERS -> Intent(context, AdminWinnersActivity::class.java)
         NativeDestination.USER_ACCOUNTS -> Intent(context, UserAccountsActivity::class.java)

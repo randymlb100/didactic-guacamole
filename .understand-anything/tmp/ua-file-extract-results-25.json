@@ -1,0 +1,324 @@
+{
+  "scriptCompleted": true,
+  "filesAnalyzed": 25,
+  "filesSkipped": [],
+  "results": [
+    {
+      "path": ".agents/skills/supabase-postgres-best-practices/SKILL.md",
+      "language": "markdown",
+      "fileCategory": "docs",
+      "totalLines": 64,
+      "nonEmptyLines": 52,
+      "sections": [
+        {
+          "heading": "Supabase Postgres Best Practices",
+          "level": 1,
+          "line": 13
+        },
+        {
+          "heading": "When to Apply",
+          "level": 2,
+          "line": 17
+        },
+        {
+          "heading": "Rule Categories by Priority",
+          "level": 2,
+          "line": 27
+        },
+        {
+          "heading": "How to Use",
+          "level": 2,
+          "line": 40
+        },
+        {
+          "heading": "References",
+          "level": 2,
+          "line": 58
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "sectionCount": 5
+      }
+    },
+    {
+      "path": ".agents/skills/supabase/assets/feedback-issue-template.md",
+      "language": "markdown",
+      "fileCategory": "docs",
+      "totalLines": 17,
+      "nonEmptyLines": 9,
+      "sections": [
+        {
+          "heading": "What happened",
+          "level": 2,
+          "line": 1
+        },
+        {
+          "heading": "Source",
+          "level": 2,
+          "line": 9
+        },
+        {
+          "heading": "Fix suggestion",
+          "level": 2,
+          "line": 15
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "sectionCount": 3
+      }
+    },
+    {
+      "path": ".agents/skills/supabase/references/skill-feedback.md",
+      "language": "markdown",
+      "fileCategory": "docs",
+      "totalLines": 17,
+      "nonEmptyLines": 10,
+      "sections": [
+        {
+          "heading": "Skill Feedback",
+          "level": 1,
+          "line": 1
+        },
+        {
+          "heading": "Steps",
+          "level": 2,
+          "line": 5
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "sectionCount": 2
+      }
+    },
+    {
+      "path": ".agents/skills/supabase/SKILL.md",
+      "language": "markdown",
+      "fileCategory": "docs",
+      "totalLines": 135,
+      "nonEmptyLines": 96,
+      "sections": [
+        {
+          "heading": "Supabase",
+          "level": 1,
+          "line": 9
+        },
+        {
+          "heading": "Core Principles",
+          "level": 2,
+          "line": 11
+        },
+        {
+          "heading": "Supabase CLI",
+          "level": 2,
+          "line": 77
+        },
+        {
+          "heading": "Supabase MCP Server",
+          "level": 2,
+          "line": 95
+        },
+        {
+          "heading": "Supabase Documentation",
+          "level": 2,
+          "line": 111
+        },
+        {
+          "heading": "Making and Committing Schema Changes",
+          "level": 2,
+          "line": 119
+        },
+        {
+          "heading": "Reference Guides",
+          "level": 2,
+          "line": 132
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "sectionCount": 7
+      }
+    },
+    {
+      "path": ".gitattributes",
+      "language": "unknown",
+      "fileCategory": "code",
+      "totalLines": 2,
+      "nonEmptyLines": 2,
+      "metrics": {}
+    },
+    {
+      "path": ".understand-anything/.understandignore",
+      "language": "unknown",
+      "fileCategory": "code",
+      "totalLines": 41,
+      "nonEmptyLines": 36,
+      "metrics": {}
+    },
+    {
+      "path": "app/build.gradle.kts",
+      "language": "kotlin",
+      "fileCategory": "code",
+      "totalLines": 144,
+      "nonEmptyLines": 128,
+      "metrics": {}
+    },
+    {
+      "path": "app/proguard-rules.pro",
+      "language": "pro",
+      "fileCategory": "code",
+      "totalLines": 38,
+      "nonEmptyLines": 31,
+      "metrics": {}
+    },
+    {
+      "path": "app/src/main/AndroidManifest.xml",
+      "language": "xml",
+      "fileCategory": "config",
+      "totalLines": 254,
+      "nonEmptyLines": 221,
+      "metrics": {}
+    },
+    {
+      "path": "app/src/main/assets/fonts/MaterialSymbols-LICENSE.txt",
+      "language": "txt",
+      "fileCategory": "docs",
+      "totalLines": 202,
+      "nonEmptyLines": 169,
+      "metrics": {}
+    },
+    {
+      "path": "app/src/main/assets/fonts/RobotoFlex-OFL.txt",
+      "language": "txt",
+      "fileCategory": "docs",
+      "totalLines": 93,
+      "nonEmptyLines": 75,
+      "metrics": {}
+    },
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/core/export/ResultsWhatsAppShare.kt",
+      "language": "kotlin",
+      "fileCategory": "code",
+      "totalLines": 13,
+      "nonEmptyLines": 10,
+      "metrics": {}
+    },
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/core/finance/FinanceModels.kt",
+      "language": "kotlin",
+      "fileCategory": "code",
+      "totalLines": 128,
+      "nonEmptyLines": 113,
+      "metrics": {}
+    },
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/core/finance/FinanceRemoteRefreshPolicy.kt",
+      "language": "kotlin",
+      "fileCategory": "code",
+      "totalLines": 48,
+      "nonEmptyLines": 44,
+      "metrics": {}
+    },
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/core/format/MoneyFormatter.kt",
+      "language": "kotlin",
+      "fileCategory": "code",
+      "totalLines": 24,
+      "nonEmptyLines": 20,
+      "metrics": {}
+    },
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/core/master/ReloadlyConnectionTester.kt",
+      "language": "kotlin",
+      "fileCategory": "code",
+      "totalLines": 83,
+      "nonEmptyLines": 74,
+      "metrics": {}
+    },
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/core/model/AlertModels.kt",
+      "language": "kotlin",
+      "fileCategory": "code",
+      "totalLines": 10,
+      "nonEmptyLines": 9,
+      "metrics": {}
+    },
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/core/model/AuditModels.kt",
+      "language": "kotlin",
+      "fileCategory": "code",
+      "totalLines": 9,
+      "nonEmptyLines": 8,
+      "metrics": {}
+    },
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/core/model/CalendarModels.kt",
+      "language": "kotlin",
+      "fileCategory": "code",
+      "totalLines": 31,
+      "nonEmptyLines": 27,
+      "metrics": {}
+    },
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/core/model/ExportModels.kt",
+      "language": "kotlin",
+      "fileCategory": "code",
+      "totalLines": 75,
+      "nonEmptyLines": 68,
+      "metrics": {}
+    },
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/core/model/LotteryCatalogModels.kt",
+      "language": "kotlin",
+      "fileCategory": "code",
+      "totalLines": 46,
+      "nonEmptyLines": 41,
+      "metrics": {}
+    },
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/core/model/PlayNumberFormatting.kt",
+      "language": "kotlin",
+      "fileCategory": "code",
+      "totalLines": 23,
+      "nonEmptyLines": 21,
+      "metrics": {}
+    },
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/core/model/PrintingModels.kt",
+      "language": "kotlin",
+      "fileCategory": "code",
+      "totalLines": 34,
+      "nonEmptyLines": 32,
+      "metrics": {}
+    },
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/core/model/PrizeModels.kt",
+      "language": "kotlin",
+      "fileCategory": "code",
+      "totalLines": 41,
+      "nonEmptyLines": 38,
+      "metrics": {}
+    },
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/core/model/RechargeModels.kt",
+      "language": "kotlin",
+      "fileCategory": "code",
+      "totalLines": 17,
+      "nonEmptyLines": 16,
+      "metrics": {}
+    }
+  ]
+}

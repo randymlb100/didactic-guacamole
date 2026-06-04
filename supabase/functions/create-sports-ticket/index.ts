@@ -56,8 +56,50 @@ function metadataMatchesActor(metadata: JsonMap, actorKey: string, adminKey: str
   return accepted.some((value) => metadataValues.includes(value));
 }
 
-async function featureEnabledFor(role: string, actorKey: string): Promise<boolean> {
+function cleanArray(value: unknown): string[] {
+  return Array.isArray(value) ? value.map(clean).filter(Boolean) : [];
+}
+
+function roleFlagName(role: string): string {
+  if (lower(role) === "admin") return "adminEnabled";
+  if (lower(role) === "supervisor") return "supervisorEnabled";
+  if (lower(role) === "cashier") return "cashierEnabled";
+  return "";
+}
+
+function actorMatchesAny(candidates: string[], allowed: string[]): boolean {
+  if (allowed.length === 0) return true;
+  const normalized = new Set(allowed.map(lower).filter(Boolean));
+  return candidates.map(lower).some((candidate) => normalized.has(candidate));
+}
+
+function actorMatchesConfigured(candidates: string[], allowed: string[]): boolean {
+  if (allowed.length === 0) return false;
+  return actorMatchesAny(candidates, allowed);
+}
+
+async function featureEnabledFor(role: string, actorKey: string, adminKey: string, cashierKey: string): Promise<boolean> {
   const supabase = supabaseAdmin();
+  const candidates = [actorKey, cashierKey, adminKey].map(clean).filter(Boolean);
+  const { data: masterConfig } = await supabase
+    .from("lotterynet_master_state")
+    .select("payload")
+    .eq("config_key", "sportsbook:global")
+    .maybeSingle();
+  const payload = asObject(masterConfig?.payload);
+  if (payload.enabled === true) {
+    const flagName = roleFlagName(role);
+    if (!flagName || payload[flagName] !== true) return false;
+    const allowedActors = cleanArray(payload.allowedActorKeys);
+    const cashierAdminKeys = cleanArray(payload.cashierAdminKeys);
+    if (allowedActors.length === 0 && cashierAdminKeys.length === 0) return false;
+    if (lower(role) === "cashier") {
+      return actorMatchesAny([actorKey, cashierKey], allowedActors) ||
+        actorMatchesConfigured([adminKey], cashierAdminKeys);
+    }
+    return actorMatchesConfigured(candidates, allowedActors);
+  }
+
   const { data: flags } = await supabase
     .from("sports_feature_flags")
     .select("enabled,allowed_roles,allowed_actor_keys")
@@ -66,9 +108,9 @@ async function featureEnabledFor(role: string, actorKey: string): Promise<boolea
 
   if (flags?.enabled === true) {
     const allowedRoles = Array.isArray(flags.allowed_roles) ? flags.allowed_roles.map(lower) : [];
-    const allowedActors = Array.isArray(flags.allowed_actor_keys) ? flags.allowed_actor_keys.map(clean) : [];
+    const allowedActors = cleanArray(flags.allowed_actor_keys);
     const roleAllowed = allowedRoles.length === 0 || allowedRoles.includes(lower(role));
-    const actorAllowed = allowedActors.length === 0 || allowedActors.includes(actorKey);
+    const actorAllowed = actorMatchesAny(candidates, allowedActors);
     return roleAllowed && actorAllowed;
   }
 
@@ -86,9 +128,15 @@ async function featureEnabledFor(role: string, actorKey: string): Promise<boolea
     return false;
   }
   if (parsed.enabled !== true) return false;
-  if (lower(role) === "admin") return parsed.adminEnabled === true;
-  if (lower(role) === "supervisor") return parsed.supervisorEnabled === true;
-  if (lower(role) === "cashier") return parsed.cashierEnabled === true;
+  const allowedActors = cleanArray(parsed.allowedActorKeys);
+  const cashierAdminKeys = cleanArray(parsed.cashierAdminKeys);
+  if (allowedActors.length === 0 && cashierAdminKeys.length === 0) return false;
+  if (lower(role) === "admin") return parsed.adminEnabled === true && actorMatchesConfigured(candidates, allowedActors);
+  if (lower(role) === "supervisor") return parsed.supervisorEnabled === true && actorMatchesConfigured(candidates, allowedActors);
+  if (lower(role) === "cashier") {
+    return parsed.cashierEnabled === true &&
+      (actorMatchesConfigured([actorKey, cashierKey], allowedActors) || actorMatchesConfigured([adminKey], cashierAdminKeys));
+  }
   return false;
 }
 
@@ -218,7 +266,7 @@ async function handle(req: Request): Promise<Response> {
   const existing = await existingTicket(clientRequestId);
   if (existing) return json({ ok: true, duplicate: true, ticket: existing });
 
-  if (!(await featureEnabledFor(actorRole, actorKey))) {
+  if (!(await featureEnabledFor(actorRole, actorKey, adminKey, cashierKey))) {
     return json({ ok: false, message: "Deportes no esta habilitado para esta cuenta." }, 403);
   }
 

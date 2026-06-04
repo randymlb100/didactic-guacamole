@@ -21,6 +21,8 @@ import com.google.zxing.EncodeHintType
 import com.google.zxing.MultiFormatWriter
 import com.lotterynet.pro.core.catalog.LotteryLogoBitmapLoader
 import com.lotterynet.pro.core.catalog.StaticLotteryCatalogRepository
+import com.lotterynet.pro.core.delivery.TicketDeliveryMode
+import com.lotterynet.pro.core.delivery.TicketDeliveryPolicy
 import com.lotterynet.pro.core.finance.FinanceAlertTone
 import com.lotterynet.pro.core.finance.FinanceSummary
 import com.lotterynet.pro.core.finance.FinancePeriodReport
@@ -28,8 +30,11 @@ import com.lotterynet.pro.core.finance.operationalReportCommissionPercent
 import com.lotterynet.pro.core.finance.resolveOperationalReportNet
 import com.lotterynet.pro.core.model.ResultShareRow
 import com.lotterynet.pro.core.model.ResultsSharePayload
+import com.lotterynet.pro.core.model.SportsbookTicketRecord
+import com.lotterynet.pro.core.model.SportsbookTicketStatus
 import com.lotterynet.pro.core.model.TicketQrPayload
 import com.lotterynet.pro.core.model.TicketRecord
+import com.lotterynet.pro.core.model.WinningPlayDetail
 import com.lotterynet.pro.core.model.PlayItem
 import com.lotterynet.pro.core.model.effectiveDrawDateKey
 import com.lotterynet.pro.core.model.formatPlayDisplayNumber
@@ -454,6 +459,17 @@ internal fun resolveResultRowLayout(row: ResultShareRow): ResultRowLayout {
         val height: Int,
     )
 
+    internal data class OfficialTicketWinnerGroup(
+        val lotteryName: String,
+        val resultNumber: String,
+        val details: List<WinningPlayDetail>,
+        val totalPayout: Double,
+    )
+
+    internal fun shouldShowWinnerGroupSubtotal(group: OfficialTicketWinnerGroup): Boolean {
+        return group.details.size > 1
+    }
+
     internal data class OfficialTicketSecurityLayout(
         val boxTopY: Float,
         val boxBottomY: Float,
@@ -640,7 +656,7 @@ internal fun resolveResultRowLayout(row: ResultShareRow): ResultRowLayout {
         val securityBandHeight = if (securityCode.isNotBlank()) 142 else 0
         val totalBarHeight = 198
         val qrSectionHeight = 284
-        val footerHeight = 132
+        val footerHeight = 200
         val catalog = StaticLotteryCatalogRepository()
         val grouped = ticket.plays.groupBy { play ->
             val primary = play.lotteryName.orEmpty().ifBlank { "Lotería" }
@@ -669,7 +685,13 @@ internal fun resolveResultRowLayout(row: ResultShareRow): ResultRowLayout {
             )
         }
         val groupsHeight = groupEntries.sumOf { it.height } + (kotlin.math.max(0, groupEntries.size - 1) * 24)
-        val height = headerHeight + serialBandHeight + securityBandHeight + groupsHeight + totalBarHeight + qrSectionHeight + footerHeight
+        val winnerGroups = groupOfficialTicketWinnerDetails(ticket)
+        val winnerDetailsHeight = if (winnerGroups.isNotEmpty()) {
+            92 + winnerGroups.sumOf { group -> 78 + (group.details.size * 96) }
+        } else {
+            0
+        }
+        val height = headerHeight + serialBandHeight + securityBandHeight + groupsHeight + winnerDetailsHeight + totalBarHeight + qrSectionHeight + footerHeight
         val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
         val canvas = Canvas(bitmap)
         canvas.drawColor(Color.WHITE)
@@ -873,6 +895,83 @@ internal fun resolveResultRowLayout(row: ResultShareRow): ResultRowLayout {
             top += group.height - lotteryHeaderLayout.heightPx
         }
 
+        if (winnerGroups.isNotEmpty()) {
+            fill.color = Color.parseColor("#ECFDF5")
+            canvas.drawRect(0f, top, width.toFloat(), top + winnerDetailsHeight, fill)
+            fill.color = greenDeep
+            canvas.drawRect(0f, top, width.toFloat(), top + 72f, fill)
+            fill.color = gold
+            canvas.drawRect(0f, top, width.toFloat(), top + 6f, fill)
+            body.color = Color.WHITE
+            body.textSize = 34f
+            body.textAlign = Paint.Align.LEFT
+            canvas.drawText("PREMIOS DEL TICKET", 42f, top + 48f, body)
+            body.textAlign = Paint.Align.RIGHT
+            body.textSize = 32f
+            canvas.drawText("$ ${formatMoney(winnerPrizeTotalAmount(ticket))}", width - 42f, top + 40f, body)
+            small.color = Color.argb(220, 255, 255, 255)
+            small.textAlign = Paint.Align.RIGHT
+            small.textSize = 22f
+            canvas.drawText(winnerDetailsMeta(ticket), width - 42f, top + 64f, small)
+            top += 92f
+
+            winnerGroups.forEachIndexed { groupIndex, group ->
+                val groupTop = top
+                fill.color = if (groupIndex % 2 == 0) Color.WHITE else Color.parseColor("#F8FAFC")
+                canvas.drawRect(42f, groupTop, width - 42f, groupTop + 66f, fill)
+                fill.color = green
+                canvas.drawRoundRect(RectF(58f, groupTop + 16f, 78f, groupTop + 36f), 10f, 10f, fill)
+                body.color = navy
+                body.textSize = 28f
+                body.textAlign = Paint.Align.LEFT
+                drawTextFitted(canvas, group.lotteryName, 92f, groupTop + 32f, body, 520f)
+                small.color = muted
+                small.textSize = 18f
+                small.textAlign = Paint.Align.LEFT
+                canvas.drawText("Resultado ${group.resultNumber.ifBlank { "-" }}", 92f, groupTop + 58f, small)
+                if (shouldShowWinnerGroupSubtotal(group)) {
+                    mono.color = greenDeep
+                    mono.textAlign = Paint.Align.RIGHT
+                    mono.textSize = 34f
+                    canvas.drawText("$ ${formatMoney(group.totalPayout)}", width - 64f, groupTop + 44f, mono)
+                }
+                top += 78f
+
+                group.details.forEachIndexed { detailIndex, detail ->
+                    val rowTop = top + (detailIndex * 96f)
+                    fill.color = if (detailIndex % 2 == 0) Color.parseColor("#FBFEFC") else Color.WHITE
+                    canvas.drawRect(64f, rowTop, width - 64f, rowTop + 84f, fill)
+                    canvas.drawLine(76f, rowTop + 84f, width - 76f, rowTop + 84f, stroke)
+                    small.color = muted
+                    small.textSize = 18f
+                    small.textAlign = Paint.Align.LEFT
+                    canvas.drawText("Tipo", 88f, rowTop + 28f, small)
+                    canvas.drawText("Jugado", 248f, rowTop + 28f, small)
+                    canvas.drawText("Acierto", 456f, rowTop + 28f, small)
+                    canvas.drawText("Apuesta", 672f, rowTop + 28f, small)
+                    canvas.drawText("Premio", 850f, rowTop + 28f, small)
+                    mono.color = navy
+                    mono.textAlign = Paint.Align.LEFT
+                    mono.textSize = 25f
+                    canvas.drawText(playTypeLabel(detail.playType), 88f, rowTop + 66f, mono)
+                    drawTextFitted(
+                        canvas,
+                        formatPlayDisplayNumber(detail.playedNumber, detail.playType),
+                        248f,
+                        rowTop + 66f,
+                        mono,
+                        180f,
+                    )
+                    drawTextFitted(canvas, winnerHitLabel(detail.hitPosition), 456f, rowTop + 66f, mono, 190f)
+                    mono.textAlign = Paint.Align.RIGHT
+                    canvas.drawText("$ ${formatMoney(detail.amount)}", 790f, rowTop + 66f, mono)
+                    mono.color = greenDeep
+                    canvas.drawText("$ ${formatMoney(detail.payoutAmount)}", width - 88f, rowTop + 66f, mono)
+                }
+                top += group.details.size * 96f
+            }
+        }
+
         val totalTop = top + 18f
         val totalPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
             shader = android.graphics.LinearGradient(
@@ -932,19 +1031,74 @@ internal fun resolveResultRowLayout(row: ResultShareRow): ResultRowLayout {
         fill.color = gold
         canvas.drawRect(0f, top, width.toFloat(), top + 6f, fill)
         body.color = Color.parseColor("#CBD5E1")
-        body.textSize = 28f
+        body.textSize = 26f
         body.textAlign = Paint.Align.CENTER
-        canvas.drawText("Ticket valido para el sorteo ${formatDrawDateForTicket(ticket.effectiveDrawDateKey(), resolveTicketDrawTimeLabel(ticket))}  ·  Presentar para cobrar premio", width / 2f, top + 44f, body)
+        val validityText = "Ticket valido para el sorteo ${formatDrawDateForTicket(ticket.effectiveDrawDateKey(), resolveTicketDrawTimeLabel(ticket))}"
+        canvas.drawText(validityText, width / 2f, top + 46f, body)
+        canvas.drawText("Presentar para cobrar premio", width / 2f, top + 82f, body)
         body.color = goldPale
-        body.textSize = 24f
+        body.textSize = 23f
         val footerMeta = listOfNotNull(bancaName.takeIf { it.isNotBlank() }, ticket.sellerUser?.takeIf { it.isNotBlank() }).joinToString(" · ")
-        canvas.drawText(footerMeta.ifBlank { "LotteryNet" }, width / 2f, top + 84f, body)
+        canvas.drawText(footerMeta.ifBlank { "LotteryNet" }, width / 2f, top + 120f, body)
         if (securityCode.isNotBlank()) {
             body.color = Color.WHITE
             body.textSize = 22f
-            canvas.drawText("Verificacion: $securityCode", width / 2f, top + 114f, body)
+            canvas.drawText("Verificacion: $securityCode", width / 2f, top + 154f, body)
         }
         return bitmap
+    }
+
+    fun renderOfficialTicketBitmaps(
+        context: Context? = null,
+        ticket: TicketRecord,
+        bancaName: String,
+        securityCode: String = "",
+        bancaLogoUri: String? = null,
+    ): List<Bitmap> {
+        val estimatedHeight = estimateOfficialTicketBitmapHeight(ticket, securityCode)
+        val decision = TicketDeliveryPolicy.resolveDecision(ticket, estimatedHeight)
+        if (decision.mode == TicketDeliveryMode.SINGLE_IMAGE || ticket.plays.isEmpty()) {
+            return listOf(
+                renderOfficialTicketBitmap(
+                    context = context,
+                    ticket = ticket,
+                    bancaName = bancaName,
+                    securityCode = securityCode,
+                    bancaLogoUri = bancaLogoUri,
+                ),
+            )
+        }
+        val pages = TicketDeliveryPolicy.buildPages(ticket)
+        if (pages.isEmpty()) {
+            return listOf(
+                renderOfficialTicketBitmap(
+                    context = context,
+                    ticket = ticket,
+                    bancaName = bancaName,
+                    securityCode = securityCode,
+                    bancaLogoUri = bancaLogoUri,
+                ),
+            )
+        }
+        return pages.map { page ->
+            val pageTotal = page.plays.sumOf { it.amount }
+            val pageTicket = ticket.copy(
+                serial = listOfNotNull(ticket.serial, "P${page.index + 1}-${page.totalPages}")
+                    .joinToString("-"),
+                plays = page.plays,
+                subtotal = pageTotal,
+                total = pageTotal,
+                winningDetails = if (page.index == pages.lastIndex) ticket.winningDetails else emptyList(),
+                totalPrize = if (page.index == pages.lastIndex) ticket.totalPrize else 0.0,
+            )
+            renderOfficialTicketBitmap(
+                context = context,
+                ticket = pageTicket,
+                bancaName = bancaName,
+                securityCode = securityCode,
+                bancaLogoUri = bancaLogoUri,
+            )
+        }
     }
 
     internal fun estimateOfficialTicketBitmapHeight(
@@ -956,7 +1110,7 @@ internal fun resolveResultRowLayout(row: ResultShareRow): ResultRowLayout {
         val securityBandHeight = if (securityCode.isNotBlank()) 142 else 0
         val totalBarHeight = 198
         val qrSectionHeight = 284
-        val footerHeight = 132
+        val footerHeight = 200
         val groups = ticket.plays.groupBy { play ->
             val primary = play.lotteryName.orEmpty().ifBlank { "Lotería" }
             val secondary = play.secondaryLotteryName.orEmpty().trim()
@@ -973,7 +1127,13 @@ internal fun resolveResultRowLayout(row: ResultShareRow): ResultRowLayout {
             val rows = columns.maxOfOrNull { it.size } ?: 0
             lotteryHeaderLayout.heightPx + 44 + (rows * density.rowHeightPx)
         } + (kotlin.math.max(0, groups.size - 1) * 24)
-        return headerHeight + serialBandHeight + securityBandHeight + groupsHeight + totalBarHeight + qrSectionHeight + footerHeight
+        val winnerGroups = groupOfficialTicketWinnerDetails(ticket)
+        val winnerDetailsHeight = if (winnerGroups.isNotEmpty()) {
+            92 + winnerGroups.sumOf { group -> 78 + (group.details.size * 96) }
+        } else {
+            0
+        }
+        return headerHeight + serialBandHeight + securityBandHeight + groupsHeight + winnerDetailsHeight + totalBarHeight + qrSectionHeight + footerHeight
     }
 
     fun renderResultsBitmap(payload: ResultsSharePayload, context: Context? = null): Bitmap {
@@ -1052,6 +1212,189 @@ internal fun resolveResultRowLayout(row: ResultShareRow): ResultRowLayout {
             width = width,
             height = kotlin.math.max(1600, contentHeight),
         )
+    }
+
+    fun renderSportsbookTicketBitmap(
+        ticket: SportsbookTicketRecord,
+        bancaName: String,
+    ): Bitmap {
+        val width = 1080
+        val headerHeight = 260
+        val ticketBandHeight = 132
+        val legHeight = 126
+        val legsHeight = (ticket.legs.size.coerceAtLeast(1) * legHeight) + 96
+        val totalHeight = 176
+        val footerHeight = 148
+        val height = headerHeight + ticketBandHeight + legsHeight + totalHeight + footerHeight
+        val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+        val canvas = Canvas(bitmap)
+        canvas.drawColor(Color.WHITE)
+
+        val navy = Color.parseColor("#071A44")
+        val blue = Color.parseColor("#164EAD")
+        val green = Color.parseColor("#16A34A")
+        val gold = Color.parseColor("#F59E0B")
+        val surface = Color.parseColor("#F8FAFC")
+        val outline = Color.parseColor("#E2E8F0")
+        val muted = Color.parseColor("#64748B")
+        val fill = Paint(Paint.ANTI_ALIAS_FLAG)
+        val stroke = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            style = Paint.Style.STROKE
+            strokeWidth = 3f
+            color = outline
+        }
+        val body = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = navy
+            textSize = 34f
+            isFakeBoldText = true
+        }
+        val small = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = muted
+            textSize = 24f
+            isFakeBoldText = true
+        }
+        val mono = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = navy
+            typeface = android.graphics.Typeface.MONOSPACE
+            isFakeBoldText = true
+        }
+        val headerPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            shader = android.graphics.LinearGradient(
+                0f,
+                0f,
+                width.toFloat(),
+                headerHeight.toFloat(),
+                blue,
+                Color.parseColor("#14532D"),
+                android.graphics.Shader.TileMode.CLAMP,
+            )
+        }
+        canvas.drawRect(0f, 0f, width.toFloat(), headerHeight.toFloat(), headerPaint)
+        fill.color = gold
+        canvas.drawRect(0f, 0f, width.toFloat(), 14f, fill)
+        canvas.drawRect(0f, headerHeight - 10f, width.toFloat(), headerHeight.toFloat(), fill)
+        fill.color = Color.argb(34, 255, 255, 255)
+        canvas.drawRoundRect(RectF(44f, 46f, 150f, 152f), 28f, 28f, fill)
+        body.color = Color.WHITE
+        body.textSize = 52f
+        canvas.drawText("D", 82f, 116f, body)
+        small.color = Color.parseColor("#F8DF8C")
+        canvas.drawText("APUESTA DEPORTIVA", 184f, 80f, small)
+        body.textSize = if (bancaName.length > 18) 44f else 56f
+        drawTextFitted(canvas, bancaName.ifBlank { "Deportes" }, 184f, 148f, body, 590f)
+        drawSportsbookStatusBadge(canvas, width - 264f, 58f, ticket.status, green, gold, body)
+
+        var top = headerHeight.toFloat()
+        fill.color = surface
+        canvas.drawRect(0f, top, width.toFloat(), top + ticketBandHeight, fill)
+        small.color = muted
+        small.textSize = 22f
+        small.textAlign = Paint.Align.LEFT
+        canvas.drawText("NUMERO DE TICKET", 38f, top + 46f, small)
+        mono.color = blue
+        mono.textSize = 46f
+        mono.textAlign = Paint.Align.LEFT
+        canvas.drawText(ticket.ticketCode.take(24), 38f, top + 104f, mono)
+        small.textAlign = Paint.Align.RIGHT
+        canvas.drawText("VENDEDOR", width - 38f, top + 46f, small)
+        body.color = navy
+        body.textSize = 28f
+        body.textAlign = Paint.Align.RIGHT
+        drawTextFitted(canvas, ticket.sellerUsername.ifBlank { ticket.bancaName }, width - 38f, top + 102f, body, 340f)
+        canvas.drawLine(0f, top + ticketBandHeight, width.toFloat(), top + ticketBandHeight, stroke)
+        top += ticketBandHeight
+
+        body.textAlign = Paint.Align.LEFT
+        body.color = navy
+        body.textSize = 34f
+        canvas.drawText("Selecciones", 38f, top + 58f, body)
+        small.textAlign = Paint.Align.RIGHT
+        small.color = muted
+        canvas.drawText("${ticket.legs.size} total", width - 38f, top + 58f, small)
+        top += 86f
+        val visibleLegs = ticket.legs.ifEmpty {
+            listOf(
+                com.lotterynet.pro.core.model.SportsbookTicketLegRecord(
+                    eventLabel = "Ticket deportivo",
+                    marketTitle = ticket.ticketType,
+                    selectionLabel = "Sin detalle",
+                    decimalOdds = ticket.decimalOdds,
+                    status = ticket.status,
+                ),
+            )
+        }
+        visibleLegs.forEachIndexed { index, leg ->
+            val rowTop = top + (index * legHeight)
+            fill.color = if (index % 2 == 0) Color.WHITE else surface
+            canvas.drawRoundRect(RectF(38f, rowTop, width - 38f, rowTop + legHeight - 12f), 18f, 18f, fill)
+            canvas.drawRoundRect(RectF(38f, rowTop, width - 38f, rowTop + legHeight - 12f), 18f, 18f, stroke)
+            body.color = navy
+            body.textSize = 30f
+            body.textAlign = Paint.Align.LEFT
+            drawTextFitted(canvas, leg.eventLabel.ifBlank { "Evento" }, 64f, rowTop + 42f, body, 620f)
+            small.color = muted
+            small.textSize = 23f
+            canvas.drawText("${leg.marketTitle} · ${leg.selectionLabel}", 64f, rowTop + 86f, small)
+            mono.color = green
+            mono.textSize = 34f
+            mono.textAlign = Paint.Align.RIGHT
+            canvas.drawText("%.2f".format(Locale.US, leg.decimalOdds), width - 64f, rowTop + 70f, mono)
+        }
+        top += visibleLegs.size * legHeight
+
+        fill.color = Color.parseColor("#0B2A4A")
+        canvas.drawRect(0f, top, width.toFloat(), top + totalHeight, fill)
+        small.textAlign = Paint.Align.LEFT
+        small.color = Color.parseColor("#F8DF8C")
+        small.textSize = 24f
+        canvas.drawText("MONTO APOSTADO", 42f, top + 56f, small)
+        body.color = Color.WHITE
+        body.textSize = 42f
+        canvas.drawText("$ ${formatMoney(ticket.stake)}", 42f, top + 118f, body)
+        small.textAlign = Paint.Align.RIGHT
+        canvas.drawText("PAGO POSIBLE", width - 42f, top + 56f, small)
+        mono.color = gold
+        mono.textSize = 58f
+        mono.textAlign = Paint.Align.RIGHT
+        canvas.drawText("$ ${formatMoney(ticket.potentialPayout)}", width - 42f, top + 122f, mono)
+        top += totalHeight
+
+        fill.color = Color.parseColor("#071A44")
+        canvas.drawRect(0f, top, width.toFloat(), top + footerHeight, fill)
+        small.color = Color.WHITE
+        small.textAlign = Paint.Align.CENTER
+        small.textSize = 24f
+        canvas.drawText(
+            "Ticket deportivo separado de loteria · Validar antes de pagar",
+            width / 2f,
+            top + 56f,
+            small,
+        )
+        small.color = Color.parseColor("#F8DF8C")
+        canvas.drawText("${ticket.bancaName.ifBlank { bancaName }} · ${ticket.ticketType.uppercase(Locale.US)}", width / 2f, top + 96f, small)
+        return bitmap
+    }
+
+    private fun drawSportsbookStatusBadge(
+        canvas: Canvas,
+        left: Float,
+        top: Float,
+        status: SportsbookTicketStatus,
+        green: Int,
+        gold: Int,
+        paint: Paint,
+    ) {
+        val color = when (status) {
+            SportsbookTicketStatus.WON, SportsbookTicketStatus.PAID -> green
+            SportsbookTicketStatus.LOST, SportsbookTicketStatus.VOID -> Color.parseColor("#DC2626")
+            else -> gold
+        }
+        val fill = Paint(Paint.ANTI_ALIAS_FLAG).apply { this.color = color }
+        canvas.drawRoundRect(RectF(left, top, left + 220f, top + 64f), 22f, 22f, fill)
+        paint.color = Color.WHITE
+        paint.textSize = 27f
+        paint.textAlign = Paint.Align.CENTER
+        canvas.drawText(status.wireValue.uppercase(Locale.US), left + 110f, top + 42f, paint)
     }
 
     internal fun resolveResultsWhatsAppRowLayout(): ResultsWhatsAppRowLayout {
@@ -1686,7 +2029,7 @@ internal fun resolveResultRowLayout(row: ResultShareRow): ResultRowLayout {
         val width = 1400
         val headerHeight = 230
         val heroHeight = 220
-        val rowsHeight = 132 + (visibleRows.size * 88)
+        val rowsHeight = 150 + (visibleRows.size * 104)
         val footerHeight = 108
         val height = headerHeight + heroHeight + rowsHeight + footerHeight
         val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
@@ -1741,6 +2084,8 @@ internal fun resolveResultRowLayout(row: ResultShareRow): ResultRowLayout {
         title.textSize = 34f
         canvas.drawText(bancaName, 154f, 140f, title)
         canvas.drawText(dayKey, 154f, 184f, subtitle)
+        drawHeaderBadge(canvas, width - 338f, 46f, 296f, 58f, Color.argb(34, 255, 255, 255), white, "${rows.size} cajeros", Color.argb(48, 255, 255, 255))
+        drawHeaderBadge(canvas, width - 338f, 118f, 296f, 58f, Color.argb(34, 255, 255, 255), white, "Ordenado por cajero", Color.argb(48, 255, 255, 255))
 
         val heroTop = headerHeight + 20f
         drawFinanceMetricCard(canvas, 28f, heroTop, 320f, 172f, "Ventas banca", formatMoney(bancaSummary.ventas), green)
@@ -1749,16 +2094,57 @@ internal fun resolveResultRowLayout(row: ResultShareRow): ResultRowLayout {
         drawFinanceMetricCard(canvas, 1030f, heroTop, 342f, 172f, "Tickets", bancaSummary.ticketsCount.toString(), navy)
 
         val tableTop = heroTop + heroHeight
-        drawSectionCard(canvas, 28f, tableTop, width - 28f, tableTop + rowsHeight, "Cajeros del dia", stroke)
+        drawSectionCard(canvas, 28f, tableTop, width - 28f, tableTop + rowsHeight, "Cajeros ordenados", stroke)
+        val small = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = Color.parseColor("#64748B")
+            textSize = 21f
+            isFakeBoldText = true
+        }
+        small.textAlign = Paint.Align.LEFT
+        canvas.drawText("Cajero", 58f, tableTop + 92f, small)
+        canvas.drawText("Estado", 472f, tableTop + 92f, small)
+        canvas.drawText("Ventas", 650f, tableTop + 92f, small)
+        canvas.drawText("Caja", 868f, tableTop + 92f, small)
+        canvas.drawText("Resultado", 1084f, tableTop + 92f, small)
         visibleRows.forEachIndexed { index, row ->
-            val y = tableTop + 132f + (index * 88f)
+            val parts = row.split(" · ")
+            val cashier = parts.getOrNull(0).orEmpty().ifBlank { row }
+            val status = parts.getOrNull(1).orEmpty().ifBlank { "-" }
+            val sales = parts.getOrNull(2)?.removePrefix("Ventas ") ?: "-"
+            val cash = parts.getOrNull(3)?.removePrefix("Caja ") ?: "-"
+            val result = parts.getOrNull(4) ?: "-"
+            val y = tableTop + 142f + (index * 104f)
             if (index % 2 == 0) {
                 val fill = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.parseColor("#F8FAFC") }
-                canvas.drawRoundRect(RectF(44f, y - 42f, width - 44f, y + 24f), 14f, 14f, fill)
+                canvas.drawRoundRect(RectF(44f, y - 44f, width - 44f, y + 42f), 16f, 16f, fill)
             }
             body.textAlign = Paint.Align.LEFT
+            body.textSize = 25f
+            body.color = navy
+            drawTextFitted(canvas, cashier, 58f, y - 10f, body, 370f)
+            small.color = Color.parseColor("#64748B")
+            small.textSize = 18f
+            drawTextFitted(canvas, row.substringAfter(" · ", "").substringBefore(" · Ventas"), 58f, y + 22f, small, 370f)
+            drawBadge(
+                canvas,
+                462f,
+                y - 38f,
+                status,
+                if (status.equals("Activo", ignoreCase = true)) green else amber,
+                Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                    color = if (status.equals("Activo", ignoreCase = true)) green else amber
+                    textSize = 18f
+                    isFakeBoldText = true
+                },
+            )
             mono.textAlign = Paint.Align.LEFT
-            canvas.drawText(row, 58f, y, if (row.length > 86) mono.apply { textSize = 20f } else mono.apply { textSize = 22f })
+            mono.textSize = 24f
+            mono.color = green
+            drawTextFitted(canvas, sales, 650f, y, mono, 190f)
+            mono.color = navy
+            drawTextFitted(canvas, cash, 868f, y, mono, 190f)
+            mono.color = if (result.contains("Perd", ignoreCase = true) || result.contains("-", ignoreCase = true)) Color.parseColor("#B91C1C") else green
+            drawTextFitted(canvas, result, 1084f, y, mono, 250f)
         }
         val footerTop = tableTop + rowsHeight
         val fill = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = navy }
@@ -1767,7 +2153,7 @@ internal fun resolveResultRowLayout(row: ResultShareRow): ResultRowLayout {
         body.textAlign = Paint.Align.CENTER
         body.textSize = 24f
         val overflow = if (rows.size > visibleRows.size) " · +${rows.size - visibleRows.size} cajeros más" else ""
-        canvas.drawText("Premios pendientes ${miniMoney(bancaSummary.premiosPendientes)}$overflow", width / 2f, footerTop + 62f, body)
+        canvas.drawText("Premios pendientes ${miniMoney(bancaSummary.premiosPendientes)} · snapshot operativo$overflow", width / 2f, footerTop + 62f, body)
         return bitmap
     }
 
@@ -2680,6 +3066,7 @@ internal fun resolveResultRowLayout(row: ResultShareRow): ResultRowLayout {
             }
         }).apply {
             putExtra(Intent.EXTRA_SUBJECT, title)
+            if (text.isNotBlank()) putExtra(Intent.EXTRA_TEXT, text)
             val clip = android.content.ClipData.newUri(context.contentResolver, title, uris.first())
             uris.drop(1).forEach { clip.addItem(android.content.ClipData.Item(it)) }
             clipData = clip
@@ -2811,6 +3198,65 @@ internal fun resolveResultRowLayout(row: ResultShareRow): ResultRowLayout {
         if (plays.size <= 4) return listOf(plays)
         val midpoint = kotlin.math.ceil(plays.size / 2.0).toInt()
         return listOf(plays.take(midpoint), plays.drop(midpoint))
+    }
+
+    private fun winnerHitLabel(raw: String): String {
+        return when (raw.trim().lowercase(Locale.US)) {
+            "1" -> "primera"
+            "2" -> "segunda"
+            "3" -> "tercera"
+            "1-2" -> "pale 1-2"
+            "1-3" -> "pale 1-3"
+            "2-3" -> "pale 2-3"
+            "sp" -> "super pale"
+            "back" -> "ultimo par"
+            "" -> "ganadora"
+            else -> raw
+        }
+    }
+
+    internal fun officialTicketWinnerDetails(ticket: TicketRecord): List<WinningPlayDetail> {
+        return ticket.winningDetails
+            .filter { detail ->
+                detail.lotteryName.isNotBlank() ||
+                    detail.playedNumber.isNotBlank() ||
+                    detail.resultNumber.isNotBlank() ||
+                    detail.payoutAmount > 0.0
+            }
+    }
+
+    internal fun groupOfficialTicketWinnerDetails(ticket: TicketRecord): List<OfficialTicketWinnerGroup> {
+        return officialTicketWinnerDetails(ticket)
+            .groupBy { detail ->
+                listOf(
+                    detail.lotteryName.ifBlank { "Loteria" },
+                    detail.resultNumber.ifBlank { "-" },
+                ).joinToString("|")
+            }
+            .map { (_, details) ->
+                val first = details.first()
+                OfficialTicketWinnerGroup(
+                    lotteryName = first.lotteryName.ifBlank { "Loteria" },
+                    resultNumber = first.resultNumber.ifBlank { "-" },
+                    details = details,
+                    totalPayout = details.sumOf { it.payoutAmount },
+                )
+            }
+    }
+
+    internal fun winnerDetailsMeta(ticket: TicketRecord): String {
+        val visible = officialTicketWinnerDetails(ticket).size
+        val total = ticket.winningDetails.size
+        return if (total > visible) "$visible de $total premios" else "$visible premios"
+    }
+
+    internal fun winnerPrizeTotalAmount(ticket: TicketRecord): Double {
+        return ticket.totalPrize.takeIf { it > 0.0 }
+            ?: officialTicketWinnerDetails(ticket).sumOf { it.payoutAmount }
+    }
+
+    internal fun winnerPrizeTotalMeta(ticket: TicketRecord): String {
+        return "$ ${formatMoney(winnerPrizeTotalAmount(ticket))} total"
     }
 
     private fun loadBitmapFromUri(context: Context, uriString: String): Bitmap? {

@@ -1,0 +1,1195 @@
+{
+  "nodes": [
+    {
+      "id": "file:supabase/functions/_shared/lotterynet-admin.ts",
+      "type": "file",
+      "name": "lotterynet-admin.ts",
+      "summary": "Supabase integration file used by the app/server for remote data, ticket, result, or configuration workflows.",
+      "tags": [
+        "code",
+        "server-function",
+        "supabase"
+      ],
+      "complexity": "moderate",
+      "filePath": "supabase/functions/_shared/lotterynet-admin.ts",
+      "lineRange": [
+        1,
+        90
+      ]
+    },
+    {
+      "id": "function:supabase/functions/_shared/lotterynet-admin.ts:json",
+      "type": "function",
+      "name": "json",
+      "summary": "Function json in lotterynet-admin.ts.",
+      "tags": [
+        "function",
+        "typescript"
+      ],
+      "complexity": "moderate",
+      "filePath": "supabase/functions/_shared/lotterynet-admin.ts",
+      "lineRange": [
+        9,
+        17
+      ]
+    },
+    {
+      "id": "function:supabase/functions/_shared/lotterynet-admin.ts:clean",
+      "type": "function",
+      "name": "clean",
+      "summary": "Function clean in lotterynet-admin.ts.",
+      "tags": [
+        "function",
+        "typescript"
+      ],
+      "complexity": "moderate",
+      "filePath": "supabase/functions/_shared/lotterynet-admin.ts",
+      "lineRange": [
+        19,
+        21
+      ]
+    },
+    {
+      "id": "function:supabase/functions/_shared/lotterynet-admin.ts:lower",
+      "type": "function",
+      "name": "lower",
+      "summary": "Function lower in lotterynet-admin.ts.",
+      "tags": [
+        "function",
+        "typescript"
+      ],
+      "complexity": "moderate",
+      "filePath": "supabase/functions/_shared/lotterynet-admin.ts",
+      "lineRange": [
+        23,
+        25
+      ]
+    },
+    {
+      "id": "function:supabase/functions/_shared/lotterynet-admin.ts:requireSharedSecret",
+      "type": "function",
+      "name": "requireSharedSecret",
+      "summary": "Function requireSharedSecret in lotterynet-admin.ts.",
+      "tags": [
+        "function",
+        "typescript"
+      ],
+      "complexity": "moderate",
+      "filePath": "supabase/functions/_shared/lotterynet-admin.ts",
+      "lineRange": [
+        27,
+        37
+      ]
+    },
+    {
+      "id": "function:supabase/functions/_shared/lotterynet-admin.ts:requireAdminRole",
+      "type": "function",
+      "name": "requireAdminRole",
+      "summary": "Function requireAdminRole in lotterynet-admin.ts.",
+      "tags": [
+        "function",
+        "typescript"
+      ],
+      "complexity": "moderate",
+      "filePath": "supabase/functions/_shared/lotterynet-admin.ts",
+      "lineRange": [
+        39,
+        45
+      ]
+    },
+    {
+      "id": "function:supabase/functions/_shared/lotterynet-admin.ts:bearerToken",
+      "type": "function",
+      "name": "bearerToken",
+      "summary": "Function bearerToken in lotterynet-admin.ts.",
+      "tags": [
+        "function",
+        "typescript"
+      ],
+      "complexity": "moderate",
+      "filePath": "supabase/functions/_shared/lotterynet-admin.ts",
+      "lineRange": [
+        47,
+        50
+      ]
+    },
+    {
+      "id": "function:supabase/functions/_shared/lotterynet-admin.ts:requireAdminJwt",
+      "type": "function",
+      "name": "requireAdminJwt",
+      "summary": "Function requireAdminJwt in lotterynet-admin.ts.",
+      "tags": [
+        "function",
+        "typescript"
+      ],
+      "complexity": "moderate",
+      "filePath": "supabase/functions/_shared/lotterynet-admin.ts",
+      "lineRange": [
+        52,
+        62
+      ]
+    },
+    {
+      "id": "function:supabase/functions/_shared/lotterynet-admin.ts:supabaseAdmin",
+      "type": "function",
+      "name": "supabaseAdmin",
+      "summary": "Function supabaseAdmin in lotterynet-admin.ts.",
+      "tags": [
+        "function",
+        "typescript"
+      ],
+      "complexity": "moderate",
+      "filePath": "supabase/functions/_shared/lotterynet-admin.ts",
+      "lineRange": [
+        64,
+        70
+      ]
+    },
+    {
+      "id": "function:supabase/functions/_shared/lotterynet-admin.ts:fetchKvValue",
+      "type": "function",
+      "name": "fetchKvValue",
+      "summary": "Function fetchKvValue in lotterynet-admin.ts.",
+      "tags": [
+        "function",
+        "typescript"
+      ],
+      "complexity": "moderate",
+      "filePath": "supabase/functions/_shared/lotterynet-admin.ts",
+      "lineRange": [
+        72,
+        81
+      ]
+    },
+    {
+      "id": "function:supabase/functions/_shared/lotterynet-admin.ts:upsertKvValue",
+      "type": "function",
+      "name": "upsertKvValue",
+      "summary": "Function upsertKvValue in lotterynet-admin.ts.",
+      "tags": [
+        "function",
+        "typescript"
+      ],
+      "complexity": "moderate",
+      "filePath": "supabase/functions/_shared/lotterynet-admin.ts",
+      "lineRange": [
+        83,
+        90
+      ]
+    },
+    {
+      "id": "file:supabase/functions/admin-cashier-limits/index.ts",
+      "type": "file",
+      "name": "index.ts",
+      "summary": "Supabase integration file used by the app/server for remote data, ticket, result, or configuration workflows.",
+      "tags": [
+        "code",
+        "server-function",
+        "supabase"
+      ],
+      "complexity": "simple",
+      "filePath": "supabase/functions/admin-cashier-limits/index.ts",
+      "lineRange": [
+        1,
+        30
+      ]
+    },
+    {
+      "id": "file:supabase/functions/admin-manual-results-override/index.ts",
+      "type": "file",
+      "name": "index.ts",
+      "summary": "Supabase integration file used by the app/server for remote data, ticket, result, or configuration workflows.",
+      "tags": [
+        "code",
+        "server-function",
+        "results",
+        "supabase"
+      ],
+      "complexity": "moderate",
+      "filePath": "supabase/functions/admin-manual-results-override/index.ts",
+      "lineRange": [
+        1,
+        107
+      ]
+    },
+    {
+      "id": "file:supabase/functions/admin-master-state/index.ts",
+      "type": "file",
+      "name": "index.ts",
+      "summary": "Supabase integration file used by the app/server for remote data, ticket, result, or configuration workflows.",
+      "tags": [
+        "code",
+        "server-function",
+        "supabase"
+      ],
+      "complexity": "simple",
+      "filePath": "supabase/functions/admin-master-state/index.ts",
+      "lineRange": [
+        1,
+        30
+      ]
+    },
+    {
+      "id": "file:supabase/functions/admin-users-state/index.ts",
+      "type": "file",
+      "name": "index.ts",
+      "summary": "Supabase integration file used by the app/server for remote data, ticket, result, or configuration workflows.",
+      "tags": [
+        "code",
+        "server-function",
+        "supabase"
+      ],
+      "complexity": "simple",
+      "filePath": "supabase/functions/admin-users-state/index.ts",
+      "lineRange": [
+        1,
+        38
+      ]
+    },
+    {
+      "id": "file:supabase/functions/client-health-batch/index.ts",
+      "type": "file",
+      "name": "index.ts",
+      "summary": "Supabase integration file used by the app/server for remote data, ticket, result, or configuration workflows.",
+      "tags": [
+        "code",
+        "server-function",
+        "supabase"
+      ],
+      "complexity": "simple",
+      "filePath": "supabase/functions/client-health-batch/index.ts",
+      "lineRange": [
+        1,
+        49
+      ]
+    },
+    {
+      "id": "file:supabase/functions/get-master-config/index.ts",
+      "type": "file",
+      "name": "index.ts",
+      "summary": "Supabase integration file used by the app/server for remote data, ticket, result, or configuration workflows.",
+      "tags": [
+        "code",
+        "server-function",
+        "supabase"
+      ],
+      "complexity": "simple",
+      "filePath": "supabase/functions/get-master-config/index.ts",
+      "lineRange": [
+        1,
+        37
+      ]
+    },
+    {
+      "id": "file:supabase/functions/get-results-status/index.ts",
+      "type": "file",
+      "name": "index.ts",
+      "summary": "Supabase integration file used by the app/server for remote data, ticket, result, or configuration workflows.",
+      "tags": [
+        "code",
+        "server-function",
+        "results",
+        "supabase"
+      ],
+      "complexity": "moderate",
+      "filePath": "supabase/functions/get-results-status/index.ts",
+      "lineRange": [
+        1,
+        77
+      ]
+    },
+    {
+      "id": "function:supabase/functions/get-results-status/index.ts:normalizeDayKey",
+      "type": "function",
+      "name": "normalizeDayKey",
+      "summary": "Function normalizeDayKey in index.ts.",
+      "tags": [
+        "function",
+        "typescript"
+      ],
+      "complexity": "moderate",
+      "filePath": "supabase/functions/get-results-status/index.ts",
+      "lineRange": [
+        11,
+        24
+      ]
+    },
+    {
+      "id": "file:supabase/functions/get-results-v2/index.ts",
+      "type": "file",
+      "name": "index.ts",
+      "summary": "Supabase integration file used by the app/server for remote data, ticket, result, or configuration workflows.",
+      "tags": [
+        "code",
+        "server-function",
+        "results",
+        "supabase"
+      ],
+      "complexity": "moderate",
+      "filePath": "supabase/functions/get-results-v2/index.ts",
+      "lineRange": [
+        1,
+        58
+      ]
+    },
+    {
+      "id": "function:supabase/functions/get-results-v2/index.ts:normalizeDayKey",
+      "type": "function",
+      "name": "normalizeDayKey",
+      "summary": "Function normalizeDayKey in index.ts.",
+      "tags": [
+        "function",
+        "typescript"
+      ],
+      "complexity": "moderate",
+      "filePath": "supabase/functions/get-results-v2/index.ts",
+      "lineRange": [
+        4,
+        17
+      ]
+    },
+    {
+      "id": "function:supabase/functions/get-results-v2/index.ts:rowsFromRpc",
+      "type": "function",
+      "name": "rowsFromRpc",
+      "summary": "Function rowsFromRpc in index.ts.",
+      "tags": [
+        "function",
+        "typescript"
+      ],
+      "complexity": "moderate",
+      "filePath": "supabase/functions/get-results-v2/index.ts",
+      "lineRange": [
+        19,
+        29
+      ]
+    },
+    {
+      "id": "file:supabase/functions/get-ticket-delta/index.ts",
+      "type": "file",
+      "name": "index.ts",
+      "summary": "Supabase integration file used by the app/server for remote data, ticket, result, or configuration workflows.",
+      "tags": [
+        "code",
+        "server-function",
+        "ticket",
+        "supabase"
+      ],
+      "complexity": "moderate",
+      "filePath": "supabase/functions/get-ticket-delta/index.ts",
+      "lineRange": [
+        1,
+        98
+      ]
+    },
+    {
+      "id": "function:supabase/functions/get-ticket-delta/index.ts:fetchTicketRows",
+      "type": "function",
+      "name": "fetchTicketRows",
+      "summary": "Function fetchTicketRows in index.ts.",
+      "tags": [
+        "function",
+        "typescript"
+      ],
+      "complexity": "moderate",
+      "filePath": "supabase/functions/get-ticket-delta/index.ts",
+      "lineRange": [
+        22,
+        49
+      ]
+    },
+    {
+      "id": "function:supabase/functions/get-ticket-delta/index.ts:fetchTicketItems",
+      "type": "function",
+      "name": "fetchTicketItems",
+      "summary": "Function fetchTicketItems in index.ts.",
+      "tags": [
+        "function",
+        "typescript"
+      ],
+      "complexity": "moderate",
+      "filePath": "supabase/functions/get-ticket-delta/index.ts",
+      "lineRange": [
+        51,
+        66
+      ]
+    },
+    {
+      "id": "file:supabase/functions/get-ticket-summary/index.ts",
+      "type": "file",
+      "name": "index.ts",
+      "summary": "Supabase integration file used by the app/server for remote data, ticket, result, or configuration workflows.",
+      "tags": [
+        "code",
+        "server-function",
+        "ticket",
+        "supabase"
+      ],
+      "complexity": "moderate",
+      "filePath": "supabase/functions/get-ticket-summary/index.ts",
+      "lineRange": [
+        1,
+        90
+      ]
+    },
+    {
+      "id": "function:supabase/functions/get-ticket-summary/index.ts:isoDateFromDayKey",
+      "type": "function",
+      "name": "isoDateFromDayKey",
+      "summary": "Function isoDateFromDayKey in index.ts.",
+      "tags": [
+        "function",
+        "typescript"
+      ],
+      "complexity": "moderate",
+      "filePath": "supabase/functions/get-ticket-summary/index.ts",
+      "lineRange": [
+        6,
+        19
+      ]
+    },
+    {
+      "id": "function:supabase/functions/get-ticket-summary/index.ts:fetchRows",
+      "type": "function",
+      "name": "fetchRows",
+      "summary": "Function fetchRows in index.ts.",
+      "tags": [
+        "function",
+        "typescript"
+      ],
+      "complexity": "moderate",
+      "filePath": "supabase/functions/get-ticket-summary/index.ts",
+      "lineRange": [
+        30,
+        50
+      ]
+    },
+    {
+      "id": "file:supabase/functions/lotterynet-users-state/index.ts",
+      "type": "file",
+      "name": "index.ts",
+      "summary": "Supabase integration file used by the app/server for remote data, ticket, result, or configuration workflows.",
+      "tags": [
+        "code",
+        "server-function",
+        "supabase"
+      ],
+      "complexity": "simple",
+      "filePath": "supabase/functions/lotterynet-users-state/index.ts",
+      "lineRange": [
+        1,
+        48
+      ]
+    },
+    {
+      "id": "file:supabase/functions/results-server-refresh/index.ts",
+      "type": "file",
+      "name": "index.ts",
+      "summary": "Supabase integration file used by the app/server for remote data, ticket, result, or configuration workflows.",
+      "tags": [
+        "code",
+        "server-function",
+        "results",
+        "supabase",
+        "large-module"
+      ],
+      "complexity": "complex",
+      "filePath": "supabase/functions/results-server-refresh/index.ts",
+      "lineRange": [
+        1,
+        358
+      ]
+    },
+    {
+      "id": "function:supabase/functions/results-server-refresh/index.ts:normalizeDateKey",
+      "type": "function",
+      "name": "normalizeDateKey",
+      "summary": "Function normalizeDateKey in index.ts.",
+      "tags": [
+        "function",
+        "typescript"
+      ],
+      "complexity": "moderate",
+      "filePath": "supabase/functions/results-server-refresh/index.ts",
+      "lineRange": [
+        10,
+        23
+      ]
+    },
+    {
+      "id": "function:supabase/functions/results-server-refresh/index.ts:stableStringify",
+      "type": "function",
+      "name": "stableStringify",
+      "summary": "Function stableStringify in index.ts.",
+      "tags": [
+        "function",
+        "typescript"
+      ],
+      "complexity": "moderate",
+      "filePath": "supabase/functions/results-server-refresh/index.ts",
+      "lineRange": [
+        30,
+        38
+      ]
+    },
+    {
+      "id": "function:supabase/functions/results-server-refresh/index.ts:rowsFrom",
+      "type": "function",
+      "name": "rowsFrom",
+      "summary": "Function rowsFrom in index.ts.",
+      "tags": [
+        "function",
+        "typescript"
+      ],
+      "complexity": "moderate",
+      "filePath": "supabase/functions/results-server-refresh/index.ts",
+      "lineRange": [
+        40,
+        56
+      ]
+    },
+    {
+      "id": "function:supabase/functions/results-server-refresh/index.ts:hasPublishedNumbers",
+      "type": "function",
+      "name": "hasPublishedNumbers",
+      "summary": "Function hasPublishedNumbers in index.ts.",
+      "tags": [
+        "function",
+        "typescript"
+      ],
+      "complexity": "moderate",
+      "filePath": "supabase/functions/results-server-refresh/index.ts",
+      "lineRange": [
+        62,
+        72
+      ]
+    },
+    {
+      "id": "function:supabase/functions/results-server-refresh/index.ts:isProtectedNoDrawRow",
+      "type": "function",
+      "name": "isProtectedNoDrawRow",
+      "summary": "Function isProtectedNoDrawRow in index.ts.",
+      "tags": [
+        "function",
+        "typescript"
+      ],
+      "complexity": "moderate",
+      "filePath": "supabase/functions/results-server-refresh/index.ts",
+      "lineRange": [
+        74,
+        88
+      ]
+    },
+    {
+      "id": "function:supabase/functions/results-server-refresh/index.ts:mergeProtectedNoDrawRows",
+      "type": "function",
+      "name": "mergeProtectedNoDrawRows",
+      "summary": "Function mergeProtectedNoDrawRows in index.ts.",
+      "tags": [
+        "function",
+        "typescript"
+      ],
+      "complexity": "moderate",
+      "filePath": "supabase/functions/results-server-refresh/index.ts",
+      "lineRange": [
+        90,
+        99
+      ]
+    },
+    {
+      "id": "function:supabase/functions/results-server-refresh/index.ts:mergeMissingCurrentRows",
+      "type": "function",
+      "name": "mergeMissingCurrentRows",
+      "summary": "Function mergeMissingCurrentRows in index.ts.",
+      "tags": [
+        "function",
+        "typescript"
+      ],
+      "complexity": "moderate",
+      "filePath": "supabase/functions/results-server-refresh/index.ts",
+      "lineRange": [
+        101,
+        109
+      ]
+    },
+    {
+      "id": "function:supabase/functions/results-server-refresh/index.ts:mergeHolidayNoDrawRows",
+      "type": "function",
+      "name": "mergeHolidayNoDrawRows",
+      "summary": "Function mergeHolidayNoDrawRows in index.ts.",
+      "tags": [
+        "function",
+        "typescript"
+      ],
+      "complexity": "moderate",
+      "filePath": "supabase/functions/results-server-refresh/index.ts",
+      "lineRange": [
+        111,
+        126
+      ]
+    },
+    {
+      "id": "function:supabase/functions/results-server-refresh/index.ts:fetchHolidayNoDrawRows",
+      "type": "function",
+      "name": "fetchHolidayNoDrawRows",
+      "summary": "Function fetchHolidayNoDrawRows in index.ts.",
+      "tags": [
+        "function",
+        "typescript"
+      ],
+      "complexity": "moderate",
+      "filePath": "supabase/functions/results-server-refresh/index.ts",
+      "lineRange": [
+        146,
+        184
+      ]
+    },
+    {
+      "id": "function:supabase/functions/results-server-refresh/index.ts:rowText",
+      "type": "function",
+      "name": "rowText",
+      "summary": "Function rowText in index.ts.",
+      "tags": [
+        "function",
+        "typescript"
+      ],
+      "complexity": "moderate",
+      "filePath": "supabase/functions/results-server-refresh/index.ts",
+      "lineRange": [
+        191,
+        200
+      ]
+    },
+    {
+      "id": "function:supabase/functions/results-server-refresh/index.ts:isPickRow",
+      "type": "function",
+      "name": "isPickRow",
+      "summary": "Function isPickRow in index.ts.",
+      "tags": [
+        "function",
+        "typescript"
+      ],
+      "complexity": "moderate",
+      "filePath": "supabase/functions/results-server-refresh/index.ts",
+      "lineRange": [
+        202,
+        215
+      ]
+    },
+    {
+      "id": "function:supabase/functions/results-server-refresh/index.ts:splitPayload",
+      "type": "function",
+      "name": "splitPayload",
+      "summary": "Function splitPayload in index.ts.",
+      "tags": [
+        "function",
+        "typescript"
+      ],
+      "complexity": "moderate",
+      "filePath": "supabase/functions/results-server-refresh/index.ts",
+      "lineRange": [
+        217,
+        228
+      ]
+    },
+    {
+      "id": "function:supabase/functions/results-server-refresh/index.ts:fetchLiveResults",
+      "type": "function",
+      "name": "fetchLiveResults",
+      "summary": "Function fetchLiveResults in index.ts.",
+      "tags": [
+        "function",
+        "typescript"
+      ],
+      "complexity": "moderate",
+      "filePath": "supabase/functions/results-server-refresh/index.ts",
+      "lineRange": [
+        230,
+        243
+      ]
+    },
+    {
+      "id": "function:supabase/functions/results-server-refresh/index.ts:fetchLiveResultsOrEmpty",
+      "type": "function",
+      "name": "fetchLiveResultsOrEmpty",
+      "summary": "Function fetchLiveResultsOrEmpty in index.ts.",
+      "tags": [
+        "function",
+        "typescript"
+      ],
+      "complexity": "moderate",
+      "filePath": "supabase/functions/results-server-refresh/index.ts",
+      "lineRange": [
+        245,
+        254
+      ]
+    },
+    {
+      "id": "function:supabase/functions/results-server-refresh/index.ts:currentRowsFor",
+      "type": "function",
+      "name": "currentRowsFor",
+      "summary": "Function currentRowsFor in index.ts.",
+      "tags": [
+        "function",
+        "typescript"
+      ],
+      "complexity": "moderate",
+      "filePath": "supabase/functions/results-server-refresh/index.ts",
+      "lineRange": [
+        256,
+        265
+      ]
+    },
+    {
+      "id": "function:supabase/functions/results-server-refresh/index.ts:upsertIfChanged",
+      "type": "function",
+      "name": "upsertIfChanged",
+      "summary": "Function upsertIfChanged in index.ts.",
+      "tags": [
+        "function",
+        "typescript"
+      ],
+      "complexity": "moderate",
+      "filePath": "supabase/functions/results-server-refresh/index.ts",
+      "lineRange": [
+        267,
+        280
+      ]
+    },
+    {
+      "id": "function:supabase/functions/results-server-refresh/index.ts:configuredCronSecret",
+      "type": "function",
+      "name": "configuredCronSecret",
+      "summary": "Function configuredCronSecret in index.ts.",
+      "tags": [
+        "function",
+        "typescript"
+      ],
+      "complexity": "moderate",
+      "filePath": "supabase/functions/results-server-refresh/index.ts",
+      "lineRange": [
+        291,
+        305
+      ]
+    },
+    {
+      "id": "function:supabase/functions/results-server-refresh/index.ts:authorize",
+      "type": "function",
+      "name": "authorize",
+      "summary": "Function authorize in index.ts.",
+      "tags": [
+        "function",
+        "typescript"
+      ],
+      "complexity": "moderate",
+      "filePath": "supabase/functions/results-server-refresh/index.ts",
+      "lineRange": [
+        307,
+        317
+      ]
+    },
+    {
+      "id": "file:supabase/functions/update-master-config/index.ts",
+      "type": "file",
+      "name": "index.ts",
+      "summary": "Supabase integration file used by the app/server for remote data, ticket, result, or configuration workflows.",
+      "tags": [
+        "code",
+        "server-function",
+        "supabase"
+      ],
+      "complexity": "simple",
+      "filePath": "supabase/functions/update-master-config/index.ts",
+      "lineRange": [
+        1,
+        32
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "source": "file:supabase/functions/_shared/lotterynet-admin.ts",
+      "target": "function:supabase/functions/_shared/lotterynet-admin.ts:json",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "lotterynet-admin.ts contains json"
+    },
+    {
+      "source": "file:supabase/functions/_shared/lotterynet-admin.ts",
+      "target": "function:supabase/functions/_shared/lotterynet-admin.ts:clean",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "lotterynet-admin.ts contains clean"
+    },
+    {
+      "source": "file:supabase/functions/_shared/lotterynet-admin.ts",
+      "target": "function:supabase/functions/_shared/lotterynet-admin.ts:lower",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "lotterynet-admin.ts contains lower"
+    },
+    {
+      "source": "file:supabase/functions/_shared/lotterynet-admin.ts",
+      "target": "function:supabase/functions/_shared/lotterynet-admin.ts:requireSharedSecret",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "lotterynet-admin.ts contains requireSharedSecret"
+    },
+    {
+      "source": "file:supabase/functions/_shared/lotterynet-admin.ts",
+      "target": "function:supabase/functions/_shared/lotterynet-admin.ts:requireAdminRole",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "lotterynet-admin.ts contains requireAdminRole"
+    },
+    {
+      "source": "file:supabase/functions/_shared/lotterynet-admin.ts",
+      "target": "function:supabase/functions/_shared/lotterynet-admin.ts:bearerToken",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "lotterynet-admin.ts contains bearerToken"
+    },
+    {
+      "source": "file:supabase/functions/_shared/lotterynet-admin.ts",
+      "target": "function:supabase/functions/_shared/lotterynet-admin.ts:requireAdminJwt",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "lotterynet-admin.ts contains requireAdminJwt"
+    },
+    {
+      "source": "file:supabase/functions/_shared/lotterynet-admin.ts",
+      "target": "function:supabase/functions/_shared/lotterynet-admin.ts:supabaseAdmin",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "lotterynet-admin.ts contains supabaseAdmin"
+    },
+    {
+      "source": "file:supabase/functions/_shared/lotterynet-admin.ts",
+      "target": "function:supabase/functions/_shared/lotterynet-admin.ts:fetchKvValue",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "lotterynet-admin.ts contains fetchKvValue"
+    },
+    {
+      "source": "file:supabase/functions/_shared/lotterynet-admin.ts",
+      "target": "function:supabase/functions/_shared/lotterynet-admin.ts:upsertKvValue",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "lotterynet-admin.ts contains upsertKvValue"
+    },
+    {
+      "source": "file:supabase/functions/admin-cashier-limits/index.ts",
+      "target": "file:supabase/functions/_shared/lotterynet-admin.ts",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7,
+      "description": "supabase/functions/admin-cashier-limits/index.ts imports supabase/functions/_shared/lotterynet-admin.ts"
+    },
+    {
+      "source": "file:supabase/functions/admin-manual-results-override/index.ts",
+      "target": "file:supabase/functions/_shared/lotterynet-admin.ts",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7,
+      "description": "supabase/functions/admin-manual-results-override/index.ts imports supabase/functions/_shared/lotterynet-admin.ts"
+    },
+    {
+      "source": "file:supabase/functions/admin-master-state/index.ts",
+      "target": "file:supabase/functions/_shared/lotterynet-admin.ts",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7,
+      "description": "supabase/functions/admin-master-state/index.ts imports supabase/functions/_shared/lotterynet-admin.ts"
+    },
+    {
+      "source": "file:supabase/functions/admin-users-state/index.ts",
+      "target": "file:supabase/functions/_shared/lotterynet-admin.ts",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7,
+      "description": "supabase/functions/admin-users-state/index.ts imports supabase/functions/_shared/lotterynet-admin.ts"
+    },
+    {
+      "source": "file:supabase/functions/client-health-batch/index.ts",
+      "target": "file:supabase/functions/_shared/lotterynet-admin.ts",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7,
+      "description": "supabase/functions/client-health-batch/index.ts imports supabase/functions/_shared/lotterynet-admin.ts"
+    },
+    {
+      "source": "file:supabase/functions/get-master-config/index.ts",
+      "target": "file:supabase/functions/_shared/lotterynet-admin.ts",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7,
+      "description": "supabase/functions/get-master-config/index.ts imports supabase/functions/_shared/lotterynet-admin.ts"
+    },
+    {
+      "source": "file:supabase/functions/get-results-status/index.ts",
+      "target": "function:supabase/functions/get-results-status/index.ts:normalizeDayKey",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "index.ts contains normalizeDayKey"
+    },
+    {
+      "source": "file:supabase/functions/get-results-status/index.ts",
+      "target": "file:supabase/functions/_shared/lotterynet-admin.ts",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7,
+      "description": "supabase/functions/get-results-status/index.ts imports supabase/functions/_shared/lotterynet-admin.ts"
+    },
+    {
+      "source": "file:supabase/functions/get-results-v2/index.ts",
+      "target": "function:supabase/functions/get-results-v2/index.ts:normalizeDayKey",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "index.ts contains normalizeDayKey"
+    },
+    {
+      "source": "file:supabase/functions/get-results-v2/index.ts",
+      "target": "function:supabase/functions/get-results-v2/index.ts:rowsFromRpc",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "index.ts contains rowsFromRpc"
+    },
+    {
+      "source": "file:supabase/functions/get-results-v2/index.ts",
+      "target": "file:supabase/functions/_shared/lotterynet-admin.ts",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7,
+      "description": "supabase/functions/get-results-v2/index.ts imports supabase/functions/_shared/lotterynet-admin.ts"
+    },
+    {
+      "source": "file:supabase/functions/get-ticket-delta/index.ts",
+      "target": "function:supabase/functions/get-ticket-delta/index.ts:fetchTicketRows",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "index.ts contains fetchTicketRows"
+    },
+    {
+      "source": "file:supabase/functions/get-ticket-delta/index.ts",
+      "target": "function:supabase/functions/get-ticket-delta/index.ts:fetchTicketItems",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "index.ts contains fetchTicketItems"
+    },
+    {
+      "source": "file:supabase/functions/get-ticket-delta/index.ts",
+      "target": "file:supabase/functions/_shared/lotterynet-admin.ts",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7,
+      "description": "supabase/functions/get-ticket-delta/index.ts imports supabase/functions/_shared/lotterynet-admin.ts"
+    },
+    {
+      "source": "file:supabase/functions/get-ticket-summary/index.ts",
+      "target": "function:supabase/functions/get-ticket-summary/index.ts:isoDateFromDayKey",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "index.ts contains isoDateFromDayKey"
+    },
+    {
+      "source": "file:supabase/functions/get-ticket-summary/index.ts",
+      "target": "function:supabase/functions/get-ticket-summary/index.ts:fetchRows",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "index.ts contains fetchRows"
+    },
+    {
+      "source": "file:supabase/functions/get-ticket-summary/index.ts",
+      "target": "file:supabase/functions/_shared/lotterynet-admin.ts",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7,
+      "description": "supabase/functions/get-ticket-summary/index.ts imports supabase/functions/_shared/lotterynet-admin.ts"
+    },
+    {
+      "source": "file:supabase/functions/lotterynet-users-state/index.ts",
+      "target": "file:supabase/functions/_shared/lotterynet-admin.ts",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7,
+      "description": "supabase/functions/lotterynet-users-state/index.ts imports supabase/functions/_shared/lotterynet-admin.ts"
+    },
+    {
+      "source": "file:supabase/functions/results-server-refresh/index.ts",
+      "target": "function:supabase/functions/results-server-refresh/index.ts:normalizeDateKey",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "index.ts contains normalizeDateKey"
+    },
+    {
+      "source": "file:supabase/functions/results-server-refresh/index.ts",
+      "target": "function:supabase/functions/results-server-refresh/index.ts:stableStringify",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "index.ts contains stableStringify"
+    },
+    {
+      "source": "file:supabase/functions/results-server-refresh/index.ts",
+      "target": "function:supabase/functions/results-server-refresh/index.ts:rowsFrom",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "index.ts contains rowsFrom"
+    },
+    {
+      "source": "file:supabase/functions/results-server-refresh/index.ts",
+      "target": "function:supabase/functions/results-server-refresh/index.ts:hasPublishedNumbers",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "index.ts contains hasPublishedNumbers"
+    },
+    {
+      "source": "file:supabase/functions/results-server-refresh/index.ts",
+      "target": "function:supabase/functions/results-server-refresh/index.ts:isProtectedNoDrawRow",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "index.ts contains isProtectedNoDrawRow"
+    },
+    {
+      "source": "file:supabase/functions/results-server-refresh/index.ts",
+      "target": "function:supabase/functions/results-server-refresh/index.ts:mergeProtectedNoDrawRows",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "index.ts contains mergeProtectedNoDrawRows"
+    },
+    {
+      "source": "file:supabase/functions/results-server-refresh/index.ts",
+      "target": "function:supabase/functions/results-server-refresh/index.ts:mergeMissingCurrentRows",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "index.ts contains mergeMissingCurrentRows"
+    },
+    {
+      "source": "file:supabase/functions/results-server-refresh/index.ts",
+      "target": "function:supabase/functions/results-server-refresh/index.ts:mergeHolidayNoDrawRows",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "index.ts contains mergeHolidayNoDrawRows"
+    },
+    {
+      "source": "file:supabase/functions/results-server-refresh/index.ts",
+      "target": "function:supabase/functions/results-server-refresh/index.ts:fetchHolidayNoDrawRows",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "index.ts contains fetchHolidayNoDrawRows"
+    },
+    {
+      "source": "file:supabase/functions/results-server-refresh/index.ts",
+      "target": "function:supabase/functions/results-server-refresh/index.ts:rowText",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "index.ts contains rowText"
+    },
+    {
+      "source": "file:supabase/functions/results-server-refresh/index.ts",
+      "target": "function:supabase/functions/results-server-refresh/index.ts:isPickRow",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "index.ts contains isPickRow"
+    },
+    {
+      "source": "file:supabase/functions/results-server-refresh/index.ts",
+      "target": "function:supabase/functions/results-server-refresh/index.ts:splitPayload",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "index.ts contains splitPayload"
+    },
+    {
+      "source": "file:supabase/functions/results-server-refresh/index.ts",
+      "target": "function:supabase/functions/results-server-refresh/index.ts:fetchLiveResults",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "index.ts contains fetchLiveResults"
+    },
+    {
+      "source": "file:supabase/functions/results-server-refresh/index.ts",
+      "target": "function:supabase/functions/results-server-refresh/index.ts:fetchLiveResultsOrEmpty",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "index.ts contains fetchLiveResultsOrEmpty"
+    },
+    {
+      "source": "file:supabase/functions/results-server-refresh/index.ts",
+      "target": "function:supabase/functions/results-server-refresh/index.ts:currentRowsFor",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "index.ts contains currentRowsFor"
+    },
+    {
+      "source": "file:supabase/functions/results-server-refresh/index.ts",
+      "target": "function:supabase/functions/results-server-refresh/index.ts:upsertIfChanged",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "index.ts contains upsertIfChanged"
+    },
+    {
+      "source": "file:supabase/functions/results-server-refresh/index.ts",
+      "target": "function:supabase/functions/results-server-refresh/index.ts:configuredCronSecret",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "index.ts contains configuredCronSecret"
+    },
+    {
+      "source": "file:supabase/functions/results-server-refresh/index.ts",
+      "target": "function:supabase/functions/results-server-refresh/index.ts:authorize",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "index.ts contains authorize"
+    },
+    {
+      "source": "file:supabase/functions/results-server-refresh/index.ts",
+      "target": "file:supabase/functions/_shared/lotterynet-admin.ts",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7,
+      "description": "supabase/functions/results-server-refresh/index.ts imports supabase/functions/_shared/lotterynet-admin.ts"
+    },
+    {
+      "source": "file:supabase/functions/update-master-config/index.ts",
+      "target": "file:supabase/functions/_shared/lotterynet-admin.ts",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7,
+      "description": "supabase/functions/update-master-config/index.ts imports supabase/functions/_shared/lotterynet-admin.ts"
+    }
+  ]
+}

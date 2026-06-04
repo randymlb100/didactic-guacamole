@@ -3,6 +3,7 @@ import { clean, corsHeaders, fetchKvValue, json, supabaseAdmin } from "../_share
 
 function isAllowedKey(key: string): boolean {
   return /^(cashier_limits|cashier_prize_payouts|recharge_limits|admin_operational_limits|system_modes|manual_disabled_lotteries):[A-Za-z0-9_.:-]+$/.test(key) ||
+    /^sportsbook:(global|actor:[A-Za-z0-9_.:-]+|admin:[A-Za-z0-9_.:-]+)$/.test(key) ||
     /^sys_[A-Za-z0-9_.:-]+$/.test(key);
 }
 

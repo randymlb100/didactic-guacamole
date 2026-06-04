@@ -1,0 +1,271 @@
+{
+  "scriptCompleted": true,
+  "filesAnalyzed": 33,
+  "filesSkipped": [],
+  "results": [
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/core/calendar/LotteryAvailabilityResolver.kt",
+      "language": "kotlin",
+      "fileCategory": "code",
+      "totalLines": 80,
+      "nonEmptyLines": 70,
+      "metrics": {}
+    },
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/core/calendar/LotteryClosePolicy.kt",
+      "language": "kotlin",
+      "fileCategory": "code",
+      "totalLines": 273,
+      "nonEmptyLines": 249,
+      "metrics": {}
+    },
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/core/calendar/LotteryTimeZones.kt",
+      "language": "kotlin",
+      "fileCategory": "code",
+      "totalLines": 24,
+      "nonEmptyLines": 19,
+      "metrics": {}
+    },
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/core/calendar/StaticHolidayCalendarRepository.kt",
+      "language": "kotlin",
+      "fileCategory": "code",
+      "totalLines": 179,
+      "nonEmptyLines": 161,
+      "metrics": {}
+    },
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/core/catalog/LotteryAssetResolver.kt",
+      "language": "kotlin",
+      "fileCategory": "code",
+      "totalLines": 43,
+      "nonEmptyLines": 38,
+      "metrics": {}
+    },
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/core/catalog/LotteryLogoBitmapLoader.kt",
+      "language": "kotlin",
+      "fileCategory": "code",
+      "totalLines": 211,
+      "nonEmptyLines": 190,
+      "metrics": {}
+    },
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/core/catalog/StaticLotteryCatalogRepository.kt",
+      "language": "kotlin",
+      "fileCategory": "code",
+      "totalLines": 501,
+      "nonEmptyLines": 478,
+      "metrics": {}
+    },
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/core/catalog/UsPickScheduleResolver.kt",
+      "language": "kotlin",
+      "fileCategory": "code",
+      "totalLines": 234,
+      "nonEmptyLines": 223,
+      "metrics": {}
+    },
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/core/delivery/TicketDeliveryPolicy.kt",
+      "language": "kotlin",
+      "fileCategory": "code",
+      "totalLines": 91,
+      "nonEmptyLines": 82,
+      "metrics": {}
+    },
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/core/export/NativeBitmapExport.kt",
+      "language": "kotlin",
+      "fileCategory": "code",
+      "totalLines": 3709,
+      "nonEmptyLines": 3500,
+      "metrics": {}
+    },
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/core/export/StaticExportTemplateRepository.kt",
+      "language": "kotlin",
+      "fileCategory": "code",
+      "totalLines": 423,
+      "nonEmptyLines": 403,
+      "metrics": {}
+    },
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/core/export/TicketSecurity.kt",
+      "language": "kotlin",
+      "fileCategory": "code",
+      "totalLines": 46,
+      "nonEmptyLines": 40,
+      "metrics": {}
+    },
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/core/network/ProductionNetworkGuard.kt",
+      "language": "kotlin",
+      "fileCategory": "code",
+      "totalLines": 21,
+      "nonEmptyLines": 17,
+      "metrics": {}
+    },
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/core/notification/LotteryClosingNotifier.kt",
+      "language": "kotlin",
+      "fileCategory": "code",
+      "totalLines": 147,
+      "nonEmptyLines": 130,
+      "metrics": {}
+    },
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/core/notification/WinningTicketNotifier.kt",
+      "language": "kotlin",
+      "fileCategory": "code",
+      "totalLines": 194,
+      "nonEmptyLines": 170,
+      "metrics": {}
+    },
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/core/perf/PosPerformanceBudget.kt",
+      "language": "kotlin",
+      "fileCategory": "code",
+      "totalLines": 13,
+      "nonEmptyLines": 12,
+      "metrics": {}
+    },
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/core/printing/BluetoothThermalPrinter.kt",
+      "language": "kotlin",
+      "fileCategory": "code",
+      "totalLines": 368,
+      "nonEmptyLines": 346,
+      "metrics": {}
+    },
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/core/printing/IntegratedThermalPrinter.kt",
+      "language": "kotlin",
+      "fileCategory": "code",
+      "totalLines": 133,
+      "nonEmptyLines": 124,
+      "metrics": {}
+    },
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/core/printing/ThermalTicketRenderer.kt",
+      "language": "kotlin",
+      "fileCategory": "code",
+      "totalLines": 1055,
+      "nonEmptyLines": 988,
+      "metrics": {}
+    },
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/core/render/LocalRenderCacheRepository.kt",
+      "language": "kotlin",
+      "fileCategory": "code",
+      "totalLines": 63,
+      "nonEmptyLines": 54,
+      "metrics": {}
+    },
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/core/repository/ExportTemplateRepository.kt",
+      "language": "kotlin",
+      "fileCategory": "code",
+      "totalLines": 22,
+      "nonEmptyLines": 20,
+      "metrics": {}
+    },
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/core/repository/HolidayCalendarRepository.kt",
+      "language": "kotlin",
+      "fileCategory": "code",
+      "totalLines": 9,
+      "nonEmptyLines": 7,
+      "metrics": {}
+    },
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/core/repository/LotteryCatalogRepository.kt",
+      "language": "kotlin",
+      "fileCategory": "code",
+      "totalLines": 11,
+      "nonEmptyLines": 9,
+      "metrics": {}
+    },
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/core/repository/NativeSyncQueueRepository.kt",
+      "language": "kotlin",
+      "fileCategory": "code",
+      "totalLines": 9,
+      "nonEmptyLines": 7,
+      "metrics": {}
+    },
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/core/repository/ResultsRepository.kt",
+      "language": "kotlin",
+      "fileCategory": "code",
+      "totalLines": 9,
+      "nonEmptyLines": 7,
+      "metrics": {}
+    },
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/core/repository/SalesRepository.kt",
+      "language": "kotlin",
+      "fileCategory": "code",
+      "totalLines": 11,
+      "nonEmptyLines": 9,
+      "metrics": {}
+    },
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/core/repository/ThermalPrinterRepository.kt",
+      "language": "kotlin",
+      "fileCategory": "code",
+      "totalLines": 9,
+      "nonEmptyLines": 7,
+      "metrics": {}
+    },
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/core/repository/TrustedClockRepository.kt",
+      "language": "kotlin",
+      "fileCategory": "code",
+      "totalLines": 12,
+      "nonEmptyLines": 10,
+      "metrics": {}
+    },
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/core/results/LegacyResultsCacheBridge.kt",
+      "language": "kotlin",
+      "fileCategory": "code",
+      "totalLines": 50,
+      "nonEmptyLines": 47,
+      "metrics": {}
+    },
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/core/results/PickResultIdentityResolver.kt",
+      "language": "kotlin",
+      "fileCategory": "code",
+      "totalLines": 172,
+      "nonEmptyLines": 158,
+      "metrics": {}
+    },
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/core/results/PrizeValidationEngine.kt",
+      "language": "kotlin",
+      "fileCategory": "code",
+      "totalLines": 377,
+      "nonEmptyLines": 349,
+      "metrics": {}
+    },
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/core/results/ResultsRemoteStore.kt",
+      "language": "kotlin",
+      "fileCategory": "code",
+      "totalLines": 7,
+      "nonEmptyLines": 5,
+      "metrics": {}
+    },
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/core/results/ResultsScraperOrchestrator.kt",
+      "language": "kotlin",
+      "fileCategory": "code",
+      "totalLines": 253,
+      "nonEmptyLines": 235,
+      "metrics": {}
+    }
+  ]
+}

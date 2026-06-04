@@ -1,0 +1,41 @@
+# .understandignore - patrones para excluir del analisis
+# Sintaxis parecida a .gitignore
+
+# Build/cache Android y Gradle
+.gradle/
+build/
+app/build/
+**/build/
+
+# IDE / sistema
+.idea/
+.vscode/
+*.log
+.DS_Store
+
+# Dependencias / salidas comunes
+node_modules/
+dist/
+out/
+coverage/
+
+# Binarios e imagenes grandes
+*.apk
+*.aab
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.webp
+*.svg
+*.pdf
+*.zip
+*.tar
+*.gz
+*.mp4
+*.mp3
+
+# Archivos generados o datos locales
+*.keystore
+*.jks
+local.properties

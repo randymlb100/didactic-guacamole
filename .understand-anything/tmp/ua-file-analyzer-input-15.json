@@ -1,0 +1,105 @@
+{
+  "projectRoot": "C:\\Users\\Randy Cordero\\Desktop\\lotterynet_android",
+  "batchFiles": [
+    {
+      "path": ".agents/skills/supabase-postgres-best-practices/references/query-composite-indexes.md",
+      "language": "markdown",
+      "sizeLines": 44,
+      "fileCategory": "docs"
+    },
+    {
+      "path": ".agents/skills/supabase-postgres-best-practices/references/query-covering-indexes.md",
+      "language": "markdown",
+      "sizeLines": 40,
+      "fileCategory": "docs"
+    },
+    {
+      "path": ".agents/skills/supabase-postgres-best-practices/references/query-index-types.md",
+      "language": "markdown",
+      "sizeLines": 48,
+      "fileCategory": "docs"
+    },
+    {
+      "path": ".agents/skills/supabase-postgres-best-practices/references/query-missing-indexes.md",
+      "language": "markdown",
+      "sizeLines": 43,
+      "fileCategory": "docs"
+    },
+    {
+      "path": ".agents/skills/supabase-postgres-best-practices/references/query-partial-indexes.md",
+      "language": "markdown",
+      "sizeLines": 45,
+      "fileCategory": "docs"
+    },
+    {
+      "path": ".agents/skills/supabase-postgres-best-practices/references/schema-constraints.md",
+      "language": "markdown",
+      "sizeLines": 80,
+      "fileCategory": "docs"
+    },
+    {
+      "path": ".agents/skills/supabase-postgres-best-practices/references/schema-data-types.md",
+      "language": "markdown",
+      "sizeLines": 46,
+      "fileCategory": "docs"
+    },
+    {
+      "path": ".agents/skills/supabase-postgres-best-practices/references/schema-foreign-key-indexes.md",
+      "language": "markdown",
+      "sizeLines": 59,
+      "fileCategory": "docs"
+    },
+    {
+      "path": ".agents/skills/supabase-postgres-best-practices/references/schema-lowercase-identifiers.md",
+      "language": "markdown",
+      "sizeLines": 55,
+      "fileCategory": "docs"
+    },
+    {
+      "path": ".agents/skills/supabase-postgres-best-practices/references/schema-partitioning.md",
+      "language": "markdown",
+      "sizeLines": 55,
+      "fileCategory": "docs"
+    },
+    {
+      "path": ".agents/skills/supabase-postgres-best-practices/references/schema-primary-keys.md",
+      "language": "markdown",
+      "sizeLines": 61,
+      "fileCategory": "docs"
+    },
+    {
+      "path": ".agents/skills/supabase-postgres-best-practices/references/security-privileges.md",
+      "language": "markdown",
+      "sizeLines": 54,
+      "fileCategory": "docs"
+    },
+    {
+      "path": ".agents/skills/supabase-postgres-best-practices/references/security-rls-basics.md",
+      "language": "markdown",
+      "sizeLines": 50,
+      "fileCategory": "docs"
+    },
+    {
+      "path": ".agents/skills/supabase-postgres-best-practices/references/security-rls-performance.md",
+      "language": "markdown",
+      "sizeLines": 63,
+      "fileCategory": "docs"
+    }
+  ],
+  "batchImportData": {
+    ".agents/skills/supabase-postgres-best-practices/references/query-composite-indexes.md": [],
+    ".agents/skills/supabase-postgres-best-practices/references/query-covering-indexes.md": [],
+    ".agents/skills/supabase-postgres-best-practices/references/query-index-types.md": [],
+    ".agents/skills/supabase-postgres-best-practices/references/query-missing-indexes.md": [],
+    ".agents/skills/supabase-postgres-best-practices/references/query-partial-indexes.md": [],
+    ".agents/skills/supabase-postgres-best-practices/references/schema-constraints.md": [],
+    ".agents/skills/supabase-postgres-best-practices/references/schema-data-types.md": [],
+    ".agents/skills/supabase-postgres-best-practices/references/schema-foreign-key-indexes.md": [],
+    ".agents/skills/supabase-postgres-best-practices/references/schema-lowercase-identifiers.md": [],
+    ".agents/skills/supabase-postgres-best-practices/references/schema-partitioning.md": [],
+    ".agents/skills/supabase-postgres-best-practices/references/schema-primary-keys.md": [],
+    ".agents/skills/supabase-postgres-best-practices/references/security-privileges.md": [],
+    ".agents/skills/supabase-postgres-best-practices/references/security-rls-basics.md": [],
+    ".agents/skills/supabase-postgres-best-practices/references/security-rls-performance.md": []
+  }
+}

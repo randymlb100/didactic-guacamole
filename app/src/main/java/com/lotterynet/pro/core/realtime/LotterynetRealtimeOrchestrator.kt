@@ -27,7 +27,7 @@ class LotterynetRealtimeOrchestrator(
             "lotterynet_users_state" -> onUsersChanged()
             "lotterynet_master_state" -> event.filterValue?.let(onMasterKeyChanged)
             "lotterynet_tickets_by_owner" -> event.filterValue?.let(onTicketOwnerChanged)
-            "lotterynet_kv" -> event.filterValue?.let(onResultsCacheChanged)
+            "result_draws" -> event.filterValue?.let(onResultsCacheChanged)
         }
     }
 }

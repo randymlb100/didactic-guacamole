@@ -1,0 +1,342 @@
+{
+  "nodes": [
+    {
+      "id": "file:docs/superpowers/plans/2026-04-18-lotterynet-full-app-recovery.md",
+      "type": "document",
+      "name": "2026-04-18-lotterynet-full-app-recovery.md",
+      "summary": "Documentation file covering 2026-04-18-lotterynet-full-app-recovery.md.",
+      "tags": [
+        "docs",
+        "documentation"
+      ],
+      "complexity": "complex",
+      "filePath": "docs/superpowers/plans/2026-04-18-lotterynet-full-app-recovery.md",
+      "lineRange": [
+        1,
+        309
+      ]
+    },
+    {
+      "id": "file:docs/superpowers/plans/2026-04-18-lotterynet-native-ui-polish.md",
+      "type": "document",
+      "name": "2026-04-18-lotterynet-native-ui-polish.md",
+      "summary": "Documentation file covering 2026-04-18-lotterynet-native-ui-polish.md.",
+      "tags": [
+        "docs",
+        "documentation"
+      ],
+      "complexity": "complex",
+      "filePath": "docs/superpowers/plans/2026-04-18-lotterynet-native-ui-polish.md",
+      "lineRange": [
+        1,
+        479
+      ]
+    },
+    {
+      "id": "file:docs/superpowers/plans/2026-04-20-mobile-layout-ticket-preview.md",
+      "type": "document",
+      "name": "2026-04-20-mobile-layout-ticket-preview.md",
+      "summary": "Documentation file covering 2026-04-20-mobile-layout-ticket-preview.md.",
+      "tags": [
+        "docs",
+        "ticket",
+        "documentation"
+      ],
+      "complexity": "complex",
+      "filePath": "docs/superpowers/plans/2026-04-20-mobile-layout-ticket-preview.md",
+      "lineRange": [
+        1,
+        345
+      ]
+    },
+    {
+      "id": "file:docs/superpowers/plans/2026-04-24-supabase-admin-cajero-realtime.md",
+      "type": "document",
+      "name": "2026-04-24-supabase-admin-cajero-realtime.md",
+      "summary": "Supabase integration file used by the app/server for remote data, ticket, result, or configuration workflows.",
+      "tags": [
+        "docs",
+        "sync",
+        "supabase",
+        "documentation"
+      ],
+      "complexity": "moderate",
+      "filePath": "docs/superpowers/plans/2026-04-24-supabase-admin-cajero-realtime.md",
+      "lineRange": [
+        1,
+        112
+      ]
+    },
+    {
+      "id": "file:docs/superpowers/plans/2026-04-26-cashier-performance-no-freeze.md",
+      "type": "document",
+      "name": "2026-04-26-cashier-performance-no-freeze.md",
+      "summary": "Documentation file covering 2026-04-26-cashier-performance-no-freeze.md.",
+      "tags": [
+        "docs",
+        "documentation"
+      ],
+      "complexity": "complex",
+      "filePath": "docs/superpowers/plans/2026-04-26-cashier-performance-no-freeze.md",
+      "lineRange": [
+        1,
+        581
+      ]
+    },
+    {
+      "id": "file:docs/superpowers/plans/2026-04-26-cashier-pos-performance.md",
+      "type": "document",
+      "name": "2026-04-26-cashier-pos-performance.md",
+      "summary": "Documentation file covering 2026-04-26-cashier-pos-performance.md.",
+      "tags": [
+        "docs",
+        "documentation"
+      ],
+      "complexity": "complex",
+      "filePath": "docs/superpowers/plans/2026-04-26-cashier-pos-performance.md",
+      "lineRange": [
+        1,
+        501
+      ]
+    },
+    {
+      "id": "file:docs/superpowers/plans/2026-04-26-native-local-no-webview.md",
+      "type": "document",
+      "name": "2026-04-26-native-local-no-webview.md",
+      "summary": "Documentation file covering 2026-04-26-native-local-no-webview.md.",
+      "tags": [
+        "docs",
+        "documentation"
+      ],
+      "complexity": "complex",
+      "filePath": "docs/superpowers/plans/2026-04-26-native-local-no-webview.md",
+      "lineRange": [
+        1,
+        785
+      ]
+    },
+    {
+      "id": "file:docs/superpowers/plans/2026-05-04-recargas-rapidas-integration.md",
+      "type": "document",
+      "name": "2026-05-04-recargas-rapidas-integration.md",
+      "summary": "Documentation file covering 2026-05-04-recargas-rapidas-integration.md.",
+      "tags": [
+        "docs",
+        "documentation"
+      ],
+      "complexity": "simple",
+      "filePath": "docs/superpowers/plans/2026-05-04-recargas-rapidas-integration.md",
+      "lineRange": [
+        1,
+        54
+      ]
+    },
+    {
+      "id": "file:docs/superpowers/plans/2026-05-11-production-ready-results-system-mode.md",
+      "type": "document",
+      "name": "2026-05-11-production-ready-results-system-mode.md",
+      "summary": "Documentation file covering 2026-05-11-production-ready-results-system-mode.md.",
+      "tags": [
+        "docs",
+        "results",
+        "documentation"
+      ],
+      "complexity": "moderate",
+      "filePath": "docs/superpowers/plans/2026-05-11-production-ready-results-system-mode.md",
+      "lineRange": [
+        1,
+        220
+      ]
+    },
+    {
+      "id": "file:docs/superpowers/plans/2026-05-13-supabase-realtime-app.md",
+      "type": "document",
+      "name": "2026-05-13-supabase-realtime-app.md",
+      "summary": "Supabase integration file used by the app/server for remote data, ticket, result, or configuration workflows.",
+      "tags": [
+        "docs",
+        "sync",
+        "supabase",
+        "documentation"
+      ],
+      "complexity": "complex",
+      "filePath": "docs/superpowers/plans/2026-05-13-supabase-realtime-app.md",
+      "lineRange": [
+        1,
+        637
+      ]
+    },
+    {
+      "id": "file:docs/superpowers/plans/2026-05-23-compose-ui-organization-audit.md",
+      "type": "document",
+      "name": "2026-05-23-compose-ui-organization-audit.md",
+      "summary": "Documentation file covering 2026-05-23-compose-ui-organization-audit.md.",
+      "tags": [
+        "docs",
+        "ui",
+        "documentation"
+      ],
+      "complexity": "complex",
+      "filePath": "docs/superpowers/plans/2026-05-23-compose-ui-organization-audit.md",
+      "lineRange": [
+        1,
+        397
+      ]
+    },
+    {
+      "id": "file:docs/superpowers/plans/2026-05-23-non-sales-visual-redesign.md",
+      "type": "document",
+      "name": "2026-05-23-non-sales-visual-redesign.md",
+      "summary": "Documentation file covering 2026-05-23-non-sales-visual-redesign.md.",
+      "tags": [
+        "docs",
+        "sales",
+        "documentation"
+      ],
+      "complexity": "complex",
+      "filePath": "docs/superpowers/plans/2026-05-23-non-sales-visual-redesign.md",
+      "lineRange": [
+        1,
+        757
+      ]
+    },
+    {
+      "id": "file:docs/superpowers/plans/2026-05-24-results-supabase-compose-optimization.md",
+      "type": "document",
+      "name": "2026-05-24-results-supabase-compose-optimization.md",
+      "summary": "Supabase integration file used by the app/server for remote data, ticket, result, or configuration workflows.",
+      "tags": [
+        "docs",
+        "ui",
+        "results",
+        "supabase",
+        "documentation"
+      ],
+      "complexity": "complex",
+      "filePath": "docs/superpowers/plans/2026-05-24-results-supabase-compose-optimization.md",
+      "lineRange": [
+        1,
+        316
+      ]
+    },
+    {
+      "id": "file:docs/superpowers/plans/2026-05-25-blindaje-resultados-pick-falsos.md",
+      "type": "document",
+      "name": "2026-05-25-blindaje-resultados-pick-falsos.md",
+      "summary": "Documentation file covering 2026-05-25-blindaje-resultados-pick-falsos.md.",
+      "tags": [
+        "docs",
+        "results",
+        "documentation"
+      ],
+      "complexity": "moderate",
+      "filePath": "docs/superpowers/plans/2026-05-25-blindaje-resultados-pick-falsos.md",
+      "lineRange": [
+        1,
+        220
+      ]
+    },
+    {
+      "id": "file:docs/superpowers/plans/2026-05-26-pick-fast-keypad.md",
+      "type": "document",
+      "name": "2026-05-26-pick-fast-keypad.md",
+      "summary": "Documentation file covering 2026-05-26-pick-fast-keypad.md.",
+      "tags": [
+        "docs",
+        "documentation"
+      ],
+      "complexity": "complex",
+      "filePath": "docs/superpowers/plans/2026-05-26-pick-fast-keypad.md",
+      "lineRange": [
+        1,
+        548
+      ]
+    },
+    {
+      "id": "file:docs/superpowers/plans/2026-05-26-results-current-architecture-small-improvements.md",
+      "type": "document",
+      "name": "2026-05-26-results-current-architecture-small-improvements.md",
+      "summary": "Documentation file covering 2026-05-26-results-current-architecture-small-improvements.md.",
+      "tags": [
+        "docs",
+        "results",
+        "documentation"
+      ],
+      "complexity": "complex",
+      "filePath": "docs/superpowers/plans/2026-05-26-results-current-architecture-small-improvements.md",
+      "lineRange": [
+        1,
+        594
+      ]
+    },
+    {
+      "id": "file:docs/superpowers/plans/2026-05-27-compose-visual-organization-refresh.md",
+      "type": "document",
+      "name": "2026-05-27-compose-visual-organization-refresh.md",
+      "summary": "Documentation file covering 2026-05-27-compose-visual-organization-refresh.md.",
+      "tags": [
+        "docs",
+        "ui",
+        "documentation"
+      ],
+      "complexity": "complex",
+      "filePath": "docs/superpowers/plans/2026-05-27-compose-visual-organization-refresh.md",
+      "lineRange": [
+        1,
+        1500
+      ]
+    },
+    {
+      "id": "file:docs/superpowers/plans/2026-05-29-large-ticket-delivery-stability.md",
+      "type": "document",
+      "name": "2026-05-29-large-ticket-delivery-stability.md",
+      "summary": "Documentation file covering 2026-05-29-large-ticket-delivery-stability.md.",
+      "tags": [
+        "docs",
+        "ticket",
+        "documentation"
+      ],
+      "complexity": "moderate",
+      "filePath": "docs/superpowers/plans/2026-05-29-large-ticket-delivery-stability.md",
+      "lineRange": [
+        1,
+        172
+      ]
+    },
+    {
+      "id": "file:docs/superpowers/plans/2026-05-29-safe-results-migration.md",
+      "type": "document",
+      "name": "2026-05-29-safe-results-migration.md",
+      "summary": "Documentation file covering 2026-05-29-safe-results-migration.md.",
+      "tags": [
+        "docs",
+        "results",
+        "documentation"
+      ],
+      "complexity": "moderate",
+      "filePath": "docs/superpowers/plans/2026-05-29-safe-results-migration.md",
+      "lineRange": [
+        1,
+        236
+      ]
+    },
+    {
+      "id": "file:docs/superpowers/plans/2026-05-29-solucion-definitiva-resultados-premios-servidor.md",
+      "type": "document",
+      "name": "2026-05-29-solucion-definitiva-resultados-premios-servidor.md",
+      "summary": "Documentation file covering 2026-05-29-solucion-definitiva-resultados-premios-servidor.md.",
+      "tags": [
+        "docs",
+        "results",
+        "documentation"
+      ],
+      "complexity": "moderate",
+      "filePath": "docs/superpowers/plans/2026-05-29-solucion-definitiva-resultados-premios-servidor.md",
+      "lineRange": [
+        1,
+        196
+      ]
+    }
+  ],
+  "edges": []
+}

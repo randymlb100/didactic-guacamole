@@ -87,11 +87,12 @@ class StaticExportTemplateRepository : ExportTemplateRepository {
         )
         val grouped = ticket.plays.groupBy { it.lotteryName.orEmpty().ifBlank { "Lotería" } }
         val body = grouped.entries.joinToString("") { (lotteryName, plays) ->
+            val lotteryTotal = plays.sumOf { it.amount }
             """
             <div class="ticket-lot">
               <div class="ticket-lot-head">
                 <span>${escapeHtml(lotteryName)}</span>
-                <strong>${plays.size} jugadas</strong>
+                <strong>${plays.size} jugadas · $ ${formatMoney(lotteryTotal)}</strong>
               </div>
               ${plays.joinToString("") { play ->
                 """
@@ -100,10 +101,49 @@ class StaticExportTemplateRepository : ExportTemplateRepository {
                     <div class="ticket-number">${escapeHtml(play.number)}</div>
                     <div class="ticket-play-meta">
                       <div class="ticket-type">${escapeHtml(play.playType)}</div>
-                      <div class="ticket-play-label">${escapeHtml(play.lotteryName.orEmpty().ifBlank { lotteryName })}</div>
+                      <div class="ticket-play-label">Jugada</div>
                     </div>
                   </div>
                   <div class="ticket-amount">$ ${formatMoney(play.amount)}</div>
+                </div>
+                """.trimIndent()
+              }}
+              <div class="ticket-lot-total">
+                <span>Monto lotería</span>
+                <strong>$ ${formatMoney(lotteryTotal)}</strong>
+              </div>
+            </div>
+            """.trimIndent()
+        }
+        val winnerGroups = NativeBitmapExport.groupOfficialTicketWinnerDetails(ticket)
+        val winnersHtml = if (winnerGroups.isEmpty()) {
+            ""
+        } else {
+            """
+            <div class="ticket-winners">
+              <div class="ticket-winners-head">
+                <span>Premios del ticket</span>
+                <strong>${escapeHtml(NativeBitmapExport.winnerPrizeTotalMeta(ticket))} · ${escapeHtml(NativeBitmapExport.winnerDetailsMeta(ticket))}</strong>
+              </div>
+              ${winnerGroups.joinToString("") { group ->
+                """
+                <div class="ticket-winner-group">
+                  <div class="ticket-winner-lot">
+                    <div>
+                      <span>${escapeHtml(group.lotteryName)}</span>
+                      <small>Ganador ${escapeHtml(group.resultNumber.ifBlank { "-" })}</small>
+                    </div>
+                    ${if (NativeBitmapExport.shouldShowWinnerGroupSubtotal(group)) "<strong>$ ${formatMoney(group.totalPayout)}</strong>" else ""}
+                  </div>
+                  ${group.details.joinToString("") { detail ->
+                    """
+                    <div class="ticket-winner-row">
+                      <span>${escapeHtml(detail.playType)} ${escapeHtml(com.lotterynet.pro.core.model.formatPlayDisplayNumber(detail.playedNumber, detail.playType))}</span>
+                      <small>${escapeHtml(winningHitLabel(detail.hitPosition))} · Apostado $ ${formatMoney(detail.amount)}</small>
+                      <b>$ ${formatMoney(detail.payoutAmount)}</b>
+                    </div>
+                    """.trimIndent()
+                  }}
                 </div>
                 """.trimIndent()
               }}
@@ -153,6 +193,22 @@ class StaticExportTemplateRepository : ExportTemplateRepository {
                 .ticket-play-label{font-size:11px;font-weight:900;color:#64748b;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
                 .ticket-number{display:inline-flex;align-items:center;justify-content:center;min-width:38px;height:38px;padding:0 12px;border-radius:999px;background:#16a34a;color:#fff;font-size:16px;font-weight:900;font-family:'JetBrains Mono','Courier New',monospace;border:2px solid #dcfce7}
                 .ticket-amount{font-size:18px;font-weight:900;color:#b7791f;font-family:'JetBrains Mono','Courier New',monospace;white-space:nowrap}
+                .ticket-lot-total{display:flex;justify-content:space-between;gap:12px;align-items:center;margin:8px -2px -2px;padding:8px 10px;border-radius:8px;background:#f8fafc;border:1px solid #e2e8f0}
+                .ticket-lot-total span{font-size:11px;font-weight:900;color:#64748b;text-transform:uppercase;letter-spacing:.5px}
+                .ticket-lot-total strong{font-size:15px;font-weight:900;color:#0f172a;font-family:'JetBrains Mono','Courier New',monospace;white-space:nowrap}
+                .ticket-winners{margin:10px 0 4px;background:#ecfdf5;border:1px solid #86efac;border-radius:8px;overflow:hidden}
+                .ticket-winners-head{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;background:#14532d;color:#fff}
+                .ticket-winners-head span{font-size:13px;font-weight:900;text-transform:uppercase;letter-spacing:.8px}
+                .ticket-winners-head strong{font-size:11px;font-weight:900;color:#f8df8c;text-transform:uppercase}
+                .ticket-winner-group{padding:10px 12px;border-top:1px solid #bbf7d0}
+                .ticket-winner-lot{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;margin-bottom:8px}
+                .ticket-winner-lot span{display:block;font-size:14px;font-weight:900;color:#0f172a}
+                .ticket-winner-lot small{display:block;margin-top:2px;font-size:11px;font-weight:900;color:#166534}
+                .ticket-winner-lot strong{font-size:18px;font-weight:900;color:#166534;font-family:'JetBrains Mono','Courier New',monospace;white-space:nowrap}
+                .ticket-winner-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 10px;padding:7px 0;border-top:1px solid #dcfce7}
+                .ticket-winner-row span{font-size:13px;font-weight:900;color:#0f172a}
+                .ticket-winner-row small{font-size:11px;font-weight:800;color:#64748b}
+                .ticket-winner-row b{grid-row:1/3;grid-column:2;font-size:15px;font-weight:900;color:#166534;font-family:'JetBrains Mono','Courier New',monospace;align-self:center}
                 .ticket-total{display:flex;justify-content:space-between;align-items:center;padding:14px 16px;background:${spec.primaryNavy};color:#fff;border-top:3px solid ${spec.accentGold}}
                 .ticket-total-k{font-size:11px;font-weight:900;letter-spacing:1.4px;text-transform:uppercase;color:#f8df8c}
                 .ticket-total-v{font-size:30px;font-weight:900;color:#f8df8c;font-family:'JetBrains Mono','Courier New',monospace}
@@ -189,6 +245,7 @@ class StaticExportTemplateRepository : ExportTemplateRepository {
                     }
                 }
                   $body
+                  $winnersHtml
                 </div>
                 <div class="ticket-total">
                   <span class="ticket-total-k">TOTAL</span>
@@ -323,6 +380,22 @@ class StaticExportTemplateRepository : ExportTemplateRepository {
             "winner" -> "Ganador"
             "voided", "invalid" -> "Anulado"
             else -> "Activo"
+        }
+    }
+
+    private fun winningHitLabel(raw: String): String {
+        return when (raw.trim().lowercase(java.util.Locale.US)) {
+            "1" -> "primera"
+            "2" -> "segunda"
+            "3" -> "tercera"
+            "1-2" -> "pale 1-2"
+            "1-3" -> "pale 1-3"
+            "2-3" -> "pale 2-3"
+            "sp" -> "super pale"
+            "straight" -> "straight"
+            "back" -> "ultimo par"
+            "" -> "ganadora"
+            else -> raw
         }
     }
 

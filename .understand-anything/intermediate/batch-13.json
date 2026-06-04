@@ -1,0 +1,659 @@
+{
+  "nodes": [
+    {
+      "id": "file:supabase/migrations/20260507000100_ota_update_system.sql",
+      "type": "table",
+      "name": "20260507000100_ota_update_system.sql",
+      "summary": "Supabase integration file used by the app/server for remote data, ticket, result, or configuration workflows.",
+      "tags": [
+        "data",
+        "supabase",
+        "database"
+      ],
+      "complexity": "moderate",
+      "filePath": "supabase/migrations/20260507000100_ota_update_system.sql",
+      "lineRange": [
+        1,
+        115
+      ]
+    },
+    {
+      "id": "file:supabase/migrations/20260518000100_results_server_refresh_cron.sql",
+      "type": "table",
+      "name": "20260518000100_results_server_refresh_cron.sql",
+      "summary": "Supabase integration file used by the app/server for remote data, ticket, result, or configuration workflows.",
+      "tags": [
+        "data",
+        "results",
+        "supabase",
+        "database"
+      ],
+      "complexity": "moderate",
+      "filePath": "supabase/migrations/20260518000100_results_server_refresh_cron.sql",
+      "lineRange": [
+        1,
+        60
+      ]
+    },
+    {
+      "id": "file:supabase/migrations/20260518230328_server_first_prize_payments.sql",
+      "type": "table",
+      "name": "20260518230328_server_first_prize_payments.sql",
+      "summary": "Supabase integration file used by the app/server for remote data, ticket, result, or configuration workflows.",
+      "tags": [
+        "data",
+        "supabase",
+        "database"
+      ],
+      "complexity": "complex",
+      "filePath": "supabase/migrations/20260518230328_server_first_prize_payments.sql",
+      "lineRange": [
+        1,
+        614
+      ]
+    },
+    {
+      "id": "file:supabase/migrations/20260518235038_temporary_lock_public_ticket_rpcs.sql",
+      "type": "table",
+      "name": "20260518235038_temporary_lock_public_ticket_rpcs.sql",
+      "summary": "Supabase integration file used by the app/server for remote data, ticket, result, or configuration workflows.",
+      "tags": [
+        "data",
+        "ticket",
+        "supabase",
+        "database"
+      ],
+      "complexity": "moderate",
+      "filePath": "supabase/migrations/20260518235038_temporary_lock_public_ticket_rpcs.sql",
+      "lineRange": [
+        1,
+        63
+      ]
+    },
+    {
+      "id": "file:supabase/migrations/20260518235228_temporary_lock_remaining_public_security_definers.sql",
+      "type": "table",
+      "name": "20260518235228_temporary_lock_remaining_public_security_definers.sql",
+      "summary": "Supabase integration file used by the app/server for remote data, ticket, result, or configuration workflows.",
+      "tags": [
+        "data",
+        "supabase",
+        "database"
+      ],
+      "complexity": "simple",
+      "filePath": "supabase/migrations/20260518235228_temporary_lock_remaining_public_security_definers.sql",
+      "lineRange": [
+        1,
+        1
+      ]
+    },
+    {
+      "id": "file:supabase/migrations/20260519003000_enforce_ticket_delete_roles_and_two_minute_window.sql",
+      "type": "table",
+      "name": "20260519003000_enforce_ticket_delete_roles_and_two_minute_window.sql",
+      "summary": "Supabase integration file used by the app/server for remote data, ticket, result, or configuration workflows.",
+      "tags": [
+        "data",
+        "ticket",
+        "supabase",
+        "database"
+      ],
+      "complexity": "moderate",
+      "filePath": "supabase/migrations/20260519003000_enforce_ticket_delete_roles_and_two_minute_window.sql",
+      "lineRange": [
+        1,
+        152
+      ]
+    },
+    {
+      "id": "file:supabase/migrations/20260519013000_server_authoritative_sales_limits.sql",
+      "type": "table",
+      "name": "20260519013000_server_authoritative_sales_limits.sql",
+      "summary": "Supabase integration file used by the app/server for remote data, ticket, result, or configuration workflows.",
+      "tags": [
+        "data",
+        "sales",
+        "supabase",
+        "database"
+      ],
+      "complexity": "complex",
+      "filePath": "supabase/migrations/20260519013000_server_authoritative_sales_limits.sql",
+      "lineRange": [
+        1,
+        363
+      ]
+    },
+    {
+      "id": "file:supabase/migrations/20260519023000_server_profile_grace_jwt_clock.sql",
+      "type": "table",
+      "name": "20260519023000_server_profile_grace_jwt_clock.sql",
+      "summary": "Supabase integration file used by the app/server for remote data, ticket, result, or configuration workflows.",
+      "tags": [
+        "data",
+        "supabase",
+        "database"
+      ],
+      "complexity": "complex",
+      "filePath": "supabase/migrations/20260519023000_server_profile_grace_jwt_clock.sql",
+      "lineRange": [
+        1,
+        238
+      ]
+    },
+    {
+      "id": "file:supabase/migrations/20260519033000_client_health_events.sql",
+      "type": "table",
+      "name": "20260519033000_client_health_events.sql",
+      "summary": "Supabase integration file used by the app/server for remote data, ticket, result, or configuration workflows.",
+      "tags": [
+        "data",
+        "supabase",
+        "database"
+      ],
+      "complexity": "simple",
+      "filePath": "supabase/migrations/20260519033000_client_health_events.sql",
+      "lineRange": [
+        1,
+        26
+      ]
+    },
+    {
+      "id": "file:supabase/migrations/20260519043000_normalize_pick_box_straight_server.sql",
+      "type": "table",
+      "name": "20260519043000_normalize_pick_box_straight_server.sql",
+      "summary": "Supabase integration file used by the app/server for remote data, ticket, result, or configuration workflows.",
+      "tags": [
+        "data",
+        "supabase",
+        "database"
+      ],
+      "complexity": "moderate",
+      "filePath": "supabase/migrations/20260519043000_normalize_pick_box_straight_server.sql",
+      "lineRange": [
+        1,
+        152
+      ]
+    },
+    {
+      "id": "file:supabase/migrations/20260519052000_harden_advisors_nonblocking.sql",
+      "type": "table",
+      "name": "20260519052000_harden_advisors_nonblocking.sql",
+      "summary": "Supabase integration file used by the app/server for remote data, ticket, result, or configuration workflows.",
+      "tags": [
+        "data",
+        "supabase",
+        "database"
+      ],
+      "complexity": "moderate",
+      "filePath": "supabase/migrations/20260519052000_harden_advisors_nonblocking.sql",
+      "lineRange": [
+        1,
+        63
+      ]
+    },
+    {
+      "id": "file:supabase/migrations/20260519053000_harden_remaining_function_search_paths.sql",
+      "type": "table",
+      "name": "20260519053000_harden_remaining_function_search_paths.sql",
+      "summary": "Supabase integration file used by the app/server for remote data, ticket, result, or configuration workflows.",
+      "tags": [
+        "data",
+        "supabase",
+        "database"
+      ],
+      "complexity": "simple",
+      "filePath": "supabase/migrations/20260519053000_harden_remaining_function_search_paths.sql",
+      "lineRange": [
+        1,
+        16
+      ]
+    },
+    {
+      "id": "file:supabase/migrations/20260519072000_allow_public_results_cache_writes.sql",
+      "type": "table",
+      "name": "20260519072000_allow_public_results_cache_writes.sql",
+      "summary": "Supabase integration file used by the app/server for remote data, ticket, result, or configuration workflows.",
+      "tags": [
+        "data",
+        "results",
+        "supabase",
+        "database"
+      ],
+      "complexity": "simple",
+      "filePath": "supabase/migrations/20260519072000_allow_public_results_cache_writes.sql",
+      "lineRange": [
+        1,
+        45
+      ]
+    },
+    {
+      "id": "file:supabase/migrations/20260519075000_scope_cashier_play_limits_by_cashier.sql",
+      "type": "table",
+      "name": "20260519075000_scope_cashier_play_limits_by_cashier.sql",
+      "summary": "Supabase integration file used by the app/server for remote data, ticket, result, or configuration workflows.",
+      "tags": [
+        "data",
+        "supabase",
+        "database"
+      ],
+      "complexity": "simple",
+      "filePath": "supabase/migrations/20260519075000_scope_cashier_play_limits_by_cashier.sql",
+      "lineRange": [
+        1,
+        52
+      ]
+    },
+    {
+      "id": "file:supabase/migrations/20260520123000_auto_sync_winning_ticket_payloads.sql",
+      "type": "table",
+      "name": "20260520123000_auto_sync_winning_ticket_payloads.sql",
+      "summary": "Supabase integration file used by the app/server for remote data, ticket, result, or configuration workflows.",
+      "tags": [
+        "data",
+        "ticket",
+        "sync",
+        "supabase",
+        "database"
+      ],
+      "complexity": "moderate",
+      "filePath": "supabase/migrations/20260520123000_auto_sync_winning_ticket_payloads.sql",
+      "lineRange": [
+        1,
+        192
+      ]
+    },
+    {
+      "id": "file:supabase/migrations/20260520124500_include_pick_results_in_server_reconcile.sql",
+      "type": "table",
+      "name": "20260520124500_include_pick_results_in_server_reconcile.sql",
+      "summary": "Supabase integration file used by the app/server for remote data, ticket, result, or configuration workflows.",
+      "tags": [
+        "data",
+        "results",
+        "supabase",
+        "database"
+      ],
+      "complexity": "complex",
+      "filePath": "supabase/migrations/20260520124500_include_pick_results_in_server_reconcile.sql",
+      "lineRange": [
+        1,
+        235
+      ]
+    },
+    {
+      "id": "file:supabase/migrations/20260520131500_fix_finance_report_dates_commissions_and_limit_status.sql",
+      "type": "table",
+      "name": "20260520131500_fix_finance_report_dates_commissions_and_limit_status.sql",
+      "summary": "Supabase integration file used by the app/server for remote data, ticket, result, or configuration workflows.",
+      "tags": [
+        "data",
+        "supabase",
+        "database"
+      ],
+      "complexity": "moderate",
+      "filePath": "supabase/migrations/20260520131500_fix_finance_report_dates_commissions_and_limit_status.sql",
+      "lineRange": [
+        1,
+        216
+      ]
+    },
+    {
+      "id": "file:supabase/migrations/20260520132000_map_ticket_limit_errors_to_conflict.sql",
+      "type": "table",
+      "name": "20260520132000_map_ticket_limit_errors_to_conflict.sql",
+      "summary": "Supabase integration file used by the app/server for remote data, ticket, result, or configuration workflows.",
+      "tags": [
+        "data",
+        "ticket",
+        "supabase",
+        "database"
+      ],
+      "complexity": "simple",
+      "filePath": "supabase/migrations/20260520132000_map_ticket_limit_errors_to_conflict.sql",
+      "lineRange": [
+        1,
+        32
+      ]
+    },
+    {
+      "id": "file:supabase/migrations/20260520205152_reserve_pending_prizes_in_reports.sql",
+      "type": "table",
+      "name": "20260520205152_reserve_pending_prizes_in_reports.sql",
+      "summary": "Supabase integration file used by the app/server for remote data, ticket, result, or configuration workflows.",
+      "tags": [
+        "data",
+        "supabase",
+        "database"
+      ],
+      "complexity": "moderate",
+      "filePath": "supabase/migrations/20260520205152_reserve_pending_prizes_in_reports.sql",
+      "lineRange": [
+        1,
+        123
+      ]
+    },
+    {
+      "id": "file:supabase/migrations/20260521183000_secure_results_reconcile_ticket_items.sql",
+      "type": "table",
+      "name": "20260521183000_secure_results_reconcile_ticket_items.sql",
+      "summary": "Supabase integration file used by the app/server for remote data, ticket, result, or configuration workflows.",
+      "tags": [
+        "data",
+        "ticket",
+        "results",
+        "supabase",
+        "database"
+      ],
+      "complexity": "simple",
+      "filePath": "supabase/migrations/20260521183000_secure_results_reconcile_ticket_items.sql",
+      "lineRange": [
+        1,
+        46
+      ]
+    },
+    {
+      "id": "file:supabase/migrations/20260522031721_fix_limits_pick_supervisor_regressions.sql",
+      "type": "table",
+      "name": "20260522031721_fix_limits_pick_supervisor_regressions.sql",
+      "summary": "Supabase integration file used by the app/server for remote data, ticket, result, or configuration workflows.",
+      "tags": [
+        "data",
+        "supabase",
+        "database"
+      ],
+      "complexity": "complex",
+      "filePath": "supabase/migrations/20260522031721_fix_limits_pick_supervisor_regressions.sql",
+      "lineRange": [
+        1,
+        317
+      ]
+    },
+    {
+      "id": "file:supabase/migrations/20260522070500_fix_performance_advisor_indexes_rls.sql",
+      "type": "table",
+      "name": "20260522070500_fix_performance_advisor_indexes_rls.sql",
+      "summary": "Supabase integration file used by the app/server for remote data, ticket, result, or configuration workflows.",
+      "tags": [
+        "data",
+        "supabase",
+        "database"
+      ],
+      "complexity": "moderate",
+      "filePath": "supabase/migrations/20260522070500_fix_performance_advisor_indexes_rls.sql",
+      "lineRange": [
+        1,
+        115
+      ]
+    },
+    {
+      "id": "file:supabase/migrations/20260524092446_sync_results_tables_from_kv_cache.sql",
+      "type": "table",
+      "name": "20260524092446_sync_results_tables_from_kv_cache.sql",
+      "summary": "Supabase integration file used by the app/server for remote data, ticket, result, or configuration workflows.",
+      "tags": [
+        "data",
+        "results",
+        "sync",
+        "supabase",
+        "database"
+      ],
+      "complexity": "moderate",
+      "filePath": "supabase/migrations/20260524092446_sync_results_tables_from_kv_cache.sql",
+      "lineRange": [
+        1,
+        101
+      ]
+    },
+    {
+      "id": "file:supabase/migrations/20260524101500_avoid_reconcile_when_result_numbers_unchanged.sql",
+      "type": "table",
+      "name": "20260524101500_avoid_reconcile_when_result_numbers_unchanged.sql",
+      "summary": "Supabase integration file used by the app/server for remote data, ticket, result, or configuration workflows.",
+      "tags": [
+        "data",
+        "results",
+        "supabase",
+        "database"
+      ],
+      "complexity": "moderate",
+      "filePath": "supabase/migrations/20260524101500_avoid_reconcile_when_result_numbers_unchanged.sql",
+      "lineRange": [
+        1,
+        108
+      ]
+    },
+    {
+      "id": "file:supabase/migrations/20260525000100_fix_prize_payout_config_aliases.sql",
+      "type": "table",
+      "name": "20260525000100_fix_prize_payout_config_aliases.sql",
+      "summary": "Supabase integration file used by the app/server for remote data, ticket, result, or configuration workflows.",
+      "tags": [
+        "data",
+        "supabase",
+        "database"
+      ],
+      "complexity": "moderate",
+      "filePath": "supabase/migrations/20260525000100_fix_prize_payout_config_aliases.sql",
+      "lineRange": [
+        1,
+        165
+      ]
+    },
+    {
+      "id": "file:supabase/migrations/20260525001000_fix_prize_payout_config_master_state.sql",
+      "type": "table",
+      "name": "20260525001000_fix_prize_payout_config_master_state.sql",
+      "summary": "Supabase integration file used by the app/server for remote data, ticket, result, or configuration workflows.",
+      "tags": [
+        "data",
+        "supabase",
+        "database"
+      ],
+      "complexity": "moderate",
+      "filePath": "supabase/migrations/20260525001000_fix_prize_payout_config_master_state.sql",
+      "lineRange": [
+        1,
+        165
+      ]
+    },
+    {
+      "id": "file:supabase/migrations/20260527093000_separate_admin_self_limits_from_cashier_defaults.sql",
+      "type": "table",
+      "name": "20260527093000_separate_admin_self_limits_from_cashier_defaults.sql",
+      "summary": "Supabase integration file used by the app/server for remote data, ticket, result, or configuration workflows.",
+      "tags": [
+        "data",
+        "supabase",
+        "database"
+      ],
+      "complexity": "moderate",
+      "filePath": "supabase/migrations/20260527093000_separate_admin_self_limits_from_cashier_defaults.sql",
+      "lineRange": [
+        1,
+        102
+      ]
+    },
+    {
+      "id": "file:supabase/migrations/20260528014500_skip_inline_reconcile_during_results_kv_sync.sql",
+      "type": "table",
+      "name": "20260528014500_skip_inline_reconcile_during_results_kv_sync.sql",
+      "summary": "Supabase integration file used by the app/server for remote data, ticket, result, or configuration workflows.",
+      "tags": [
+        "data",
+        "results",
+        "sync",
+        "supabase",
+        "database"
+      ],
+      "complexity": "moderate",
+      "filePath": "supabase/migrations/20260528014500_skip_inline_reconcile_during_results_kv_sync.sql",
+      "lineRange": [
+        1,
+        119
+      ]
+    },
+    {
+      "id": "file:supabase/migrations/20260528120000_optimize_rls_and_indexes.sql",
+      "type": "table",
+      "name": "20260528120000_optimize_rls_and_indexes.sql",
+      "summary": "Supabase integration file used by the app/server for remote data, ticket, result, or configuration workflows.",
+      "tags": [
+        "data",
+        "supabase",
+        "database"
+      ],
+      "complexity": "simple",
+      "filePath": "supabase/migrations/20260528120000_optimize_rls_and_indexes.sql",
+      "lineRange": [
+        1,
+        28
+      ]
+    },
+    {
+      "id": "file:supabase/migrations/20260528130000_harden_security_definer_executes.sql",
+      "type": "table",
+      "name": "20260528130000_harden_security_definer_executes.sql",
+      "summary": "Supabase integration file used by the app/server for remote data, ticket, result, or configuration workflows.",
+      "tags": [
+        "data",
+        "supabase",
+        "database"
+      ],
+      "complexity": "simple",
+      "filePath": "supabase/migrations/20260528130000_harden_security_definer_executes.sql",
+      "lineRange": [
+        1,
+        11
+      ]
+    },
+    {
+      "id": "file:supabase/migrations/20260529003000_result_draws_prize_v2_foundation.sql",
+      "type": "table",
+      "name": "20260529003000_result_draws_prize_v2_foundation.sql",
+      "summary": "Supabase integration file used by the app/server for remote data, ticket, result, or configuration workflows.",
+      "tags": [
+        "data",
+        "results",
+        "supabase",
+        "database"
+      ],
+      "complexity": "complex",
+      "filePath": "supabase/migrations/20260529003000_result_draws_prize_v2_foundation.sql",
+      "lineRange": [
+        1,
+        708
+      ]
+    },
+    {
+      "id": "file:supabase/migrations/20260529004500_result_reconcile_queue_guard.sql",
+      "type": "table",
+      "name": "20260529004500_result_reconcile_queue_guard.sql",
+      "summary": "Supabase integration file used by the app/server for remote data, ticket, result, or configuration workflows.",
+      "tags": [
+        "data",
+        "results",
+        "supabase",
+        "database"
+      ],
+      "complexity": "moderate",
+      "filePath": "supabase/migrations/20260529004500_result_reconcile_queue_guard.sql",
+      "lineRange": [
+        1,
+        134
+      ]
+    },
+    {
+      "id": "file:supabase/migrations/20260529011000_results_realtime_signal.sql",
+      "type": "table",
+      "name": "20260529011000_results_realtime_signal.sql",
+      "summary": "Supabase integration file used by the app/server for remote data, ticket, result, or configuration workflows.",
+      "tags": [
+        "data",
+        "results",
+        "sync",
+        "supabase",
+        "database"
+      ],
+      "complexity": "moderate",
+      "filePath": "supabase/migrations/20260529011000_results_realtime_signal.sql",
+      "lineRange": [
+        1,
+        137
+      ]
+    },
+    {
+      "id": "file:supabase/migrations/20260529013000_ticket_owner_realtime_touch.sql",
+      "type": "table",
+      "name": "20260529013000_ticket_owner_realtime_touch.sql",
+      "summary": "Supabase integration file used by the app/server for remote data, ticket, result, or configuration workflows.",
+      "tags": [
+        "data",
+        "ticket",
+        "sync",
+        "supabase",
+        "database"
+      ],
+      "complexity": "moderate",
+      "filePath": "supabase/migrations/20260529013000_ticket_owner_realtime_touch.sql",
+      "lineRange": [
+        1,
+        76
+      ]
+    },
+    {
+      "id": "file:supabase/migrations/20260529020000_result_draws_first_cutover.sql",
+      "type": "table",
+      "name": "20260529020000_result_draws_first_cutover.sql",
+      "summary": "Supabase integration file used by the app/server for remote data, ticket, result, or configuration workflows.",
+      "tags": [
+        "data",
+        "results",
+        "supabase",
+        "database"
+      ],
+      "complexity": "simple",
+      "filePath": "supabase/migrations/20260529020000_result_draws_first_cutover.sql",
+      "lineRange": [
+        1,
+        46
+      ]
+    },
+    {
+      "id": "file:supabase/migrations/20260529033000_force_prize_config_from_ticket_seller.sql",
+      "type": "table",
+      "name": "20260529033000_force_prize_config_from_ticket_seller.sql",
+      "summary": "Supabase integration file used by the app/server for remote data, ticket, result, or configuration workflows.",
+      "tags": [
+        "data",
+        "ticket",
+        "supabase",
+        "database"
+      ],
+      "complexity": "simple",
+      "filePath": "supabase/migrations/20260529033000_force_prize_config_from_ticket_seller.sql",
+      "lineRange": [
+        1,
+        32
+      ]
+    },
+    {
+      "id": "file:supabase/migrations/20260529034500_reconcile_paid_ticket_prizes_with_seller_config.sql",
+      "type": "table",
+      "name": "20260529034500_reconcile_paid_ticket_prizes_with_seller_config.sql",
+      "summary": "Supabase integration file used by the app/server for remote data, ticket, result, or configuration workflows.",
+      "tags": [
+        "data",
+        "ticket",
+        "supabase",
+        "database"
+      ],
+      "complexity": "moderate",
+      "filePath": "supabase/migrations/20260529034500_reconcile_paid_ticket_prizes_with_seller_config.sql",
+      "lineRange": [
+        1,
+        106
+      ]
+    }
+  ],
+  "edges": []
+}

@@ -1,0 +1,133 @@
+{
+  "nodes": [
+    {
+      "id": "file:docs/superpowers/specs/2026-04-18-lotterynet-recovery-design.md",
+      "type": "document",
+      "name": "2026-04-18-lotterynet-recovery-design.md",
+      "summary": "Documentation file covering 2026-04-18-lotterynet-recovery-design.md.",
+      "tags": [
+        "docs",
+        "documentation"
+      ],
+      "complexity": "simple",
+      "filePath": "docs/superpowers/specs/2026-04-18-lotterynet-recovery-design.md",
+      "lineRange": [
+        1,
+        48
+      ]
+    },
+    {
+      "id": "file:docs/superpowers/specs/2026-04-21-figma-library-phase0-discovery.md",
+      "type": "document",
+      "name": "2026-04-21-figma-library-phase0-discovery.md",
+      "summary": "Documentation file covering 2026-04-21-figma-library-phase0-discovery.md.",
+      "tags": [
+        "docs",
+        "documentation"
+      ],
+      "complexity": "complex",
+      "filePath": "docs/superpowers/specs/2026-04-21-figma-library-phase0-discovery.md",
+      "lineRange": [
+        1,
+        478
+      ]
+    },
+    {
+      "id": "file:docs/superpowers/specs/2026-04-21-figma-library-phase1-foundations.md",
+      "type": "document",
+      "name": "2026-04-21-figma-library-phase1-foundations.md",
+      "summary": "Documentation file covering 2026-04-21-figma-library-phase1-foundations.md.",
+      "tags": [
+        "docs",
+        "documentation"
+      ],
+      "complexity": "complex",
+      "filePath": "docs/superpowers/specs/2026-04-21-figma-library-phase1-foundations.md",
+      "lineRange": [
+        1,
+        315
+      ]
+    },
+    {
+      "id": "file:docs/superpowers/specs/2026-04-21-figma-library-phase2-component-spec.md",
+      "type": "document",
+      "name": "2026-04-21-figma-library-phase2-component-spec.md",
+      "summary": "Documentation file covering 2026-04-21-figma-library-phase2-component-spec.md.",
+      "tags": [
+        "docs",
+        "documentation"
+      ],
+      "complexity": "complex",
+      "filePath": "docs/superpowers/specs/2026-04-21-figma-library-phase2-component-spec.md",
+      "lineRange": [
+        1,
+        433
+      ]
+    },
+    {
+      "id": "file:docs/superpowers/specs/2026-04-21-figma-redesign-handoff.md",
+      "type": "document",
+      "name": "2026-04-21-figma-redesign-handoff.md",
+      "summary": "Documentation file covering 2026-04-21-figma-redesign-handoff.md.",
+      "tags": [
+        "docs",
+        "documentation"
+      ],
+      "complexity": "complex",
+      "filePath": "docs/superpowers/specs/2026-04-21-figma-redesign-handoff.md",
+      "lineRange": [
+        1,
+        393
+      ]
+    },
+    {
+      "id": "file:docs/superpowers/specs/2026-04-21-figma-screen-spec-v1.md",
+      "type": "document",
+      "name": "2026-04-21-figma-screen-spec-v1.md",
+      "summary": "Documentation file covering 2026-04-21-figma-screen-spec-v1.md.",
+      "tags": [
+        "docs",
+        "documentation"
+      ],
+      "complexity": "moderate",
+      "filePath": "docs/superpowers/specs/2026-04-21-figma-screen-spec-v1.md",
+      "lineRange": [
+        1,
+        147
+      ]
+    },
+    {
+      "id": "file:docs/superpowers/specs/2026-05-04-recargas-rapidas-integration-design.md",
+      "type": "document",
+      "name": "2026-05-04-recargas-rapidas-integration-design.md",
+      "summary": "Documentation file covering 2026-05-04-recargas-rapidas-integration-design.md.",
+      "tags": [
+        "docs",
+        "documentation"
+      ],
+      "complexity": "simple",
+      "filePath": "docs/superpowers/specs/2026-05-04-recargas-rapidas-integration-design.md",
+      "lineRange": [
+        1,
+        50
+      ]
+    },
+    {
+      "id": "file:docs/superpowers/specs/lotterynet-figma-tokens-v1.json",
+      "type": "config",
+      "name": "lotterynet-figma-tokens-v1.json",
+      "summary": "Configuration file for lotterynet-figma-tokens-v1.json.",
+      "tags": [
+        "config",
+        "configuration"
+      ],
+      "complexity": "moderate",
+      "filePath": "docs/superpowers/specs/lotterynet-figma-tokens-v1.json",
+      "lineRange": [
+        1,
+        92
+      ]
+    }
+  ],
+  "edges": []
+}

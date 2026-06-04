@@ -1,0 +1,49 @@
+{
+  "projectRoot": "C:\\Users\\Randy Cordero\\Desktop\\lotterynet_android",
+  "batchFiles": [
+    {
+      "path": "proyecto web nuevo/README.md",
+      "language": "markdown",
+      "sizeLines": 73,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "proyecto web nuevo/index.html",
+      "language": "html",
+      "sizeLines": 14,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "proyecto web nuevo/package.json",
+      "language": "json",
+      "sizeLines": 33,
+      "fileCategory": "config"
+    },
+    {
+      "path": "proyecto web nuevo/tsconfig.app.json",
+      "language": "json",
+      "sizeLines": 25,
+      "fileCategory": "config"
+    },
+    {
+      "path": "proyecto web nuevo/tsconfig.json",
+      "language": "json",
+      "sizeLines": 7,
+      "fileCategory": "config"
+    },
+    {
+      "path": "proyecto web nuevo/tsconfig.node.json",
+      "language": "json",
+      "sizeLines": 24,
+      "fileCategory": "config"
+    }
+  ],
+  "batchImportData": {
+    "proyecto web nuevo/README.md": [],
+    "proyecto web nuevo/index.html": [],
+    "proyecto web nuevo/package.json": [],
+    "proyecto web nuevo/tsconfig.app.json": [],
+    "proyecto web nuevo/tsconfig.json": [],
+    "proyecto web nuevo/tsconfig.node.json": []
+  }
+}

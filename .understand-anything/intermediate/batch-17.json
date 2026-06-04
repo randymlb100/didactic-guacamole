@@ -1,0 +1,133 @@
+{
+  "nodes": [
+    {
+      "id": "file:app/src/main/res/drawable/bg_login_primary_button.xml",
+      "type": "config",
+      "name": "bg_login_primary_button.xml",
+      "summary": "Configuration file for bg_login_primary_button.xml.",
+      "tags": [
+        "config",
+        "configuration"
+      ],
+      "complexity": "simple",
+      "filePath": "app/src/main/res/drawable/bg_login_primary_button.xml",
+      "lineRange": [
+        1,
+        15
+      ]
+    },
+    {
+      "id": "file:app/src/main/res/drawable/bg_login_secondary_button.xml",
+      "type": "config",
+      "name": "bg_login_secondary_button.xml",
+      "summary": "Configuration file for bg_login_secondary_button.xml.",
+      "tags": [
+        "config",
+        "configuration"
+      ],
+      "complexity": "simple",
+      "filePath": "app/src/main/res/drawable/bg_login_secondary_button.xml",
+      "lineRange": [
+        1,
+        8
+      ]
+    },
+    {
+      "id": "file:app/src/main/res/drawable/bg_login_surface.xml",
+      "type": "config",
+      "name": "bg_login_surface.xml",
+      "summary": "Configuration file for bg_login_surface.xml.",
+      "tags": [
+        "config",
+        "configuration"
+      ],
+      "complexity": "simple",
+      "filePath": "app/src/main/res/drawable/bg_login_surface.xml",
+      "lineRange": [
+        1,
+        8
+      ]
+    },
+    {
+      "id": "file:app/src/main/res/drawable/ic_launcher.xml",
+      "type": "config",
+      "name": "ic_launcher.xml",
+      "summary": "Configuration file for ic_launcher.xml.",
+      "tags": [
+        "config",
+        "configuration"
+      ],
+      "complexity": "simple",
+      "filePath": "app/src/main/res/drawable/ic_launcher.xml",
+      "lineRange": [
+        1,
+        5
+      ]
+    },
+    {
+      "id": "file:app/src/main/res/drawable/ic_launcher_background.xml",
+      "type": "config",
+      "name": "ic_launcher_background.xml",
+      "summary": "Configuration file for ic_launcher_background.xml.",
+      "tags": [
+        "config",
+        "configuration"
+      ],
+      "complexity": "simple",
+      "filePath": "app/src/main/res/drawable/ic_launcher_background.xml",
+      "lineRange": [
+        1,
+        10
+      ]
+    },
+    {
+      "id": "file:app/src/main/res/drawable/ic_launcher_foreground.xml",
+      "type": "config",
+      "name": "ic_launcher_foreground.xml",
+      "summary": "Configuration file for ic_launcher_foreground.xml.",
+      "tags": [
+        "config",
+        "configuration"
+      ],
+      "complexity": "simple",
+      "filePath": "app/src/main/res/drawable/ic_launcher_foreground.xml",
+      "lineRange": [
+        1,
+        20
+      ]
+    },
+    {
+      "id": "file:app/src/main/res/drawable/ic_launcher_monochrome.xml",
+      "type": "config",
+      "name": "ic_launcher_monochrome.xml",
+      "summary": "Configuration file for ic_launcher_monochrome.xml.",
+      "tags": [
+        "config",
+        "configuration"
+      ],
+      "complexity": "simple",
+      "filePath": "app/src/main/res/drawable/ic_launcher_monochrome.xml",
+      "lineRange": [
+        1,
+        19
+      ]
+    },
+    {
+      "id": "file:app/src/main/res/drawable/ic_launcher_round.xml",
+      "type": "config",
+      "name": "ic_launcher_round.xml",
+      "summary": "Configuration file for ic_launcher_round.xml.",
+      "tags": [
+        "config",
+        "configuration"
+      ],
+      "complexity": "simple",
+      "filePath": "app/src/main/res/drawable/ic_launcher_round.xml",
+      "lineRange": [
+        1,
+        5
+      ]
+    }
+  ],
+  "edges": []
+}

@@ -1,0 +1,1208 @@
+{
+  "nodes": [
+    {
+      "id": "file:app/src/main/res/values/strings.xml",
+      "type": "config",
+      "name": "strings.xml",
+      "summary": "Configuration file for strings.xml.",
+      "tags": [
+        "config",
+        "configuration"
+      ],
+      "complexity": "simple",
+      "filePath": "app/src/main/res/values/strings.xml",
+      "lineRange": [
+        1,
+        19
+      ]
+    },
+    {
+      "id": "file:app/src/main/res/values/themes.xml",
+      "type": "config",
+      "name": "themes.xml",
+      "summary": "Configuration file for themes.xml.",
+      "tags": [
+        "config",
+        "configuration"
+      ],
+      "complexity": "simple",
+      "filePath": "app/src/main/res/values/themes.xml",
+      "lineRange": [
+        1,
+        27
+      ]
+    },
+    {
+      "id": "file:app/src/test/java/com/lotterynet/pro/core/calendar/LotteryTimeZonesTest.kt",
+      "type": "file",
+      "name": "LotteryTimeZonesTest.kt",
+      "summary": "Source file app/src/test/java/com/lotterynet/pro/core/calendar/LotteryTimeZonesTest.kt containing 1 class(es) and 1 function(s).",
+      "tags": [
+        "code",
+        "test"
+      ],
+      "complexity": "simple",
+      "filePath": "app/src/test/java/com/lotterynet/pro/core/calendar/LotteryTimeZonesTest.kt",
+      "lineRange": [
+        1,
+        34
+      ]
+    },
+    {
+      "id": "class:app/src/test/java/com/lotterynet/pro/core/calendar/LotteryTimeZonesTest.kt:LotteryTimeZonesTest",
+      "type": "class",
+      "name": "LotteryTimeZonesTest",
+      "summary": "Class LotteryTimeZonesTest in LotteryTimeZonesTest.kt.",
+      "tags": [
+        "class",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/test/java/com/lotterynet/pro/core/calendar/LotteryTimeZonesTest.kt",
+      "lineRange": [
+        10,
+        35
+      ]
+    },
+    {
+      "id": "file:app/src/test/java/com/lotterynet/pro/core/catalog/LotteryAssetResolverTest.kt",
+      "type": "file",
+      "name": "LotteryAssetResolverTest.kt",
+      "summary": "Source file app/src/test/java/com/lotterynet/pro/core/catalog/LotteryAssetResolverTest.kt containing 1 class(es).",
+      "tags": [
+        "code",
+        "test"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/test/java/com/lotterynet/pro/core/catalog/LotteryAssetResolverTest.kt",
+      "lineRange": [
+        1,
+        71
+      ]
+    },
+    {
+      "id": "class:app/src/test/java/com/lotterynet/pro/core/catalog/LotteryAssetResolverTest.kt:LotteryAssetResolverTest",
+      "type": "class",
+      "name": "LotteryAssetResolverTest",
+      "summary": "Class LotteryAssetResolverTest in LotteryAssetResolverTest.kt.",
+      "tags": [
+        "class",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/test/java/com/lotterynet/pro/core/catalog/LotteryAssetResolverTest.kt",
+      "lineRange": [
+        11,
+        72
+      ]
+    },
+    {
+      "id": "file:app/src/test/java/com/lotterynet/pro/core/catalog/LotteryLogoBitmapLoaderTest.kt",
+      "type": "file",
+      "name": "LotteryLogoBitmapLoaderTest.kt",
+      "summary": "Source file app/src/test/java/com/lotterynet/pro/core/catalog/LotteryLogoBitmapLoaderTest.kt containing 1 class(es).",
+      "tags": [
+        "code",
+        "test"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/test/java/com/lotterynet/pro/core/catalog/LotteryLogoBitmapLoaderTest.kt",
+      "lineRange": [
+        1,
+        92
+      ]
+    },
+    {
+      "id": "class:app/src/test/java/com/lotterynet/pro/core/catalog/LotteryLogoBitmapLoaderTest.kt:LotteryLogoBitmapLoaderTest",
+      "type": "class",
+      "name": "LotteryLogoBitmapLoaderTest",
+      "summary": "Class LotteryLogoBitmapLoaderTest in LotteryLogoBitmapLoaderTest.kt.",
+      "tags": [
+        "class",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/test/java/com/lotterynet/pro/core/catalog/LotteryLogoBitmapLoaderTest.kt",
+      "lineRange": [
+        8,
+        87
+      ]
+    },
+    {
+      "id": "file:app/src/test/java/com/lotterynet/pro/core/catalog/StaticLotteryCatalogRepositoryTest.kt",
+      "type": "file",
+      "name": "StaticLotteryCatalogRepositoryTest.kt",
+      "summary": "Source file app/src/test/java/com/lotterynet/pro/core/catalog/StaticLotteryCatalogRepositoryTest.kt containing 1 class(es).",
+      "tags": [
+        "code",
+        "test"
+      ],
+      "complexity": "complex",
+      "filePath": "app/src/test/java/com/lotterynet/pro/core/catalog/StaticLotteryCatalogRepositoryTest.kt",
+      "lineRange": [
+        1,
+        241
+      ]
+    },
+    {
+      "id": "class:app/src/test/java/com/lotterynet/pro/core/catalog/StaticLotteryCatalogRepositoryTest.kt:StaticLotteryCatalogRepositoryTest",
+      "type": "class",
+      "name": "StaticLotteryCatalogRepositoryTest",
+      "summary": "Class StaticLotteryCatalogRepositoryTest in StaticLotteryCatalogRepositoryTest.kt.",
+      "tags": [
+        "class",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/test/java/com/lotterynet/pro/core/catalog/StaticLotteryCatalogRepositoryTest.kt",
+      "lineRange": [
+        10,
+        89
+      ]
+    },
+    {
+      "id": "file:app/src/test/java/com/lotterynet/pro/core/delivery/TicketDeliveryPolicyTest.kt",
+      "type": "file",
+      "name": "TicketDeliveryPolicyTest.kt",
+      "summary": "Source file app/src/test/java/com/lotterynet/pro/core/delivery/TicketDeliveryPolicyTest.kt containing 1 class(es).",
+      "tags": [
+        "code",
+        "test",
+        "ticket"
+      ],
+      "complexity": "simple",
+      "filePath": "app/src/test/java/com/lotterynet/pro/core/delivery/TicketDeliveryPolicyTest.kt",
+      "lineRange": [
+        1,
+        52
+      ]
+    },
+    {
+      "id": "class:app/src/test/java/com/lotterynet/pro/core/delivery/TicketDeliveryPolicyTest.kt:TicketDeliveryPolicyTest",
+      "type": "class",
+      "name": "TicketDeliveryPolicyTest",
+      "summary": "Class TicketDeliveryPolicyTest in TicketDeliveryPolicyTest.kt.",
+      "tags": [
+        "class",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/test/java/com/lotterynet/pro/core/delivery/TicketDeliveryPolicyTest.kt",
+      "lineRange": [
+        9,
+        53
+      ]
+    },
+    {
+      "id": "file:app/src/test/java/com/lotterynet/pro/core/export/OfficialTicketShareContractsTest.kt",
+      "type": "file",
+      "name": "OfficialTicketShareContractsTest.kt",
+      "summary": "Source file app/src/test/java/com/lotterynet/pro/core/export/OfficialTicketShareContractsTest.kt containing 1 class(es) and 2 function(s).",
+      "tags": [
+        "code",
+        "test",
+        "ticket"
+      ],
+      "complexity": "complex",
+      "filePath": "app/src/test/java/com/lotterynet/pro/core/export/OfficialTicketShareContractsTest.kt",
+      "lineRange": [
+        1,
+        350
+      ]
+    },
+    {
+      "id": "function:app/src/test/java/com/lotterynet/pro/core/export/OfficialTicketShareContractsTest.kt:sampleTicket",
+      "type": "function",
+      "name": "sampleTicket",
+      "summary": "Function sampleTicket in OfficialTicketShareContractsTest.kt.",
+      "tags": [
+        "function",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/test/java/com/lotterynet/pro/core/export/OfficialTicketShareContractsTest.kt",
+      "lineRange": [
+        315,
+        334
+      ]
+    },
+    {
+      "id": "function:app/src/test/java/com/lotterynet/pro/core/export/OfficialTicketShareContractsTest.kt:play",
+      "type": "function",
+      "name": "play",
+      "summary": "Function play in OfficialTicketShareContractsTest.kt.",
+      "tags": [
+        "function",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/test/java/com/lotterynet/pro/core/export/OfficialTicketShareContractsTest.kt",
+      "lineRange": [
+        341,
+        351
+      ]
+    },
+    {
+      "id": "class:app/src/test/java/com/lotterynet/pro/core/export/OfficialTicketShareContractsTest.kt:OfficialTicketShareContractsTest",
+      "type": "class",
+      "name": "OfficialTicketShareContractsTest",
+      "summary": "Class OfficialTicketShareContractsTest in OfficialTicketShareContractsTest.kt.",
+      "tags": [
+        "class",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/test/java/com/lotterynet/pro/core/export/OfficialTicketShareContractsTest.kt",
+      "lineRange": [
+        10,
+        89
+      ]
+    },
+    {
+      "id": "file:app/src/test/java/com/lotterynet/pro/core/export/ResultsShareLayoutContractsTest.kt",
+      "type": "file",
+      "name": "ResultsShareLayoutContractsTest.kt",
+      "summary": "Source file app/src/test/java/com/lotterynet/pro/core/export/ResultsShareLayoutContractsTest.kt containing 1 class(es).",
+      "tags": [
+        "code",
+        "test",
+        "results"
+      ],
+      "complexity": "complex",
+      "filePath": "app/src/test/java/com/lotterynet/pro/core/export/ResultsShareLayoutContractsTest.kt",
+      "lineRange": [
+        1,
+        335
+      ]
+    },
+    {
+      "id": "class:app/src/test/java/com/lotterynet/pro/core/export/ResultsShareLayoutContractsTest.kt:ResultsShareLayoutContractsTest",
+      "type": "class",
+      "name": "ResultsShareLayoutContractsTest",
+      "summary": "Class ResultsShareLayoutContractsTest in ResultsShareLayoutContractsTest.kt.",
+      "tags": [
+        "class",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/test/java/com/lotterynet/pro/core/export/ResultsShareLayoutContractsTest.kt",
+      "lineRange": [
+        11,
+        90
+      ]
+    },
+    {
+      "id": "file:app/src/test/java/com/lotterynet/pro/core/export/ShareIntentContractsTest.kt",
+      "type": "file",
+      "name": "ShareIntentContractsTest.kt",
+      "summary": "Source file app/src/test/java/com/lotterynet/pro/core/export/ShareIntentContractsTest.kt containing 1 class(es).",
+      "tags": [
+        "code",
+        "test"
+      ],
+      "complexity": "simple",
+      "filePath": "app/src/test/java/com/lotterynet/pro/core/export/ShareIntentContractsTest.kt",
+      "lineRange": [
+        1,
+        16
+      ]
+    },
+    {
+      "id": "file:app/src/test/java/com/lotterynet/pro/core/finance/FinanceCachePolicyContractsTest.kt",
+      "type": "file",
+      "name": "FinanceCachePolicyContractsTest.kt",
+      "summary": "Source file app/src/test/java/com/lotterynet/pro/core/finance/FinanceCachePolicyContractsTest.kt containing 1 class(es).",
+      "tags": [
+        "code",
+        "test"
+      ],
+      "complexity": "simple",
+      "filePath": "app/src/test/java/com/lotterynet/pro/core/finance/FinanceCachePolicyContractsTest.kt",
+      "lineRange": [
+        1,
+        54
+      ]
+    },
+    {
+      "id": "class:app/src/test/java/com/lotterynet/pro/core/finance/FinanceCachePolicyContractsTest.kt:FinanceCachePolicyContractsTest",
+      "type": "class",
+      "name": "FinanceCachePolicyContractsTest",
+      "summary": "Class FinanceCachePolicyContractsTest in FinanceCachePolicyContractsTest.kt.",
+      "tags": [
+        "class",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/test/java/com/lotterynet/pro/core/finance/FinanceCachePolicyContractsTest.kt",
+      "lineRange": [
+        9,
+        55
+      ]
+    },
+    {
+      "id": "file:app/src/test/java/com/lotterynet/pro/core/format/MoneyFormatterTest.kt",
+      "type": "file",
+      "name": "MoneyFormatterTest.kt",
+      "summary": "Source file app/src/test/java/com/lotterynet/pro/core/format/MoneyFormatterTest.kt containing 1 class(es).",
+      "tags": [
+        "code",
+        "test"
+      ],
+      "complexity": "simple",
+      "filePath": "app/src/test/java/com/lotterynet/pro/core/format/MoneyFormatterTest.kt",
+      "lineRange": [
+        1,
+        29
+      ]
+    },
+    {
+      "id": "class:app/src/test/java/com/lotterynet/pro/core/format/MoneyFormatterTest.kt:MoneyFormatterTest",
+      "type": "class",
+      "name": "MoneyFormatterTest",
+      "summary": "Class MoneyFormatterTest in MoneyFormatterTest.kt.",
+      "tags": [
+        "class",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/test/java/com/lotterynet/pro/core/format/MoneyFormatterTest.kt",
+      "lineRange": [
+        6,
+        30
+      ]
+    },
+    {
+      "id": "file:app/src/test/java/com/lotterynet/pro/core/model/OperationalFeedbackContractsTest.kt",
+      "type": "file",
+      "name": "OperationalFeedbackContractsTest.kt",
+      "summary": "Source file app/src/test/java/com/lotterynet/pro/core/model/OperationalFeedbackContractsTest.kt containing 1 class(es).",
+      "tags": [
+        "code",
+        "test"
+      ],
+      "complexity": "simple",
+      "filePath": "app/src/test/java/com/lotterynet/pro/core/model/OperationalFeedbackContractsTest.kt",
+      "lineRange": [
+        1,
+        26
+      ]
+    },
+    {
+      "id": "class:app/src/test/java/com/lotterynet/pro/core/model/OperationalFeedbackContractsTest.kt:OperationalFeedbackContractsTest",
+      "type": "class",
+      "name": "OperationalFeedbackContractsTest",
+      "summary": "Class OperationalFeedbackContractsTest in OperationalFeedbackContractsTest.kt.",
+      "tags": [
+        "class",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/test/java/com/lotterynet/pro/core/model/OperationalFeedbackContractsTest.kt",
+      "lineRange": [
+        7,
+        27
+      ]
+    },
+    {
+      "id": "file:app/src/test/java/com/lotterynet/pro/core/network/ProductionNetworkGuardTest.kt",
+      "type": "file",
+      "name": "ProductionNetworkGuardTest.kt",
+      "summary": "Source file app/src/test/java/com/lotterynet/pro/core/network/ProductionNetworkGuardTest.kt containing 1 class(es).",
+      "tags": [
+        "code",
+        "test"
+      ],
+      "complexity": "simple",
+      "filePath": "app/src/test/java/com/lotterynet/pro/core/network/ProductionNetworkGuardTest.kt",
+      "lineRange": [
+        1,
+        23
+      ]
+    },
+    {
+      "id": "class:app/src/test/java/com/lotterynet/pro/core/network/ProductionNetworkGuardTest.kt:ProductionNetworkGuardTest",
+      "type": "class",
+      "name": "ProductionNetworkGuardTest",
+      "summary": "Class ProductionNetworkGuardTest in ProductionNetworkGuardTest.kt.",
+      "tags": [
+        "class",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/test/java/com/lotterynet/pro/core/network/ProductionNetworkGuardTest.kt",
+      "lineRange": [
+        8,
+        24
+      ]
+    },
+    {
+      "id": "file:app/src/test/java/com/lotterynet/pro/core/notification/LotteryClosingNotifierContractsTest.kt",
+      "type": "file",
+      "name": "LotteryClosingNotifierContractsTest.kt",
+      "summary": "Source file app/src/test/java/com/lotterynet/pro/core/notification/LotteryClosingNotifierContractsTest.kt containing 1 class(es) and 2 function(s).",
+      "tags": [
+        "code",
+        "test"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/test/java/com/lotterynet/pro/core/notification/LotteryClosingNotifierContractsTest.kt",
+      "lineRange": [
+        1,
+        71
+      ]
+    },
+    {
+      "id": "function:app/src/test/java/com/lotterynet/pro/core/notification/LotteryClosingNotifierContractsTest.kt:lottery",
+      "type": "function",
+      "name": "lottery",
+      "summary": "Function lottery in LotteryClosingNotifierContractsTest.kt.",
+      "tags": [
+        "function",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/test/java/com/lotterynet/pro/core/notification/LotteryClosingNotifierContractsTest.kt",
+      "lineRange": [
+        57,
+        72
+      ]
+    },
+    {
+      "id": "class:app/src/test/java/com/lotterynet/pro/core/notification/LotteryClosingNotifierContractsTest.kt:LotteryClosingNotifierContractsTest",
+      "type": "class",
+      "name": "LotteryClosingNotifierContractsTest",
+      "summary": "Class LotteryClosingNotifierContractsTest in LotteryClosingNotifierContractsTest.kt.",
+      "tags": [
+        "class",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/test/java/com/lotterynet/pro/core/notification/LotteryClosingNotifierContractsTest.kt",
+      "lineRange": [
+        10,
+        72
+      ]
+    },
+    {
+      "id": "file:app/src/test/java/com/lotterynet/pro/core/perf/PosPerformanceBudgetTest.kt",
+      "type": "file",
+      "name": "PosPerformanceBudgetTest.kt",
+      "summary": "Source file app/src/test/java/com/lotterynet/pro/core/perf/PosPerformanceBudgetTest.kt containing 1 class(es).",
+      "tags": [
+        "code",
+        "test"
+      ],
+      "complexity": "simple",
+      "filePath": "app/src/test/java/com/lotterynet/pro/core/perf/PosPerformanceBudgetTest.kt",
+      "lineRange": [
+        1,
+        26
+      ]
+    },
+    {
+      "id": "class:app/src/test/java/com/lotterynet/pro/core/perf/PosPerformanceBudgetTest.kt:PosPerformanceBudgetTest",
+      "type": "class",
+      "name": "PosPerformanceBudgetTest",
+      "summary": "Class PosPerformanceBudgetTest in PosPerformanceBudgetTest.kt.",
+      "tags": [
+        "class",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/test/java/com/lotterynet/pro/core/perf/PosPerformanceBudgetTest.kt",
+      "lineRange": [
+        8,
+        27
+      ]
+    },
+    {
+      "id": "file:app/src/test/java/com/lotterynet/pro/core/printing/ThermalTicketRendererTest.kt",
+      "type": "file",
+      "name": "ThermalTicketRendererTest.kt",
+      "summary": "Source file app/src/test/java/com/lotterynet/pro/core/printing/ThermalTicketRendererTest.kt containing 1 class(es) and 1 function(s).",
+      "tags": [
+        "code",
+        "test",
+        "ticket",
+        "printing"
+      ],
+      "complexity": "complex",
+      "filePath": "app/src/test/java/com/lotterynet/pro/core/printing/ThermalTicketRendererTest.kt",
+      "lineRange": [
+        1,
+        695
+      ]
+    },
+    {
+      "id": "class:app/src/test/java/com/lotterynet/pro/core/printing/ThermalTicketRendererTest.kt:ThermalTicketRendererTest",
+      "type": "class",
+      "name": "ThermalTicketRendererTest",
+      "summary": "Class ThermalTicketRendererTest in ThermalTicketRendererTest.kt.",
+      "tags": [
+        "class",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/test/java/com/lotterynet/pro/core/printing/ThermalTicketRendererTest.kt",
+      "lineRange": [
+        12,
+        91
+      ]
+    },
+    {
+      "id": "file:app/src/test/java/com/lotterynet/pro/core/realtime/LotterynetRealtimeOrchestratorTest.kt",
+      "type": "file",
+      "name": "LotterynetRealtimeOrchestratorTest.kt",
+      "summary": "Source file app/src/test/java/com/lotterynet/pro/core/realtime/LotterynetRealtimeOrchestratorTest.kt containing 1 class(es).",
+      "tags": [
+        "code",
+        "test",
+        "sync"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/test/java/com/lotterynet/pro/core/realtime/LotterynetRealtimeOrchestratorTest.kt",
+      "lineRange": [
+        1,
+        71
+      ]
+    },
+    {
+      "id": "class:app/src/test/java/com/lotterynet/pro/core/realtime/LotterynetRealtimeOrchestratorTest.kt:LotterynetRealtimeOrchestratorTest",
+      "type": "class",
+      "name": "LotterynetRealtimeOrchestratorTest",
+      "summary": "Class LotterynetRealtimeOrchestratorTest in LotterynetRealtimeOrchestratorTest.kt.",
+      "tags": [
+        "class",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/test/java/com/lotterynet/pro/core/realtime/LotterynetRealtimeOrchestratorTest.kt",
+      "lineRange": [
+        6,
+        72
+      ]
+    },
+    {
+      "id": "file:app/src/test/java/com/lotterynet/pro/core/realtime/LotterynetRealtimeSubscriptionTest.kt",
+      "type": "file",
+      "name": "LotterynetRealtimeSubscriptionTest.kt",
+      "summary": "Source file app/src/test/java/com/lotterynet/pro/core/realtime/LotterynetRealtimeSubscriptionTest.kt containing 1 class(es).",
+      "tags": [
+        "code",
+        "test",
+        "sync"
+      ],
+      "complexity": "simple",
+      "filePath": "app/src/test/java/com/lotterynet/pro/core/realtime/LotterynetRealtimeSubscriptionTest.kt",
+      "lineRange": [
+        1,
+        36
+      ]
+    },
+    {
+      "id": "class:app/src/test/java/com/lotterynet/pro/core/realtime/LotterynetRealtimeSubscriptionTest.kt:LotterynetRealtimeSubscriptionTest",
+      "type": "class",
+      "name": "LotterynetRealtimeSubscriptionTest",
+      "summary": "Class LotterynetRealtimeSubscriptionTest in LotterynetRealtimeSubscriptionTest.kt.",
+      "tags": [
+        "class",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/test/java/com/lotterynet/pro/core/realtime/LotterynetRealtimeSubscriptionTest.kt",
+      "lineRange": [
+        7,
+        37
+      ]
+    },
+    {
+      "id": "file:app/src/test/java/com/lotterynet/pro/core/recharge/recargasrapidas/RecargasRapidasContractsTest.kt",
+      "type": "file",
+      "name": "RecargasRapidasContractsTest.kt",
+      "summary": "Source file app/src/test/java/com/lotterynet/pro/core/recharge/recargasrapidas/RecargasRapidasContractsTest.kt containing 1 class(es).",
+      "tags": [
+        "code",
+        "test"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/test/java/com/lotterynet/pro/core/recharge/recargasrapidas/RecargasRapidasContractsTest.kt",
+      "lineRange": [
+        1,
+        198
+      ]
+    },
+    {
+      "id": "class:app/src/test/java/com/lotterynet/pro/core/recharge/recargasrapidas/RecargasRapidasContractsTest.kt:RecargasRapidasContractsTest",
+      "type": "class",
+      "name": "RecargasRapidasContractsTest",
+      "summary": "Class RecargasRapidasContractsTest in RecargasRapidasContractsTest.kt.",
+      "tags": [
+        "class",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/test/java/com/lotterynet/pro/core/recharge/recargasrapidas/RecargasRapidasContractsTest.kt",
+      "lineRange": [
+        8,
+        87
+      ]
+    },
+    {
+      "id": "file:app/src/test/java/com/lotterynet/pro/core/remote/SupabaseEdgeClientTest.kt",
+      "type": "file",
+      "name": "SupabaseEdgeClientTest.kt",
+      "summary": "Supabase integration file used by the app/server for remote data, ticket, result, or configuration workflows.",
+      "tags": [
+        "code",
+        "test",
+        "supabase"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/test/java/com/lotterynet/pro/core/remote/SupabaseEdgeClientTest.kt",
+      "lineRange": [
+        1,
+        61
+      ]
+    },
+    {
+      "id": "class:app/src/test/java/com/lotterynet/pro/core/remote/SupabaseEdgeClientTest.kt:SupabaseEdgeClientTest",
+      "type": "class",
+      "name": "SupabaseEdgeClientTest",
+      "summary": "Class SupabaseEdgeClientTest in SupabaseEdgeClientTest.kt.",
+      "tags": [
+        "class",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/test/java/com/lotterynet/pro/core/remote/SupabaseEdgeClientTest.kt",
+      "lineRange": [
+        8,
+        62
+      ]
+    },
+    {
+      "id": "file:app/src/test/java/com/lotterynet/pro/core/render/LocalRenderCacheRepositoryContractTest.kt",
+      "type": "file",
+      "name": "LocalRenderCacheRepositoryContractTest.kt",
+      "summary": "Source file app/src/test/java/com/lotterynet/pro/core/render/LocalRenderCacheRepositoryContractTest.kt containing 1 class(es).",
+      "tags": [
+        "code",
+        "test"
+      ],
+      "complexity": "simple",
+      "filePath": "app/src/test/java/com/lotterynet/pro/core/render/LocalRenderCacheRepositoryContractTest.kt",
+      "lineRange": [
+        1,
+        11
+      ]
+    },
+    {
+      "id": "file:app/src/test/java/com/lotterynet/pro/core/render/RenderCacheKeysTest.kt",
+      "type": "file",
+      "name": "RenderCacheKeysTest.kt",
+      "summary": "Source file app/src/test/java/com/lotterynet/pro/core/render/RenderCacheKeysTest.kt containing 1 class(es).",
+      "tags": [
+        "code",
+        "test"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/test/java/com/lotterynet/pro/core/render/RenderCacheKeysTest.kt",
+      "lineRange": [
+        1,
+        59
+      ]
+    },
+    {
+      "id": "class:app/src/test/java/com/lotterynet/pro/core/render/RenderCacheKeysTest.kt:RenderCacheKeysTest",
+      "type": "class",
+      "name": "RenderCacheKeysTest",
+      "summary": "Class RenderCacheKeysTest in RenderCacheKeysTest.kt.",
+      "tags": [
+        "class",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/test/java/com/lotterynet/pro/core/render/RenderCacheKeysTest.kt",
+      "lineRange": [
+        10,
+        60
+      ]
+    },
+    {
+      "id": "file:app/src/test/java/com/lotterynet/pro/core/results/PrizeValidationEngineTest.kt",
+      "type": "file",
+      "name": "PrizeValidationEngineTest.kt",
+      "summary": "Source file app/src/test/java/com/lotterynet/pro/core/results/PrizeValidationEngineTest.kt containing 1 class(es) and 1 function(s).",
+      "tags": [
+        "code",
+        "test",
+        "results"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/test/java/com/lotterynet/pro/core/results/PrizeValidationEngineTest.kt",
+      "lineRange": [
+        1,
+        163
+      ]
+    },
+    {
+      "id": "function:app/src/test/java/com/lotterynet/pro/core/results/PrizeValidationEngineTest.kt:ticketWith",
+      "type": "function",
+      "name": "ticketWith",
+      "summary": "Function ticketWith in PrizeValidationEngineTest.kt.",
+      "tags": [
+        "function",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/test/java/com/lotterynet/pro/core/results/PrizeValidationEngineTest.kt",
+      "lineRange": [
+        150,
+        164
+      ]
+    },
+    {
+      "id": "class:app/src/test/java/com/lotterynet/pro/core/results/PrizeValidationEngineTest.kt:PrizeValidationEngineTest",
+      "type": "class",
+      "name": "PrizeValidationEngineTest",
+      "summary": "Class PrizeValidationEngineTest in PrizeValidationEngineTest.kt.",
+      "tags": [
+        "class",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/test/java/com/lotterynet/pro/core/results/PrizeValidationEngineTest.kt",
+      "lineRange": [
+        10,
+        89
+      ]
+    },
+    {
+      "id": "file:app/src/test/java/com/lotterynet/pro/core/sales/SaleValidatorContractsTest.kt",
+      "type": "file",
+      "name": "SaleValidatorContractsTest.kt",
+      "summary": "Source file app/src/test/java/com/lotterynet/pro/core/sales/SaleValidatorContractsTest.kt containing 1 class(es) and 8 function(s).",
+      "tags": [
+        "code",
+        "test",
+        "sales"
+      ],
+      "complexity": "complex",
+      "filePath": "app/src/test/java/com/lotterynet/pro/core/sales/SaleValidatorContractsTest.kt",
+      "lineRange": [
+        1,
+        543
+      ]
+    },
+    {
+      "id": "function:app/src/test/java/com/lotterynet/pro/core/sales/SaleValidatorContractsTest.kt:newJerseyPm",
+      "type": "function",
+      "name": "newJerseyPm",
+      "summary": "Function newJerseyPm in SaleValidatorContractsTest.kt.",
+      "tags": [
+        "function",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/test/java/com/lotterynet/pro/core/sales/SaleValidatorContractsTest.kt",
+      "lineRange": [
+        455,
+        474
+      ]
+    },
+    {
+      "id": "function:app/src/test/java/com/lotterynet/pro/core/sales/SaleValidatorContractsTest.kt:newJerseyAm",
+      "type": "function",
+      "name": "newJerseyAm",
+      "summary": "Function newJerseyAm in SaleValidatorContractsTest.kt.",
+      "tags": [
+        "function",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/test/java/com/lotterynet/pro/core/sales/SaleValidatorContractsTest.kt",
+      "lineRange": [
+        466,
+        485
+      ]
+    },
+    {
+      "id": "function:app/src/test/java/com/lotterynet/pro/core/sales/SaleValidatorContractsTest.kt:pick3",
+      "type": "function",
+      "name": "pick3",
+      "summary": "Function pick3 in SaleValidatorContractsTest.kt.",
+      "tags": [
+        "function",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/test/java/com/lotterynet/pro/core/sales/SaleValidatorContractsTest.kt",
+      "lineRange": [
+        477,
+        496
+      ]
+    },
+    {
+      "id": "function:app/src/test/java/com/lotterynet/pro/core/sales/SaleValidatorContractsTest.kt:pick4",
+      "type": "function",
+      "name": "pick4",
+      "summary": "Function pick4 in SaleValidatorContractsTest.kt.",
+      "tags": [
+        "function",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/test/java/com/lotterynet/pro/core/sales/SaleValidatorContractsTest.kt",
+      "lineRange": [
+        489,
+        508
+      ]
+    },
+    {
+      "id": "function:app/src/test/java/com/lotterynet/pro/core/sales/SaleValidatorContractsTest.kt:pickCapabilities",
+      "type": "function",
+      "name": "pickCapabilities",
+      "summary": "Function pickCapabilities in SaleValidatorContractsTest.kt.",
+      "tags": [
+        "function",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/test/java/com/lotterynet/pro/core/sales/SaleValidatorContractsTest.kt",
+      "lineRange": [
+        501,
+        520
+      ]
+    },
+    {
+      "id": "function:app/src/test/java/com/lotterynet/pro/core/sales/SaleValidatorContractsTest.kt:stagedQuiniela",
+      "type": "function",
+      "name": "stagedQuiniela",
+      "summary": "Function stagedQuiniela in SaleValidatorContractsTest.kt.",
+      "tags": [
+        "function",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/test/java/com/lotterynet/pro/core/sales/SaleValidatorContractsTest.kt",
+      "lineRange": [
+        508,
+        527
+      ]
+    },
+    {
+      "id": "function:app/src/test/java/com/lotterynet/pro/core/sales/SaleValidatorContractsTest.kt:stagedTripleta",
+      "type": "function",
+      "name": "stagedTripleta",
+      "summary": "Function stagedTripleta in SaleValidatorContractsTest.kt.",
+      "tags": [
+        "function",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/test/java/com/lotterynet/pro/core/sales/SaleValidatorContractsTest.kt",
+      "lineRange": [
+        520,
+        539
+      ]
+    },
+    {
+      "id": "function:app/src/test/java/com/lotterynet/pro/core/sales/SaleValidatorContractsTest.kt:stagedPale",
+      "type": "function",
+      "name": "stagedPale",
+      "summary": "Function stagedPale in SaleValidatorContractsTest.kt.",
+      "tags": [
+        "function",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/test/java/com/lotterynet/pro/core/sales/SaleValidatorContractsTest.kt",
+      "lineRange": [
+        532,
+        544
+      ]
+    },
+    {
+      "id": "class:app/src/test/java/com/lotterynet/pro/core/sales/SaleValidatorContractsTest.kt:SaleValidatorContractsTest",
+      "type": "class",
+      "name": "SaleValidatorContractsTest",
+      "summary": "Class SaleValidatorContractsTest in SaleValidatorContractsTest.kt.",
+      "tags": [
+        "class",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/test/java/com/lotterynet/pro/core/sales/SaleValidatorContractsTest.kt",
+      "lineRange": [
+        12,
+        91
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "source": "file:app/src/test/java/com/lotterynet/pro/core/calendar/LotteryTimeZonesTest.kt",
+      "target": "class:app/src/test/java/com/lotterynet/pro/core/calendar/LotteryTimeZonesTest.kt:LotteryTimeZonesTest",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "LotteryTimeZonesTest.kt contains LotteryTimeZonesTest"
+    },
+    {
+      "source": "file:app/src/test/java/com/lotterynet/pro/core/catalog/LotteryAssetResolverTest.kt",
+      "target": "class:app/src/test/java/com/lotterynet/pro/core/catalog/LotteryAssetResolverTest.kt:LotteryAssetResolverTest",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "LotteryAssetResolverTest.kt contains LotteryAssetResolverTest"
+    },
+    {
+      "source": "file:app/src/test/java/com/lotterynet/pro/core/catalog/LotteryLogoBitmapLoaderTest.kt",
+      "target": "class:app/src/test/java/com/lotterynet/pro/core/catalog/LotteryLogoBitmapLoaderTest.kt:LotteryLogoBitmapLoaderTest",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "LotteryLogoBitmapLoaderTest.kt contains LotteryLogoBitmapLoaderTest"
+    },
+    {
+      "source": "file:app/src/test/java/com/lotterynet/pro/core/catalog/StaticLotteryCatalogRepositoryTest.kt",
+      "target": "class:app/src/test/java/com/lotterynet/pro/core/catalog/StaticLotteryCatalogRepositoryTest.kt:StaticLotteryCatalogRepositoryTest",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "StaticLotteryCatalogRepositoryTest.kt contains StaticLotteryCatalogRepositoryTest"
+    },
+    {
+      "source": "file:app/src/test/java/com/lotterynet/pro/core/delivery/TicketDeliveryPolicyTest.kt",
+      "target": "class:app/src/test/java/com/lotterynet/pro/core/delivery/TicketDeliveryPolicyTest.kt:TicketDeliveryPolicyTest",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "TicketDeliveryPolicyTest.kt contains TicketDeliveryPolicyTest"
+    },
+    {
+      "source": "file:app/src/test/java/com/lotterynet/pro/core/export/OfficialTicketShareContractsTest.kt",
+      "target": "function:app/src/test/java/com/lotterynet/pro/core/export/OfficialTicketShareContractsTest.kt:sampleTicket",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "OfficialTicketShareContractsTest.kt contains sampleTicket"
+    },
+    {
+      "source": "file:app/src/test/java/com/lotterynet/pro/core/export/OfficialTicketShareContractsTest.kt",
+      "target": "function:app/src/test/java/com/lotterynet/pro/core/export/OfficialTicketShareContractsTest.kt:play",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "OfficialTicketShareContractsTest.kt contains play"
+    },
+    {
+      "source": "file:app/src/test/java/com/lotterynet/pro/core/export/OfficialTicketShareContractsTest.kt",
+      "target": "class:app/src/test/java/com/lotterynet/pro/core/export/OfficialTicketShareContractsTest.kt:OfficialTicketShareContractsTest",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "OfficialTicketShareContractsTest.kt contains OfficialTicketShareContractsTest"
+    },
+    {
+      "source": "file:app/src/test/java/com/lotterynet/pro/core/export/ResultsShareLayoutContractsTest.kt",
+      "target": "class:app/src/test/java/com/lotterynet/pro/core/export/ResultsShareLayoutContractsTest.kt:ResultsShareLayoutContractsTest",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "ResultsShareLayoutContractsTest.kt contains ResultsShareLayoutContractsTest"
+    },
+    {
+      "source": "file:app/src/test/java/com/lotterynet/pro/core/finance/FinanceCachePolicyContractsTest.kt",
+      "target": "class:app/src/test/java/com/lotterynet/pro/core/finance/FinanceCachePolicyContractsTest.kt:FinanceCachePolicyContractsTest",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "FinanceCachePolicyContractsTest.kt contains FinanceCachePolicyContractsTest"
+    },
+    {
+      "source": "file:app/src/test/java/com/lotterynet/pro/core/format/MoneyFormatterTest.kt",
+      "target": "class:app/src/test/java/com/lotterynet/pro/core/format/MoneyFormatterTest.kt:MoneyFormatterTest",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "MoneyFormatterTest.kt contains MoneyFormatterTest"
+    },
+    {
+      "source": "file:app/src/test/java/com/lotterynet/pro/core/model/OperationalFeedbackContractsTest.kt",
+      "target": "class:app/src/test/java/com/lotterynet/pro/core/model/OperationalFeedbackContractsTest.kt:OperationalFeedbackContractsTest",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "OperationalFeedbackContractsTest.kt contains OperationalFeedbackContractsTest"
+    },
+    {
+      "source": "file:app/src/test/java/com/lotterynet/pro/core/network/ProductionNetworkGuardTest.kt",
+      "target": "class:app/src/test/java/com/lotterynet/pro/core/network/ProductionNetworkGuardTest.kt:ProductionNetworkGuardTest",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "ProductionNetworkGuardTest.kt contains ProductionNetworkGuardTest"
+    },
+    {
+      "source": "file:app/src/test/java/com/lotterynet/pro/core/notification/LotteryClosingNotifierContractsTest.kt",
+      "target": "function:app/src/test/java/com/lotterynet/pro/core/notification/LotteryClosingNotifierContractsTest.kt:lottery",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "LotteryClosingNotifierContractsTest.kt contains lottery"
+    },
+    {
+      "source": "file:app/src/test/java/com/lotterynet/pro/core/notification/LotteryClosingNotifierContractsTest.kt",
+      "target": "class:app/src/test/java/com/lotterynet/pro/core/notification/LotteryClosingNotifierContractsTest.kt:LotteryClosingNotifierContractsTest",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "LotteryClosingNotifierContractsTest.kt contains LotteryClosingNotifierContractsTest"
+    },
+    {
+      "source": "file:app/src/test/java/com/lotterynet/pro/core/perf/PosPerformanceBudgetTest.kt",
+      "target": "class:app/src/test/java/com/lotterynet/pro/core/perf/PosPerformanceBudgetTest.kt:PosPerformanceBudgetTest",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "PosPerformanceBudgetTest.kt contains PosPerformanceBudgetTest"
+    },
+    {
+      "source": "file:app/src/test/java/com/lotterynet/pro/core/printing/ThermalTicketRendererTest.kt",
+      "target": "class:app/src/test/java/com/lotterynet/pro/core/printing/ThermalTicketRendererTest.kt:ThermalTicketRendererTest",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "ThermalTicketRendererTest.kt contains ThermalTicketRendererTest"
+    },
+    {
+      "source": "file:app/src/test/java/com/lotterynet/pro/core/realtime/LotterynetRealtimeOrchestratorTest.kt",
+      "target": "class:app/src/test/java/com/lotterynet/pro/core/realtime/LotterynetRealtimeOrchestratorTest.kt:LotterynetRealtimeOrchestratorTest",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "LotterynetRealtimeOrchestratorTest.kt contains LotterynetRealtimeOrchestratorTest"
+    },
+    {
+      "source": "file:app/src/test/java/com/lotterynet/pro/core/realtime/LotterynetRealtimeSubscriptionTest.kt",
+      "target": "class:app/src/test/java/com/lotterynet/pro/core/realtime/LotterynetRealtimeSubscriptionTest.kt:LotterynetRealtimeSubscriptionTest",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "LotterynetRealtimeSubscriptionTest.kt contains LotterynetRealtimeSubscriptionTest"
+    },
+    {
+      "source": "file:app/src/test/java/com/lotterynet/pro/core/recharge/recargasrapidas/RecargasRapidasContractsTest.kt",
+      "target": "class:app/src/test/java/com/lotterynet/pro/core/recharge/recargasrapidas/RecargasRapidasContractsTest.kt:RecargasRapidasContractsTest",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "RecargasRapidasContractsTest.kt contains RecargasRapidasContractsTest"
+    },
+    {
+      "source": "file:app/src/test/java/com/lotterynet/pro/core/remote/SupabaseEdgeClientTest.kt",
+      "target": "class:app/src/test/java/com/lotterynet/pro/core/remote/SupabaseEdgeClientTest.kt:SupabaseEdgeClientTest",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "SupabaseEdgeClientTest.kt contains SupabaseEdgeClientTest"
+    },
+    {
+      "source": "file:app/src/test/java/com/lotterynet/pro/core/render/RenderCacheKeysTest.kt",
+      "target": "class:app/src/test/java/com/lotterynet/pro/core/render/RenderCacheKeysTest.kt:RenderCacheKeysTest",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "RenderCacheKeysTest.kt contains RenderCacheKeysTest"
+    },
+    {
+      "source": "file:app/src/test/java/com/lotterynet/pro/core/results/PrizeValidationEngineTest.kt",
+      "target": "function:app/src/test/java/com/lotterynet/pro/core/results/PrizeValidationEngineTest.kt:ticketWith",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "PrizeValidationEngineTest.kt contains ticketWith"
+    },
+    {
+      "source": "file:app/src/test/java/com/lotterynet/pro/core/results/PrizeValidationEngineTest.kt",
+      "target": "class:app/src/test/java/com/lotterynet/pro/core/results/PrizeValidationEngineTest.kt:PrizeValidationEngineTest",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "PrizeValidationEngineTest.kt contains PrizeValidationEngineTest"
+    },
+    {
+      "source": "file:app/src/test/java/com/lotterynet/pro/core/sales/SaleValidatorContractsTest.kt",
+      "target": "function:app/src/test/java/com/lotterynet/pro/core/sales/SaleValidatorContractsTest.kt:newJerseyPm",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "SaleValidatorContractsTest.kt contains newJerseyPm"
+    },
+    {
+      "source": "file:app/src/test/java/com/lotterynet/pro/core/sales/SaleValidatorContractsTest.kt",
+      "target": "function:app/src/test/java/com/lotterynet/pro/core/sales/SaleValidatorContractsTest.kt:newJerseyAm",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "SaleValidatorContractsTest.kt contains newJerseyAm"
+    },
+    {
+      "source": "file:app/src/test/java/com/lotterynet/pro/core/sales/SaleValidatorContractsTest.kt",
+      "target": "function:app/src/test/java/com/lotterynet/pro/core/sales/SaleValidatorContractsTest.kt:pick3",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "SaleValidatorContractsTest.kt contains pick3"
+    },
+    {
+      "source": "file:app/src/test/java/com/lotterynet/pro/core/sales/SaleValidatorContractsTest.kt",
+      "target": "function:app/src/test/java/com/lotterynet/pro/core/sales/SaleValidatorContractsTest.kt:pick4",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "SaleValidatorContractsTest.kt contains pick4"
+    },
+    {
+      "source": "file:app/src/test/java/com/lotterynet/pro/core/sales/SaleValidatorContractsTest.kt",
+      "target": "function:app/src/test/java/com/lotterynet/pro/core/sales/SaleValidatorContractsTest.kt:pickCapabilities",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "SaleValidatorContractsTest.kt contains pickCapabilities"
+    },
+    {
+      "source": "file:app/src/test/java/com/lotterynet/pro/core/sales/SaleValidatorContractsTest.kt",
+      "target": "function:app/src/test/java/com/lotterynet/pro/core/sales/SaleValidatorContractsTest.kt:stagedQuiniela",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "SaleValidatorContractsTest.kt contains stagedQuiniela"
+    },
+    {
+      "source": "file:app/src/test/java/com/lotterynet/pro/core/sales/SaleValidatorContractsTest.kt",
+      "target": "function:app/src/test/java/com/lotterynet/pro/core/sales/SaleValidatorContractsTest.kt:stagedTripleta",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "SaleValidatorContractsTest.kt contains stagedTripleta"
+    },
+    {
+      "source": "file:app/src/test/java/com/lotterynet/pro/core/sales/SaleValidatorContractsTest.kt",
+      "target": "function:app/src/test/java/com/lotterynet/pro/core/sales/SaleValidatorContractsTest.kt:stagedPale",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "SaleValidatorContractsTest.kt contains stagedPale"
+    },
+    {
+      "source": "file:app/src/test/java/com/lotterynet/pro/core/sales/SaleValidatorContractsTest.kt",
+      "target": "class:app/src/test/java/com/lotterynet/pro/core/sales/SaleValidatorContractsTest.kt:SaleValidatorContractsTest",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "SaleValidatorContractsTest.kt contains SaleValidatorContractsTest"
+    }
+  ]
+}

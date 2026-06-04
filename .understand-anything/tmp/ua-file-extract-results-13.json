@@ -1,0 +1,1040 @@
+{
+  "scriptCompleted": true,
+  "filesAnalyzed": 37,
+  "filesSkipped": [],
+  "results": [
+    {
+      "path": "supabase/migrations/20260507000100_ota_update_system.sql",
+      "language": "sql",
+      "fileCategory": "data",
+      "totalLines": 115,
+      "nonEmptyLines": 99,
+      "definitions": [
+        {
+          "name": "public",
+          "kind": "table",
+          "fields": [
+            "id",
+            "package_name",
+            "release_channel",
+            "version_code",
+            "version_name",
+            "minimum_version",
+            "force_update",
+            "title",
+            "changelog",
+            "allowed_roles",
+            "storage_bucket",
+            "storage_path",
+            "apk_sha256",
+            "apk_size_bytes",
+            "active",
+            "published_at",
+            "created_at",
+            "updated_at"
+          ],
+          "startLine": 3,
+          "endLine": 22
+        },
+        {
+          "name": "public",
+          "kind": "table",
+          "fields": [
+            "id",
+            "event",
+            "user_id",
+            "username",
+            "role",
+            "package_name",
+            "release_channel",
+            "current_version_code",
+            "current_version_name",
+            "target_version_code",
+            "status",
+            "message",
+            "created_at"
+          ],
+          "startLine": 37,
+          "endLine": 59
+        },
+        {
+          "name": "ota_releases_version_code_key",
+          "kind": "index",
+          "fields": [],
+          "startLine": 24,
+          "endLine": 24
+        },
+        {
+          "name": "ota_releases_active_version_idx",
+          "kind": "index",
+          "fields": [],
+          "startLine": 27,
+          "endLine": 27
+        },
+        {
+          "name": "ota_releases_allowed_roles_idx",
+          "kind": "index",
+          "fields": [],
+          "startLine": 30,
+          "endLine": 30
+        },
+        {
+          "name": "ota_releases_single_active_production_idx",
+          "kind": "index",
+          "fields": [],
+          "startLine": 33,
+          "endLine": 33
+        },
+        {
+          "name": "ota_update_logs_created_idx",
+          "kind": "index",
+          "fields": [],
+          "startLine": 61,
+          "endLine": 61
+        },
+        {
+          "name": "ota_update_logs_user_idx",
+          "kind": "index",
+          "fields": [],
+          "startLine": 64,
+          "endLine": 64
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "definitionCount": 8
+      }
+    },
+    {
+      "path": "supabase/migrations/20260518000100_results_server_refresh_cron.sql",
+      "language": "sql",
+      "fileCategory": "data",
+      "totalLines": 60,
+      "nonEmptyLines": 54,
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "definitionCount": 0
+      }
+    },
+    {
+      "path": "supabase/migrations/20260518230328_server_first_prize_payments.sql",
+      "language": "sql",
+      "fileCategory": "data",
+      "totalLines": 614,
+      "nonEmptyLines": 564,
+      "definitions": [
+        {
+          "name": "tickets_paid_at_idx",
+          "kind": "index",
+          "fields": [],
+          "startLine": 610,
+          "endLine": 610
+        },
+        {
+          "name": "tickets_cashier_draw_status_idx",
+          "kind": "index",
+          "fields": [],
+          "startLine": 611,
+          "endLine": 611
+        },
+        {
+          "name": "tickets_supervisor_draw_status_idx",
+          "kind": "index",
+          "fields": [],
+          "startLine": 612,
+          "endLine": 612
+        },
+        {
+          "name": "pagos_created_status_idx",
+          "kind": "index",
+          "fields": [],
+          "startLine": 613,
+          "endLine": 613
+        },
+        {
+          "name": "movimientos_balance_ticket_idx",
+          "kind": "index",
+          "fields": [],
+          "startLine": 614,
+          "endLine": 614
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "definitionCount": 5
+      }
+    },
+    {
+      "path": "supabase/migrations/20260518235038_temporary_lock_public_ticket_rpcs.sql",
+      "language": "sql",
+      "fileCategory": "data",
+      "totalLines": 63,
+      "nonEmptyLines": 50,
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "definitionCount": 0
+      }
+    },
+    {
+      "path": "supabase/migrations/20260518235228_temporary_lock_remaining_public_security_definers.sql",
+      "language": "sql",
+      "fileCategory": "data",
+      "totalLines": 1,
+      "nonEmptyLines": 0,
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "definitionCount": 0
+      }
+    },
+    {
+      "path": "supabase/migrations/20260519003000_enforce_ticket_delete_roles_and_two_minute_window.sql",
+      "language": "sql",
+      "fileCategory": "data",
+      "totalLines": 152,
+      "nonEmptyLines": 137,
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "definitionCount": 0
+      }
+    },
+    {
+      "path": "supabase/migrations/20260519013000_server_authoritative_sales_limits.sql",
+      "language": "sql",
+      "fileCategory": "data",
+      "totalLines": 363,
+      "nonEmptyLines": 323,
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "definitionCount": 0
+      }
+    },
+    {
+      "path": "supabase/migrations/20260519023000_server_profile_grace_jwt_clock.sql",
+      "language": "sql",
+      "fileCategory": "data",
+      "totalLines": 238,
+      "nonEmptyLines": 214,
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "definitionCount": 0
+      }
+    },
+    {
+      "path": "supabase/migrations/20260519033000_client_health_events.sql",
+      "language": "sql",
+      "fileCategory": "data",
+      "totalLines": 26,
+      "nonEmptyLines": 21,
+      "definitions": [
+        {
+          "name": "public",
+          "kind": "table",
+          "fields": [
+            "id",
+            "received_at",
+            "app_version",
+            "device_id",
+            "owner_key",
+            "event_type",
+            "payload"
+          ],
+          "startLine": 1,
+          "endLine": 9
+        },
+        {
+          "name": "client_health_events_received_at_idx",
+          "kind": "index",
+          "fields": [],
+          "startLine": 11,
+          "endLine": 11
+        },
+        {
+          "name": "client_health_events_owner_received_idx",
+          "kind": "index",
+          "fields": [],
+          "startLine": 14,
+          "endLine": 14
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "definitionCount": 3
+      }
+    },
+    {
+      "path": "supabase/migrations/20260519043000_normalize_pick_box_straight_server.sql",
+      "language": "sql",
+      "fileCategory": "data",
+      "totalLines": 152,
+      "nonEmptyLines": 139,
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "definitionCount": 0
+      }
+    },
+    {
+      "path": "supabase/migrations/20260519052000_harden_advisors_nonblocking.sql",
+      "language": "sql",
+      "fileCategory": "data",
+      "totalLines": 63,
+      "nonEmptyLines": 58,
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "definitionCount": 0
+      }
+    },
+    {
+      "path": "supabase/migrations/20260519053000_harden_remaining_function_search_paths.sql",
+      "language": "sql",
+      "fileCategory": "data",
+      "totalLines": 16,
+      "nonEmptyLines": 15,
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "definitionCount": 0
+      }
+    },
+    {
+      "path": "supabase/migrations/20260519072000_allow_public_results_cache_writes.sql",
+      "language": "sql",
+      "fileCategory": "data",
+      "totalLines": 45,
+      "nonEmptyLines": 40,
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "definitionCount": 0
+      }
+    },
+    {
+      "path": "supabase/migrations/20260519075000_scope_cashier_play_limits_by_cashier.sql",
+      "language": "sql",
+      "fileCategory": "data",
+      "totalLines": 52,
+      "nonEmptyLines": 45,
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "definitionCount": 0
+      }
+    },
+    {
+      "path": "supabase/migrations/20260520123000_auto_sync_winning_ticket_payloads.sql",
+      "language": "sql",
+      "fileCategory": "data",
+      "totalLines": 192,
+      "nonEmptyLines": 177,
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "definitionCount": 0
+      }
+    },
+    {
+      "path": "supabase/migrations/20260520124500_include_pick_results_in_server_reconcile.sql",
+      "language": "sql",
+      "fileCategory": "data",
+      "totalLines": 235,
+      "nonEmptyLines": 223,
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "definitionCount": 0
+      }
+    },
+    {
+      "path": "supabase/migrations/20260520131500_fix_finance_report_dates_commissions_and_limit_status.sql",
+      "language": "sql",
+      "fileCategory": "data",
+      "totalLines": 216,
+      "nonEmptyLines": 198,
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "definitionCount": 0
+      }
+    },
+    {
+      "path": "supabase/migrations/20260520132000_map_ticket_limit_errors_to_conflict.sql",
+      "language": "sql",
+      "fileCategory": "data",
+      "totalLines": 32,
+      "nonEmptyLines": 32,
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "definitionCount": 0
+      }
+    },
+    {
+      "path": "supabase/migrations/20260520205152_reserve_pending_prizes_in_reports.sql",
+      "language": "sql",
+      "fileCategory": "data",
+      "totalLines": 123,
+      "nonEmptyLines": 116,
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "definitionCount": 0
+      }
+    },
+    {
+      "path": "supabase/migrations/20260521183000_secure_results_reconcile_ticket_items.sql",
+      "language": "sql",
+      "fileCategory": "data",
+      "totalLines": 46,
+      "nonEmptyLines": 39,
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "definitionCount": 0
+      }
+    },
+    {
+      "path": "supabase/migrations/20260522031721_fix_limits_pick_supervisor_regressions.sql",
+      "language": "sql",
+      "fileCategory": "data",
+      "totalLines": 317,
+      "nonEmptyLines": 285,
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "definitionCount": 0
+      }
+    },
+    {
+      "path": "supabase/migrations/20260522070500_fix_performance_advisor_indexes_rls.sql",
+      "language": "sql",
+      "fileCategory": "data",
+      "totalLines": 115,
+      "nonEmptyLines": 105,
+      "definitions": [
+        {
+          "name": "admin_networks_master_id_idx",
+          "kind": "index",
+          "fields": [],
+          "startLine": 3,
+          "endLine": 3
+        },
+        {
+          "name": "app_config_updated_by_idx",
+          "kind": "index",
+          "fields": [],
+          "startLine": 4,
+          "endLine": 4
+        },
+        {
+          "name": "bancas_admin_id_idx",
+          "kind": "index",
+          "fields": [],
+          "startLine": 5,
+          "endLine": 5
+        },
+        {
+          "name": "cajeros_supervisor_id_idx",
+          "kind": "index",
+          "fields": [],
+          "startLine": 6,
+          "endLine": 6
+        },
+        {
+          "name": "horarios_cierre_sorteo_id_idx",
+          "kind": "index",
+          "fields": [],
+          "startLine": 7,
+          "endLine": 7
+        },
+        {
+          "name": "limites_numeros_banca_id_idx",
+          "kind": "index",
+          "fields": [],
+          "startLine": 8,
+          "endLine": 8
+        },
+        {
+          "name": "limites_numeros_lottery_id_idx",
+          "kind": "index",
+          "fields": [],
+          "startLine": 9,
+          "endLine": 9
+        },
+        {
+          "name": "limites_numeros_sorteo_id_idx",
+          "kind": "index",
+          "fields": [],
+          "startLine": 10,
+          "endLine": 10
+        },
+        {
+          "name": "limites_numeros_consumo_sorteo_id_idx",
+          "kind": "index",
+          "fields": [],
+          "startLine": 11,
+          "endLine": 11
+        },
+        {
+          "name": "messages_sender_id_idx",
+          "kind": "index",
+          "fields": [],
+          "startLine": 12,
+          "endLine": 12
+        },
+        {
+          "name": "movimientos_balance_from_user_id_idx",
+          "kind": "index",
+          "fields": [],
+          "startLine": 13,
+          "endLine": 13
+        },
+        {
+          "name": "notificaciones_recipient_id_idx",
+          "kind": "index",
+          "fields": [],
+          "startLine": 14,
+          "endLine": 14
+        },
+        {
+          "name": "pagos_paid_by_idx",
+          "kind": "index",
+          "fields": [],
+          "startLine": 15,
+          "endLine": 15
+        },
+        {
+          "name": "profiles_admin_owner_id_idx",
+          "kind": "index",
+          "fields": [],
+          "startLine": 16,
+          "endLine": 16
+        },
+        {
+          "name": "profiles_banca_id_idx",
+          "kind": "index",
+          "fields": [],
+          "startLine": 17,
+          "endLine": 17
+        },
+        {
+          "name": "profiles_created_by_idx",
+          "kind": "index",
+          "fields": [],
+          "startLine": 18,
+          "endLine": 18
+        },
+        {
+          "name": "profiles_parent_user_id_idx",
+          "kind": "index",
+          "fields": [],
+          "startLine": 19,
+          "endLine": 19
+        },
+        {
+          "name": "recargas_from_user_id_idx",
+          "kind": "index",
+          "fields": [],
+          "startLine": 20,
+          "endLine": 20
+        },
+        {
+          "name": "recargas_to_user_id_idx",
+          "kind": "index",
+          "fields": [],
+          "startLine": 21,
+          "endLine": 21
+        },
+        {
+          "name": "recargas_usuario_id_idx",
+          "kind": "index",
+          "fields": [],
+          "startLine": 22,
+          "endLine": 22
+        },
+        {
+          "name": "resultados_lottery_id_idx",
+          "kind": "index",
+          "fields": [],
+          "startLine": 23,
+          "endLine": 23
+        },
+        {
+          "name": "supervisores_admin_id_idx",
+          "kind": "index",
+          "fields": [],
+          "startLine": 24,
+          "endLine": 24
+        },
+        {
+          "name": "ticket_items_lottery_id_idx",
+          "kind": "index",
+          "fields": [],
+          "startLine": 25,
+          "endLine": 25
+        },
+        {
+          "name": "ticket_limit_reservations_sorteo_id_idx",
+          "kind": "index",
+          "fields": [],
+          "startLine": 26,
+          "endLine": 26
+        },
+        {
+          "name": "tickets_banca_uuid_idx",
+          "kind": "index",
+          "fields": [],
+          "startLine": 27,
+          "endLine": 27
+        },
+        {
+          "name": "tickets_supervisor_id_idx",
+          "kind": "index",
+          "fields": [],
+          "startLine": 28,
+          "endLine": 28
+        },
+        {
+          "name": "tickets_usuario_id_idx",
+          "kind": "index",
+          "fields": [],
+          "startLine": 29,
+          "endLine": 29
+        },
+        {
+          "name": "user_permissions_granted_by_idx",
+          "kind": "index",
+          "fields": [],
+          "startLine": 30,
+          "endLine": 30
+        },
+        {
+          "name": "user_permissions_permission_code_idx",
+          "kind": "index",
+          "fields": [],
+          "startLine": 31,
+          "endLine": 31
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "definitionCount": 29
+      }
+    },
+    {
+      "path": "supabase/migrations/20260524092446_sync_results_tables_from_kv_cache.sql",
+      "language": "sql",
+      "fileCategory": "data",
+      "totalLines": 101,
+      "nonEmptyLines": 90,
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "definitionCount": 0
+      }
+    },
+    {
+      "path": "supabase/migrations/20260524101500_avoid_reconcile_when_result_numbers_unchanged.sql",
+      "language": "sql",
+      "fileCategory": "data",
+      "totalLines": 108,
+      "nonEmptyLines": 94,
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "definitionCount": 0
+      }
+    },
+    {
+      "path": "supabase/migrations/20260525000100_fix_prize_payout_config_aliases.sql",
+      "language": "sql",
+      "fileCategory": "data",
+      "totalLines": 165,
+      "nonEmptyLines": 148,
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "definitionCount": 0
+      }
+    },
+    {
+      "path": "supabase/migrations/20260525001000_fix_prize_payout_config_master_state.sql",
+      "language": "sql",
+      "fileCategory": "data",
+      "totalLines": 165,
+      "nonEmptyLines": 148,
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "definitionCount": 0
+      }
+    },
+    {
+      "path": "supabase/migrations/20260527093000_separate_admin_self_limits_from_cashier_defaults.sql",
+      "language": "sql",
+      "fileCategory": "data",
+      "totalLines": 102,
+      "nonEmptyLines": 89,
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "definitionCount": 0
+      }
+    },
+    {
+      "path": "supabase/migrations/20260528014500_skip_inline_reconcile_during_results_kv_sync.sql",
+      "language": "sql",
+      "fileCategory": "data",
+      "totalLines": 119,
+      "nonEmptyLines": 101,
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "definitionCount": 0
+      }
+    },
+    {
+      "path": "supabase/migrations/20260528120000_optimize_rls_and_indexes.sql",
+      "language": "sql",
+      "fileCategory": "data",
+      "totalLines": 28,
+      "nonEmptyLines": 24,
+      "definitions": [
+        {
+          "name": "idx_tickets_created_at_desc",
+          "kind": "index",
+          "fields": [],
+          "startLine": 25,
+          "endLine": 25
+        },
+        {
+          "name": "idx_auditoria_created_at_desc",
+          "kind": "index",
+          "fields": [],
+          "startLine": 26,
+          "endLine": 26
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "definitionCount": 2
+      }
+    },
+    {
+      "path": "supabase/migrations/20260528130000_harden_security_definer_executes.sql",
+      "language": "sql",
+      "fileCategory": "data",
+      "totalLines": 11,
+      "nonEmptyLines": 8,
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "definitionCount": 0
+      }
+    },
+    {
+      "path": "supabase/migrations/20260529003000_result_draws_prize_v2_foundation.sql",
+      "language": "sql",
+      "fileCategory": "data",
+      "totalLines": 708,
+      "nonEmptyLines": 656,
+      "definitions": [
+        {
+          "name": "public",
+          "kind": "table",
+          "fields": [
+            "id",
+            "source",
+            "result_date",
+            "result_day_key",
+            "lottery_legacy_id",
+            "lottery_name",
+            "game",
+            "draw_name",
+            "number_raw",
+            "number_digits",
+            "status",
+            "source_payload",
+            "source_hash",
+            "first_seen_at",
+            "updated_at"
+          ],
+          "startLine": 3,
+          "endLine": 20
+        },
+        {
+          "name": "public",
+          "kind": "table",
+          "fields": [
+            "ticket_item_id",
+            "ticket_id",
+            "result_draw_id",
+            "is_winner",
+            "payout_amount",
+            "hit_position",
+            "result_number",
+            "payout_config_snapshot",
+            "result_hash",
+            "calculated_at"
+          ],
+          "startLine": 22,
+          "endLine": 33
+        },
+        {
+          "name": "public",
+          "kind": "table",
+          "fields": [
+            "id",
+            "result_day_key",
+            "lottery_legacy_id",
+            "game",
+            "status",
+            "attempts",
+            "last_error",
+            "created_at",
+            "locked_at",
+            "completed_at"
+          ],
+          "startLine": 35,
+          "endLine": 46
+        },
+        {
+          "name": "result_draws_day_lottery_idx",
+          "kind": "index",
+          "fields": [],
+          "startLine": 48,
+          "endLine": 48
+        },
+        {
+          "name": "result_draws_updated_idx",
+          "kind": "index",
+          "fields": [],
+          "startLine": 50,
+          "endLine": 50
+        },
+        {
+          "name": "ticket_prize_items_ticket_idx",
+          "kind": "index",
+          "fields": [],
+          "startLine": 52,
+          "endLine": 52
+        },
+        {
+          "name": "ticket_prize_items_winner_idx",
+          "kind": "index",
+          "fields": [],
+          "startLine": 54,
+          "endLine": 54
+        },
+        {
+          "name": "result_reconcile_jobs_pending_idx",
+          "kind": "index",
+          "fields": [],
+          "startLine": 57,
+          "endLine": 57
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "definitionCount": 8
+      }
+    },
+    {
+      "path": "supabase/migrations/20260529004500_result_reconcile_queue_guard.sql",
+      "language": "sql",
+      "fileCategory": "data",
+      "totalLines": 134,
+      "nonEmptyLines": 123,
+      "definitions": [
+        {
+          "name": "result_reconcile_jobs_one_active_idx",
+          "kind": "index",
+          "fields": [],
+          "startLine": 10,
+          "endLine": 10
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "definitionCount": 1
+      }
+    },
+    {
+      "path": "supabase/migrations/20260529011000_results_realtime_signal.sql",
+      "language": "sql",
+      "fileCategory": "data",
+      "totalLines": 137,
+      "nonEmptyLines": 126,
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "definitionCount": 0
+      }
+    },
+    {
+      "path": "supabase/migrations/20260529013000_ticket_owner_realtime_touch.sql",
+      "language": "sql",
+      "fileCategory": "data",
+      "totalLines": 76,
+      "nonEmptyLines": 65,
+      "definitions": [
+        {
+          "name": "tickets_admin_updated_idx",
+          "kind": "index",
+          "fields": [],
+          "startLine": 5,
+          "endLine": 5
+        },
+        {
+          "name": "tickets_cashier_updated_idx",
+          "kind": "index",
+          "fields": [],
+          "startLine": 9,
+          "endLine": 9
+        },
+        {
+          "name": "tickets_admin_server_created_idx",
+          "kind": "index",
+          "fields": [],
+          "startLine": 13,
+          "endLine": 13
+        },
+        {
+          "name": "tickets_cashier_server_created_idx",
+          "kind": "index",
+          "fields": [],
+          "startLine": 17,
+          "endLine": 17
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "definitionCount": 4
+      }
+    },
+    {
+      "path": "supabase/migrations/20260529020000_result_draws_first_cutover.sql",
+      "language": "sql",
+      "fileCategory": "data",
+      "totalLines": 46,
+      "nonEmptyLines": 41,
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "definitionCount": 0
+      }
+    },
+    {
+      "path": "supabase/migrations/20260529033000_force_prize_config_from_ticket_seller.sql",
+      "language": "sql",
+      "fileCategory": "data",
+      "totalLines": 32,
+      "nonEmptyLines": 25,
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "definitionCount": 0
+      }
+    },
+    {
+      "path": "supabase/migrations/20260529034500_reconcile_paid_ticket_prizes_with_seller_config.sql",
+      "language": "sql",
+      "fileCategory": "data",
+      "totalLines": 106,
+      "nonEmptyLines": 90,
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "definitionCount": 0
+      }
+    }
+  ]
+}

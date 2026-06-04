@@ -1,0 +1,345 @@
+{
+  "nodes": [
+    {
+      "id": "file:.agents/skills/supabase-postgres-best-practices/references/_contributing.md",
+      "type": "document",
+      "name": "_contributing.md",
+      "summary": "Supabase integration file used by the app/server for remote data, ticket, result, or configuration workflows.",
+      "tags": [
+        "docs",
+        "supabase",
+        "documentation"
+      ],
+      "complexity": "moderate",
+      "filePath": ".agents/skills/supabase-postgres-best-practices/references/_contributing.md",
+      "lineRange": [
+        1,
+        170
+      ]
+    },
+    {
+      "id": "file:.agents/skills/supabase-postgres-best-practices/references/_sections.md",
+      "type": "document",
+      "name": "_sections.md",
+      "summary": "Supabase integration file used by the app/server for remote data, ticket, result, or configuration workflows.",
+      "tags": [
+        "docs",
+        "supabase",
+        "documentation"
+      ],
+      "complexity": "simple",
+      "filePath": ".agents/skills/supabase-postgres-best-practices/references/_sections.md",
+      "lineRange": [
+        1,
+        39
+      ]
+    },
+    {
+      "id": "file:.agents/skills/supabase-postgres-best-practices/references/_template.md",
+      "type": "document",
+      "name": "_template.md",
+      "summary": "Supabase integration file used by the app/server for remote data, ticket, result, or configuration workflows.",
+      "tags": [
+        "docs",
+        "supabase",
+        "documentation"
+      ],
+      "complexity": "simple",
+      "filePath": ".agents/skills/supabase-postgres-best-practices/references/_template.md",
+      "lineRange": [
+        1,
+        34
+      ]
+    },
+    {
+      "id": "file:.agents/skills/supabase-postgres-best-practices/references/advanced-full-text-search.md",
+      "type": "document",
+      "name": "advanced-full-text-search.md",
+      "summary": "Supabase integration file used by the app/server for remote data, ticket, result, or configuration workflows.",
+      "tags": [
+        "docs",
+        "supabase",
+        "documentation"
+      ],
+      "complexity": "simple",
+      "filePath": ".agents/skills/supabase-postgres-best-practices/references/advanced-full-text-search.md",
+      "lineRange": [
+        1,
+        55
+      ]
+    },
+    {
+      "id": "file:.agents/skills/supabase-postgres-best-practices/references/advanced-jsonb-indexing.md",
+      "type": "document",
+      "name": "advanced-jsonb-indexing.md",
+      "summary": "Supabase integration file used by the app/server for remote data, ticket, result, or configuration workflows.",
+      "tags": [
+        "docs",
+        "supabase",
+        "documentation"
+      ],
+      "complexity": "simple",
+      "filePath": ".agents/skills/supabase-postgres-best-practices/references/advanced-jsonb-indexing.md",
+      "lineRange": [
+        1,
+        49
+      ]
+    },
+    {
+      "id": "file:.agents/skills/supabase-postgres-best-practices/references/conn-idle-timeout.md",
+      "type": "document",
+      "name": "conn-idle-timeout.md",
+      "summary": "Supabase integration file used by the app/server for remote data, ticket, result, or configuration workflows.",
+      "tags": [
+        "docs",
+        "supabase",
+        "documentation"
+      ],
+      "complexity": "simple",
+      "filePath": ".agents/skills/supabase-postgres-best-practices/references/conn-idle-timeout.md",
+      "lineRange": [
+        1,
+        46
+      ]
+    },
+    {
+      "id": "file:.agents/skills/supabase-postgres-best-practices/references/conn-limits.md",
+      "type": "document",
+      "name": "conn-limits.md",
+      "summary": "Supabase integration file used by the app/server for remote data, ticket, result, or configuration workflows.",
+      "tags": [
+        "docs",
+        "supabase",
+        "documentation"
+      ],
+      "complexity": "simple",
+      "filePath": ".agents/skills/supabase-postgres-best-practices/references/conn-limits.md",
+      "lineRange": [
+        1,
+        44
+      ]
+    },
+    {
+      "id": "file:.agents/skills/supabase-postgres-best-practices/references/conn-pooling.md",
+      "type": "document",
+      "name": "conn-pooling.md",
+      "summary": "Supabase integration file used by the app/server for remote data, ticket, result, or configuration workflows.",
+      "tags": [
+        "docs",
+        "supabase",
+        "documentation"
+      ],
+      "complexity": "simple",
+      "filePath": ".agents/skills/supabase-postgres-best-practices/references/conn-pooling.md",
+      "lineRange": [
+        1,
+        41
+      ]
+    },
+    {
+      "id": "file:.agents/skills/supabase-postgres-best-practices/references/conn-prepared-statements.md",
+      "type": "document",
+      "name": "conn-prepared-statements.md",
+      "summary": "Supabase integration file used by the app/server for remote data, ticket, result, or configuration workflows.",
+      "tags": [
+        "docs",
+        "supabase",
+        "documentation"
+      ],
+      "complexity": "simple",
+      "filePath": ".agents/skills/supabase-postgres-best-practices/references/conn-prepared-statements.md",
+      "lineRange": [
+        1,
+        46
+      ]
+    },
+    {
+      "id": "file:.agents/skills/supabase-postgres-best-practices/references/data-batch-inserts.md",
+      "type": "document",
+      "name": "data-batch-inserts.md",
+      "summary": "Supabase integration file used by the app/server for remote data, ticket, result, or configuration workflows.",
+      "tags": [
+        "docs",
+        "supabase",
+        "documentation"
+      ],
+      "complexity": "simple",
+      "filePath": ".agents/skills/supabase-postgres-best-practices/references/data-batch-inserts.md",
+      "lineRange": [
+        1,
+        54
+      ]
+    },
+    {
+      "id": "file:.agents/skills/supabase-postgres-best-practices/references/data-n-plus-one.md",
+      "type": "document",
+      "name": "data-n-plus-one.md",
+      "summary": "Supabase integration file used by the app/server for remote data, ticket, result, or configuration workflows.",
+      "tags": [
+        "docs",
+        "supabase",
+        "documentation"
+      ],
+      "complexity": "simple",
+      "filePath": ".agents/skills/supabase-postgres-best-practices/references/data-n-plus-one.md",
+      "lineRange": [
+        1,
+        53
+      ]
+    },
+    {
+      "id": "file:.agents/skills/supabase-postgres-best-practices/references/data-pagination.md",
+      "type": "document",
+      "name": "data-pagination.md",
+      "summary": "Supabase integration file used by the app/server for remote data, ticket, result, or configuration workflows.",
+      "tags": [
+        "docs",
+        "supabase",
+        "documentation"
+      ],
+      "complexity": "simple",
+      "filePath": ".agents/skills/supabase-postgres-best-practices/references/data-pagination.md",
+      "lineRange": [
+        1,
+        50
+      ]
+    },
+    {
+      "id": "file:.agents/skills/supabase-postgres-best-practices/references/data-upsert.md",
+      "type": "document",
+      "name": "data-upsert.md",
+      "summary": "Supabase integration file used by the app/server for remote data, ticket, result, or configuration workflows.",
+      "tags": [
+        "docs",
+        "supabase",
+        "documentation"
+      ],
+      "complexity": "simple",
+      "filePath": ".agents/skills/supabase-postgres-best-practices/references/data-upsert.md",
+      "lineRange": [
+        1,
+        50
+      ]
+    },
+    {
+      "id": "file:.agents/skills/supabase-postgres-best-practices/references/lock-advisory.md",
+      "type": "document",
+      "name": "lock-advisory.md",
+      "summary": "Supabase integration file used by the app/server for remote data, ticket, result, or configuration workflows.",
+      "tags": [
+        "docs",
+        "supabase",
+        "documentation"
+      ],
+      "complexity": "simple",
+      "filePath": ".agents/skills/supabase-postgres-best-practices/references/lock-advisory.md",
+      "lineRange": [
+        1,
+        56
+      ]
+    },
+    {
+      "id": "file:.agents/skills/supabase-postgres-best-practices/references/lock-deadlock-prevention.md",
+      "type": "document",
+      "name": "lock-deadlock-prevention.md",
+      "summary": "Supabase integration file used by the app/server for remote data, ticket, result, or configuration workflows.",
+      "tags": [
+        "docs",
+        "supabase",
+        "documentation"
+      ],
+      "complexity": "moderate",
+      "filePath": ".agents/skills/supabase-postgres-best-practices/references/lock-deadlock-prevention.md",
+      "lineRange": [
+        1,
+        68
+      ]
+    },
+    {
+      "id": "file:.agents/skills/supabase-postgres-best-practices/references/lock-short-transactions.md",
+      "type": "document",
+      "name": "lock-short-transactions.md",
+      "summary": "Supabase integration file used by the app/server for remote data, ticket, result, or configuration workflows.",
+      "tags": [
+        "docs",
+        "supabase",
+        "documentation"
+      ],
+      "complexity": "simple",
+      "filePath": ".agents/skills/supabase-postgres-best-practices/references/lock-short-transactions.md",
+      "lineRange": [
+        1,
+        50
+      ]
+    },
+    {
+      "id": "file:.agents/skills/supabase-postgres-best-practices/references/lock-skip-locked.md",
+      "type": "document",
+      "name": "lock-skip-locked.md",
+      "summary": "Supabase integration file used by the app/server for remote data, ticket, result, or configuration workflows.",
+      "tags": [
+        "docs",
+        "supabase",
+        "documentation"
+      ],
+      "complexity": "simple",
+      "filePath": ".agents/skills/supabase-postgres-best-practices/references/lock-skip-locked.md",
+      "lineRange": [
+        1,
+        54
+      ]
+    },
+    {
+      "id": "file:.agents/skills/supabase-postgres-best-practices/references/monitor-explain-analyze.md",
+      "type": "document",
+      "name": "monitor-explain-analyze.md",
+      "summary": "Supabase integration file used by the app/server for remote data, ticket, result, or configuration workflows.",
+      "tags": [
+        "docs",
+        "supabase",
+        "documentation"
+      ],
+      "complexity": "simple",
+      "filePath": ".agents/skills/supabase-postgres-best-practices/references/monitor-explain-analyze.md",
+      "lineRange": [
+        1,
+        45
+      ]
+    },
+    {
+      "id": "file:.agents/skills/supabase-postgres-best-practices/references/monitor-pg-stat-statements.md",
+      "type": "document",
+      "name": "monitor-pg-stat-statements.md",
+      "summary": "Supabase integration file used by the app/server for remote data, ticket, result, or configuration workflows.",
+      "tags": [
+        "docs",
+        "supabase",
+        "documentation"
+      ],
+      "complexity": "simple",
+      "filePath": ".agents/skills/supabase-postgres-best-practices/references/monitor-pg-stat-statements.md",
+      "lineRange": [
+        1,
+        55
+      ]
+    },
+    {
+      "id": "file:.agents/skills/supabase-postgres-best-practices/references/monitor-vacuum-analyze.md",
+      "type": "document",
+      "name": "monitor-vacuum-analyze.md",
+      "summary": "Supabase integration file used by the app/server for remote data, ticket, result, or configuration workflows.",
+      "tags": [
+        "docs",
+        "supabase",
+        "documentation"
+      ],
+      "complexity": "simple",
+      "filePath": ".agents/skills/supabase-postgres-best-practices/references/monitor-vacuum-analyze.md",
+      "lineRange": [
+        1,
+        55
+      ]
+    }
+  ],
+  "edges": []
+}

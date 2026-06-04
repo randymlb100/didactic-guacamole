@@ -6,6 +6,8 @@
 
 Politica de produccion: sin internet no se vende, no se paga, no se anula y no se guardan cambios administrativos.
 
+Para investigar o cambiar flujos criticos, seguir tambien `docs/supabase/multibanca-engineering-playbook.md`. Ese playbook define las reglas de identidad canonica, cache/realtime, jobs por cola, pruebas reales QA y gates antes de release.
+
 ## Fuente de verdad
 
 - Oficiales: `tickets`, `ticket_items`, `pagos`, `movimientos_balance`, `lotterynet_results_by_day`, `lotterynet_kv`.
@@ -107,6 +109,7 @@ where t.id = '<ticket_uuid>';
 
 ## Checklist de produccion
 
+- Confirmar que el cambio cumple `docs/supabase/multibanca-engineering-playbook.md`.
 - Confirmar que `pay-ticket` esta desplegada con `verify_jwt = true`.
 - Confirmar que `create-ticket-v2`, `void-ticket`, `pay-ticket` y reportes estan con `verify_jwt = true`.
 - Mantener `get-ticket-list` y snapshots legacy como compatibilidad hasta que todos los refrescos de Android pasen token; no usarlo como contabilidad final.

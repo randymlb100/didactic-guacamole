@@ -1,0 +1,189 @@
+{
+  "nodes": [
+    {
+      "id": "file:docs/FIGMA_LOTTERYNET_COLORIDO_PRO.md",
+      "type": "document",
+      "name": "FIGMA_LOTTERYNET_COLORIDO_PRO.md",
+      "summary": "Documentation file covering FIGMA_LOTTERYNET_COLORIDO_PRO.md.",
+      "tags": [
+        "docs",
+        "documentation"
+      ],
+      "complexity": "moderate",
+      "filePath": "docs/FIGMA_LOTTERYNET_COLORIDO_PRO.md",
+      "lineRange": [
+        1,
+        94
+      ]
+    },
+    {
+      "id": "file:docs/american-picks-source-architecture.md",
+      "type": "document",
+      "name": "american-picks-source-architecture.md",
+      "summary": "Documentation file covering american-picks-source-architecture.md.",
+      "tags": [
+        "docs",
+        "documentation"
+      ],
+      "complexity": "moderate",
+      "filePath": "docs/american-picks-source-architecture.md",
+      "lineRange": [
+        1,
+        128
+      ]
+    },
+    {
+      "id": "file:docs/bug-sweep-no-emulator-2026-05-12.md",
+      "type": "document",
+      "name": "bug-sweep-no-emulator-2026-05-12.md",
+      "summary": "Documentation file covering bug-sweep-no-emulator-2026-05-12.md.",
+      "tags": [
+        "docs",
+        "documentation"
+      ],
+      "complexity": "moderate",
+      "filePath": "docs/bug-sweep-no-emulator-2026-05-12.md",
+      "lineRange": [
+        1,
+        94
+      ]
+    },
+    {
+      "id": "file:docs/native-results-sync-recovery.md",
+      "type": "document",
+      "name": "native-results-sync-recovery.md",
+      "summary": "Documentation file covering native-results-sync-recovery.md.",
+      "tags": [
+        "docs",
+        "results",
+        "sync",
+        "documentation"
+      ],
+      "complexity": "simple",
+      "filePath": "docs/native-results-sync-recovery.md",
+      "lineRange": [
+        1,
+        38
+      ]
+    },
+    {
+      "id": "file:docs/results-operations-runbook.md",
+      "type": "document",
+      "name": "results-operations-runbook.md",
+      "summary": "Documentation file covering results-operations-runbook.md.",
+      "tags": [
+        "docs",
+        "results",
+        "documentation"
+      ],
+      "complexity": "simple",
+      "filePath": "docs/results-operations-runbook.md",
+      "lineRange": [
+        1,
+        56
+      ]
+    },
+    {
+      "id": "file:docs/sentry-android-setup.md",
+      "type": "document",
+      "name": "sentry-android-setup.md",
+      "summary": "Documentation file covering sentry-android-setup.md.",
+      "tags": [
+        "docs",
+        "documentation"
+      ],
+      "complexity": "simple",
+      "filePath": "docs/sentry-android-setup.md",
+      "lineRange": [
+        1,
+        38
+      ]
+    },
+    {
+      "id": "file:docs/supabase_advisor_warnings_hardening.sql",
+      "type": "table",
+      "name": "supabase_advisor_warnings_hardening.sql",
+      "summary": "Supabase integration file used by the app/server for remote data, ticket, result, or configuration workflows.",
+      "tags": [
+        "data",
+        "supabase",
+        "database"
+      ],
+      "complexity": "moderate",
+      "filePath": "docs/supabase_advisor_warnings_hardening.sql",
+      "lineRange": [
+        1,
+        69
+      ]
+    },
+    {
+      "id": "file:docs/supabase_legacy_public_tables_rls_options.sql",
+      "type": "table",
+      "name": "supabase_legacy_public_tables_rls_options.sql",
+      "summary": "Supabase integration file used by the app/server for remote data, ticket, result, or configuration workflows.",
+      "tags": [
+        "data",
+        "supabase",
+        "database"
+      ],
+      "complexity": "moderate",
+      "filePath": "docs/supabase_legacy_public_tables_rls_options.sql",
+      "lineRange": [
+        1,
+        111
+      ]
+    },
+    {
+      "id": "file:docs/supabase_lock_legacy_public_tables.sql",
+      "type": "table",
+      "name": "supabase_lock_legacy_public_tables.sql",
+      "summary": "Supabase integration file used by the app/server for remote data, ticket, result, or configuration workflows.",
+      "tags": [
+        "data",
+        "supabase",
+        "database"
+      ],
+      "complexity": "simple",
+      "filePath": "docs/supabase_lock_legacy_public_tables.sql",
+      "lineRange": [
+        1,
+        42
+      ]
+    },
+    {
+      "id": "file:docs/supabase_native_schema.sql",
+      "type": "table",
+      "name": "supabase_native_schema.sql",
+      "summary": "Supabase integration file used by the app/server for remote data, ticket, result, or configuration workflows.",
+      "tags": [
+        "data",
+        "supabase",
+        "database"
+      ],
+      "complexity": "simple",
+      "filePath": "docs/supabase_native_schema.sql",
+      "lineRange": [
+        1,
+        55
+      ]
+    },
+    {
+      "id": "file:docs/supabase_production_rls_compat.sql",
+      "type": "table",
+      "name": "supabase_production_rls_compat.sql",
+      "summary": "Supabase integration file used by the app/server for remote data, ticket, result, or configuration workflows.",
+      "tags": [
+        "data",
+        "supabase",
+        "database"
+      ],
+      "complexity": "complex",
+      "filePath": "docs/supabase_production_rls_compat.sql",
+      "lineRange": [
+        1,
+        253
+      ]
+    }
+  ],
+  "edges": []
+}

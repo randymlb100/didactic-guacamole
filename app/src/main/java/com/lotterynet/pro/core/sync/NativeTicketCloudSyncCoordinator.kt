@@ -51,21 +51,14 @@ class NativeTicketCloudSyncCoordinator(
                 .filter { json -> matchesNativeTicketSyncOwner(json, normalizedOwner) }
             val pendingTickets = parseWebTicketsPayload(JSONArray(pendingJson).toString())
             val remoteSnapshot = remoteStore.fetchSnapshot(normalizedOwner)
-            val localTickets = salesRepository.getAllTickets()
-                .filter { ticket -> matchesNativeTicketSyncOwner(ticket, normalizedOwner) }
             val localDeletedIds = salesRepository.getDeletedTicketRefs()
                 .filter { ref -> matchesDeletedOwner(ref, normalizedOwner) }
                 .map { ref -> ref.id }
                 .toSet()
             val deletedIds = remoteSnapshot.deletedIds + localDeletedIds
-            val merged = filterServerVisibleTickets(
-                tickets = mergeTicketsPreferImported(
-                    existing = mergeTicketsPreferImported(
-                        filterServerVisibleTickets(remoteSnapshot.tickets, deletedIds),
-                        filterServerVisibleTickets(localTickets, deletedIds),
-                    ),
-                    imported = pendingTickets,
-                ),
+            val merged = reconcileAuthoritativeOwnerSnapshot(
+                remoteTickets = remoteSnapshot.tickets,
+                pendingTickets = pendingTickets,
                 deletedIds = deletedIds,
             )
             salesRepository.replaceScopedImportedTickets(normalizedOwner, merged)
@@ -128,6 +121,20 @@ class NativeTicketCloudSyncCoordinator(
             ref.sellerId.equals(ownerKey, ignoreCase = true)
     }
 
+}
+
+internal fun reconcileAuthoritativeOwnerSnapshot(
+    remoteTickets: List<TicketRecord>,
+    pendingTickets: List<TicketRecord>,
+    deletedIds: Set<String>,
+): List<TicketRecord> {
+    return filterServerVisibleTickets(
+        tickets = mergeTicketsPreferImported(
+            existing = filterServerVisibleTickets(remoteTickets, deletedIds),
+            imported = filterServerVisibleTickets(pendingTickets, deletedIds),
+        ),
+        deletedIds = deletedIds,
+    )
 }
 
 internal fun matchesNativeTicketSyncOwner(ticket: TicketRecord, ownerKey: String): Boolean {

@@ -362,8 +362,8 @@ class UserAccountsActivity : AppCompatActivity() {
                         buildAccountsForSession(session, usersRepository)
                     },
                     onLoadCashierLimits = { account ->
-                        if (account.role == UserRole.ADMIN || account.role == UserRole.MASTER) {
-                            cashierSalesLimitRepository.getUserLimitsOrNull(ownerId, account.user) ?: noLimitSalesInputs()
+                        if (accountUsesAdminSelfSalesLimits(account)) {
+                            cashierSalesLimitRepository.getAdminSelfLimits(ownerId) ?: noLimitSalesInputs()
                         } else {
                             cashierSalesLimitRepository.getUserLimits(ownerId, account.user).let { limits ->
                                 if (limits.payout > 0.0) limits else limits.copy(payout = adminLimitRepository.getLimits().cashierPayoutLimit)
@@ -377,7 +377,11 @@ class UserAccountsActivity : AppCompatActivity() {
                     },
                     onSaveCashierLimits = { account, limits ->
                         Thread {
-                            val ok = cashierLimitCloudSync.pushUserLimitsServiceFirst(ownerId, account.user, limits)
+                            val ok = if (accountUsesAdminSelfSalesLimits(account)) {
+                                cashierLimitCloudSync.pushAdminSelfLimitsServiceFirst(ownerId, limits)
+                            } else {
+                                cashierLimitCloudSync.pushUserLimitsServiceFirst(ownerId, account.user, limits)
+                            }
                             runOnUiThread {
                                 Toast.makeText(
                                     this,
@@ -723,6 +727,10 @@ internal fun filterUserAccountsForAdmin(
         }
         .toList()
         .let(::sortUserAccountsForAdmin)
+}
+
+internal fun accountUsesAdminSelfSalesLimits(account: UserAccount): Boolean {
+    return account.role == UserRole.ADMIN || account.role == UserRole.MASTER
 }
 
 private fun sortUserAccountsForAdmin(accounts: List<UserAccount>): List<UserAccount> {

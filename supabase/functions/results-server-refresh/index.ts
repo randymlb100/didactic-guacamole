@@ -37,6 +37,12 @@ function stableStringify(value: unknown): string {
   return JSON.stringify(value);
 }
 
+function bool(value: unknown): boolean {
+  if (value === true) return true;
+  const raw = clean(value).toLowerCase();
+  return raw === "true" || raw === "1" || raw === "yes";
+}
+
 function rowsFrom(value: unknown): ResultRow[] {
   if (!value) return [];
   if (typeof value === "string") {
@@ -279,13 +285,41 @@ async function upsertIfChanged(source: "lottery" | "pick", date: string, rows: R
   return Number(data ?? 0) > 0;
 }
 
-async function saveLegacyResultCaches(date: string, lotteryRows: ResultRow[], pickRows: ResultRow[]): Promise<void> {
+async function shouldWriteLegacyCache(key: string, rows: ResultRow[], changed: boolean): Promise<boolean> {
+  if (rows.length === 0) return false;
+  if (changed) return true;
+  const currentRows = rowsFrom(await fetchKvValue(key));
+  return stableStringify(currentRows) !== stableStringify(rows);
+}
+
+async function saveLegacyResultCaches(
+  date: string,
+  lotteryRows: ResultRow[],
+  pickRows: ResultRow[],
+  lotteryChanged: boolean,
+  pickChanged: boolean,
+): Promise<{ lotteryChanged: boolean; pickChanged: boolean; skipped: boolean }> {
+  let lotteryCacheChanged = false;
+  let pickCacheChanged = false;
   if (lotteryRows.length > 0) {
-    await upsertKvValue(`lot_results_cache_by_day:${date}`, lotteryRows);
+    const key = `lot_results_cache_by_day:${date}`;
+    if (await shouldWriteLegacyCache(key, lotteryRows, lotteryChanged)) {
+      await upsertKvValue(key, lotteryRows);
+      lotteryCacheChanged = true;
+    }
   }
   if (pickRows.length > 0) {
-    await upsertKvValue(`pick_results_cache_by_day:${date}`, pickRows);
+    const key = `pick_results_cache_by_day:${date}`;
+    if (await shouldWriteLegacyCache(key, pickRows, pickChanged)) {
+      await upsertKvValue(key, pickRows);
+      pickCacheChanged = true;
+    }
   }
+  return {
+    lotteryChanged: lotteryCacheChanged,
+    pickChanged: pickCacheChanged,
+    skipped: !lotteryCacheChanged && !pickCacheChanged,
+  };
 }
 
 async function processPrizeJobsForDay(date: string): Promise<{ data: unknown; error: string | null }> {
@@ -293,8 +327,8 @@ async function processPrizeJobsForDay(date: string): Promise<{ data: unknown; er
     const { data, error } = await supabaseAdmin()
       .rpc("lotterynet_process_result_reconcile_jobs_for_day", {
         p_result_day_key: date,
-        p_job_limit: 12,
-        p_ticket_limit: 500,
+        p_job_limit: 10,
+        p_ticket_limit: 300,
       });
     if (error) throw error;
     return { data, error: null };
@@ -306,29 +340,34 @@ async function processPrizeJobsForDay(date: string): Promise<{ data: unknown; er
   }
 }
 
-async function configuredCronSecret(): Promise<string> {
-  if (ENV_CRON_SECRET) return ENV_CRON_SECRET;
+async function configuredCronSecrets(): Promise<string[]> {
+  const candidates = new Set<string>();
+  if (ENV_CRON_SECRET) candidates.add(ENV_CRON_SECRET);
   const stored = await fetchKvValue("lotterynet_results_cron_secret");
   if (typeof stored === "string") {
     try {
       const parsed = JSON.parse(stored) as Record<string, unknown>;
       const parsedSecret = clean(parsed.secret);
-      return parsedSecret || stored;
+      if (parsedSecret) candidates.add(parsedSecret);
+      else if (stored) candidates.add(stored);
     } catch {
-      return stored;
+      candidates.add(stored);
     }
   }
-  if (stored && typeof stored === "object") return clean((stored as Record<string, unknown>).secret);
-  return "";
+  if (stored && typeof stored === "object") {
+    const parsedSecret = clean((stored as Record<string, unknown>).secret);
+    if (parsedSecret) candidates.add(parsedSecret);
+  }
+  return [...candidates].map(clean).filter(Boolean);
 }
 
 async function authorize(req: Request): Promise<Response | null> {
-  const expected = await configuredCronSecret();
-  if (!expected) {
+  const expected = await configuredCronSecrets();
+  if (expected.length === 0) {
     return json({ ok: false, message: "LOTTERYNET_RESULTS_CRON_SECRET is not configured." }, 500);
   }
   const provided = req.headers.get("x-lotterynet-results-secret") ?? req.headers.get("x-lotterynet-admin-secret") ?? "";
-  if (provided !== expected) {
+  if (!expected.includes(provided)) {
     return json({ ok: false, message: "Results refresh secret is invalid." }, 403);
   }
   return null;
@@ -343,6 +382,16 @@ Deno.serve(async (req) => {
   try {
     const body = await req.json().catch(() => ({}));
     const date = normalizeDateKey(body.date);
+    if (body.processOnly === true) {
+      const prizeReconcile = await processPrizeJobsForDay(date);
+      return json({
+        ok: !prizeReconcile.error,
+        date,
+        changed: false,
+        processOnly: true,
+        prizeReconcile,
+      }, prizeReconcile.error ? 500 : 200);
+    }
     const live = await fetchLiveResultsOrEmpty(date);
     const payload = live.payload;
     const split = splitPayload(payload);
@@ -353,10 +402,11 @@ Deno.serve(async (req) => {
     const pickRows = mergeHolidayNoDrawRows(pickBaseRows, holidaySplit.picks);
     const lotteryChanged = await upsertIfChanged("lottery", date, lotteryRows);
     const pickChanged = await upsertIfChanged("pick", date, pickRows);
-    await saveLegacyResultCaches(date, lotteryRows, pickRows);
-    const prizeReconcile = lotteryChanged || pickChanged
+    const legacyCacheResult = await saveLegacyResultCaches(date, lotteryRows, pickRows, lotteryChanged, pickChanged);
+    const shouldProcessPrizes = lotteryChanged || pickChanged || bool(body.forcePrizeProcess);
+    const prizeReconcile = shouldProcessPrizes
       ? await processPrizeJobsForDay(date)
-      : { data: null, error: null };
+      : { data: { skipped: true, reason: "unchanged_results" }, error: null };
 
     return json({
       ok: true,
@@ -369,6 +419,7 @@ Deno.serve(async (req) => {
       legacyCache: {
         lotteryKey: `lot_results_cache_by_day:${date}`,
         pickKey: `pick_results_cache_by_day:${date}`,
+        ...legacyCacheResult,
       },
     });
   } catch (error) {

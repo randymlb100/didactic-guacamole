@@ -1,0 +1,4683 @@
+{
+  "nodes": [
+    {
+      "id": "file:tools/pre-release.mjs",
+      "type": "file",
+      "name": "pre-release.mjs",
+      "summary": "Source file tools/pre-release.mjs containing 9 function(s).",
+      "tags": [
+        "code"
+      ],
+      "complexity": "moderate",
+      "filePath": "tools/pre-release.mjs",
+      "lineRange": [
+        1,
+        122
+      ]
+    },
+    {
+      "id": "function:tools/pre-release.mjs:resolveJavaHome",
+      "type": "function",
+      "name": "resolveJavaHome",
+      "summary": "Function resolveJavaHome in pre-release.mjs.",
+      "tags": [
+        "function",
+        "javascript"
+      ],
+      "complexity": "moderate",
+      "filePath": "tools/pre-release.mjs",
+      "lineRange": [
+        32,
+        54
+      ]
+    },
+    {
+      "id": "function:tools/pre-release.mjs:runStep",
+      "type": "function",
+      "name": "runStep",
+      "summary": "Function runStep in pre-release.mjs.",
+      "tags": [
+        "function",
+        "javascript"
+      ],
+      "complexity": "moderate",
+      "filePath": "tools/pre-release.mjs",
+      "lineRange": [
+        56,
+        85
+      ]
+    },
+    {
+      "id": "function:tools/pre-release.mjs:formatBytes",
+      "type": "function",
+      "name": "formatBytes",
+      "summary": "Function formatBytes in pre-release.mjs.",
+      "tags": [
+        "function",
+        "javascript"
+      ],
+      "complexity": "moderate",
+      "filePath": "tools/pre-release.mjs",
+      "lineRange": [
+        87,
+        97
+      ]
+    },
+    {
+      "id": "function:tools/pre-release.mjs:reportApk",
+      "type": "function",
+      "name": "reportApk",
+      "summary": "Function reportApk in pre-release.mjs.",
+      "tags": [
+        "function",
+        "javascript"
+      ],
+      "complexity": "moderate",
+      "filePath": "tools/pre-release.mjs",
+      "lineRange": [
+        99,
+        113
+      ]
+    },
+    {
+      "id": "file:tools/qa/admin-controls-real-flow-smoke.mjs",
+      "type": "file",
+      "name": "admin-controls-real-flow-smoke.mjs",
+      "summary": "Source file tools/qa/admin-controls-real-flow-smoke.mjs containing 27 function(s).",
+      "tags": [
+        "code",
+        "large-module"
+      ],
+      "complexity": "complex",
+      "filePath": "tools/qa/admin-controls-real-flow-smoke.mjs",
+      "lineRange": [
+        1,
+        548
+      ]
+    },
+    {
+      "id": "function:tools/qa/admin-controls-real-flow-smoke.mjs:headers",
+      "type": "function",
+      "name": "headers",
+      "summary": "Function headers in admin-controls-real-flow-smoke.mjs.",
+      "tags": [
+        "function",
+        "javascript"
+      ],
+      "complexity": "moderate",
+      "filePath": "tools/qa/admin-controls-real-flow-smoke.mjs",
+      "lineRange": [
+        39,
+        47
+      ]
+    },
+    {
+      "id": "function:tools/qa/admin-controls-real-flow-smoke.mjs:requestJson",
+      "type": "function",
+      "name": "requestJson",
+      "summary": "Function requestJson in admin-controls-real-flow-smoke.mjs.",
+      "tags": [
+        "function",
+        "javascript"
+      ],
+      "complexity": "moderate",
+      "filePath": "tools/qa/admin-controls-real-flow-smoke.mjs",
+      "lineRange": [
+        56,
+        87
+      ]
+    },
+    {
+      "id": "function:tools/qa/admin-controls-real-flow-smoke.mjs:parseCredentials",
+      "type": "function",
+      "name": "parseCredentials",
+      "summary": "Function parseCredentials in admin-controls-real-flow-smoke.mjs.",
+      "tags": [
+        "function",
+        "javascript"
+      ],
+      "complexity": "moderate",
+      "filePath": "tools/qa/admin-controls-real-flow-smoke.mjs",
+      "lineRange": [
+        93,
+        105
+      ]
+    },
+    {
+      "id": "function:tools/qa/admin-controls-real-flow-smoke.mjs:allAccounts",
+      "type": "function",
+      "name": "allAccounts",
+      "summary": "Function allAccounts in admin-controls-real-flow-smoke.mjs.",
+      "tags": [
+        "function",
+        "javascript"
+      ],
+      "complexity": "moderate",
+      "filePath": "tools/qa/admin-controls-real-flow-smoke.mjs",
+      "lineRange": [
+        107,
+        116
+      ]
+    },
+    {
+      "id": "function:tools/qa/admin-controls-real-flow-smoke.mjs:login",
+      "type": "function",
+      "name": "login",
+      "summary": "Function login in admin-controls-real-flow-smoke.mjs.",
+      "tags": [
+        "function",
+        "javascript"
+      ],
+      "complexity": "moderate",
+      "filePath": "tools/qa/admin-controls-real-flow-smoke.mjs",
+      "lineRange": [
+        134,
+        143
+      ]
+    },
+    {
+      "id": "function:tools/qa/admin-controls-real-flow-smoke.mjs:fetchUsersPayload",
+      "type": "function",
+      "name": "fetchUsersPayload",
+      "summary": "Function fetchUsersPayload in admin-controls-real-flow-smoke.mjs.",
+      "tags": [
+        "function",
+        "javascript"
+      ],
+      "complexity": "moderate",
+      "filePath": "tools/qa/admin-controls-real-flow-smoke.mjs",
+      "lineRange": [
+        145,
+        153
+      ]
+    },
+    {
+      "id": "function:tools/qa/admin-controls-real-flow-smoke.mjs:saveUsersPayload",
+      "type": "function",
+      "name": "saveUsersPayload",
+      "summary": "Function saveUsersPayload in admin-controls-real-flow-smoke.mjs.",
+      "tags": [
+        "function",
+        "javascript"
+      ],
+      "complexity": "moderate",
+      "filePath": "tools/qa/admin-controls-real-flow-smoke.mjs",
+      "lineRange": [
+        155,
+        167
+      ]
+    },
+    {
+      "id": "function:tools/qa/admin-controls-real-flow-smoke.mjs:updateMasterValue",
+      "type": "function",
+      "name": "updateMasterValue",
+      "summary": "Function updateMasterValue in admin-controls-real-flow-smoke.mjs.",
+      "tags": [
+        "function",
+        "javascript"
+      ],
+      "complexity": "moderate",
+      "filePath": "tools/qa/admin-controls-real-flow-smoke.mjs",
+      "lineRange": [
+        175,
+        188
+      ]
+    },
+    {
+      "id": "function:tools/qa/admin-controls-real-flow-smoke.mjs:upsertResults",
+      "type": "function",
+      "name": "upsertResults",
+      "summary": "Function upsertResults in admin-controls-real-flow-smoke.mjs.",
+      "tags": [
+        "function",
+        "javascript"
+      ],
+      "complexity": "moderate",
+      "filePath": "tools/qa/admin-controls-real-flow-smoke.mjs",
+      "lineRange": [
+        190,
+        199
+      ]
+    },
+    {
+      "id": "function:tools/qa/admin-controls-real-flow-smoke.mjs:ticketBody",
+      "type": "function",
+      "name": "ticketBody",
+      "summary": "Function ticketBody in admin-controls-real-flow-smoke.mjs.",
+      "tags": [
+        "function",
+        "javascript"
+      ],
+      "complexity": "moderate",
+      "filePath": "tools/qa/admin-controls-real-flow-smoke.mjs",
+      "lineRange": [
+        205,
+        223
+      ]
+    },
+    {
+      "id": "function:tools/qa/admin-controls-real-flow-smoke.mjs:createSupervisorPayload",
+      "type": "function",
+      "name": "createSupervisorPayload",
+      "summary": "Function createSupervisorPayload in admin-controls-real-flow-smoke.mjs.",
+      "tags": [
+        "function",
+        "javascript"
+      ],
+      "complexity": "moderate",
+      "filePath": "tools/qa/admin-controls-real-flow-smoke.mjs",
+      "lineRange": [
+        232,
+        258
+      ]
+    },
+    {
+      "id": "function:tools/qa/admin-controls-real-flow-smoke.mjs:setAccountBlocked",
+      "type": "function",
+      "name": "setAccountBlocked",
+      "summary": "Function setAccountBlocked in admin-controls-real-flow-smoke.mjs.",
+      "tags": [
+        "function",
+        "javascript"
+      ],
+      "complexity": "moderate",
+      "filePath": "tools/qa/admin-controls-real-flow-smoke.mjs",
+      "lineRange": [
+        260,
+        278
+      ]
+    },
+    {
+      "id": "function:tools/qa/admin-controls-real-flow-smoke.mjs:voidTicket",
+      "type": "function",
+      "name": "voidTicket",
+      "summary": "Function voidTicket in admin-controls-real-flow-smoke.mjs.",
+      "tags": [
+        "function",
+        "javascript"
+      ],
+      "complexity": "moderate",
+      "filePath": "tools/qa/admin-controls-real-flow-smoke.mjs",
+      "lineRange": [
+        289,
+        298
+      ]
+    },
+    {
+      "id": "function:tools/qa/admin-controls-real-flow-smoke.mjs:main",
+      "type": "function",
+      "name": "main",
+      "summary": "Function main in admin-controls-real-flow-smoke.mjs.",
+      "tags": [
+        "function",
+        "javascript"
+      ],
+      "complexity": "moderate",
+      "filePath": "tools/qa/admin-controls-real-flow-smoke.mjs",
+      "lineRange": [
+        300,
+        503
+      ]
+    },
+    {
+      "id": "function:tools/qa/admin-controls-real-flow-smoke.mjs:restore",
+      "type": "function",
+      "name": "restore",
+      "summary": "Function restore in admin-controls-real-flow-smoke.mjs.",
+      "tags": [
+        "function",
+        "javascript"
+      ],
+      "complexity": "moderate",
+      "filePath": "tools/qa/admin-controls-real-flow-smoke.mjs",
+      "lineRange": [
+        505,
+        516
+      ]
+    },
+    {
+      "id": "function:tools/qa/admin-controls-real-flow-smoke.mjs:writeSummary",
+      "type": "function",
+      "name": "writeSummary",
+      "summary": "Function writeSummary in admin-controls-real-flow-smoke.mjs.",
+      "tags": [
+        "function",
+        "javascript"
+      ],
+      "complexity": "moderate",
+      "filePath": "tools/qa/admin-controls-real-flow-smoke.mjs",
+      "lineRange": [
+        518,
+        533
+      ]
+    },
+    {
+      "id": "file:tools/qa/admin-self-limits-smoke.mjs",
+      "type": "file",
+      "name": "admin-self-limits-smoke.mjs",
+      "summary": "Source file tools/qa/admin-self-limits-smoke.mjs containing 9 function(s).",
+      "tags": [
+        "code"
+      ],
+      "complexity": "moderate",
+      "filePath": "tools/qa/admin-self-limits-smoke.mjs",
+      "lineRange": [
+        1,
+        139
+      ]
+    },
+    {
+      "id": "function:tools/qa/admin-self-limits-smoke.mjs:playLimit",
+      "type": "function",
+      "name": "playLimit",
+      "summary": "Function playLimit in admin-self-limits-smoke.mjs.",
+      "tags": [
+        "function",
+        "javascript"
+      ],
+      "complexity": "moderate",
+      "filePath": "tools/qa/admin-self-limits-smoke.mjs",
+      "lineRange": [
+        18,
+        28
+      ]
+    },
+    {
+      "id": "function:tools/qa/admin-self-limits-smoke.mjs:hasPositiveLimit",
+      "type": "function",
+      "name": "hasPositiveLimit",
+      "summary": "Function hasPositiveLimit in admin-self-limits-smoke.mjs.",
+      "tags": [
+        "function",
+        "javascript"
+      ],
+      "complexity": "moderate",
+      "filePath": "tools/qa/admin-self-limits-smoke.mjs",
+      "lineRange": [
+        30,
+        56
+      ]
+    },
+    {
+      "id": "function:tools/qa/admin-self-limits-smoke.mjs:resolveLimitConfig",
+      "type": "function",
+      "name": "resolveLimitConfig",
+      "summary": "Function resolveLimitConfig in admin-self-limits-smoke.mjs.",
+      "tags": [
+        "function",
+        "javascript"
+      ],
+      "complexity": "moderate",
+      "filePath": "tools/qa/admin-self-limits-smoke.mjs",
+      "lineRange": [
+        58,
+        69
+      ]
+    },
+    {
+      "id": "function:tools/qa/admin-self-limits-smoke.mjs:requestJson",
+      "type": "function",
+      "name": "requestJson",
+      "summary": "Function requestJson in admin-self-limits-smoke.mjs.",
+      "tags": [
+        "function",
+        "javascript"
+      ],
+      "complexity": "moderate",
+      "filePath": "tools/qa/admin-self-limits-smoke.mjs",
+      "lineRange": [
+        71,
+        87
+      ]
+    },
+    {
+      "id": "function:tools/qa/admin-self-limits-smoke.mjs:run",
+      "type": "function",
+      "name": "run",
+      "summary": "Function run in admin-self-limits-smoke.mjs.",
+      "tags": [
+        "function",
+        "javascript"
+      ],
+      "complexity": "moderate",
+      "filePath": "tools/qa/admin-self-limits-smoke.mjs",
+      "lineRange": [
+        103,
+        134
+      ]
+    },
+    {
+      "id": "file:tools/qa/android-clock-security.node.test.mjs",
+      "type": "file",
+      "name": "android-clock-security.node.test.mjs",
+      "summary": "Source file tools/qa/android-clock-security.node.test.mjs containing 14 function(s).",
+      "tags": [
+        "code",
+        "large-module"
+      ],
+      "complexity": "moderate",
+      "filePath": "tools/qa/android-clock-security.node.test.mjs",
+      "lineRange": [
+        1,
+        180
+      ]
+    },
+    {
+      "id": "function:tools/qa/android-clock-security.node.test.mjs:requestJson",
+      "type": "function",
+      "name": "requestJson",
+      "summary": "Function requestJson in android-clock-security.node.test.mjs.",
+      "tags": [
+        "function",
+        "javascript"
+      ],
+      "complexity": "moderate",
+      "filePath": "tools/qa/android-clock-security.node.test.mjs",
+      "lineRange": [
+        30,
+        44
+      ]
+    },
+    {
+      "id": "function:tools/qa/android-clock-security.node.test.mjs:allAccounts",
+      "type": "function",
+      "name": "allAccounts",
+      "summary": "Function allAccounts in android-clock-security.node.test.mjs.",
+      "tags": [
+        "function",
+        "javascript"
+      ],
+      "complexity": "moderate",
+      "filePath": "tools/qa/android-clock-security.node.test.mjs",
+      "lineRange": [
+        57,
+        66
+      ]
+    },
+    {
+      "id": "function:tools/qa/android-clock-security.node.test.mjs:dominicanDay",
+      "type": "function",
+      "name": "dominicanDay",
+      "summary": "Function dominicanDay in android-clock-security.node.test.mjs.",
+      "tags": [
+        "function",
+        "javascript"
+      ],
+      "complexity": "moderate",
+      "filePath": "tools/qa/android-clock-security.node.test.mjs",
+      "lineRange": [
+        75,
+        87
+      ]
+    },
+    {
+      "id": "function:tools/qa/android-clock-security.node.test.mjs:buildTicketBody",
+      "type": "function",
+      "name": "buildTicketBody",
+      "summary": "Function buildTicketBody in android-clock-security.node.test.mjs.",
+      "tags": [
+        "function",
+        "javascript"
+      ],
+      "complexity": "moderate",
+      "filePath": "tools/qa/android-clock-security.node.test.mjs",
+      "lineRange": [
+        105,
+        133
+      ]
+    },
+    {
+      "id": "function:tools/qa/android-clock-security.node.test.mjs:voidUnexpectedTicket",
+      "type": "function",
+      "name": "voidUnexpectedTicket",
+      "summary": "Function voidUnexpectedTicket in android-clock-security.node.test.mjs.",
+      "tags": [
+        "function",
+        "javascript"
+      ],
+      "complexity": "moderate",
+      "filePath": "tools/qa/android-clock-security.node.test.mjs",
+      "lineRange": [
+        135,
+        144
+      ]
+    },
+    {
+      "id": "file:tools/qa/bugfix-regression-smoke.mjs",
+      "type": "file",
+      "name": "bugfix-regression-smoke.mjs",
+      "summary": "Source file tools/qa/bugfix-regression-smoke.mjs containing 27 function(s).",
+      "tags": [
+        "code",
+        "large-module"
+      ],
+      "complexity": "complex",
+      "filePath": "tools/qa/bugfix-regression-smoke.mjs",
+      "lineRange": [
+        1,
+        357
+      ]
+    },
+    {
+      "id": "function:tools/qa/bugfix-regression-smoke.mjs:headers",
+      "type": "function",
+      "name": "headers",
+      "summary": "Function headers in bugfix-regression-smoke.mjs.",
+      "tags": [
+        "function",
+        "javascript"
+      ],
+      "complexity": "moderate",
+      "filePath": "tools/qa/bugfix-regression-smoke.mjs",
+      "lineRange": [
+        48,
+        56
+      ]
+    },
+    {
+      "id": "function:tools/qa/bugfix-regression-smoke.mjs:requestJson",
+      "type": "function",
+      "name": "requestJson",
+      "summary": "Function requestJson in bugfix-regression-smoke.mjs.",
+      "tags": [
+        "function",
+        "javascript"
+      ],
+      "complexity": "moderate",
+      "filePath": "tools/qa/bugfix-regression-smoke.mjs",
+      "lineRange": [
+        58,
+        75
+      ]
+    },
+    {
+      "id": "function:tools/qa/bugfix-regression-smoke.mjs:allAccounts",
+      "type": "function",
+      "name": "allAccounts",
+      "summary": "Function allAccounts in bugfix-regression-smoke.mjs.",
+      "tags": [
+        "function",
+        "javascript"
+      ],
+      "complexity": "moderate",
+      "filePath": "tools/qa/bugfix-regression-smoke.mjs",
+      "lineRange": [
+        88,
+        97
+      ]
+    },
+    {
+      "id": "function:tools/qa/bugfix-regression-smoke.mjs:upsertResults",
+      "type": "function",
+      "name": "upsertResults",
+      "summary": "Function upsertResults in bugfix-regression-smoke.mjs.",
+      "tags": [
+        "function",
+        "javascript"
+      ],
+      "complexity": "moderate",
+      "filePath": "tools/qa/bugfix-regression-smoke.mjs",
+      "lineRange": [
+        135,
+        144
+      ]
+    },
+    {
+      "id": "function:tools/qa/bugfix-regression-smoke.mjs:createSupervisor",
+      "type": "function",
+      "name": "createSupervisor",
+      "summary": "Function createSupervisor in bugfix-regression-smoke.mjs.",
+      "tags": [
+        "function",
+        "javascript"
+      ],
+      "complexity": "moderate",
+      "filePath": "tools/qa/bugfix-regression-smoke.mjs",
+      "lineRange": [
+        150,
+        174
+      ]
+    },
+    {
+      "id": "function:tools/qa/bugfix-regression-smoke.mjs:installSupervisor",
+      "type": "function",
+      "name": "installSupervisor",
+      "summary": "Function installSupervisor in bugfix-regression-smoke.mjs.",
+      "tags": [
+        "function",
+        "javascript"
+      ],
+      "complexity": "moderate",
+      "filePath": "tools/qa/bugfix-regression-smoke.mjs",
+      "lineRange": [
+        176,
+        192
+      ]
+    },
+    {
+      "id": "function:tools/qa/bugfix-regression-smoke.mjs:createTicket",
+      "type": "function",
+      "name": "createTicket",
+      "summary": "Function createTicket in bugfix-regression-smoke.mjs.",
+      "tags": [
+        "function",
+        "javascript"
+      ],
+      "complexity": "moderate",
+      "filePath": "tools/qa/bugfix-regression-smoke.mjs",
+      "lineRange": [
+        198,
+        217
+      ]
+    },
+    {
+      "id": "function:tools/qa/bugfix-regression-smoke.mjs:main",
+      "type": "function",
+      "name": "main",
+      "summary": "Function main in bugfix-regression-smoke.mjs.",
+      "tags": [
+        "function",
+        "javascript"
+      ],
+      "complexity": "moderate",
+      "filePath": "tools/qa/bugfix-regression-smoke.mjs",
+      "lineRange": [
+        227,
+        302
+      ]
+    },
+    {
+      "id": "function:tools/qa/bugfix-regression-smoke.mjs:writeSummary",
+      "type": "function",
+      "name": "writeSummary",
+      "summary": "Function writeSummary in bugfix-regression-smoke.mjs.",
+      "tags": [
+        "function",
+        "javascript"
+      ],
+      "complexity": "moderate",
+      "filePath": "tools/qa/bugfix-regression-smoke.mjs",
+      "lineRange": [
+        304,
+        326
+      ]
+    },
+    {
+      "id": "file:tools/qa/finance-monitor-smoke.mjs",
+      "type": "file",
+      "name": "finance-monitor-smoke.mjs",
+      "summary": "Source file tools/qa/finance-monitor-smoke.mjs containing 9 function(s).",
+      "tags": [
+        "code"
+      ],
+      "complexity": "moderate",
+      "filePath": "tools/qa/finance-monitor-smoke.mjs",
+      "lineRange": [
+        1,
+        132
+      ]
+    },
+    {
+      "id": "function:tools/qa/finance-monitor-smoke.mjs:edge",
+      "type": "function",
+      "name": "edge",
+      "summary": "Function edge in finance-monitor-smoke.mjs.",
+      "tags": [
+        "function",
+        "javascript"
+      ],
+      "complexity": "moderate",
+      "filePath": "tools/qa/finance-monitor-smoke.mjs",
+      "lineRange": [
+        31,
+        44
+      ]
+    },
+    {
+      "id": "function:tools/qa/finance-monitor-smoke.mjs:createTicket",
+      "type": "function",
+      "name": "createTicket",
+      "summary": "Function createTicket in finance-monitor-smoke.mjs.",
+      "tags": [
+        "function",
+        "javascript"
+      ],
+      "complexity": "moderate",
+      "filePath": "tools/qa/finance-monitor-smoke.mjs",
+      "lineRange": [
+        55,
+        80
+      ]
+    },
+    {
+      "id": "function:tools/qa/finance-monitor-smoke.mjs:main",
+      "type": "function",
+      "name": "main",
+      "summary": "Function main in finance-monitor-smoke.mjs.",
+      "tags": [
+        "function",
+        "javascript"
+      ],
+      "complexity": "moderate",
+      "filePath": "tools/qa/finance-monitor-smoke.mjs",
+      "lineRange": [
+        86,
+        123
+      ]
+    },
+    {
+      "id": "file:tools/qa/full_advisors_report.json",
+      "type": "config",
+      "name": "full_advisors_report.json",
+      "summary": "Configuration file for full_advisors_report.json.",
+      "tags": [
+        "config",
+        "configuration"
+      ],
+      "complexity": "complex",
+      "filePath": "tools/qa/full_advisors_report.json",
+      "lineRange": [
+        1,
+        1441
+      ]
+    },
+    {
+      "id": "file:tools/qa/keyboard-sales-smoke.mjs",
+      "type": "file",
+      "name": "keyboard-sales-smoke.mjs",
+      "summary": "Source file tools/qa/keyboard-sales-smoke.mjs containing 21 function(s).",
+      "tags": [
+        "code",
+        "sales",
+        "large-module"
+      ],
+      "complexity": "complex",
+      "filePath": "tools/qa/keyboard-sales-smoke.mjs",
+      "lineRange": [
+        1,
+        379
+      ]
+    },
+    {
+      "id": "function:tools/qa/keyboard-sales-smoke.mjs:headers",
+      "type": "function",
+      "name": "headers",
+      "summary": "Function headers in keyboard-sales-smoke.mjs.",
+      "tags": [
+        "function",
+        "javascript"
+      ],
+      "complexity": "moderate",
+      "filePath": "tools/qa/keyboard-sales-smoke.mjs",
+      "lineRange": [
+        52,
+        60
+      ]
+    },
+    {
+      "id": "function:tools/qa/keyboard-sales-smoke.mjs:requestJson",
+      "type": "function",
+      "name": "requestJson",
+      "summary": "Function requestJson in keyboard-sales-smoke.mjs.",
+      "tags": [
+        "function",
+        "javascript"
+      ],
+      "complexity": "moderate",
+      "filePath": "tools/qa/keyboard-sales-smoke.mjs",
+      "lineRange": [
+        62,
+        84
+      ]
+    },
+    {
+      "id": "function:tools/qa/keyboard-sales-smoke.mjs:parseCredentials",
+      "type": "function",
+      "name": "parseCredentials",
+      "summary": "Function parseCredentials in keyboard-sales-smoke.mjs.",
+      "tags": [
+        "function",
+        "javascript"
+      ],
+      "complexity": "moderate",
+      "filePath": "tools/qa/keyboard-sales-smoke.mjs",
+      "lineRange": [
+        90,
+        102
+      ]
+    },
+    {
+      "id": "function:tools/qa/keyboard-sales-smoke.mjs:allAccounts",
+      "type": "function",
+      "name": "allAccounts",
+      "summary": "Function allAccounts in keyboard-sales-smoke.mjs.",
+      "tags": [
+        "function",
+        "javascript"
+      ],
+      "complexity": "moderate",
+      "filePath": "tools/qa/keyboard-sales-smoke.mjs",
+      "lineRange": [
+        104,
+        113
+      ]
+    },
+    {
+      "id": "function:tools/qa/keyboard-sales-smoke.mjs:fetchUsersPayload",
+      "type": "function",
+      "name": "fetchUsersPayload",
+      "summary": "Function fetchUsersPayload in keyboard-sales-smoke.mjs.",
+      "tags": [
+        "function",
+        "javascript"
+      ],
+      "complexity": "moderate",
+      "filePath": "tools/qa/keyboard-sales-smoke.mjs",
+      "lineRange": [
+        122,
+        130
+      ]
+    },
+    {
+      "id": "function:tools/qa/keyboard-sales-smoke.mjs:login",
+      "type": "function",
+      "name": "login",
+      "summary": "Function login in keyboard-sales-smoke.mjs.",
+      "tags": [
+        "function",
+        "javascript"
+      ],
+      "complexity": "moderate",
+      "filePath": "tools/qa/keyboard-sales-smoke.mjs",
+      "lineRange": [
+        132,
+        142
+      ]
+    },
+    {
+      "id": "function:tools/qa/keyboard-sales-smoke.mjs:playFromKeyboard",
+      "type": "function",
+      "name": "playFromKeyboard",
+      "summary": "Function playFromKeyboard in keyboard-sales-smoke.mjs.",
+      "tags": [
+        "function",
+        "javascript"
+      ],
+      "complexity": "moderate",
+      "filePath": "tools/qa/keyboard-sales-smoke.mjs",
+      "lineRange": [
+        156,
+        189
+      ]
+    },
+    {
+      "id": "function:tools/qa/keyboard-sales-smoke.mjs:createTicket",
+      "type": "function",
+      "name": "createTicket",
+      "summary": "Function createTicket in keyboard-sales-smoke.mjs.",
+      "tags": [
+        "function",
+        "javascript"
+      ],
+      "complexity": "moderate",
+      "filePath": "tools/qa/keyboard-sales-smoke.mjs",
+      "lineRange": [
+        191,
+        213
+      ]
+    },
+    {
+      "id": "function:tools/qa/keyboard-sales-smoke.mjs:deleteTicket",
+      "type": "function",
+      "name": "deleteTicket",
+      "summary": "Function deleteTicket in keyboard-sales-smoke.mjs.",
+      "tags": [
+        "function",
+        "javascript"
+      ],
+      "complexity": "moderate",
+      "filePath": "tools/qa/keyboard-sales-smoke.mjs",
+      "lineRange": [
+        219,
+        228
+      ]
+    },
+    {
+      "id": "function:tools/qa/keyboard-sales-smoke.mjs:main",
+      "type": "function",
+      "name": "main",
+      "summary": "Function main in keyboard-sales-smoke.mjs.",
+      "tags": [
+        "function",
+        "javascript"
+      ],
+      "complexity": "moderate",
+      "filePath": "tools/qa/keyboard-sales-smoke.mjs",
+      "lineRange": [
+        236,
+        347
+      ]
+    },
+    {
+      "id": "file:tools/qa/payment-tolerance-smoke.mjs",
+      "type": "file",
+      "name": "payment-tolerance-smoke.mjs",
+      "summary": "Source file tools/qa/payment-tolerance-smoke.mjs containing 14 function(s).",
+      "tags": [
+        "code",
+        "large-module"
+      ],
+      "complexity": "moderate",
+      "filePath": "tools/qa/payment-tolerance-smoke.mjs",
+      "lineRange": [
+        1,
+        180
+      ]
+    },
+    {
+      "id": "function:tools/qa/payment-tolerance-smoke.mjs:allAccounts",
+      "type": "function",
+      "name": "allAccounts",
+      "summary": "Function allAccounts in payment-tolerance-smoke.mjs.",
+      "tags": [
+        "function",
+        "javascript"
+      ],
+      "complexity": "moderate",
+      "filePath": "tools/qa/payment-tolerance-smoke.mjs",
+      "lineRange": [
+        27,
+        36
+      ]
+    },
+    {
+      "id": "function:tools/qa/payment-tolerance-smoke.mjs:requestJson",
+      "type": "function",
+      "name": "requestJson",
+      "summary": "Function requestJson in payment-tolerance-smoke.mjs.",
+      "tags": [
+        "function",
+        "javascript"
+      ],
+      "complexity": "moderate",
+      "filePath": "tools/qa/payment-tolerance-smoke.mjs",
+      "lineRange": [
+        58,
+        75
+      ]
+    },
+    {
+      "id": "function:tools/qa/payment-tolerance-smoke.mjs:fetchUsersPayload",
+      "type": "function",
+      "name": "fetchUsersPayload",
+      "summary": "Function fetchUsersPayload in payment-tolerance-smoke.mjs.",
+      "tags": [
+        "function",
+        "javascript"
+      ],
+      "complexity": "moderate",
+      "filePath": "tools/qa/payment-tolerance-smoke.mjs",
+      "lineRange": [
+        81,
+        89
+      ]
+    },
+    {
+      "id": "function:tools/qa/payment-tolerance-smoke.mjs:create",
+      "type": "function",
+      "name": "create",
+      "summary": "Function create in payment-tolerance-smoke.mjs.",
+      "tags": [
+        "function",
+        "javascript"
+      ],
+      "complexity": "moderate",
+      "filePath": "tools/qa/payment-tolerance-smoke.mjs",
+      "lineRange": [
+        99,
+        140
+      ]
+    },
+    {
+      "id": "function:tools/qa/payment-tolerance-smoke.mjs:publishWinningResult",
+      "type": "function",
+      "name": "publishWinningResult",
+      "summary": "Function publishWinningResult in payment-tolerance-smoke.mjs.",
+      "tags": [
+        "function",
+        "javascript"
+      ],
+      "complexity": "moderate",
+      "filePath": "tools/qa/payment-tolerance-smoke.mjs",
+      "lineRange": [
+        142,
+        157
+      ]
+    },
+    {
+      "id": "function:tools/qa/payment-tolerance-smoke.mjs:pay",
+      "type": "function",
+      "name": "pay",
+      "summary": "Function pay in payment-tolerance-smoke.mjs.",
+      "tags": [
+        "function",
+        "javascript"
+      ],
+      "complexity": "moderate",
+      "filePath": "tools/qa/payment-tolerance-smoke.mjs",
+      "lineRange": [
+        159,
+        175
+      ]
+    },
+    {
+      "id": "file:tools/qa/pick-mode-results-smoke.mjs",
+      "type": "file",
+      "name": "pick-mode-results-smoke.mjs",
+      "summary": "Source file tools/qa/pick-mode-results-smoke.mjs containing 28 function(s).",
+      "tags": [
+        "code",
+        "results",
+        "large-module"
+      ],
+      "complexity": "complex",
+      "filePath": "tools/qa/pick-mode-results-smoke.mjs",
+      "lineRange": [
+        1,
+        427
+      ]
+    },
+    {
+      "id": "function:tools/qa/pick-mode-results-smoke.mjs:headers",
+      "type": "function",
+      "name": "headers",
+      "summary": "Function headers in pick-mode-results-smoke.mjs.",
+      "tags": [
+        "function",
+        "javascript"
+      ],
+      "complexity": "moderate",
+      "filePath": "tools/qa/pick-mode-results-smoke.mjs",
+      "lineRange": [
+        41,
+        49
+      ]
+    },
+    {
+      "id": "function:tools/qa/pick-mode-results-smoke.mjs:timingSummary",
+      "type": "function",
+      "name": "timingSummary",
+      "summary": "Function timingSummary in pick-mode-results-smoke.mjs.",
+      "tags": [
+        "function",
+        "javascript"
+      ],
+      "complexity": "moderate",
+      "filePath": "tools/qa/pick-mode-results-smoke.mjs",
+      "lineRange": [
+        62,
+        73
+      ]
+    },
+    {
+      "id": "function:tools/qa/pick-mode-results-smoke.mjs:requestJson",
+      "type": "function",
+      "name": "requestJson",
+      "summary": "Function requestJson in pick-mode-results-smoke.mjs.",
+      "tags": [
+        "function",
+        "javascript"
+      ],
+      "complexity": "moderate",
+      "filePath": "tools/qa/pick-mode-results-smoke.mjs",
+      "lineRange": [
+        82,
+        100
+      ]
+    },
+    {
+      "id": "function:tools/qa/pick-mode-results-smoke.mjs:allAccounts",
+      "type": "function",
+      "name": "allAccounts",
+      "summary": "Function allAccounts in pick-mode-results-smoke.mjs.",
+      "tags": [
+        "function",
+        "javascript"
+      ],
+      "complexity": "moderate",
+      "filePath": "tools/qa/pick-mode-results-smoke.mjs",
+      "lineRange": [
+        113,
+        122
+      ]
+    },
+    {
+      "id": "function:tools/qa/pick-mode-results-smoke.mjs:fetchUsersPayload",
+      "type": "function",
+      "name": "fetchUsersPayload",
+      "summary": "Function fetchUsersPayload in pick-mode-results-smoke.mjs.",
+      "tags": [
+        "function",
+        "javascript"
+      ],
+      "complexity": "moderate",
+      "filePath": "tools/qa/pick-mode-results-smoke.mjs",
+      "lineRange": [
+        131,
+        139
+      ]
+    },
+    {
+      "id": "function:tools/qa/pick-mode-results-smoke.mjs:login",
+      "type": "function",
+      "name": "login",
+      "summary": "Function login in pick-mode-results-smoke.mjs.",
+      "tags": [
+        "function",
+        "javascript"
+      ],
+      "complexity": "moderate",
+      "filePath": "tools/qa/pick-mode-results-smoke.mjs",
+      "lineRange": [
+        141,
+        151
+      ]
+    },
+    {
+      "id": "function:tools/qa/pick-mode-results-smoke.mjs:systemModePayload",
+      "type": "function",
+      "name": "systemModePayload",
+      "summary": "Function systemModePayload in pick-mode-results-smoke.mjs.",
+      "tags": [
+        "function",
+        "javascript"
+      ],
+      "complexity": "moderate",
+      "filePath": "tools/qa/pick-mode-results-smoke.mjs",
+      "lineRange": [
+        163,
+        176
+      ]
+    },
+    {
+      "id": "function:tools/qa/pick-mode-results-smoke.mjs:setAndVerifyMode",
+      "type": "function",
+      "name": "setAndVerifyMode",
+      "summary": "Function setAndVerifyMode in pick-mode-results-smoke.mjs.",
+      "tags": [
+        "function",
+        "javascript"
+      ],
+      "complexity": "moderate",
+      "filePath": "tools/qa/pick-mode-results-smoke.mjs",
+      "lineRange": [
+        178,
+        194
+      ]
+    },
+    {
+      "id": "function:tools/qa/pick-mode-results-smoke.mjs:createTicket",
+      "type": "function",
+      "name": "createTicket",
+      "summary": "Function createTicket in pick-mode-results-smoke.mjs.",
+      "tags": [
+        "function",
+        "javascript"
+      ],
+      "complexity": "moderate",
+      "filePath": "tools/qa/pick-mode-results-smoke.mjs",
+      "lineRange": [
+        200,
+        221
+      ]
+    },
+    {
+      "id": "function:tools/qa/pick-mode-results-smoke.mjs:upsertPickResult",
+      "type": "function",
+      "name": "upsertPickResult",
+      "summary": "Function upsertPickResult in pick-mode-results-smoke.mjs.",
+      "tags": [
+        "function",
+        "javascript"
+      ],
+      "complexity": "moderate",
+      "filePath": "tools/qa/pick-mode-results-smoke.mjs",
+      "lineRange": [
+        223,
+        236
+      ]
+    },
+    {
+      "id": "function:tools/qa/pick-mode-results-smoke.mjs:upsertLotteryResult",
+      "type": "function",
+      "name": "upsertLotteryResult",
+      "summary": "Function upsertLotteryResult in pick-mode-results-smoke.mjs.",
+      "tags": [
+        "function",
+        "javascript"
+      ],
+      "complexity": "moderate",
+      "filePath": "tools/qa/pick-mode-results-smoke.mjs",
+      "lineRange": [
+        238,
+        250
+      ]
+    },
+    {
+      "id": "function:tools/qa/pick-mode-results-smoke.mjs:waitForTicketStatus",
+      "type": "function",
+      "name": "waitForTicketStatus",
+      "summary": "Function waitForTicketStatus in pick-mode-results-smoke.mjs.",
+      "tags": [
+        "function",
+        "javascript"
+      ],
+      "complexity": "moderate",
+      "filePath": "tools/qa/pick-mode-results-smoke.mjs",
+      "lineRange": [
+        264,
+        276
+      ]
+    },
+    {
+      "id": "function:tools/qa/pick-mode-results-smoke.mjs:main",
+      "type": "function",
+      "name": "main",
+      "summary": "Function main in pick-mode-results-smoke.mjs.",
+      "tags": [
+        "function",
+        "javascript"
+      ],
+      "complexity": "moderate",
+      "filePath": "tools/qa/pick-mode-results-smoke.mjs",
+      "lineRange": [
+        282,
+        398
+      ]
+    },
+    {
+      "id": "file:tools/qa/podero02-ticket-stress-no-cleanup.mjs",
+      "type": "file",
+      "name": "podero02-ticket-stress-no-cleanup.mjs",
+      "summary": "Source file tools/qa/podero02-ticket-stress-no-cleanup.mjs containing 23 function(s).",
+      "tags": [
+        "code",
+        "ticket",
+        "large-module"
+      ],
+      "complexity": "complex",
+      "filePath": "tools/qa/podero02-ticket-stress-no-cleanup.mjs",
+      "lineRange": [
+        1,
+        409
+      ]
+    },
+    {
+      "id": "function:tools/qa/podero02-ticket-stress-no-cleanup.mjs:requestJson",
+      "type": "function",
+      "name": "requestJson",
+      "summary": "Function requestJson in podero02-ticket-stress-no-cleanup.mjs.",
+      "tags": [
+        "function",
+        "javascript"
+      ],
+      "complexity": "moderate",
+      "filePath": "tools/qa/podero02-ticket-stress-no-cleanup.mjs",
+      "lineRange": [
+        55,
+        88
+      ]
+    },
+    {
+      "id": "function:tools/qa/podero02-ticket-stress-no-cleanup.mjs:parseCredentials",
+      "type": "function",
+      "name": "parseCredentials",
+      "summary": "Function parseCredentials in podero02-ticket-stress-no-cleanup.mjs.",
+      "tags": [
+        "function",
+        "javascript"
+      ],
+      "complexity": "moderate",
+      "filePath": "tools/qa/podero02-ticket-stress-no-cleanup.mjs",
+      "lineRange": [
+        94,
+        106
+      ]
+    },
+    {
+      "id": "function:tools/qa/podero02-ticket-stress-no-cleanup.mjs:allAccounts",
+      "type": "function",
+      "name": "allAccounts",
+      "summary": "Function allAccounts in podero02-ticket-stress-no-cleanup.mjs.",
+      "tags": [
+        "function",
+        "javascript"
+      ],
+      "complexity": "moderate",
+      "filePath": "tools/qa/podero02-ticket-stress-no-cleanup.mjs",
+      "lineRange": [
+        108,
+        117
+      ]
+    },
+    {
+      "id": "function:tools/qa/podero02-ticket-stress-no-cleanup.mjs:fetchUsersPayload",
+      "type": "function",
+      "name": "fetchUsersPayload",
+      "summary": "Function fetchUsersPayload in podero02-ticket-stress-no-cleanup.mjs.",
+      "tags": [
+        "function",
+        "javascript"
+      ],
+      "complexity": "moderate",
+      "filePath": "tools/qa/podero02-ticket-stress-no-cleanup.mjs",
+      "lineRange": [
+        131,
+        139
+      ]
+    },
+    {
+      "id": "function:tools/qa/podero02-ticket-stress-no-cleanup.mjs:login",
+      "type": "function",
+      "name": "login",
+      "summary": "Function login in podero02-ticket-stress-no-cleanup.mjs.",
+      "tags": [
+        "function",
+        "javascript"
+      ],
+      "complexity": "moderate",
+      "filePath": "tools/qa/podero02-ticket-stress-no-cleanup.mjs",
+      "lineRange": [
+        141,
+        149
+      ]
+    },
+    {
+      "id": "function:tools/qa/podero02-ticket-stress-no-cleanup.mjs:scenarioPlays",
+      "type": "function",
+      "name": "scenarioPlays",
+      "summary": "Function scenarioPlays in podero02-ticket-stress-no-cleanup.mjs.",
+      "tags": [
+        "function",
+        "javascript"
+      ],
+      "complexity": "moderate",
+      "filePath": "tools/qa/podero02-ticket-stress-no-cleanup.mjs",
+      "lineRange": [
+        155,
+        171
+      ]
+    },
+    {
+      "id": "function:tools/qa/podero02-ticket-stress-no-cleanup.mjs:largeTicketPlays",
+      "type": "function",
+      "name": "largeTicketPlays",
+      "summary": "Function largeTicketPlays in podero02-ticket-stress-no-cleanup.mjs.",
+      "tags": [
+        "function",
+        "javascript"
+      ],
+      "complexity": "moderate",
+      "filePath": "tools/qa/podero02-ticket-stress-no-cleanup.mjs",
+      "lineRange": [
+        173,
+        188
+      ]
+    },
+    {
+      "id": "function:tools/qa/podero02-ticket-stress-no-cleanup.mjs:ticketBody",
+      "type": "function",
+      "name": "ticketBody",
+      "summary": "Function ticketBody in podero02-ticket-stress-no-cleanup.mjs.",
+      "tags": [
+        "function",
+        "javascript"
+      ],
+      "complexity": "moderate",
+      "filePath": "tools/qa/podero02-ticket-stress-no-cleanup.mjs",
+      "lineRange": [
+        190,
+        207
+      ]
+    },
+    {
+      "id": "function:tools/qa/podero02-ticket-stress-no-cleanup.mjs:createTicket",
+      "type": "function",
+      "name": "createTicket",
+      "summary": "Function createTicket in podero02-ticket-stress-no-cleanup.mjs.",
+      "tags": [
+        "function",
+        "javascript"
+      ],
+      "complexity": "moderate",
+      "filePath": "tools/qa/podero02-ticket-stress-no-cleanup.mjs",
+      "lineRange": [
+        209,
+        223
+      ]
+    },
+    {
+      "id": "function:tools/qa/podero02-ticket-stress-no-cleanup.mjs:runPool",
+      "type": "function",
+      "name": "runPool",
+      "summary": "Function runPool in podero02-ticket-stress-no-cleanup.mjs.",
+      "tags": [
+        "function",
+        "javascript"
+      ],
+      "complexity": "moderate",
+      "filePath": "tools/qa/podero02-ticket-stress-no-cleanup.mjs",
+      "lineRange": [
+        225,
+        237
+      ]
+    },
+    {
+      "id": "function:tools/qa/podero02-ticket-stress-no-cleanup.mjs:metricSummary",
+      "type": "function",
+      "name": "metricSummary",
+      "summary": "Function metricSummary in podero02-ticket-stress-no-cleanup.mjs.",
+      "tags": [
+        "function",
+        "javascript"
+      ],
+      "complexity": "moderate",
+      "filePath": "tools/qa/podero02-ticket-stress-no-cleanup.mjs",
+      "lineRange": [
+        253,
+        262
+      ]
+    },
+    {
+      "id": "function:tools/qa/podero02-ticket-stress-no-cleanup.mjs:main",
+      "type": "function",
+      "name": "main",
+      "summary": "Function main in podero02-ticket-stress-no-cleanup.mjs.",
+      "tags": [
+        "function",
+        "javascript"
+      ],
+      "complexity": "moderate",
+      "filePath": "tools/qa/podero02-ticket-stress-no-cleanup.mjs",
+      "lineRange": [
+        264,
+        395
+      ]
+    },
+    {
+      "id": "file:tools/qa/production-stability-suite.mjs",
+      "type": "file",
+      "name": "production-stability-suite.mjs",
+      "summary": "Source file tools/qa/production-stability-suite.mjs containing 22 function(s).",
+      "tags": [
+        "code",
+        "large-module"
+      ],
+      "complexity": "complex",
+      "filePath": "tools/qa/production-stability-suite.mjs",
+      "lineRange": [
+        1,
+        351
+      ]
+    },
+    {
+      "id": "function:tools/qa/production-stability-suite.mjs:sampleMemory",
+      "type": "function",
+      "name": "sampleMemory",
+      "summary": "Function sampleMemory in production-stability-suite.mjs.",
+      "tags": [
+        "function",
+        "javascript"
+      ],
+      "complexity": "moderate",
+      "filePath": "tools/qa/production-stability-suite.mjs",
+      "lineRange": [
+        45,
+        60
+      ]
+    },
+    {
+      "id": "function:tools/qa/production-stability-suite.mjs:timingSummary",
+      "type": "function",
+      "name": "timingSummary",
+      "summary": "Function timingSummary in production-stability-suite.mjs.",
+      "tags": [
+        "function",
+        "javascript"
+      ],
+      "complexity": "moderate",
+      "filePath": "tools/qa/production-stability-suite.mjs",
+      "lineRange": [
+        73,
+        84
+      ]
+    },
+    {
+      "id": "function:tools/qa/production-stability-suite.mjs:requestJson",
+      "type": "function",
+      "name": "requestJson",
+      "summary": "Function requestJson in production-stability-suite.mjs.",
+      "tags": [
+        "function",
+        "javascript"
+      ],
+      "complexity": "moderate",
+      "filePath": "tools/qa/production-stability-suite.mjs",
+      "lineRange": [
+        102,
+        127
+      ]
+    },
+    {
+      "id": "function:tools/qa/production-stability-suite.mjs:allAccounts",
+      "type": "function",
+      "name": "allAccounts",
+      "summary": "Function allAccounts in production-stability-suite.mjs.",
+      "tags": [
+        "function",
+        "javascript"
+      ],
+      "complexity": "moderate",
+      "filePath": "tools/qa/production-stability-suite.mjs",
+      "lineRange": [
+        140,
+        149
+      ]
+    },
+    {
+      "id": "function:tools/qa/production-stability-suite.mjs:fetchUsersPayload",
+      "type": "function",
+      "name": "fetchUsersPayload",
+      "summary": "Function fetchUsersPayload in production-stability-suite.mjs.",
+      "tags": [
+        "function",
+        "javascript"
+      ],
+      "complexity": "moderate",
+      "filePath": "tools/qa/production-stability-suite.mjs",
+      "lineRange": [
+        162,
+        170
+      ]
+    },
+    {
+      "id": "function:tools/qa/production-stability-suite.mjs:login",
+      "type": "function",
+      "name": "login",
+      "summary": "Function login in production-stability-suite.mjs.",
+      "tags": [
+        "function",
+        "javascript"
+      ],
+      "complexity": "moderate",
+      "filePath": "tools/qa/production-stability-suite.mjs",
+      "lineRange": [
+        172,
+        181
+      ]
+    },
+    {
+      "id": "function:tools/qa/production-stability-suite.mjs:runPool",
+      "type": "function",
+      "name": "runPool",
+      "summary": "Function runPool in production-stability-suite.mjs.",
+      "tags": [
+        "function",
+        "javascript"
+      ],
+      "complexity": "moderate",
+      "filePath": "tools/qa/production-stability-suite.mjs",
+      "lineRange": [
+        183,
+        194
+      ]
+    },
+    {
+      "id": "function:tools/qa/production-stability-suite.mjs:createSmallWriteProbe",
+      "type": "function",
+      "name": "createSmallWriteProbe",
+      "summary": "Function createSmallWriteProbe in production-stability-suite.mjs.",
+      "tags": [
+        "function",
+        "javascript"
+      ],
+      "complexity": "moderate",
+      "filePath": "tools/qa/production-stability-suite.mjs",
+      "lineRange": [
+        200,
+        218
+      ]
+    },
+    {
+      "id": "function:tools/qa/production-stability-suite.mjs:main",
+      "type": "function",
+      "name": "main",
+      "summary": "Function main in production-stability-suite.mjs.",
+      "tags": [
+        "function",
+        "javascript"
+      ],
+      "complexity": "moderate",
+      "filePath": "tools/qa/production-stability-suite.mjs",
+      "lineRange": [
+        220,
+        345
+      ]
+    },
+    {
+      "id": "file:tools/qa/real-flow-smoke.mjs",
+      "type": "file",
+      "name": "real-flow-smoke.mjs",
+      "summary": "Source file tools/qa/real-flow-smoke.mjs containing 28 function(s).",
+      "tags": [
+        "code",
+        "large-module"
+      ],
+      "complexity": "complex",
+      "filePath": "tools/qa/real-flow-smoke.mjs",
+      "lineRange": [
+        1,
+        534
+      ]
+    },
+    {
+      "id": "function:tools/qa/real-flow-smoke.mjs:allAccounts",
+      "type": "function",
+      "name": "allAccounts",
+      "summary": "Function allAccounts in real-flow-smoke.mjs.",
+      "tags": [
+        "function",
+        "javascript"
+      ],
+      "complexity": "moderate",
+      "filePath": "tools/qa/real-flow-smoke.mjs",
+      "lineRange": [
+        60,
+        69
+      ]
+    },
+    {
+      "id": "function:tools/qa/real-flow-smoke.mjs:stableUniqueAccounts",
+      "type": "function",
+      "name": "stableUniqueAccounts",
+      "summary": "Function stableUniqueAccounts in real-flow-smoke.mjs.",
+      "tags": [
+        "function",
+        "javascript"
+      ],
+      "complexity": "moderate",
+      "filePath": "tools/qa/real-flow-smoke.mjs",
+      "lineRange": [
+        78,
+        86
+      ]
+    },
+    {
+      "id": "function:tools/qa/real-flow-smoke.mjs:requestJson",
+      "type": "function",
+      "name": "requestJson",
+      "summary": "Function requestJson in real-flow-smoke.mjs.",
+      "tags": [
+        "function",
+        "javascript"
+      ],
+      "complexity": "moderate",
+      "filePath": "tools/qa/real-flow-smoke.mjs",
+      "lineRange": [
+        101,
+        118
+      ]
+    },
+    {
+      "id": "function:tools/qa/real-flow-smoke.mjs:fetchUsersPayload",
+      "type": "function",
+      "name": "fetchUsersPayload",
+      "summary": "Function fetchUsersPayload in real-flow-smoke.mjs.",
+      "tags": [
+        "function",
+        "javascript"
+      ],
+      "complexity": "moderate",
+      "filePath": "tools/qa/real-flow-smoke.mjs",
+      "lineRange": [
+        124,
+        132
+      ]
+    },
+    {
+      "id": "function:tools/qa/real-flow-smoke.mjs:saveUsersPayload",
+      "type": "function",
+      "name": "saveUsersPayload",
+      "summary": "Function saveUsersPayload in real-flow-smoke.mjs.",
+      "tags": [
+        "function",
+        "javascript"
+      ],
+      "complexity": "moderate",
+      "filePath": "tools/qa/real-flow-smoke.mjs",
+      "lineRange": [
+        134,
+        168
+      ]
+    },
+    {
+      "id": "function:tools/qa/real-flow-smoke.mjs:upsertResults",
+      "type": "function",
+      "name": "upsertResults",
+      "summary": "Function upsertResults in real-flow-smoke.mjs.",
+      "tags": [
+        "function",
+        "javascript"
+      ],
+      "complexity": "moderate",
+      "filePath": "tools/qa/real-flow-smoke.mjs",
+      "lineRange": [
+        170,
+        180
+      ]
+    },
+    {
+      "id": "function:tools/qa/real-flow-smoke.mjs:deleteResults",
+      "type": "function",
+      "name": "deleteResults",
+      "summary": "Function deleteResults in real-flow-smoke.mjs.",
+      "tags": [
+        "function",
+        "javascript"
+      ],
+      "complexity": "moderate",
+      "filePath": "tools/qa/real-flow-smoke.mjs",
+      "lineRange": [
+        182,
+        190
+      ]
+    },
+    {
+      "id": "function:tools/qa/real-flow-smoke.mjs:login",
+      "type": "function",
+      "name": "login",
+      "summary": "Function login in real-flow-smoke.mjs.",
+      "tags": [
+        "function",
+        "javascript"
+      ],
+      "complexity": "moderate",
+      "filePath": "tools/qa/real-flow-smoke.mjs",
+      "lineRange": [
+        192,
+        202
+      ]
+    },
+    {
+      "id": "function:tools/qa/real-flow-smoke.mjs:createSupervisorPayload",
+      "type": "function",
+      "name": "createSupervisorPayload",
+      "summary": "Function createSupervisorPayload in real-flow-smoke.mjs.",
+      "tags": [
+        "function",
+        "javascript"
+      ],
+      "complexity": "moderate",
+      "filePath": "tools/qa/real-flow-smoke.mjs",
+      "lineRange": [
+        204,
+        232
+      ]
+    },
+    {
+      "id": "function:tools/qa/real-flow-smoke.mjs:addSupervisorGroup",
+      "type": "function",
+      "name": "addSupervisorGroup",
+      "summary": "Function addSupervisorGroup in real-flow-smoke.mjs.",
+      "tags": [
+        "function",
+        "javascript"
+      ],
+      "complexity": "moderate",
+      "filePath": "tools/qa/real-flow-smoke.mjs",
+      "lineRange": [
+        234,
+        251
+      ]
+    },
+    {
+      "id": "function:tools/qa/real-flow-smoke.mjs:setUserBlocked",
+      "type": "function",
+      "name": "setUserBlocked",
+      "summary": "Function setUserBlocked in real-flow-smoke.mjs.",
+      "tags": [
+        "function",
+        "javascript"
+      ],
+      "complexity": "moderate",
+      "filePath": "tools/qa/real-flow-smoke.mjs",
+      "lineRange": [
+        253,
+        262
+      ]
+    },
+    {
+      "id": "function:tools/qa/real-flow-smoke.mjs:createTicket",
+      "type": "function",
+      "name": "createTicket",
+      "summary": "Function createTicket in real-flow-smoke.mjs.",
+      "tags": [
+        "function",
+        "javascript"
+      ],
+      "complexity": "moderate",
+      "filePath": "tools/qa/real-flow-smoke.mjs",
+      "lineRange": [
+        268,
+        290
+      ]
+    },
+    {
+      "id": "function:tools/qa/real-flow-smoke.mjs:deleteTicket",
+      "type": "function",
+      "name": "deleteTicket",
+      "summary": "Function deleteTicket in real-flow-smoke.mjs.",
+      "tags": [
+        "function",
+        "javascript"
+      ],
+      "complexity": "moderate",
+      "filePath": "tools/qa/real-flow-smoke.mjs",
+      "lineRange": [
+        309,
+        318
+      ]
+    },
+    {
+      "id": "function:tools/qa/real-flow-smoke.mjs:main",
+      "type": "function",
+      "name": "main",
+      "summary": "Function main in real-flow-smoke.mjs.",
+      "tags": [
+        "function",
+        "javascript"
+      ],
+      "complexity": "moderate",
+      "filePath": "tools/qa/real-flow-smoke.mjs",
+      "lineRange": [
+        320,
+        511
+      ]
+    },
+    {
+      "id": "file:tools/qa/result-prize-v2-smoke.sql",
+      "type": "table",
+      "name": "result-prize-v2-smoke.sql",
+      "summary": "Database or structured data artifact for result-prize-v2-smoke.sql.",
+      "tags": [
+        "data",
+        "results",
+        "database"
+      ],
+      "complexity": "simple",
+      "filePath": "tools/qa/result-prize-v2-smoke.sql",
+      "lineRange": [
+        1,
+        37
+      ]
+    },
+    {
+      "id": "file:tools/qa/results-migration-contract.node.test.mjs",
+      "type": "file",
+      "name": "results-migration-contract.node.test.mjs",
+      "summary": "Source file tools/qa/results-migration-contract.node.test.mjs in the LotteryNetPro project.",
+      "tags": [
+        "code",
+        "results"
+      ],
+      "complexity": "simple",
+      "filePath": "tools/qa/results-migration-contract.node.test.mjs",
+      "lineRange": [
+        1,
+        48
+      ]
+    },
+    {
+      "id": "file:tools/qa/results-stack-diagnostic.mjs",
+      "type": "file",
+      "name": "results-stack-diagnostic.mjs",
+      "summary": "Source file tools/qa/results-stack-diagnostic.mjs containing 11 function(s).",
+      "tags": [
+        "code",
+        "results",
+        "large-module"
+      ],
+      "complexity": "moderate",
+      "filePath": "tools/qa/results-stack-diagnostic.mjs",
+      "lineRange": [
+        1,
+        192
+      ]
+    },
+    {
+      "id": "function:tools/qa/results-stack-diagnostic.mjs:toDrDate",
+      "type": "function",
+      "name": "toDrDate",
+      "summary": "Function toDrDate in results-stack-diagnostic.mjs.",
+      "tags": [
+        "function",
+        "javascript"
+      ],
+      "complexity": "moderate",
+      "filePath": "tools/qa/results-stack-diagnostic.mjs",
+      "lineRange": [
+        17,
+        25
+      ]
+    },
+    {
+      "id": "function:tools/qa/results-stack-diagnostic.mjs:fetchJson",
+      "type": "function",
+      "name": "fetchJson",
+      "summary": "Function fetchJson in results-stack-diagnostic.mjs.",
+      "tags": [
+        "function",
+        "javascript"
+      ],
+      "complexity": "moderate",
+      "filePath": "tools/qa/results-stack-diagnostic.mjs",
+      "lineRange": [
+        40,
+        61
+      ]
+    },
+    {
+      "id": "function:tools/qa/results-stack-diagnostic.mjs:checkRender",
+      "type": "function",
+      "name": "checkRender",
+      "summary": "Function checkRender in results-stack-diagnostic.mjs.",
+      "tags": [
+        "function",
+        "javascript"
+      ],
+      "complexity": "moderate",
+      "filePath": "tools/qa/results-stack-diagnostic.mjs",
+      "lineRange": [
+        76,
+        93
+      ]
+    },
+    {
+      "id": "function:tools/qa/results-stack-diagnostic.mjs:checkSupabaseResults",
+      "type": "function",
+      "name": "checkSupabaseResults",
+      "summary": "Function checkSupabaseResults in results-stack-diagnostic.mjs.",
+      "tags": [
+        "function",
+        "javascript"
+      ],
+      "complexity": "moderate",
+      "filePath": "tools/qa/results-stack-diagnostic.mjs",
+      "lineRange": [
+        95,
+        110
+      ]
+    },
+    {
+      "id": "function:tools/qa/results-stack-diagnostic.mjs:findCachedDate",
+      "type": "function",
+      "name": "findCachedDate",
+      "summary": "Function findCachedDate in results-stack-diagnostic.mjs.",
+      "tags": [
+        "function",
+        "javascript"
+      ],
+      "complexity": "moderate",
+      "filePath": "tools/qa/results-stack-diagnostic.mjs",
+      "lineRange": [
+        112,
+        134
+      ]
+    },
+    {
+      "id": "function:tools/qa/results-stack-diagnostic.mjs:checkRpcNotPublic",
+      "type": "function",
+      "name": "checkRpcNotPublic",
+      "summary": "Function checkRpcNotPublic in results-stack-diagnostic.mjs.",
+      "tags": [
+        "function",
+        "javascript"
+      ],
+      "complexity": "moderate",
+      "filePath": "tools/qa/results-stack-diagnostic.mjs",
+      "lineRange": [
+        136,
+        163
+      ]
+    },
+    {
+      "id": "file:tools/qa/sales-capacity-smoke.mjs",
+      "type": "file",
+      "name": "sales-capacity-smoke.mjs",
+      "summary": "Source file tools/qa/sales-capacity-smoke.mjs containing 16 function(s).",
+      "tags": [
+        "code",
+        "sales",
+        "large-module"
+      ],
+      "complexity": "complex",
+      "filePath": "tools/qa/sales-capacity-smoke.mjs",
+      "lineRange": [
+        1,
+        231
+      ]
+    },
+    {
+      "id": "function:tools/qa/sales-capacity-smoke.mjs:requestJson",
+      "type": "function",
+      "name": "requestJson",
+      "summary": "Function requestJson in sales-capacity-smoke.mjs.",
+      "tags": [
+        "function",
+        "javascript"
+      ],
+      "complexity": "moderate",
+      "filePath": "tools/qa/sales-capacity-smoke.mjs",
+      "lineRange": [
+        51,
+        74
+      ]
+    },
+    {
+      "id": "function:tools/qa/sales-capacity-smoke.mjs:parseCredentials",
+      "type": "function",
+      "name": "parseCredentials",
+      "summary": "Function parseCredentials in sales-capacity-smoke.mjs.",
+      "tags": [
+        "function",
+        "javascript"
+      ],
+      "complexity": "moderate",
+      "filePath": "tools/qa/sales-capacity-smoke.mjs",
+      "lineRange": [
+        80,
+        88
+      ]
+    },
+    {
+      "id": "function:tools/qa/sales-capacity-smoke.mjs:allAccounts",
+      "type": "function",
+      "name": "allAccounts",
+      "summary": "Function allAccounts in sales-capacity-smoke.mjs.",
+      "tags": [
+        "function",
+        "javascript"
+      ],
+      "complexity": "moderate",
+      "filePath": "tools/qa/sales-capacity-smoke.mjs",
+      "lineRange": [
+        90,
+        99
+      ]
+    },
+    {
+      "id": "function:tools/qa/sales-capacity-smoke.mjs:fetchUsersPayload",
+      "type": "function",
+      "name": "fetchUsersPayload",
+      "summary": "Function fetchUsersPayload in sales-capacity-smoke.mjs.",
+      "tags": [
+        "function",
+        "javascript"
+      ],
+      "complexity": "moderate",
+      "filePath": "tools/qa/sales-capacity-smoke.mjs",
+      "lineRange": [
+        113,
+        121
+      ]
+    },
+    {
+      "id": "function:tools/qa/sales-capacity-smoke.mjs:login",
+      "type": "function",
+      "name": "login",
+      "summary": "Function login in sales-capacity-smoke.mjs.",
+      "tags": [
+        "function",
+        "javascript"
+      ],
+      "complexity": "moderate",
+      "filePath": "tools/qa/sales-capacity-smoke.mjs",
+      "lineRange": [
+        123,
+        131
+      ]
+    },
+    {
+      "id": "function:tools/qa/sales-capacity-smoke.mjs:runPool",
+      "type": "function",
+      "name": "runPool",
+      "summary": "Function runPool in sales-capacity-smoke.mjs.",
+      "tags": [
+        "function",
+        "javascript"
+      ],
+      "complexity": "moderate",
+      "filePath": "tools/qa/sales-capacity-smoke.mjs",
+      "lineRange": [
+        133,
+        144
+      ]
+    },
+    {
+      "id": "function:tools/qa/sales-capacity-smoke.mjs:play",
+      "type": "function",
+      "name": "play",
+      "summary": "Function play in sales-capacity-smoke.mjs.",
+      "tags": [
+        "function",
+        "javascript"
+      ],
+      "complexity": "moderate",
+      "filePath": "tools/qa/sales-capacity-smoke.mjs",
+      "lineRange": [
+        146,
+        155
+      ]
+    },
+    {
+      "id": "function:tools/qa/sales-capacity-smoke.mjs:main",
+      "type": "function",
+      "name": "main",
+      "summary": "Function main in sales-capacity-smoke.mjs.",
+      "tags": [
+        "function",
+        "javascript"
+      ],
+      "complexity": "moderate",
+      "filePath": "tools/qa/sales-capacity-smoke.mjs",
+      "lineRange": [
+        157,
+        225
+      ]
+    },
+    {
+      "id": "file:tools/qa/server-hardening-smoke.mjs",
+      "type": "file",
+      "name": "server-hardening-smoke.mjs",
+      "summary": "Source file tools/qa/server-hardening-smoke.mjs containing 16 function(s).",
+      "tags": [
+        "code",
+        "large-module"
+      ],
+      "complexity": "moderate",
+      "filePath": "tools/qa/server-hardening-smoke.mjs",
+      "lineRange": [
+        1,
+        195
+      ]
+    },
+    {
+      "id": "function:tools/qa/server-hardening-smoke.mjs:requestJson",
+      "type": "function",
+      "name": "requestJson",
+      "summary": "Function requestJson in server-hardening-smoke.mjs.",
+      "tags": [
+        "function",
+        "javascript"
+      ],
+      "complexity": "moderate",
+      "filePath": "tools/qa/server-hardening-smoke.mjs",
+      "lineRange": [
+        35,
+        52
+      ]
+    },
+    {
+      "id": "function:tools/qa/server-hardening-smoke.mjs:allAccounts",
+      "type": "function",
+      "name": "allAccounts",
+      "summary": "Function allAccounts in server-hardening-smoke.mjs.",
+      "tags": [
+        "function",
+        "javascript"
+      ],
+      "complexity": "moderate",
+      "filePath": "tools/qa/server-hardening-smoke.mjs",
+      "lineRange": [
+        65,
+        74
+      ]
+    },
+    {
+      "id": "function:tools/qa/server-hardening-smoke.mjs:fetchUsersPayload",
+      "type": "function",
+      "name": "fetchUsersPayload",
+      "summary": "Function fetchUsersPayload in server-hardening-smoke.mjs.",
+      "tags": [
+        "function",
+        "javascript"
+      ],
+      "complexity": "moderate",
+      "filePath": "tools/qa/server-hardening-smoke.mjs",
+      "lineRange": [
+        83,
+        91
+      ]
+    },
+    {
+      "id": "function:tools/qa/server-hardening-smoke.mjs:createNonWinnerTicket",
+      "type": "function",
+      "name": "createNonWinnerTicket",
+      "summary": "Function createNonWinnerTicket in server-hardening-smoke.mjs.",
+      "tags": [
+        "function",
+        "javascript"
+      ],
+      "complexity": "moderate",
+      "filePath": "tools/qa/server-hardening-smoke.mjs",
+      "lineRange": [
+        102,
+        121
+      ]
+    },
+    {
+      "id": "function:tools/qa/server-hardening-smoke.mjs:run",
+      "type": "function",
+      "name": "run",
+      "summary": "Function run in server-hardening-smoke.mjs.",
+      "tags": [
+        "function",
+        "javascript"
+      ],
+      "complexity": "moderate",
+      "filePath": "tools/qa/server-hardening-smoke.mjs",
+      "lineRange": [
+        133,
+        190
+      ]
+    },
+    {
+      "id": "file:tools/qa/server-sales-diagnostic.mjs",
+      "type": "file",
+      "name": "server-sales-diagnostic.mjs",
+      "summary": "Source file tools/qa/server-sales-diagnostic.mjs containing 24 function(s).",
+      "tags": [
+        "code",
+        "sales",
+        "large-module"
+      ],
+      "complexity": "complex",
+      "filePath": "tools/qa/server-sales-diagnostic.mjs",
+      "lineRange": [
+        1,
+        495
+      ]
+    },
+    {
+      "id": "function:tools/qa/server-sales-diagnostic.mjs:requestJson",
+      "type": "function",
+      "name": "requestJson",
+      "summary": "Function requestJson in server-sales-diagnostic.mjs.",
+      "tags": [
+        "function",
+        "javascript"
+      ],
+      "complexity": "moderate",
+      "filePath": "tools/qa/server-sales-diagnostic.mjs",
+      "lineRange": [
+        63,
+        97
+      ]
+    },
+    {
+      "id": "function:tools/qa/server-sales-diagnostic.mjs:parseCredentials",
+      "type": "function",
+      "name": "parseCredentials",
+      "summary": "Function parseCredentials in server-sales-diagnostic.mjs.",
+      "tags": [
+        "function",
+        "javascript"
+      ],
+      "complexity": "moderate",
+      "filePath": "tools/qa/server-sales-diagnostic.mjs",
+      "lineRange": [
+        103,
+        115
+      ]
+    },
+    {
+      "id": "function:tools/qa/server-sales-diagnostic.mjs:allAccounts",
+      "type": "function",
+      "name": "allAccounts",
+      "summary": "Function allAccounts in server-sales-diagnostic.mjs.",
+      "tags": [
+        "function",
+        "javascript"
+      ],
+      "complexity": "moderate",
+      "filePath": "tools/qa/server-sales-diagnostic.mjs",
+      "lineRange": [
+        117,
+        126
+      ]
+    },
+    {
+      "id": "function:tools/qa/server-sales-diagnostic.mjs:fetchUsersPayload",
+      "type": "function",
+      "name": "fetchUsersPayload",
+      "summary": "Function fetchUsersPayload in server-sales-diagnostic.mjs.",
+      "tags": [
+        "function",
+        "javascript"
+      ],
+      "complexity": "moderate",
+      "filePath": "tools/qa/server-sales-diagnostic.mjs",
+      "lineRange": [
+        135,
+        143
+      ]
+    },
+    {
+      "id": "function:tools/qa/server-sales-diagnostic.mjs:login",
+      "type": "function",
+      "name": "login",
+      "summary": "Function login in server-sales-diagnostic.mjs.",
+      "tags": [
+        "function",
+        "javascript"
+      ],
+      "complexity": "moderate",
+      "filePath": "tools/qa/server-sales-diagnostic.mjs",
+      "lineRange": [
+        145,
+        155
+      ]
+    },
+    {
+      "id": "function:tools/qa/server-sales-diagnostic.mjs:playFromKeyboard",
+      "type": "function",
+      "name": "playFromKeyboard",
+      "summary": "Function playFromKeyboard in server-sales-diagnostic.mjs.",
+      "tags": [
+        "function",
+        "javascript"
+      ],
+      "complexity": "moderate",
+      "filePath": "tools/qa/server-sales-diagnostic.mjs",
+      "lineRange": [
+        169,
+        201
+      ]
+    },
+    {
+      "id": "function:tools/qa/server-sales-diagnostic.mjs:ticketBody",
+      "type": "function",
+      "name": "ticketBody",
+      "summary": "Function ticketBody in server-sales-diagnostic.mjs.",
+      "tags": [
+        "function",
+        "javascript"
+      ],
+      "complexity": "moderate",
+      "filePath": "tools/qa/server-sales-diagnostic.mjs",
+      "lineRange": [
+        203,
+        220
+      ]
+    },
+    {
+      "id": "function:tools/qa/server-sales-diagnostic.mjs:createTicket",
+      "type": "function",
+      "name": "createTicket",
+      "summary": "Function createTicket in server-sales-diagnostic.mjs.",
+      "tags": [
+        "function",
+        "javascript"
+      ],
+      "complexity": "moderate",
+      "filePath": "tools/qa/server-sales-diagnostic.mjs",
+      "lineRange": [
+        222,
+        231
+      ]
+    },
+    {
+      "id": "function:tools/qa/server-sales-diagnostic.mjs:getDelta",
+      "type": "function",
+      "name": "getDelta",
+      "summary": "Function getDelta in server-sales-diagnostic.mjs.",
+      "tags": [
+        "function",
+        "javascript"
+      ],
+      "complexity": "moderate",
+      "filePath": "tools/qa/server-sales-diagnostic.mjs",
+      "lineRange": [
+        233,
+        241
+      ]
+    },
+    {
+      "id": "function:tools/qa/server-sales-diagnostic.mjs:deleteTicket",
+      "type": "function",
+      "name": "deleteTicket",
+      "summary": "Function deleteTicket in server-sales-diagnostic.mjs.",
+      "tags": [
+        "function",
+        "javascript"
+      ],
+      "complexity": "moderate",
+      "filePath": "tools/qa/server-sales-diagnostic.mjs",
+      "lineRange": [
+        243,
+        252
+      ]
+    },
+    {
+      "id": "function:tools/qa/server-sales-diagnostic.mjs:metricsSummary",
+      "type": "function",
+      "name": "metricsSummary",
+      "summary": "Function metricsSummary in server-sales-diagnostic.mjs.",
+      "tags": [
+        "function",
+        "javascript"
+      ],
+      "complexity": "moderate",
+      "filePath": "tools/qa/server-sales-diagnostic.mjs",
+      "lineRange": [
+        266,
+        277
+      ]
+    },
+    {
+      "id": "function:tools/qa/server-sales-diagnostic.mjs:main",
+      "type": "function",
+      "name": "main",
+      "summary": "Function main in server-sales-diagnostic.mjs.",
+      "tags": [
+        "function",
+        "javascript"
+      ],
+      "complexity": "moderate",
+      "filePath": "tools/qa/server-sales-diagnostic.mjs",
+      "lineRange": [
+        279,
+        451
+      ]
+    },
+    {
+      "id": "file:tools/qa/ticket-official-winner-details.node.test.mjs",
+      "type": "file",
+      "name": "ticket-official-winner-details.node.test.mjs",
+      "summary": "Source file tools/qa/ticket-official-winner-details.node.test.mjs containing 2 function(s).",
+      "tags": [
+        "code",
+        "ticket"
+      ],
+      "complexity": "moderate",
+      "filePath": "tools/qa/ticket-official-winner-details.node.test.mjs",
+      "lineRange": [
+        1,
+        63
+      ]
+    },
+    {
+      "id": "file:tools/qa/ticket-payload-integrity-smoke.mjs",
+      "type": "file",
+      "name": "ticket-payload-integrity-smoke.mjs",
+      "summary": "Source file tools/qa/ticket-payload-integrity-smoke.mjs containing 18 function(s).",
+      "tags": [
+        "code",
+        "ticket",
+        "large-module"
+      ],
+      "complexity": "complex",
+      "filePath": "tools/qa/ticket-payload-integrity-smoke.mjs",
+      "lineRange": [
+        1,
+        297
+      ]
+    },
+    {
+      "id": "function:tools/qa/ticket-payload-integrity-smoke.mjs:requestJson",
+      "type": "function",
+      "name": "requestJson",
+      "summary": "Function requestJson in ticket-payload-integrity-smoke.mjs.",
+      "tags": [
+        "function",
+        "javascript"
+      ],
+      "complexity": "moderate",
+      "filePath": "tools/qa/ticket-payload-integrity-smoke.mjs",
+      "lineRange": [
+        44,
+        67
+      ]
+    },
+    {
+      "id": "function:tools/qa/ticket-payload-integrity-smoke.mjs:allAccounts",
+      "type": "function",
+      "name": "allAccounts",
+      "summary": "Function allAccounts in ticket-payload-integrity-smoke.mjs.",
+      "tags": [
+        "function",
+        "javascript"
+      ],
+      "complexity": "moderate",
+      "filePath": "tools/qa/ticket-payload-integrity-smoke.mjs",
+      "lineRange": [
+        80,
+        89
+      ]
+    },
+    {
+      "id": "function:tools/qa/ticket-payload-integrity-smoke.mjs:fetchUsersPayload",
+      "type": "function",
+      "name": "fetchUsersPayload",
+      "summary": "Function fetchUsersPayload in ticket-payload-integrity-smoke.mjs.",
+      "tags": [
+        "function",
+        "javascript"
+      ],
+      "complexity": "moderate",
+      "filePath": "tools/qa/ticket-payload-integrity-smoke.mjs",
+      "lineRange": [
+        103,
+        111
+      ]
+    },
+    {
+      "id": "function:tools/qa/ticket-payload-integrity-smoke.mjs:login",
+      "type": "function",
+      "name": "login",
+      "summary": "Function login in ticket-payload-integrity-smoke.mjs.",
+      "tags": [
+        "function",
+        "javascript"
+      ],
+      "complexity": "moderate",
+      "filePath": "tools/qa/ticket-payload-integrity-smoke.mjs",
+      "lineRange": [
+        113,
+        121
+      ]
+    },
+    {
+      "id": "function:tools/qa/ticket-payload-integrity-smoke.mjs:baseBody",
+      "type": "function",
+      "name": "baseBody",
+      "summary": "Function baseBody in ticket-payload-integrity-smoke.mjs.",
+      "tags": [
+        "function",
+        "javascript"
+      ],
+      "complexity": "moderate",
+      "filePath": "tools/qa/ticket-payload-integrity-smoke.mjs",
+      "lineRange": [
+        123,
+        141
+      ]
+    },
+    {
+      "id": "function:tools/qa/ticket-payload-integrity-smoke.mjs:deleteTicket",
+      "type": "function",
+      "name": "deleteTicket",
+      "summary": "Function deleteTicket in ticket-payload-integrity-smoke.mjs.",
+      "tags": [
+        "function",
+        "javascript"
+      ],
+      "complexity": "moderate",
+      "filePath": "tools/qa/ticket-payload-integrity-smoke.mjs",
+      "lineRange": [
+        158,
+        167
+      ]
+    },
+    {
+      "id": "function:tools/qa/ticket-payload-integrity-smoke.mjs:validPlay",
+      "type": "function",
+      "name": "validPlay",
+      "summary": "Function validPlay in ticket-payload-integrity-smoke.mjs.",
+      "tags": [
+        "function",
+        "javascript"
+      ],
+      "complexity": "moderate",
+      "filePath": "tools/qa/ticket-payload-integrity-smoke.mjs",
+      "lineRange": [
+        169,
+        179
+      ]
+    },
+    {
+      "id": "file:tools/qa/workday-monitor.playwright.spec.mjs",
+      "type": "file",
+      "name": "workday-monitor.playwright.spec.mjs",
+      "summary": "Source file tools/qa/workday-monitor.playwright.spec.mjs containing 18 function(s).",
+      "tags": [
+        "code",
+        "large-module"
+      ],
+      "complexity": "complex",
+      "filePath": "tools/qa/workday-monitor.playwright.spec.mjs",
+      "lineRange": [
+        1,
+        330
+      ]
+    },
+    {
+      "id": "function:tools/qa/workday-monitor.playwright.spec.mjs:headers",
+      "type": "function",
+      "name": "headers",
+      "summary": "Function headers in workday-monitor.playwright.spec.mjs.",
+      "tags": [
+        "function",
+        "javascript"
+      ],
+      "complexity": "moderate",
+      "filePath": "tools/qa/workday-monitor.playwright.spec.mjs",
+      "lineRange": [
+        30,
+        38
+      ]
+    },
+    {
+      "id": "function:tools/qa/workday-monitor.playwright.spec.mjs:requestJson",
+      "type": "function",
+      "name": "requestJson",
+      "summary": "Function requestJson in workday-monitor.playwright.spec.mjs.",
+      "tags": [
+        "function",
+        "javascript"
+      ],
+      "complexity": "moderate",
+      "filePath": "tools/qa/workday-monitor.playwright.spec.mjs",
+      "lineRange": [
+        40,
+        56
+      ]
+    },
+    {
+      "id": "function:tools/qa/workday-monitor.playwright.spec.mjs:allAccounts",
+      "type": "function",
+      "name": "allAccounts",
+      "summary": "Function allAccounts in workday-monitor.playwright.spec.mjs.",
+      "tags": [
+        "function",
+        "javascript"
+      ],
+      "complexity": "moderate",
+      "filePath": "tools/qa/workday-monitor.playwright.spec.mjs",
+      "lineRange": [
+        69,
+        78
+      ]
+    },
+    {
+      "id": "function:tools/qa/workday-monitor.playwright.spec.mjs:fetchUsersPayload",
+      "type": "function",
+      "name": "fetchUsersPayload",
+      "summary": "Function fetchUsersPayload in workday-monitor.playwright.spec.mjs.",
+      "tags": [
+        "function",
+        "javascript"
+      ],
+      "complexity": "moderate",
+      "filePath": "tools/qa/workday-monitor.playwright.spec.mjs",
+      "lineRange": [
+        91,
+        99
+      ]
+    },
+    {
+      "id": "function:tools/qa/workday-monitor.playwright.spec.mjs:createSupervisor",
+      "type": "function",
+      "name": "createSupervisor",
+      "summary": "Function createSupervisor in workday-monitor.playwright.spec.mjs.",
+      "tags": [
+        "function",
+        "javascript"
+      ],
+      "complexity": "moderate",
+      "filePath": "tools/qa/workday-monitor.playwright.spec.mjs",
+      "lineRange": [
+        111,
+        135
+      ]
+    },
+    {
+      "id": "function:tools/qa/workday-monitor.playwright.spec.mjs:installSupervisor",
+      "type": "function",
+      "name": "installSupervisor",
+      "summary": "Function installSupervisor in workday-monitor.playwright.spec.mjs.",
+      "tags": [
+        "function",
+        "javascript"
+      ],
+      "complexity": "moderate",
+      "filePath": "tools/qa/workday-monitor.playwright.spec.mjs",
+      "lineRange": [
+        137,
+        153
+      ]
+    },
+    {
+      "id": "function:tools/qa/workday-monitor.playwright.spec.mjs:createTicket",
+      "type": "function",
+      "name": "createTicket",
+      "summary": "Function createTicket in workday-monitor.playwright.spec.mjs.",
+      "tags": [
+        "function",
+        "javascript"
+      ],
+      "complexity": "moderate",
+      "filePath": "tools/qa/workday-monitor.playwright.spec.mjs",
+      "lineRange": [
+        159,
+        178
+      ]
+    },
+    {
+      "id": "file:tools/qa/workday-stress-smoke.mjs",
+      "type": "file",
+      "name": "workday-stress-smoke.mjs",
+      "summary": "Source file tools/qa/workday-stress-smoke.mjs containing 39 function(s).",
+      "tags": [
+        "code",
+        "large-module"
+      ],
+      "complexity": "complex",
+      "filePath": "tools/qa/workday-stress-smoke.mjs",
+      "lineRange": [
+        1,
+        704
+      ]
+    },
+    {
+      "id": "function:tools/qa/workday-stress-smoke.mjs:authHeaders",
+      "type": "function",
+      "name": "authHeaders",
+      "summary": "Function authHeaders in workday-stress-smoke.mjs.",
+      "tags": [
+        "function",
+        "javascript"
+      ],
+      "complexity": "moderate",
+      "filePath": "tools/qa/workday-stress-smoke.mjs",
+      "lineRange": [
+        55,
+        63
+      ]
+    },
+    {
+      "id": "function:tools/qa/workday-stress-smoke.mjs:requestJson",
+      "type": "function",
+      "name": "requestJson",
+      "summary": "Function requestJson in workday-stress-smoke.mjs.",
+      "tags": [
+        "function",
+        "javascript"
+      ],
+      "complexity": "moderate",
+      "filePath": "tools/qa/workday-stress-smoke.mjs",
+      "lineRange": [
+        82,
+        109
+      ]
+    },
+    {
+      "id": "function:tools/qa/workday-stress-smoke.mjs:parseCredentials",
+      "type": "function",
+      "name": "parseCredentials",
+      "summary": "Function parseCredentials in workday-stress-smoke.mjs.",
+      "tags": [
+        "function",
+        "javascript"
+      ],
+      "complexity": "moderate",
+      "filePath": "tools/qa/workday-stress-smoke.mjs",
+      "lineRange": [
+        115,
+        127
+      ]
+    },
+    {
+      "id": "function:tools/qa/workday-stress-smoke.mjs:allAccounts",
+      "type": "function",
+      "name": "allAccounts",
+      "summary": "Function allAccounts in workday-stress-smoke.mjs.",
+      "tags": [
+        "function",
+        "javascript"
+      ],
+      "complexity": "moderate",
+      "filePath": "tools/qa/workday-stress-smoke.mjs",
+      "lineRange": [
+        133,
+        142
+      ]
+    },
+    {
+      "id": "function:tools/qa/workday-stress-smoke.mjs:stableUniqueAccounts",
+      "type": "function",
+      "name": "stableUniqueAccounts",
+      "summary": "Function stableUniqueAccounts in workday-stress-smoke.mjs.",
+      "tags": [
+        "function",
+        "javascript"
+      ],
+      "complexity": "moderate",
+      "filePath": "tools/qa/workday-stress-smoke.mjs",
+      "lineRange": [
+        151,
+        159
+      ]
+    },
+    {
+      "id": "function:tools/qa/workday-stress-smoke.mjs:fetchUsersPayload",
+      "type": "function",
+      "name": "fetchUsersPayload",
+      "summary": "Function fetchUsersPayload in workday-stress-smoke.mjs.",
+      "tags": [
+        "function",
+        "javascript"
+      ],
+      "complexity": "moderate",
+      "filePath": "tools/qa/workday-stress-smoke.mjs",
+      "lineRange": [
+        167,
+        175
+      ]
+    },
+    {
+      "id": "function:tools/qa/workday-stress-smoke.mjs:saveUsersPayload",
+      "type": "function",
+      "name": "saveUsersPayload",
+      "summary": "Function saveUsersPayload in workday-stress-smoke.mjs.",
+      "tags": [
+        "function",
+        "javascript"
+      ],
+      "complexity": "moderate",
+      "filePath": "tools/qa/workday-stress-smoke.mjs",
+      "lineRange": [
+        177,
+        200
+      ]
+    },
+    {
+      "id": "function:tools/qa/workday-stress-smoke.mjs:saveLimitPayload",
+      "type": "function",
+      "name": "saveLimitPayload",
+      "summary": "Function saveLimitPayload in workday-stress-smoke.mjs.",
+      "tags": [
+        "function",
+        "javascript"
+      ],
+      "complexity": "moderate",
+      "filePath": "tools/qa/workday-stress-smoke.mjs",
+      "lineRange": [
+        209,
+        217
+      ]
+    },
+    {
+      "id": "function:tools/qa/workday-stress-smoke.mjs:upsertResults",
+      "type": "function",
+      "name": "upsertResults",
+      "summary": "Function upsertResults in workday-stress-smoke.mjs.",
+      "tags": [
+        "function",
+        "javascript"
+      ],
+      "complexity": "moderate",
+      "filePath": "tools/qa/workday-stress-smoke.mjs",
+      "lineRange": [
+        219,
+        229
+      ]
+    },
+    {
+      "id": "function:tools/qa/workday-stress-smoke.mjs:deleteResults",
+      "type": "function",
+      "name": "deleteResults",
+      "summary": "Function deleteResults in workday-stress-smoke.mjs.",
+      "tags": [
+        "function",
+        "javascript"
+      ],
+      "complexity": "moderate",
+      "filePath": "tools/qa/workday-stress-smoke.mjs",
+      "lineRange": [
+        231,
+        239
+      ]
+    },
+    {
+      "id": "function:tools/qa/workday-stress-smoke.mjs:login",
+      "type": "function",
+      "name": "login",
+      "summary": "Function login in workday-stress-smoke.mjs.",
+      "tags": [
+        "function",
+        "javascript"
+      ],
+      "complexity": "moderate",
+      "filePath": "tools/qa/workday-stress-smoke.mjs",
+      "lineRange": [
+        241,
+        251
+      ]
+    },
+    {
+      "id": "function:tools/qa/workday-stress-smoke.mjs:createSupervisorPayload",
+      "type": "function",
+      "name": "createSupervisorPayload",
+      "summary": "Function createSupervisorPayload in workday-stress-smoke.mjs.",
+      "tags": [
+        "function",
+        "javascript"
+      ],
+      "complexity": "moderate",
+      "filePath": "tools/qa/workday-stress-smoke.mjs",
+      "lineRange": [
+        253,
+        283
+      ]
+    },
+    {
+      "id": "function:tools/qa/workday-stress-smoke.mjs:addSupervisorAndCommissions",
+      "type": "function",
+      "name": "addSupervisorAndCommissions",
+      "summary": "Function addSupervisorAndCommissions in workday-stress-smoke.mjs.",
+      "tags": [
+        "function",
+        "javascript"
+      ],
+      "complexity": "moderate",
+      "filePath": "tools/qa/workday-stress-smoke.mjs",
+      "lineRange": [
+        285,
+        306
+      ]
+    },
+    {
+      "id": "function:tools/qa/workday-stress-smoke.mjs:stressPlays",
+      "type": "function",
+      "name": "stressPlays",
+      "summary": "Function stressPlays in workday-stress-smoke.mjs.",
+      "tags": [
+        "function",
+        "javascript"
+      ],
+      "complexity": "moderate",
+      "filePath": "tools/qa/workday-stress-smoke.mjs",
+      "lineRange": [
+        321,
+        332
+      ]
+    },
+    {
+      "id": "function:tools/qa/workday-stress-smoke.mjs:createTicket",
+      "type": "function",
+      "name": "createTicket",
+      "summary": "Function createTicket in workday-stress-smoke.mjs.",
+      "tags": [
+        "function",
+        "javascript"
+      ],
+      "complexity": "moderate",
+      "filePath": "tools/qa/workday-stress-smoke.mjs",
+      "lineRange": [
+        334,
+        356
+      ]
+    },
+    {
+      "id": "function:tools/qa/workday-stress-smoke.mjs:runPool",
+      "type": "function",
+      "name": "runPool",
+      "summary": "Function runPool in workday-stress-smoke.mjs.",
+      "tags": [
+        "function",
+        "javascript"
+      ],
+      "complexity": "moderate",
+      "filePath": "tools/qa/workday-stress-smoke.mjs",
+      "lineRange": [
+        358,
+        369
+      ]
+    },
+    {
+      "id": "function:tools/qa/workday-stress-smoke.mjs:waitForTicketsInDelta",
+      "type": "function",
+      "name": "waitForTicketsInDelta",
+      "summary": "Function waitForTicketsInDelta in workday-stress-smoke.mjs.",
+      "tags": [
+        "function",
+        "javascript"
+      ],
+      "complexity": "moderate",
+      "filePath": "tools/qa/workday-stress-smoke.mjs",
+      "lineRange": [
+        392,
+        406
+      ]
+    },
+    {
+      "id": "function:tools/qa/workday-stress-smoke.mjs:main",
+      "type": "function",
+      "name": "main",
+      "summary": "Function main in workday-stress-smoke.mjs.",
+      "tags": [
+        "function",
+        "javascript"
+      ],
+      "complexity": "moderate",
+      "filePath": "tools/qa/workday-stress-smoke.mjs",
+      "lineRange": [
+        408,
+        604
+      ]
+    },
+    {
+      "id": "file:tools/real-server-smoke.mjs",
+      "type": "file",
+      "name": "real-server-smoke.mjs",
+      "summary": "Source file tools/real-server-smoke.mjs containing 18 function(s).",
+      "tags": [
+        "code",
+        "large-module"
+      ],
+      "complexity": "complex",
+      "filePath": "tools/real-server-smoke.mjs",
+      "lineRange": [
+        1,
+        317
+      ]
+    },
+    {
+      "id": "function:tools/real-server-smoke.mjs:callFunction",
+      "type": "function",
+      "name": "callFunction",
+      "summary": "Function callFunction in real-server-smoke.mjs.",
+      "tags": [
+        "function",
+        "javascript"
+      ],
+      "complexity": "moderate",
+      "filePath": "tools/real-server-smoke.mjs",
+      "lineRange": [
+        25,
+        56
+      ]
+    },
+    {
+      "id": "function:tools/real-server-smoke.mjs:refreshSession",
+      "type": "function",
+      "name": "refreshSession",
+      "summary": "Function refreshSession in real-server-smoke.mjs.",
+      "tags": [
+        "function",
+        "javascript"
+      ],
+      "complexity": "moderate",
+      "filePath": "tools/real-server-smoke.mjs",
+      "lineRange": [
+        58,
+        77
+      ]
+    },
+    {
+      "id": "function:tools/real-server-smoke.mjs:readCredentials",
+      "type": "function",
+      "name": "readCredentials",
+      "summary": "Function readCredentials in real-server-smoke.mjs.",
+      "tags": [
+        "function",
+        "javascript"
+      ],
+      "complexity": "moderate",
+      "filePath": "tools/real-server-smoke.mjs",
+      "lineRange": [
+        79,
+        96
+      ]
+    },
+    {
+      "id": "function:tools/real-server-smoke.mjs:parseTextCredentials",
+      "type": "function",
+      "name": "parseTextCredentials",
+      "summary": "Function parseTextCredentials in real-server-smoke.mjs.",
+      "tags": [
+        "function",
+        "javascript"
+      ],
+      "complexity": "moderate",
+      "filePath": "tools/real-server-smoke.mjs",
+      "lineRange": [
+        98,
+        116
+      ]
+    },
+    {
+      "id": "function:tools/real-server-smoke.mjs:parseUsuarioClaveBlocks",
+      "type": "function",
+      "name": "parseUsuarioClaveBlocks",
+      "summary": "Function parseUsuarioClaveBlocks in real-server-smoke.mjs.",
+      "tags": [
+        "function",
+        "javascript"
+      ],
+      "complexity": "moderate",
+      "filePath": "tools/real-server-smoke.mjs",
+      "lineRange": [
+        118,
+        127
+      ]
+    },
+    {
+      "id": "function:tools/real-server-smoke.mjs:parseCredentialLine",
+      "type": "function",
+      "name": "parseCredentialLine",
+      "summary": "Function parseCredentialLine in real-server-smoke.mjs.",
+      "tags": [
+        "function",
+        "javascript"
+      ],
+      "complexity": "moderate",
+      "filePath": "tools/real-server-smoke.mjs",
+      "lineRange": [
+        129,
+        145
+      ]
+    },
+    {
+      "id": "function:tools/real-server-smoke.mjs:readPair",
+      "type": "function",
+      "name": "readPair",
+      "summary": "Function readPair in real-server-smoke.mjs.",
+      "tags": [
+        "function",
+        "javascript"
+      ],
+      "complexity": "moderate",
+      "filePath": "tools/real-server-smoke.mjs",
+      "lineRange": [
+        169,
+        181
+      ]
+    },
+    {
+      "id": "function:tools/real-server-smoke.mjs:reportPayloadFor",
+      "type": "function",
+      "name": "reportPayloadFor",
+      "summary": "Function reportPayloadFor in real-server-smoke.mjs.",
+      "tags": [
+        "function",
+        "javascript"
+      ],
+      "complexity": "moderate",
+      "filePath": "tools/real-server-smoke.mjs",
+      "lineRange": [
+        211,
+        247
+      ]
+    },
+    {
+      "id": "function:tools/real-server-smoke.mjs:runAccount",
+      "type": "function",
+      "name": "runAccount",
+      "summary": "Function runAccount in real-server-smoke.mjs.",
+      "tags": [
+        "function",
+        "javascript"
+      ],
+      "complexity": "moderate",
+      "filePath": "tools/real-server-smoke.mjs",
+      "lineRange": [
+        249,
+        277
+      ]
+    },
+    {
+      "id": "file:tools/real-test-credentials.local.example.json",
+      "type": "config",
+      "name": "real-test-credentials.local.example.json",
+      "summary": "Configuration file for real-test-credentials.local.example.json.",
+      "tags": [
+        "config",
+        "configuration"
+      ],
+      "complexity": "simple",
+      "filePath": "tools/real-test-credentials.local.example.json",
+      "lineRange": [
+        1,
+        32
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "source": "file:tools/pre-release.mjs",
+      "target": "function:tools/pre-release.mjs:resolveJavaHome",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "pre-release.mjs contains resolveJavaHome"
+    },
+    {
+      "source": "file:tools/pre-release.mjs",
+      "target": "function:tools/pre-release.mjs:runStep",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "pre-release.mjs contains runStep"
+    },
+    {
+      "source": "file:tools/pre-release.mjs",
+      "target": "function:tools/pre-release.mjs:formatBytes",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "pre-release.mjs contains formatBytes"
+    },
+    {
+      "source": "file:tools/pre-release.mjs",
+      "target": "function:tools/pre-release.mjs:reportApk",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "pre-release.mjs contains reportApk"
+    },
+    {
+      "source": "file:tools/qa/admin-controls-real-flow-smoke.mjs",
+      "target": "function:tools/qa/admin-controls-real-flow-smoke.mjs:headers",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "admin-controls-real-flow-smoke.mjs contains headers"
+    },
+    {
+      "source": "file:tools/qa/admin-controls-real-flow-smoke.mjs",
+      "target": "function:tools/qa/admin-controls-real-flow-smoke.mjs:requestJson",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "admin-controls-real-flow-smoke.mjs contains requestJson"
+    },
+    {
+      "source": "file:tools/qa/admin-controls-real-flow-smoke.mjs",
+      "target": "function:tools/qa/admin-controls-real-flow-smoke.mjs:parseCredentials",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "admin-controls-real-flow-smoke.mjs contains parseCredentials"
+    },
+    {
+      "source": "file:tools/qa/admin-controls-real-flow-smoke.mjs",
+      "target": "function:tools/qa/admin-controls-real-flow-smoke.mjs:allAccounts",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "admin-controls-real-flow-smoke.mjs contains allAccounts"
+    },
+    {
+      "source": "file:tools/qa/admin-controls-real-flow-smoke.mjs",
+      "target": "function:tools/qa/admin-controls-real-flow-smoke.mjs:login",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "admin-controls-real-flow-smoke.mjs contains login"
+    },
+    {
+      "source": "file:tools/qa/admin-controls-real-flow-smoke.mjs",
+      "target": "function:tools/qa/admin-controls-real-flow-smoke.mjs:fetchUsersPayload",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "admin-controls-real-flow-smoke.mjs contains fetchUsersPayload"
+    },
+    {
+      "source": "file:tools/qa/admin-controls-real-flow-smoke.mjs",
+      "target": "function:tools/qa/admin-controls-real-flow-smoke.mjs:saveUsersPayload",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "admin-controls-real-flow-smoke.mjs contains saveUsersPayload"
+    },
+    {
+      "source": "file:tools/qa/admin-controls-real-flow-smoke.mjs",
+      "target": "function:tools/qa/admin-controls-real-flow-smoke.mjs:updateMasterValue",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "admin-controls-real-flow-smoke.mjs contains updateMasterValue"
+    },
+    {
+      "source": "file:tools/qa/admin-controls-real-flow-smoke.mjs",
+      "target": "function:tools/qa/admin-controls-real-flow-smoke.mjs:upsertResults",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "admin-controls-real-flow-smoke.mjs contains upsertResults"
+    },
+    {
+      "source": "file:tools/qa/admin-controls-real-flow-smoke.mjs",
+      "target": "function:tools/qa/admin-controls-real-flow-smoke.mjs:ticketBody",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "admin-controls-real-flow-smoke.mjs contains ticketBody"
+    },
+    {
+      "source": "file:tools/qa/admin-controls-real-flow-smoke.mjs",
+      "target": "function:tools/qa/admin-controls-real-flow-smoke.mjs:createSupervisorPayload",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "admin-controls-real-flow-smoke.mjs contains createSupervisorPayload"
+    },
+    {
+      "source": "file:tools/qa/admin-controls-real-flow-smoke.mjs",
+      "target": "function:tools/qa/admin-controls-real-flow-smoke.mjs:setAccountBlocked",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "admin-controls-real-flow-smoke.mjs contains setAccountBlocked"
+    },
+    {
+      "source": "file:tools/qa/admin-controls-real-flow-smoke.mjs",
+      "target": "function:tools/qa/admin-controls-real-flow-smoke.mjs:voidTicket",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "admin-controls-real-flow-smoke.mjs contains voidTicket"
+    },
+    {
+      "source": "file:tools/qa/admin-controls-real-flow-smoke.mjs",
+      "target": "function:tools/qa/admin-controls-real-flow-smoke.mjs:main",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "admin-controls-real-flow-smoke.mjs contains main"
+    },
+    {
+      "source": "file:tools/qa/admin-controls-real-flow-smoke.mjs",
+      "target": "function:tools/qa/admin-controls-real-flow-smoke.mjs:restore",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "admin-controls-real-flow-smoke.mjs contains restore"
+    },
+    {
+      "source": "file:tools/qa/admin-controls-real-flow-smoke.mjs",
+      "target": "function:tools/qa/admin-controls-real-flow-smoke.mjs:writeSummary",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "admin-controls-real-flow-smoke.mjs contains writeSummary"
+    },
+    {
+      "source": "file:tools/qa/admin-self-limits-smoke.mjs",
+      "target": "function:tools/qa/admin-self-limits-smoke.mjs:playLimit",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "admin-self-limits-smoke.mjs contains playLimit"
+    },
+    {
+      "source": "file:tools/qa/admin-self-limits-smoke.mjs",
+      "target": "function:tools/qa/admin-self-limits-smoke.mjs:hasPositiveLimit",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "admin-self-limits-smoke.mjs contains hasPositiveLimit"
+    },
+    {
+      "source": "file:tools/qa/admin-self-limits-smoke.mjs",
+      "target": "function:tools/qa/admin-self-limits-smoke.mjs:resolveLimitConfig",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "admin-self-limits-smoke.mjs contains resolveLimitConfig"
+    },
+    {
+      "source": "file:tools/qa/admin-self-limits-smoke.mjs",
+      "target": "function:tools/qa/admin-self-limits-smoke.mjs:requestJson",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "admin-self-limits-smoke.mjs contains requestJson"
+    },
+    {
+      "source": "file:tools/qa/admin-self-limits-smoke.mjs",
+      "target": "function:tools/qa/admin-self-limits-smoke.mjs:run",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "admin-self-limits-smoke.mjs contains run"
+    },
+    {
+      "source": "file:tools/qa/android-clock-security.node.test.mjs",
+      "target": "function:tools/qa/android-clock-security.node.test.mjs:requestJson",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "android-clock-security.node.test.mjs contains requestJson"
+    },
+    {
+      "source": "file:tools/qa/android-clock-security.node.test.mjs",
+      "target": "function:tools/qa/android-clock-security.node.test.mjs:allAccounts",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "android-clock-security.node.test.mjs contains allAccounts"
+    },
+    {
+      "source": "file:tools/qa/android-clock-security.node.test.mjs",
+      "target": "function:tools/qa/android-clock-security.node.test.mjs:dominicanDay",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "android-clock-security.node.test.mjs contains dominicanDay"
+    },
+    {
+      "source": "file:tools/qa/android-clock-security.node.test.mjs",
+      "target": "function:tools/qa/android-clock-security.node.test.mjs:buildTicketBody",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "android-clock-security.node.test.mjs contains buildTicketBody"
+    },
+    {
+      "source": "file:tools/qa/android-clock-security.node.test.mjs",
+      "target": "function:tools/qa/android-clock-security.node.test.mjs:voidUnexpectedTicket",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "android-clock-security.node.test.mjs contains voidUnexpectedTicket"
+    },
+    {
+      "source": "file:tools/qa/bugfix-regression-smoke.mjs",
+      "target": "function:tools/qa/bugfix-regression-smoke.mjs:headers",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "bugfix-regression-smoke.mjs contains headers"
+    },
+    {
+      "source": "file:tools/qa/bugfix-regression-smoke.mjs",
+      "target": "function:tools/qa/bugfix-regression-smoke.mjs:requestJson",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "bugfix-regression-smoke.mjs contains requestJson"
+    },
+    {
+      "source": "file:tools/qa/bugfix-regression-smoke.mjs",
+      "target": "function:tools/qa/bugfix-regression-smoke.mjs:allAccounts",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "bugfix-regression-smoke.mjs contains allAccounts"
+    },
+    {
+      "source": "file:tools/qa/bugfix-regression-smoke.mjs",
+      "target": "function:tools/qa/bugfix-regression-smoke.mjs:upsertResults",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "bugfix-regression-smoke.mjs contains upsertResults"
+    },
+    {
+      "source": "file:tools/qa/bugfix-regression-smoke.mjs",
+      "target": "function:tools/qa/bugfix-regression-smoke.mjs:createSupervisor",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "bugfix-regression-smoke.mjs contains createSupervisor"
+    },
+    {
+      "source": "file:tools/qa/bugfix-regression-smoke.mjs",
+      "target": "function:tools/qa/bugfix-regression-smoke.mjs:installSupervisor",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "bugfix-regression-smoke.mjs contains installSupervisor"
+    },
+    {
+      "source": "file:tools/qa/bugfix-regression-smoke.mjs",
+      "target": "function:tools/qa/bugfix-regression-smoke.mjs:createTicket",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "bugfix-regression-smoke.mjs contains createTicket"
+    },
+    {
+      "source": "file:tools/qa/bugfix-regression-smoke.mjs",
+      "target": "function:tools/qa/bugfix-regression-smoke.mjs:main",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "bugfix-regression-smoke.mjs contains main"
+    },
+    {
+      "source": "file:tools/qa/bugfix-regression-smoke.mjs",
+      "target": "function:tools/qa/bugfix-regression-smoke.mjs:writeSummary",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "bugfix-regression-smoke.mjs contains writeSummary"
+    },
+    {
+      "source": "file:tools/qa/finance-monitor-smoke.mjs",
+      "target": "function:tools/qa/finance-monitor-smoke.mjs:edge",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "finance-monitor-smoke.mjs contains edge"
+    },
+    {
+      "source": "file:tools/qa/finance-monitor-smoke.mjs",
+      "target": "function:tools/qa/finance-monitor-smoke.mjs:createTicket",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "finance-monitor-smoke.mjs contains createTicket"
+    },
+    {
+      "source": "file:tools/qa/finance-monitor-smoke.mjs",
+      "target": "function:tools/qa/finance-monitor-smoke.mjs:main",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "finance-monitor-smoke.mjs contains main"
+    },
+    {
+      "source": "file:tools/qa/keyboard-sales-smoke.mjs",
+      "target": "function:tools/qa/keyboard-sales-smoke.mjs:headers",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "keyboard-sales-smoke.mjs contains headers"
+    },
+    {
+      "source": "file:tools/qa/keyboard-sales-smoke.mjs",
+      "target": "function:tools/qa/keyboard-sales-smoke.mjs:requestJson",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "keyboard-sales-smoke.mjs contains requestJson"
+    },
+    {
+      "source": "file:tools/qa/keyboard-sales-smoke.mjs",
+      "target": "function:tools/qa/keyboard-sales-smoke.mjs:parseCredentials",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "keyboard-sales-smoke.mjs contains parseCredentials"
+    },
+    {
+      "source": "file:tools/qa/keyboard-sales-smoke.mjs",
+      "target": "function:tools/qa/keyboard-sales-smoke.mjs:allAccounts",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "keyboard-sales-smoke.mjs contains allAccounts"
+    },
+    {
+      "source": "file:tools/qa/keyboard-sales-smoke.mjs",
+      "target": "function:tools/qa/keyboard-sales-smoke.mjs:fetchUsersPayload",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "keyboard-sales-smoke.mjs contains fetchUsersPayload"
+    },
+    {
+      "source": "file:tools/qa/keyboard-sales-smoke.mjs",
+      "target": "function:tools/qa/keyboard-sales-smoke.mjs:login",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "keyboard-sales-smoke.mjs contains login"
+    },
+    {
+      "source": "file:tools/qa/keyboard-sales-smoke.mjs",
+      "target": "function:tools/qa/keyboard-sales-smoke.mjs:playFromKeyboard",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "keyboard-sales-smoke.mjs contains playFromKeyboard"
+    },
+    {
+      "source": "file:tools/qa/keyboard-sales-smoke.mjs",
+      "target": "function:tools/qa/keyboard-sales-smoke.mjs:createTicket",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "keyboard-sales-smoke.mjs contains createTicket"
+    },
+    {
+      "source": "file:tools/qa/keyboard-sales-smoke.mjs",
+      "target": "function:tools/qa/keyboard-sales-smoke.mjs:deleteTicket",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "keyboard-sales-smoke.mjs contains deleteTicket"
+    },
+    {
+      "source": "file:tools/qa/keyboard-sales-smoke.mjs",
+      "target": "function:tools/qa/keyboard-sales-smoke.mjs:main",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "keyboard-sales-smoke.mjs contains main"
+    },
+    {
+      "source": "file:tools/qa/payment-tolerance-smoke.mjs",
+      "target": "function:tools/qa/payment-tolerance-smoke.mjs:allAccounts",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "payment-tolerance-smoke.mjs contains allAccounts"
+    },
+    {
+      "source": "file:tools/qa/payment-tolerance-smoke.mjs",
+      "target": "function:tools/qa/payment-tolerance-smoke.mjs:requestJson",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "payment-tolerance-smoke.mjs contains requestJson"
+    },
+    {
+      "source": "file:tools/qa/payment-tolerance-smoke.mjs",
+      "target": "function:tools/qa/payment-tolerance-smoke.mjs:fetchUsersPayload",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "payment-tolerance-smoke.mjs contains fetchUsersPayload"
+    },
+    {
+      "source": "file:tools/qa/payment-tolerance-smoke.mjs",
+      "target": "function:tools/qa/payment-tolerance-smoke.mjs:create",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "payment-tolerance-smoke.mjs contains create"
+    },
+    {
+      "source": "file:tools/qa/payment-tolerance-smoke.mjs",
+      "target": "function:tools/qa/payment-tolerance-smoke.mjs:publishWinningResult",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "payment-tolerance-smoke.mjs contains publishWinningResult"
+    },
+    {
+      "source": "file:tools/qa/payment-tolerance-smoke.mjs",
+      "target": "function:tools/qa/payment-tolerance-smoke.mjs:pay",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "payment-tolerance-smoke.mjs contains pay"
+    },
+    {
+      "source": "file:tools/qa/pick-mode-results-smoke.mjs",
+      "target": "function:tools/qa/pick-mode-results-smoke.mjs:headers",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "pick-mode-results-smoke.mjs contains headers"
+    },
+    {
+      "source": "file:tools/qa/pick-mode-results-smoke.mjs",
+      "target": "function:tools/qa/pick-mode-results-smoke.mjs:timingSummary",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "pick-mode-results-smoke.mjs contains timingSummary"
+    },
+    {
+      "source": "file:tools/qa/pick-mode-results-smoke.mjs",
+      "target": "function:tools/qa/pick-mode-results-smoke.mjs:requestJson",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "pick-mode-results-smoke.mjs contains requestJson"
+    },
+    {
+      "source": "file:tools/qa/pick-mode-results-smoke.mjs",
+      "target": "function:tools/qa/pick-mode-results-smoke.mjs:allAccounts",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "pick-mode-results-smoke.mjs contains allAccounts"
+    },
+    {
+      "source": "file:tools/qa/pick-mode-results-smoke.mjs",
+      "target": "function:tools/qa/pick-mode-results-smoke.mjs:fetchUsersPayload",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "pick-mode-results-smoke.mjs contains fetchUsersPayload"
+    },
+    {
+      "source": "file:tools/qa/pick-mode-results-smoke.mjs",
+      "target": "function:tools/qa/pick-mode-results-smoke.mjs:login",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "pick-mode-results-smoke.mjs contains login"
+    },
+    {
+      "source": "file:tools/qa/pick-mode-results-smoke.mjs",
+      "target": "function:tools/qa/pick-mode-results-smoke.mjs:systemModePayload",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "pick-mode-results-smoke.mjs contains systemModePayload"
+    },
+    {
+      "source": "file:tools/qa/pick-mode-results-smoke.mjs",
+      "target": "function:tools/qa/pick-mode-results-smoke.mjs:setAndVerifyMode",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "pick-mode-results-smoke.mjs contains setAndVerifyMode"
+    },
+    {
+      "source": "file:tools/qa/pick-mode-results-smoke.mjs",
+      "target": "function:tools/qa/pick-mode-results-smoke.mjs:createTicket",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "pick-mode-results-smoke.mjs contains createTicket"
+    },
+    {
+      "source": "file:tools/qa/pick-mode-results-smoke.mjs",
+      "target": "function:tools/qa/pick-mode-results-smoke.mjs:upsertPickResult",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "pick-mode-results-smoke.mjs contains upsertPickResult"
+    },
+    {
+      "source": "file:tools/qa/pick-mode-results-smoke.mjs",
+      "target": "function:tools/qa/pick-mode-results-smoke.mjs:upsertLotteryResult",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "pick-mode-results-smoke.mjs contains upsertLotteryResult"
+    },
+    {
+      "source": "file:tools/qa/pick-mode-results-smoke.mjs",
+      "target": "function:tools/qa/pick-mode-results-smoke.mjs:waitForTicketStatus",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "pick-mode-results-smoke.mjs contains waitForTicketStatus"
+    },
+    {
+      "source": "file:tools/qa/pick-mode-results-smoke.mjs",
+      "target": "function:tools/qa/pick-mode-results-smoke.mjs:main",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "pick-mode-results-smoke.mjs contains main"
+    },
+    {
+      "source": "file:tools/qa/podero02-ticket-stress-no-cleanup.mjs",
+      "target": "function:tools/qa/podero02-ticket-stress-no-cleanup.mjs:requestJson",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "podero02-ticket-stress-no-cleanup.mjs contains requestJson"
+    },
+    {
+      "source": "file:tools/qa/podero02-ticket-stress-no-cleanup.mjs",
+      "target": "function:tools/qa/podero02-ticket-stress-no-cleanup.mjs:parseCredentials",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "podero02-ticket-stress-no-cleanup.mjs contains parseCredentials"
+    },
+    {
+      "source": "file:tools/qa/podero02-ticket-stress-no-cleanup.mjs",
+      "target": "function:tools/qa/podero02-ticket-stress-no-cleanup.mjs:allAccounts",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "podero02-ticket-stress-no-cleanup.mjs contains allAccounts"
+    },
+    {
+      "source": "file:tools/qa/podero02-ticket-stress-no-cleanup.mjs",
+      "target": "function:tools/qa/podero02-ticket-stress-no-cleanup.mjs:fetchUsersPayload",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "podero02-ticket-stress-no-cleanup.mjs contains fetchUsersPayload"
+    },
+    {
+      "source": "file:tools/qa/podero02-ticket-stress-no-cleanup.mjs",
+      "target": "function:tools/qa/podero02-ticket-stress-no-cleanup.mjs:login",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "podero02-ticket-stress-no-cleanup.mjs contains login"
+    },
+    {
+      "source": "file:tools/qa/podero02-ticket-stress-no-cleanup.mjs",
+      "target": "function:tools/qa/podero02-ticket-stress-no-cleanup.mjs:scenarioPlays",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "podero02-ticket-stress-no-cleanup.mjs contains scenarioPlays"
+    },
+    {
+      "source": "file:tools/qa/podero02-ticket-stress-no-cleanup.mjs",
+      "target": "function:tools/qa/podero02-ticket-stress-no-cleanup.mjs:largeTicketPlays",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "podero02-ticket-stress-no-cleanup.mjs contains largeTicketPlays"
+    },
+    {
+      "source": "file:tools/qa/podero02-ticket-stress-no-cleanup.mjs",
+      "target": "function:tools/qa/podero02-ticket-stress-no-cleanup.mjs:ticketBody",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "podero02-ticket-stress-no-cleanup.mjs contains ticketBody"
+    },
+    {
+      "source": "file:tools/qa/podero02-ticket-stress-no-cleanup.mjs",
+      "target": "function:tools/qa/podero02-ticket-stress-no-cleanup.mjs:createTicket",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "podero02-ticket-stress-no-cleanup.mjs contains createTicket"
+    },
+    {
+      "source": "file:tools/qa/podero02-ticket-stress-no-cleanup.mjs",
+      "target": "function:tools/qa/podero02-ticket-stress-no-cleanup.mjs:runPool",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "podero02-ticket-stress-no-cleanup.mjs contains runPool"
+    },
+    {
+      "source": "file:tools/qa/podero02-ticket-stress-no-cleanup.mjs",
+      "target": "function:tools/qa/podero02-ticket-stress-no-cleanup.mjs:metricSummary",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "podero02-ticket-stress-no-cleanup.mjs contains metricSummary"
+    },
+    {
+      "source": "file:tools/qa/podero02-ticket-stress-no-cleanup.mjs",
+      "target": "function:tools/qa/podero02-ticket-stress-no-cleanup.mjs:main",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "podero02-ticket-stress-no-cleanup.mjs contains main"
+    },
+    {
+      "source": "file:tools/qa/production-stability-suite.mjs",
+      "target": "function:tools/qa/production-stability-suite.mjs:sampleMemory",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "production-stability-suite.mjs contains sampleMemory"
+    },
+    {
+      "source": "file:tools/qa/production-stability-suite.mjs",
+      "target": "function:tools/qa/production-stability-suite.mjs:timingSummary",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "production-stability-suite.mjs contains timingSummary"
+    },
+    {
+      "source": "file:tools/qa/production-stability-suite.mjs",
+      "target": "function:tools/qa/production-stability-suite.mjs:requestJson",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "production-stability-suite.mjs contains requestJson"
+    },
+    {
+      "source": "file:tools/qa/production-stability-suite.mjs",
+      "target": "function:tools/qa/production-stability-suite.mjs:allAccounts",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "production-stability-suite.mjs contains allAccounts"
+    },
+    {
+      "source": "file:tools/qa/production-stability-suite.mjs",
+      "target": "function:tools/qa/production-stability-suite.mjs:fetchUsersPayload",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "production-stability-suite.mjs contains fetchUsersPayload"
+    },
+    {
+      "source": "file:tools/qa/production-stability-suite.mjs",
+      "target": "function:tools/qa/production-stability-suite.mjs:login",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "production-stability-suite.mjs contains login"
+    },
+    {
+      "source": "file:tools/qa/production-stability-suite.mjs",
+      "target": "function:tools/qa/production-stability-suite.mjs:runPool",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "production-stability-suite.mjs contains runPool"
+    },
+    {
+      "source": "file:tools/qa/production-stability-suite.mjs",
+      "target": "function:tools/qa/production-stability-suite.mjs:createSmallWriteProbe",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "production-stability-suite.mjs contains createSmallWriteProbe"
+    },
+    {
+      "source": "file:tools/qa/production-stability-suite.mjs",
+      "target": "function:tools/qa/production-stability-suite.mjs:main",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "production-stability-suite.mjs contains main"
+    },
+    {
+      "source": "file:tools/qa/real-flow-smoke.mjs",
+      "target": "function:tools/qa/real-flow-smoke.mjs:allAccounts",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "real-flow-smoke.mjs contains allAccounts"
+    },
+    {
+      "source": "file:tools/qa/real-flow-smoke.mjs",
+      "target": "function:tools/qa/real-flow-smoke.mjs:stableUniqueAccounts",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "real-flow-smoke.mjs contains stableUniqueAccounts"
+    },
+    {
+      "source": "file:tools/qa/real-flow-smoke.mjs",
+      "target": "function:tools/qa/real-flow-smoke.mjs:requestJson",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "real-flow-smoke.mjs contains requestJson"
+    },
+    {
+      "source": "file:tools/qa/real-flow-smoke.mjs",
+      "target": "function:tools/qa/real-flow-smoke.mjs:fetchUsersPayload",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "real-flow-smoke.mjs contains fetchUsersPayload"
+    },
+    {
+      "source": "file:tools/qa/real-flow-smoke.mjs",
+      "target": "function:tools/qa/real-flow-smoke.mjs:saveUsersPayload",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "real-flow-smoke.mjs contains saveUsersPayload"
+    },
+    {
+      "source": "file:tools/qa/real-flow-smoke.mjs",
+      "target": "function:tools/qa/real-flow-smoke.mjs:upsertResults",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "real-flow-smoke.mjs contains upsertResults"
+    },
+    {
+      "source": "file:tools/qa/real-flow-smoke.mjs",
+      "target": "function:tools/qa/real-flow-smoke.mjs:deleteResults",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "real-flow-smoke.mjs contains deleteResults"
+    },
+    {
+      "source": "file:tools/qa/real-flow-smoke.mjs",
+      "target": "function:tools/qa/real-flow-smoke.mjs:login",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "real-flow-smoke.mjs contains login"
+    },
+    {
+      "source": "file:tools/qa/real-flow-smoke.mjs",
+      "target": "function:tools/qa/real-flow-smoke.mjs:createSupervisorPayload",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "real-flow-smoke.mjs contains createSupervisorPayload"
+    },
+    {
+      "source": "file:tools/qa/real-flow-smoke.mjs",
+      "target": "function:tools/qa/real-flow-smoke.mjs:addSupervisorGroup",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "real-flow-smoke.mjs contains addSupervisorGroup"
+    },
+    {
+      "source": "file:tools/qa/real-flow-smoke.mjs",
+      "target": "function:tools/qa/real-flow-smoke.mjs:setUserBlocked",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "real-flow-smoke.mjs contains setUserBlocked"
+    },
+    {
+      "source": "file:tools/qa/real-flow-smoke.mjs",
+      "target": "function:tools/qa/real-flow-smoke.mjs:createTicket",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "real-flow-smoke.mjs contains createTicket"
+    },
+    {
+      "source": "file:tools/qa/real-flow-smoke.mjs",
+      "target": "function:tools/qa/real-flow-smoke.mjs:deleteTicket",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "real-flow-smoke.mjs contains deleteTicket"
+    },
+    {
+      "source": "file:tools/qa/real-flow-smoke.mjs",
+      "target": "function:tools/qa/real-flow-smoke.mjs:main",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "real-flow-smoke.mjs contains main"
+    },
+    {
+      "source": "file:tools/qa/results-stack-diagnostic.mjs",
+      "target": "function:tools/qa/results-stack-diagnostic.mjs:toDrDate",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "results-stack-diagnostic.mjs contains toDrDate"
+    },
+    {
+      "source": "file:tools/qa/results-stack-diagnostic.mjs",
+      "target": "function:tools/qa/results-stack-diagnostic.mjs:fetchJson",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "results-stack-diagnostic.mjs contains fetchJson"
+    },
+    {
+      "source": "file:tools/qa/results-stack-diagnostic.mjs",
+      "target": "function:tools/qa/results-stack-diagnostic.mjs:checkRender",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "results-stack-diagnostic.mjs contains checkRender"
+    },
+    {
+      "source": "file:tools/qa/results-stack-diagnostic.mjs",
+      "target": "function:tools/qa/results-stack-diagnostic.mjs:checkSupabaseResults",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "results-stack-diagnostic.mjs contains checkSupabaseResults"
+    },
+    {
+      "source": "file:tools/qa/results-stack-diagnostic.mjs",
+      "target": "function:tools/qa/results-stack-diagnostic.mjs:findCachedDate",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "results-stack-diagnostic.mjs contains findCachedDate"
+    },
+    {
+      "source": "file:tools/qa/results-stack-diagnostic.mjs",
+      "target": "function:tools/qa/results-stack-diagnostic.mjs:checkRpcNotPublic",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "results-stack-diagnostic.mjs contains checkRpcNotPublic"
+    },
+    {
+      "source": "file:tools/qa/sales-capacity-smoke.mjs",
+      "target": "function:tools/qa/sales-capacity-smoke.mjs:requestJson",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "sales-capacity-smoke.mjs contains requestJson"
+    },
+    {
+      "source": "file:tools/qa/sales-capacity-smoke.mjs",
+      "target": "function:tools/qa/sales-capacity-smoke.mjs:parseCredentials",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "sales-capacity-smoke.mjs contains parseCredentials"
+    },
+    {
+      "source": "file:tools/qa/sales-capacity-smoke.mjs",
+      "target": "function:tools/qa/sales-capacity-smoke.mjs:allAccounts",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "sales-capacity-smoke.mjs contains allAccounts"
+    },
+    {
+      "source": "file:tools/qa/sales-capacity-smoke.mjs",
+      "target": "function:tools/qa/sales-capacity-smoke.mjs:fetchUsersPayload",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "sales-capacity-smoke.mjs contains fetchUsersPayload"
+    },
+    {
+      "source": "file:tools/qa/sales-capacity-smoke.mjs",
+      "target": "function:tools/qa/sales-capacity-smoke.mjs:login",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "sales-capacity-smoke.mjs contains login"
+    },
+    {
+      "source": "file:tools/qa/sales-capacity-smoke.mjs",
+      "target": "function:tools/qa/sales-capacity-smoke.mjs:runPool",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "sales-capacity-smoke.mjs contains runPool"
+    },
+    {
+      "source": "file:tools/qa/sales-capacity-smoke.mjs",
+      "target": "function:tools/qa/sales-capacity-smoke.mjs:play",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "sales-capacity-smoke.mjs contains play"
+    },
+    {
+      "source": "file:tools/qa/sales-capacity-smoke.mjs",
+      "target": "function:tools/qa/sales-capacity-smoke.mjs:main",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "sales-capacity-smoke.mjs contains main"
+    },
+    {
+      "source": "file:tools/qa/server-hardening-smoke.mjs",
+      "target": "function:tools/qa/server-hardening-smoke.mjs:requestJson",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "server-hardening-smoke.mjs contains requestJson"
+    },
+    {
+      "source": "file:tools/qa/server-hardening-smoke.mjs",
+      "target": "function:tools/qa/server-hardening-smoke.mjs:allAccounts",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "server-hardening-smoke.mjs contains allAccounts"
+    },
+    {
+      "source": "file:tools/qa/server-hardening-smoke.mjs",
+      "target": "function:tools/qa/server-hardening-smoke.mjs:fetchUsersPayload",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "server-hardening-smoke.mjs contains fetchUsersPayload"
+    },
+    {
+      "source": "file:tools/qa/server-hardening-smoke.mjs",
+      "target": "function:tools/qa/server-hardening-smoke.mjs:createNonWinnerTicket",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "server-hardening-smoke.mjs contains createNonWinnerTicket"
+    },
+    {
+      "source": "file:tools/qa/server-hardening-smoke.mjs",
+      "target": "function:tools/qa/server-hardening-smoke.mjs:run",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "server-hardening-smoke.mjs contains run"
+    },
+    {
+      "source": "file:tools/qa/server-sales-diagnostic.mjs",
+      "target": "function:tools/qa/server-sales-diagnostic.mjs:requestJson",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "server-sales-diagnostic.mjs contains requestJson"
+    },
+    {
+      "source": "file:tools/qa/server-sales-diagnostic.mjs",
+      "target": "function:tools/qa/server-sales-diagnostic.mjs:parseCredentials",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "server-sales-diagnostic.mjs contains parseCredentials"
+    },
+    {
+      "source": "file:tools/qa/server-sales-diagnostic.mjs",
+      "target": "function:tools/qa/server-sales-diagnostic.mjs:allAccounts",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "server-sales-diagnostic.mjs contains allAccounts"
+    },
+    {
+      "source": "file:tools/qa/server-sales-diagnostic.mjs",
+      "target": "function:tools/qa/server-sales-diagnostic.mjs:fetchUsersPayload",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "server-sales-diagnostic.mjs contains fetchUsersPayload"
+    },
+    {
+      "source": "file:tools/qa/server-sales-diagnostic.mjs",
+      "target": "function:tools/qa/server-sales-diagnostic.mjs:login",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "server-sales-diagnostic.mjs contains login"
+    },
+    {
+      "source": "file:tools/qa/server-sales-diagnostic.mjs",
+      "target": "function:tools/qa/server-sales-diagnostic.mjs:playFromKeyboard",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "server-sales-diagnostic.mjs contains playFromKeyboard"
+    },
+    {
+      "source": "file:tools/qa/server-sales-diagnostic.mjs",
+      "target": "function:tools/qa/server-sales-diagnostic.mjs:ticketBody",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "server-sales-diagnostic.mjs contains ticketBody"
+    },
+    {
+      "source": "file:tools/qa/server-sales-diagnostic.mjs",
+      "target": "function:tools/qa/server-sales-diagnostic.mjs:createTicket",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "server-sales-diagnostic.mjs contains createTicket"
+    },
+    {
+      "source": "file:tools/qa/server-sales-diagnostic.mjs",
+      "target": "function:tools/qa/server-sales-diagnostic.mjs:getDelta",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "server-sales-diagnostic.mjs contains getDelta"
+    },
+    {
+      "source": "file:tools/qa/server-sales-diagnostic.mjs",
+      "target": "function:tools/qa/server-sales-diagnostic.mjs:deleteTicket",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "server-sales-diagnostic.mjs contains deleteTicket"
+    },
+    {
+      "source": "file:tools/qa/server-sales-diagnostic.mjs",
+      "target": "function:tools/qa/server-sales-diagnostic.mjs:metricsSummary",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "server-sales-diagnostic.mjs contains metricsSummary"
+    },
+    {
+      "source": "file:tools/qa/server-sales-diagnostic.mjs",
+      "target": "function:tools/qa/server-sales-diagnostic.mjs:main",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "server-sales-diagnostic.mjs contains main"
+    },
+    {
+      "source": "file:tools/qa/ticket-payload-integrity-smoke.mjs",
+      "target": "function:tools/qa/ticket-payload-integrity-smoke.mjs:requestJson",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "ticket-payload-integrity-smoke.mjs contains requestJson"
+    },
+    {
+      "source": "file:tools/qa/ticket-payload-integrity-smoke.mjs",
+      "target": "function:tools/qa/ticket-payload-integrity-smoke.mjs:allAccounts",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "ticket-payload-integrity-smoke.mjs contains allAccounts"
+    },
+    {
+      "source": "file:tools/qa/ticket-payload-integrity-smoke.mjs",
+      "target": "function:tools/qa/ticket-payload-integrity-smoke.mjs:fetchUsersPayload",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "ticket-payload-integrity-smoke.mjs contains fetchUsersPayload"
+    },
+    {
+      "source": "file:tools/qa/ticket-payload-integrity-smoke.mjs",
+      "target": "function:tools/qa/ticket-payload-integrity-smoke.mjs:login",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "ticket-payload-integrity-smoke.mjs contains login"
+    },
+    {
+      "source": "file:tools/qa/ticket-payload-integrity-smoke.mjs",
+      "target": "function:tools/qa/ticket-payload-integrity-smoke.mjs:baseBody",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "ticket-payload-integrity-smoke.mjs contains baseBody"
+    },
+    {
+      "source": "file:tools/qa/ticket-payload-integrity-smoke.mjs",
+      "target": "function:tools/qa/ticket-payload-integrity-smoke.mjs:deleteTicket",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "ticket-payload-integrity-smoke.mjs contains deleteTicket"
+    },
+    {
+      "source": "file:tools/qa/ticket-payload-integrity-smoke.mjs",
+      "target": "function:tools/qa/ticket-payload-integrity-smoke.mjs:validPlay",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "ticket-payload-integrity-smoke.mjs contains validPlay"
+    },
+    {
+      "source": "file:tools/qa/workday-monitor.playwright.spec.mjs",
+      "target": "function:tools/qa/workday-monitor.playwright.spec.mjs:headers",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "workday-monitor.playwright.spec.mjs contains headers"
+    },
+    {
+      "source": "file:tools/qa/workday-monitor.playwright.spec.mjs",
+      "target": "function:tools/qa/workday-monitor.playwright.spec.mjs:requestJson",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "workday-monitor.playwright.spec.mjs contains requestJson"
+    },
+    {
+      "source": "file:tools/qa/workday-monitor.playwright.spec.mjs",
+      "target": "function:tools/qa/workday-monitor.playwright.spec.mjs:allAccounts",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "workday-monitor.playwright.spec.mjs contains allAccounts"
+    },
+    {
+      "source": "file:tools/qa/workday-monitor.playwright.spec.mjs",
+      "target": "function:tools/qa/workday-monitor.playwright.spec.mjs:fetchUsersPayload",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "workday-monitor.playwright.spec.mjs contains fetchUsersPayload"
+    },
+    {
+      "source": "file:tools/qa/workday-monitor.playwright.spec.mjs",
+      "target": "function:tools/qa/workday-monitor.playwright.spec.mjs:createSupervisor",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "workday-monitor.playwright.spec.mjs contains createSupervisor"
+    },
+    {
+      "source": "file:tools/qa/workday-monitor.playwright.spec.mjs",
+      "target": "function:tools/qa/workday-monitor.playwright.spec.mjs:installSupervisor",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "workday-monitor.playwright.spec.mjs contains installSupervisor"
+    },
+    {
+      "source": "file:tools/qa/workday-monitor.playwright.spec.mjs",
+      "target": "function:tools/qa/workday-monitor.playwright.spec.mjs:createTicket",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "workday-monitor.playwright.spec.mjs contains createTicket"
+    },
+    {
+      "source": "file:tools/qa/workday-stress-smoke.mjs",
+      "target": "function:tools/qa/workday-stress-smoke.mjs:authHeaders",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "workday-stress-smoke.mjs contains authHeaders"
+    },
+    {
+      "source": "file:tools/qa/workday-stress-smoke.mjs",
+      "target": "function:tools/qa/workday-stress-smoke.mjs:requestJson",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "workday-stress-smoke.mjs contains requestJson"
+    },
+    {
+      "source": "file:tools/qa/workday-stress-smoke.mjs",
+      "target": "function:tools/qa/workday-stress-smoke.mjs:parseCredentials",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "workday-stress-smoke.mjs contains parseCredentials"
+    },
+    {
+      "source": "file:tools/qa/workday-stress-smoke.mjs",
+      "target": "function:tools/qa/workday-stress-smoke.mjs:allAccounts",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "workday-stress-smoke.mjs contains allAccounts"
+    },
+    {
+      "source": "file:tools/qa/workday-stress-smoke.mjs",
+      "target": "function:tools/qa/workday-stress-smoke.mjs:stableUniqueAccounts",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "workday-stress-smoke.mjs contains stableUniqueAccounts"
+    },
+    {
+      "source": "file:tools/qa/workday-stress-smoke.mjs",
+      "target": "function:tools/qa/workday-stress-smoke.mjs:fetchUsersPayload",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "workday-stress-smoke.mjs contains fetchUsersPayload"
+    },
+    {
+      "source": "file:tools/qa/workday-stress-smoke.mjs",
+      "target": "function:tools/qa/workday-stress-smoke.mjs:saveUsersPayload",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "workday-stress-smoke.mjs contains saveUsersPayload"
+    },
+    {
+      "source": "file:tools/qa/workday-stress-smoke.mjs",
+      "target": "function:tools/qa/workday-stress-smoke.mjs:saveLimitPayload",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "workday-stress-smoke.mjs contains saveLimitPayload"
+    },
+    {
+      "source": "file:tools/qa/workday-stress-smoke.mjs",
+      "target": "function:tools/qa/workday-stress-smoke.mjs:upsertResults",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "workday-stress-smoke.mjs contains upsertResults"
+    },
+    {
+      "source": "file:tools/qa/workday-stress-smoke.mjs",
+      "target": "function:tools/qa/workday-stress-smoke.mjs:deleteResults",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "workday-stress-smoke.mjs contains deleteResults"
+    },
+    {
+      "source": "file:tools/qa/workday-stress-smoke.mjs",
+      "target": "function:tools/qa/workday-stress-smoke.mjs:login",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "workday-stress-smoke.mjs contains login"
+    },
+    {
+      "source": "file:tools/qa/workday-stress-smoke.mjs",
+      "target": "function:tools/qa/workday-stress-smoke.mjs:createSupervisorPayload",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "workday-stress-smoke.mjs contains createSupervisorPayload"
+    },
+    {
+      "source": "file:tools/qa/workday-stress-smoke.mjs",
+      "target": "function:tools/qa/workday-stress-smoke.mjs:addSupervisorAndCommissions",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "workday-stress-smoke.mjs contains addSupervisorAndCommissions"
+    },
+    {
+      "source": "file:tools/qa/workday-stress-smoke.mjs",
+      "target": "function:tools/qa/workday-stress-smoke.mjs:stressPlays",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "workday-stress-smoke.mjs contains stressPlays"
+    },
+    {
+      "source": "file:tools/qa/workday-stress-smoke.mjs",
+      "target": "function:tools/qa/workday-stress-smoke.mjs:createTicket",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "workday-stress-smoke.mjs contains createTicket"
+    },
+    {
+      "source": "file:tools/qa/workday-stress-smoke.mjs",
+      "target": "function:tools/qa/workday-stress-smoke.mjs:runPool",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "workday-stress-smoke.mjs contains runPool"
+    },
+    {
+      "source": "file:tools/qa/workday-stress-smoke.mjs",
+      "target": "function:tools/qa/workday-stress-smoke.mjs:waitForTicketsInDelta",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "workday-stress-smoke.mjs contains waitForTicketsInDelta"
+    },
+    {
+      "source": "file:tools/qa/workday-stress-smoke.mjs",
+      "target": "function:tools/qa/workday-stress-smoke.mjs:main",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "workday-stress-smoke.mjs contains main"
+    },
+    {
+      "source": "file:tools/real-server-smoke.mjs",
+      "target": "function:tools/real-server-smoke.mjs:callFunction",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "real-server-smoke.mjs contains callFunction"
+    },
+    {
+      "source": "file:tools/real-server-smoke.mjs",
+      "target": "function:tools/real-server-smoke.mjs:refreshSession",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "real-server-smoke.mjs contains refreshSession"
+    },
+    {
+      "source": "file:tools/real-server-smoke.mjs",
+      "target": "function:tools/real-server-smoke.mjs:readCredentials",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "real-server-smoke.mjs contains readCredentials"
+    },
+    {
+      "source": "file:tools/real-server-smoke.mjs",
+      "target": "function:tools/real-server-smoke.mjs:parseTextCredentials",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "real-server-smoke.mjs contains parseTextCredentials"
+    },
+    {
+      "source": "file:tools/real-server-smoke.mjs",
+      "target": "function:tools/real-server-smoke.mjs:parseUsuarioClaveBlocks",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "real-server-smoke.mjs contains parseUsuarioClaveBlocks"
+    },
+    {
+      "source": "file:tools/real-server-smoke.mjs",
+      "target": "function:tools/real-server-smoke.mjs:parseCredentialLine",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "real-server-smoke.mjs contains parseCredentialLine"
+    },
+    {
+      "source": "file:tools/real-server-smoke.mjs",
+      "target": "function:tools/real-server-smoke.mjs:readPair",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "real-server-smoke.mjs contains readPair"
+    },
+    {
+      "source": "file:tools/real-server-smoke.mjs",
+      "target": "function:tools/real-server-smoke.mjs:reportPayloadFor",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "real-server-smoke.mjs contains reportPayloadFor"
+    },
+    {
+      "source": "file:tools/real-server-smoke.mjs",
+      "target": "function:tools/real-server-smoke.mjs:runAccount",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "real-server-smoke.mjs contains runAccount"
+    }
+  ]
+}

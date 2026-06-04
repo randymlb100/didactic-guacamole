@@ -72,3 +72,5 @@ tools/qa/*summary*.md
 tools/qa/*state.json
 tools/qa/*.png
 /ticket_preview.html
+
+.vercel

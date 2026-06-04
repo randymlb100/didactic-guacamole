@@ -43,6 +43,8 @@ fun resolveTicketActorLabel(
 
 fun resolveUserActorDisplayLabel(user: UserAccount): String {
     return user.displayName?.takeIf { it.isNotBlank() }
+        ?: user.banca?.takeIf { it.isNotBlank() }
+        ?: user.ownerName?.takeIf { it.isNotBlank() }
         ?: user.user
 }
 

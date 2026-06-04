@@ -99,9 +99,9 @@ class SalesUiContractsTest {
     }
 
     @Test
-    fun `sales results polling is disabled when realtime is active`() {
+    fun `sales results polling stays enabled as realtime safety fallback`() {
         assertTrue(shouldPollSalesResultsWinnerRefreshInBackground(realtimeEnabled = false))
-        assertFalse(shouldPollSalesResultsWinnerRefreshInBackground(realtimeEnabled = true))
+        assertTrue(shouldPollSalesResultsWinnerRefreshInBackground(realtimeEnabled = true))
     }
 
     @Test
@@ -162,7 +162,113 @@ class SalesUiContractsTest {
 
     @Test
     fun `server ticket validation timeout stays below anr window`() {
-        assertTrue(SALES_SERVER_TICKET_VALIDATION_TIMEOUT_MS <= 4_500L)
+        assertTrue(SALES_SERVER_TICKET_VALIDATION_TIMEOUT_MS <= 6_500L)
+        assertEquals(SALES_SERVER_TICKET_VALIDATION_TIMEOUT_MS, resolveSalesServerTicketValidationTimeoutMs(12))
+        assertTrue(resolveSalesServerTicketValidationTimeoutMs(80) > SALES_SERVER_TICKET_VALIDATION_TIMEOUT_MS)
+        assertEquals(SALES_SERVER_LARGE_TICKET_VALIDATION_TIMEOUT_MS, resolveSalesServerTicketValidationTimeoutMs(200))
+    }
+
+    @Test
+    fun `sale save gate blocks a second print while server validation is running`() {
+        val running = resolveSaleSaveGate(isSaveInFlight = true, stagedRowCount = 18)
+        val ready = resolveSaleSaveGate(isSaveInFlight = false, stagedRowCount = 18)
+        val empty = resolveSaleSaveGate(isSaveInFlight = false, stagedRowCount = 0)
+
+        assertFalse(running.canStartSave)
+        assertEquals("Venta ya está validando. Espera que termine.", running.message)
+        assertTrue(ready.canStartSave)
+        assertNull(ready.message)
+        assertFalse(empty.canStartSave)
+        assertEquals("No hay jugadas para guardar", empty.message)
+    }
+
+    @Test
+    fun `sale retry keeps same client request id for same staged rows`() {
+        val rows = listOf(
+            SaleStagedRow(
+                lotteryId = "quiniela-real",
+                lotteryName = "Quiniela Real",
+                playType = "PALE",
+                label = "Pale",
+                number = "1125",
+                displayNumber = "11/25",
+                amount = 4.0,
+            ),
+        )
+        val fingerprint = buildSaleSubmissionFingerprint(
+            adminId = "ADM-163C38",
+            adminUser = "nicola01",
+            sellerId = "CAJ-D3BDF0",
+            sellerUser = "bancay06",
+            drawDateKey = "2026-06-01",
+            rows = rows,
+        )
+        val first = resolveSaleSubmissionIdentity(
+            current = null,
+            nextFingerprint = fingerprint,
+            nowEpochMs = 1_780_330_590_000L,
+        )
+        val retry = resolveSaleSubmissionIdentity(
+            current = first,
+            nextFingerprint = fingerprint,
+            nowEpochMs = 1_780_330_710_000L,
+        )
+
+        assertEquals(first.clientRequestId, retry.clientRequestId)
+        assertEquals(first.createdAtEpochMs, retry.createdAtEpochMs)
+    }
+
+    @Test
+    fun `sale retry gets new client request id when staged rows change`() {
+        val firstFingerprint = buildSaleSubmissionFingerprint(
+            adminId = "ADM-163C38",
+            adminUser = "nicola01",
+            sellerId = "CAJ-D3BDF0",
+            sellerUser = "bancay06",
+            drawDateKey = "2026-06-01",
+            rows = listOf(
+                SaleStagedRow(
+                    lotteryId = "quiniela-real",
+                    lotteryName = "Quiniela Real",
+                    playType = "PALE",
+                    label = "Pale",
+                    number = "1125",
+                    displayNumber = "11/25",
+                    amount = 4.0,
+                ),
+            ),
+        )
+        val changedFingerprint = buildSaleSubmissionFingerprint(
+            adminId = "ADM-163C38",
+            adminUser = "nicola01",
+            sellerId = "CAJ-D3BDF0",
+            sellerUser = "bancay06",
+            drawDateKey = "2026-06-01",
+            rows = listOf(
+                SaleStagedRow(
+                    lotteryId = "quiniela-real",
+                    lotteryName = "Quiniela Real",
+                    playType = "PALE",
+                    label = "Pale",
+                    number = "1125",
+                    displayNumber = "11/25",
+                    amount = 5.0,
+                ),
+            ),
+        )
+        val first = resolveSaleSubmissionIdentity(
+            current = null,
+            nextFingerprint = firstFingerprint,
+            nowEpochMs = 1_780_330_590_000L,
+        )
+        val changed = resolveSaleSubmissionIdentity(
+            current = first,
+            nextFingerprint = changedFingerprint,
+            nowEpochMs = 1_780_330_710_000L,
+        )
+
+        assertEquals("native-1780330590000", first.clientRequestId)
+        assertEquals("native-1780330710000", changed.clientRequestId)
     }
 
     @Test
@@ -239,7 +345,7 @@ class SalesUiContractsTest {
     }
 
     @Test
-    fun `pick assisted entry replaces stale normal lottery with compatible pick lottery`() {
+    fun `pick assisted entry does not replace user selected lottery`() {
         val lotteries = listOf(
             lottery(id = "ny", name = "New York", closeTime = "20:00").copy(type = "NY"),
             lottery(id = "p3-fl", name = "Florida Pick 3", closeTime = "13:00").copy(type = "Pick3"),
@@ -252,11 +358,11 @@ class SalesUiContractsTest {
             assistedEntry = resolvePickAssistedEntry("252S"),
         )
 
-        assertEquals(listOf("p3-fl"), selected)
+        assertEquals(listOf("ny"), selected)
     }
 
     @Test
-    fun `pick assisted entry removes mixed normal selection and keeps compatible picks`() {
+    fun `pick assisted entry keeps manual mixed selection unchanged`() {
         val lotteries = listOf(
             lottery(id = "ny", name = "New York", closeTime = "20:00").copy(type = "NY"),
             lottery(id = "p3-fl", name = "Florida Pick 3", closeTime = "13:00").copy(type = "Pick3"),
@@ -269,11 +375,11 @@ class SalesUiContractsTest {
             assistedEntry = resolvePickAssistedEntry("252B"),
         )
 
-        assertEquals(listOf("p3-ny"), selected)
+        assertEquals(listOf("ny", "p3-ny"), selected)
     }
 
     @Test
-    fun `pick assisted entry switches to equivalent state and draw when pick size changes`() {
+    fun `pick assisted entry keeps pick4 selection while three digits are typed`() {
         val lotteries = listOf(
             lottery(id = "19", name = "NJ Pick 3 Dia", closeTime = "12:50 PM").copy(type = "Pick3", baseDrawTime = "12:59 PM"),
             lottery(id = "20", name = "NJ Pick 3 Noche", closeTime = "10:50 PM").copy(type = "Pick3", baseDrawTime = "10:57 PM"),
@@ -282,23 +388,17 @@ class SalesUiContractsTest {
             lottery(id = "p4-fl", name = "Florida Pick 4 Midday Draw", closeTime = "13:25").copy(type = "Pick4", baseDrawTime = "1:30 PM"),
         )
 
-        val daySelected = resolvePickAssistedLotterySelection(
-            currentSelection = listOf("19"),
+        val partialSelected = resolvePickAssistedLotterySelection(
+            currentSelection = listOf("21"),
             lotteries = lotteries,
-            assistedEntry = resolvePickAssistedEntry("2546+"),
-        )
-        val nightSelected = resolvePickAssistedLotterySelection(
-            currentSelection = listOf("20"),
-            lotteries = lotteries,
-            assistedEntry = resolvePickAssistedEntry("2546-"),
+            assistedEntry = resolvePickAssistedEntry("254+"),
         )
 
-        assertEquals(listOf("21"), daySelected)
-        assertEquals(listOf("22"), nightSelected)
+        assertEquals(listOf("21"), partialSelected)
     }
 
     @Test
-    fun `pick digits without suffix switch equivalent lottery and can advance to amount`() {
+    fun `pick digits without suffix do not switch selected lottery automatically`() {
         val lotteries = listOf(
             lottery(id = "19", name = "NJ Pick 3 Dia", closeTime = "12:50 PM").copy(type = "Pick3", baseDrawTime = "12:59 PM"),
             lottery(id = "21", name = "NJ Pick 4 Dia", closeTime = "12:50 PM").copy(type = "Pick4", baseDrawTime = "12:59 PM"),
@@ -313,7 +413,7 @@ class SalesUiContractsTest {
             lotteries = lotteries,
             assistedEntry = assistedEntry,
         )
-        val pick3 = lotteries.first { it.id == selected.single() }
+        val pick4 = lotteries.first { it.id == selected.single() }
         val draft = com.lotterynet.pro.core.model.SaleDraft(
             selectedLotteryIds = selected,
             numberInput = assistedEntry?.digits.orEmpty(),
@@ -321,13 +421,13 @@ class SalesUiContractsTest {
             pickMode = assistedEntry?.pickMode ?: PickPlayMode.STRAIGHT,
         )
         val validator = com.lotterynet.pro.core.sales.SaleValidator()
-        val detected = validator.detectPlay(draft, listOf(pick3))
-        val hint = validator.getPartialHint(draft, listOf(pick3))
+        val detected = validator.detectPlay(draft, listOf(pick4))
+        val hint = validator.getPartialHint(draft, listOf(pick4))
 
         assertEquals("Pick3", assistedEntry?.lotteryType)
-        assertEquals(listOf("19"), selected)
-        assertEquals("P3", detected?.playType)
-        assertTrue(resolveNumberAdvanceState("854", detected != null, hint != null).canAdvanceToAmount)
+        assertEquals(listOf("21"), selected)
+        assertEquals(null, detected?.playType)
+        assertEquals("4 dígitos · Pick 4 Straight", hint?.sub)
     }
 
     @Test
@@ -492,6 +592,23 @@ class SalesUiContractsTest {
             lotteries = lotteries,
             selectedLotteries = listOf(lotteries.first()),
             assistedEntry = null,
+        )
+
+        assertEquals(listOf("p3-fl", "p4-fl"), filtered.map { it.id })
+    }
+
+    @Test
+    fun `lottery picker keeps manual pick4 choice visible while three digits are typed`() {
+        val lotteries = listOf(
+            lottery(id = "p3-fl", name = "Florida Pick 3", closeTime = "13:00").copy(type = "Pick3"),
+            lottery(id = "p4-fl", name = "Florida Pick 4", closeTime = "13:00").copy(type = "Pick4"),
+            lottery(id = "ny", name = "New York", closeTime = "20:00").copy(type = "NY"),
+        )
+
+        val filtered = filterVentaLotteryPickerForMode(
+            lotteries = lotteries,
+            selectedLotteries = listOf(lotteries[1]),
+            assistedEntry = resolvePickAssistedEntry("854+"),
         )
 
         assertEquals(listOf("p3-fl", "p4-fl"), filtered.map { it.id })
@@ -1841,12 +1958,13 @@ class SalesUiContractsTest {
     }
 
     @Test
-    fun `cashier sale limit badge shows configured limit and admin has no cap`() {
+    fun `sale limit badge shows cashier limit and admin self limit when configured`() {
         val limits = CashierSalesLimitInputs(quiniela = 10000.0, pale = 500.0, tripleta = 75.0)
 
         assertEquals("10,000", resolveSaleLimitBadgeMain(UserRole.CASHIER, "Q", PickPlayMode.STRAIGHT, limits))
         assertEquals("500", resolveSaleLimitBadgeMain(UserRole.CASHIER, "P", PickPlayMode.STRAIGHT, limits))
-        assertEquals("Sin tope", resolveSaleLimitBadgeMain(UserRole.ADMIN, "Q", PickPlayMode.STRAIGHT, limits))
+        assertEquals("10,000", resolveSaleLimitBadgeMain(UserRole.ADMIN, "Q", PickPlayMode.STRAIGHT, limits))
+        assertEquals("Sin tope", resolveSaleLimitBadgeMain(UserRole.ADMIN, "Q", PickPlayMode.STRAIGHT, zeroSaleLimits()))
     }
 
     @Test
@@ -1898,8 +2016,8 @@ class SalesUiContractsTest {
     }
 
     @Test
-    fun `cashier sale limit preview includes current amount before adding play`() {
-        assertEquals(30.0, resolveSaleLimitPendingPreview(stagedPending = 10.0, currentAmount = 20.0), 0.001)
+    fun `cashier sale limit preview ignores current amount until play is added`() {
+        assertEquals(10.0, resolveSaleLimitPendingPreview(stagedPending = 10.0, currentAmount = 20.0), 0.001)
         assertEquals(10.0, resolveSaleLimitPendingPreview(stagedPending = 10.0, currentAmount = null), 0.001)
     }
 
@@ -1914,7 +2032,7 @@ class SalesUiContractsTest {
         )
 
         assertEquals("362", resolveSaleLimitBadgeMain(UserRole.CASHIER, stagedLimit))
-        assertEquals("Sin tope", resolveSaleLimitBadgeMain(UserRole.ADMIN, stagedLimit))
+        assertEquals("362", resolveSaleLimitBadgeMain(UserRole.ADMIN, stagedLimit))
     }
 
     @Test
@@ -1935,6 +2053,23 @@ class SalesUiContractsTest {
                 currentAmount = null,
             ),
         )
+    }
+
+    @Test
+    fun `cashier sale limit fallback ignores previous staged row while typing another number`() {
+        val stagedLimit = SaleLimitRemainingRow(
+            playType = "P4",
+            number = "1475",
+            limit = 5.0,
+            sold = 0.0,
+            pending = 1.0,
+        )
+
+        val fallbackWhileIdle = if ("".isBlank()) stagedLimit else null
+        val fallbackWhileTyping = if ("275".isBlank()) stagedLimit else null
+
+        assertEquals("4", resolveSaleLimitBadgeMain(UserRole.ADMIN, fallbackWhileIdle))
+        assertEquals(null, resolveSaleLimitBadgeMain(UserRole.ADMIN, fallbackWhileTyping))
     }
 
     @Test
@@ -2089,4 +2224,19 @@ class SalesUiContractsTest {
     }
 
     private fun utcMillis(value: String): Long = Instant.parse(value).toEpochMilli()
+
+    private fun zeroSaleLimits(): CashierSalesLimitInputs {
+        return CashierSalesLimitInputs(
+            daySale = 0.0,
+            payout = 0.0,
+            quiniela = 0.0,
+            pale = 0.0,
+            superPale = 0.0,
+            tripleta = 0.0,
+            pick3Straight = 0.0,
+            pick3Box = 0.0,
+            pick4Straight = 0.0,
+            pick4Box = 0.0,
+        )
+    }
 }

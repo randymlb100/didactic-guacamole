@@ -1,0 +1,206 @@
+{
+  "ok": true,
+  "runId": "cashier-real-ang8-1780399085531",
+  "admin": {
+    "user": "podero02",
+    "id": "ADM-C5FFB0"
+  },
+  "cashier": {
+    "user": "bancae01",
+    "id": "CAJ-E4A14B"
+  },
+  "created": [
+    {
+      "cid": "cashier-real-ang8-1780399085531-01",
+      "ok": true,
+      "status": 200,
+      "ms": 875,
+      "message": "Ticket valido",
+      "code": "LN-34D07A-60C2FA",
+      "plays": 14
+    },
+    {
+      "cid": "cashier-real-ang8-1780399085531-02",
+      "ok": true,
+      "status": 200,
+      "ms": 765,
+      "message": "Ticket valido",
+      "code": "LN-FD2078-AF574E",
+      "plays": 14
+    },
+    {
+      "cid": "cashier-real-ang8-1780399085531-03",
+      "ok": true,
+      "status": 200,
+      "ms": 1006,
+      "message": "Ticket valido",
+      "code": "LN-374560-F56BDD",
+      "plays": 14
+    },
+    {
+      "cid": "cashier-real-ang8-1780399085531-04",
+      "ok": true,
+      "status": 200,
+      "ms": 979,
+      "message": "Ticket valido",
+      "code": "LN-CE53EA-F09CE5",
+      "plays": 14
+    },
+    {
+      "cid": "cashier-real-ang8-1780399085531-05",
+      "ok": true,
+      "status": 200,
+      "ms": 1020,
+      "message": "Ticket valido",
+      "code": "LN-6BD297-78E12A",
+      "plays": 14
+    }
+  ],
+  "adminSeen": [
+    {
+      "cid": "cashier-real-ang8-1780399085531-01",
+      "code": "LN-34D07A-60C2FA",
+      "seen": true,
+      "status": "VALIDO",
+      "total": 14,
+      "cashier": "bancae01",
+      "items": 14,
+      "firstItems": [
+        "QUINIELA 58 $1 Anguilla 8AM",
+        "QUINIELA 65 $1 Anguilla 8AM",
+        "QUINIELA 72 $1 Anguilla 8AM"
+      ]
+    },
+    {
+      "cid": "cashier-real-ang8-1780399085531-02",
+      "code": "LN-FD2078-AF574E",
+      "seen": true,
+      "status": "VALIDO",
+      "total": 14,
+      "cashier": "bancae01",
+      "items": 14,
+      "firstItems": [
+        "QUINIELA 75 $1 Anguilla 8AM",
+        "QUINIELA 82 $1 Anguilla 8AM",
+        "QUINIELA 89 $1 Anguilla 8AM"
+      ]
+    },
+    {
+      "cid": "cashier-real-ang8-1780399085531-03",
+      "code": "LN-374560-F56BDD",
+      "seen": true,
+      "status": "VALIDO",
+      "total": 14,
+      "cashier": "bancae01",
+      "items": 14,
+      "firstItems": [
+        "QUINIELA 92 $1 Anguilla 8AM",
+        "QUINIELA 99 $1 Anguilla 8AM",
+        "QUINIELA 06 $1 Anguilla 8AM"
+      ]
+    },
+    {
+      "cid": "cashier-real-ang8-1780399085531-04",
+      "code": "LN-CE53EA-F09CE5",
+      "seen": true,
+      "status": "VALIDO",
+      "total": 14,
+      "cashier": "bancae01",
+      "items": 14,
+      "firstItems": [
+        "QUINIELA 09 $1 Anguilla 8AM",
+        "QUINIELA 16 $1 Anguilla 8AM",
+        "QUINIELA 23 $1 Anguilla 8AM"
+      ]
+    },
+    {
+      "cid": "cashier-real-ang8-1780399085531-05",
+      "code": "LN-6BD297-78E12A",
+      "seen": true,
+      "status": "VALIDO",
+      "total": 14,
+      "cashier": "bancae01",
+      "items": 14,
+      "firstItems": [
+        "QUINIELA 26 $1 Anguilla 8AM",
+        "QUINIELA 33 $1 Anguilla 8AM",
+        "QUINIELA 40 $1 Anguilla 8AM"
+      ]
+    }
+  ],
+  "cashierSeen": [
+    {
+      "cid": "cashier-real-ang8-1780399085531-01",
+      "code": "LN-34D07A-60C2FA",
+      "seen": true,
+      "status": "VALIDO",
+      "total": 14,
+      "cashier": "bancae01",
+      "items": 14,
+      "firstItems": [
+        "QUINIELA 58 $1 Anguilla 8AM",
+        "QUINIELA 65 $1 Anguilla 8AM",
+        "QUINIELA 72 $1 Anguilla 8AM"
+      ]
+    },
+    {
+      "cid": "cashier-real-ang8-1780399085531-02",
+      "code": "LN-FD2078-AF574E",
+      "seen": true,
+      "status": "VALIDO",
+      "total": 14,
+      "cashier": "bancae01",
+      "items": 14,
+      "firstItems": [
+        "QUINIELA 75 $1 Anguilla 8AM",
+        "QUINIELA 82 $1 Anguilla 8AM",
+        "QUINIELA 89 $1 Anguilla 8AM"
+      ]
+    },
+    {
+      "cid": "cashier-real-ang8-1780399085531-03",
+      "code": "LN-374560-F56BDD",
+      "seen": true,
+      "status": "VALIDO",
+      "total": 14,
+      "cashier": "bancae01",
+      "items": 14,
+      "firstItems": [
+        "QUINIELA 92 $1 Anguilla 8AM",
+        "QUINIELA 99 $1 Anguilla 8AM",
+        "QUINIELA 06 $1 Anguilla 8AM"
+      ]
+    },
+    {
+      "cid": "cashier-real-ang8-1780399085531-04",
+      "code": "LN-CE53EA-F09CE5",
+      "seen": true,
+      "status": "VALIDO",
+      "total": 14,
+      "cashier": "bancae01",
+      "items": 14,
+      "firstItems": [
+        "QUINIELA 09 $1 Anguilla 8AM",
+        "QUINIELA 16 $1 Anguilla 8AM",
+        "QUINIELA 23 $1 Anguilla 8AM"
+      ]
+    },
+    {
+      "cid": "cashier-real-ang8-1780399085531-05",
+      "code": "LN-6BD297-78E12A",
+      "seen": true,
+      "status": "VALIDO",
+      "total": 14,
+      "cashier": "bancae01",
+      "items": 14,
+      "firstItems": [
+        "QUINIELA 26 $1 Anguilla 8AM",
+        "QUINIELA 33 $1 Anguilla 8AM",
+        "QUINIELA 40 $1 Anguilla 8AM"
+      ]
+    }
+  ],
+  "beforeCount": 76,
+  "afterAdminCount": 81,
+  "afterCashierCount": 7
+}

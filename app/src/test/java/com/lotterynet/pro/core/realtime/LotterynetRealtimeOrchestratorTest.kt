@@ -44,4 +44,28 @@ class LotterynetRealtimeOrchestratorTest {
 
         assertEquals(1, calls)
     }
+
+    @Test
+    fun `result draw update triggers result refresh`() {
+        var calls = 0
+        var dayKey = ""
+        val orchestrator = LotterynetRealtimeOrchestrator(
+            onResultsCacheChanged = {
+                calls += 1
+                dayKey = it
+            },
+        )
+
+        orchestrator.onEvent(
+            LotterynetRealtimeEvent(
+                type = LotterynetRealtimeEventType.UPDATE,
+                table = "result_draws",
+                filterValue = "29-05-2026",
+                payloadJson = """{"result_day_key":"29-05-2026"}""",
+            ),
+        )
+
+        assertEquals(1, calls)
+        assertEquals("29-05-2026", dayKey)
+    }
 }

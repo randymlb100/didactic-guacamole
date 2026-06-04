@@ -12,6 +12,10 @@ fun renderCacheFileName(key: String): String {
     return "$safe.png"
 }
 
+fun renderCachePageKey(key: String, index: Int): String {
+    return "$key-page-${index + 1}"
+}
+
 class LocalRenderCacheRepository(
     private val context: Context,
 ) {
@@ -24,6 +28,14 @@ class LocalRenderCacheRepository(
         return FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
     }
 
+    fun getUrisIfPresent(key: String, pageCount: Int): List<Uri>? {
+        if (pageCount <= 0) return null
+        val uris = (0 until pageCount).mapNotNull { index ->
+            getUriIfPresent(renderCachePageKey(key, index))
+        }
+        return uris.takeIf { it.size == pageCount }
+    }
+
     fun saveBitmap(key: String, bitmap: Bitmap): Uri? {
         return runCatching {
             val file = File(cacheDir, renderCacheFileName(key))
@@ -34,7 +46,18 @@ class LocalRenderCacheRepository(
         }.getOrNull()
     }
 
+    fun saveBitmaps(key: String, bitmaps: List<Bitmap>): List<Uri> {
+        if (bitmaps.isEmpty()) return emptyList()
+        if (bitmaps.size == 1) return listOfNotNull(saveBitmap(key, bitmaps.first()))
+        return bitmaps.mapIndexedNotNull { index, bitmap ->
+            saveBitmap(renderCachePageKey(key, index), bitmap)
+        }
+    }
+
     fun clear(key: String) {
         File(cacheDir, renderCacheFileName(key)).delete()
+        cacheDir.listFiles()
+            ?.filter { it.name.startsWith(renderCacheFileName("$key-page-").removeSuffix(".png")) }
+            ?.forEach { it.delete() }
     }
 }

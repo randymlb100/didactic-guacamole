@@ -1,0 +1,293 @@
+{
+  "scriptCompleted": true,
+  "filesAnalyzed": 6,
+  "filesSkipped": [],
+  "results": [
+    {
+      "path": "docs/qa/2026-05-05-production-readiness-audit.md",
+      "language": "markdown",
+      "fileCategory": "docs",
+      "totalLines": 58,
+      "nonEmptyLines": 39,
+      "sections": [
+        {
+          "heading": "LotteryNet Production Readiness Audit",
+          "level": 1,
+          "line": 1
+        },
+        {
+          "heading": "Estado",
+          "level": 2,
+          "line": 5
+        },
+        {
+          "heading": "Bloqueos",
+          "level": 2,
+          "line": 16
+        },
+        {
+          "heading": "Critico",
+          "level": 3,
+          "line": 18
+        },
+        {
+          "heading": "Alto",
+          "level": 3,
+          "line": 22
+        },
+        {
+          "heading": "Medio",
+          "level": 3,
+          "line": 26
+        },
+        {
+          "heading": "Fix Aplicado",
+          "level": 2,
+          "line": 30
+        },
+        {
+          "heading": "Evidencia",
+          "level": 2,
+          "line": 35
+        },
+        {
+          "heading": "Checklist De Flujos",
+          "level": 2,
+          "line": 47
+        },
+        {
+          "heading": "Recomendacion",
+          "level": 2,
+          "line": 56
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "sectionCount": 10
+      }
+    },
+    {
+      "path": "docs/qa/2026-05-19-apkpure-upload-info.md",
+      "language": "markdown",
+      "fileCategory": "docs",
+      "totalLines": 72,
+      "nonEmptyLines": 40,
+      "sections": [
+        {
+          "heading": "AppPure upload verification info",
+          "level": 1,
+          "line": 1
+        },
+        {
+          "heading": "APK correcto para subir",
+          "level": 2,
+          "line": 5
+        },
+        {
+          "heading": "Datos que debe tener AppPure",
+          "level": 2,
+          "line": 11
+        },
+        {
+          "heading": "Causa probable del error",
+          "level": 2,
+          "line": 41
+        },
+        {
+          "heading": "Que llenar en AppPure",
+          "level": 2,
+          "line": 54
+        },
+        {
+          "heading": "Si vuelve a fallar",
+          "level": 2,
+          "line": 69
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "sectionCount": 6
+      }
+    },
+    {
+      "path": "docs/qa/2026-05-19-node-wide-smoke-production-risk.md",
+      "language": "markdown",
+      "fileCategory": "docs",
+      "totalLines": 215,
+      "nonEmptyLines": 144,
+      "sections": [
+        {
+          "heading": "Prueba amplia Node.js antes de produccion",
+          "level": 1,
+          "line": 1
+        },
+        {
+          "heading": "Objetivo",
+          "level": 2,
+          "line": 7
+        },
+        {
+          "heading": "Herramientas usadas",
+          "level": 2,
+          "line": 18
+        },
+        {
+          "heading": "Pruebas realizadas",
+          "level": 2,
+          "line": 30
+        },
+        {
+          "heading": "1. Login y JWT",
+          "level": 3,
+          "line": 32
+        },
+        {
+          "heading": "2. Venta real por API",
+          "level": 3,
+          "line": 51
+        },
+        {
+          "heading": "3. Crear banca, cajero y supervisor temporal",
+          "level": 3,
+          "line": 77
+        },
+        {
+          "heading": "4. RLS / permisos",
+          "level": 3,
+          "line": 108
+        },
+        {
+          "heading": "5. Supabase Advisors",
+          "level": 3,
+          "line": 124
+        },
+        {
+          "heading": "Hallazgos principales",
+          "level": 2,
+          "line": 139
+        },
+        {
+          "heading": "Critico 1: endpoint de usuarios demasiado abierto",
+          "level": 3,
+          "line": 141
+        },
+        {
+          "heading": "Critico 2: pago de premios falla con 500",
+          "level": 3,
+          "line": 162
+        },
+        {
+          "heading": "Alto 3: master report 403",
+          "level": 3,
+          "line": 179
+        },
+        {
+          "heading": "Medio 4: advisors de seguridad/performance",
+          "level": 3,
+          "line": 189
+        },
+        {
+          "heading": "Lo que no se hizo",
+          "level": 2,
+          "line": 198
+        },
+        {
+          "heading": "Orden sugerido para arreglar de noche",
+          "level": 2,
+          "line": 207
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "sectionCount": 16
+      }
+    },
+    {
+      "path": "docs/qa/2026-05-23-non-sales-visual-redesign-checklist.md",
+      "language": "markdown",
+      "fileCategory": "docs",
+      "totalLines": 48,
+      "nonEmptyLines": 40,
+      "sections": [
+        {
+          "heading": "Non-Sales Visual Redesign QA Checklist",
+          "level": 1,
+          "line": 1
+        },
+        {
+          "heading": "Shared Checks",
+          "level": 2,
+          "line": 7
+        },
+        {
+          "heading": "Screens",
+          "level": 2,
+          "line": 18
+        },
+        {
+          "heading": "Final Commands",
+          "level": 2,
+          "line": 42
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "sectionCount": 4
+      }
+    },
+    {
+      "path": "docs/qa/cashier-old-android-performance-checklist.md",
+      "language": "markdown",
+      "fileCategory": "docs",
+      "totalLines": 26,
+      "nonEmptyLines": 23,
+      "sections": [
+        {
+          "heading": "Cashier Old Android Performance Checklist",
+          "level": 1,
+          "line": 1
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "sectionCount": 1
+      }
+    },
+    {
+      "path": "docs/qa/native-local-pos-checklist.md",
+      "language": "markdown",
+      "fileCategory": "docs",
+      "totalLines": 26,
+      "nonEmptyLines": 23,
+      "sections": [
+        {
+          "heading": "Native Local POS Checklist",
+          "level": 1,
+          "line": 1
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "sectionCount": 1
+      }
+    }
+  ]
+}

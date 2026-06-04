@@ -5,6 +5,7 @@ import com.lotterynet.pro.core.model.LotteryResult
 import com.lotterynet.pro.core.model.PlayItem
 import com.lotterynet.pro.core.model.PrizeTableConfig
 import com.lotterynet.pro.core.model.TicketRecord
+import com.lotterynet.pro.core.model.WinningPlayDetail
 import com.lotterynet.pro.core.model.isPaidStatus
 import com.lotterynet.pro.core.model.normalizedPrizeTableConfig
 import java.text.Normalizer
@@ -33,12 +34,14 @@ class PrizeValidationEngine(
         var relevantRowsFound = false
         var totalPrize = 0.0
         var matchCount = 0
+        val winningDetails = mutableListOf<WinningPlayDetail>()
 
         ticket.plays.forEach { play ->
             val resolution = resolvePrizes(play, results, safePrizeConfig)
             relevantRowsFound = relevantRowsFound || resolution.relevantRowsFound
             totalPrize += resolution.totalPrize
             matchCount += resolution.matchCount
+            resolution.detail?.let(winningDetails::add)
         }
 
         if (!relevantRowsFound) {
@@ -47,6 +50,7 @@ class PrizeValidationEngine(
 
         val normalizedTicket = ticket.copy(
             totalPrize = totalPrize,
+            winningDetails = winningDetails,
             status = when {
                 totalPrize > 0.0 && ticket.isPaidStatus() -> "paid"
                 totalPrize > 0.0 -> "winner"
@@ -77,7 +81,13 @@ class PrizeValidationEngine(
             val direct = primary.first.orEmpty() == parts[0] && secondary.first.orEmpty() == parts[1]
             val reverse = primary.first.orEmpty() == parts[1] && secondary.first.orEmpty() == parts[0]
             return if (direct || reverse) {
-                PlayPrizeResolution(totalPrize = play.amount * prizeConfig.superPale, matchCount = 1, relevantRowsFound = true)
+                val payout = play.amount * prizeConfig.superPale
+                PlayPrizeResolution(
+                    totalPrize = payout,
+                    matchCount = 1,
+                    relevantRowsFound = true,
+                    detail = winningDetail(play, primary, "SP", payout),
+                )
             } else {
                 PlayPrizeResolution(relevantRowsFound = true)
             }
@@ -89,12 +99,12 @@ class PrizeValidationEngine(
             "Q" -> resolveQuiniela(play.amount, digits, result, prizeConfig)
             "P" -> resolvePale(play.amount, digits, result, prizeConfig)
             "T" -> resolveTripleta(play.amount, digits, result, prizeConfig)
-            "P3" -> resolveExact(play.amount, digits, result.pick3 ?: drawTriple(result), prizeConfig.pick3Straight)
-            "P4" -> resolveExact(play.amount, digits, result.pick4 ?: drawQuad(result), prizeConfig.pick4Straight)
-            "P3BOX" -> resolveBox(play.amount, digits, result.pick3 ?: drawTriple(result), "P3BOX", prizeConfig)
-            "P4BOX" -> resolveBox(play.amount, digits, result.pick4 ?: drawQuad(result), "P4BOX", prizeConfig)
-            "P3B" -> resolveBackPair(play.amount, digits, result.pick3 ?: drawTriple(result), prizeConfig.pick3BackPair)
-            "P4B" -> resolveBackPair(play.amount, digits, result.pick4 ?: drawQuad(result), prizeConfig.pick4BackPair)
+            "P3" -> resolveExact(play, digits, result, result.pick3 ?: drawTriple(result), prizeConfig.pick3Straight)
+            "P4" -> resolveExact(play, digits, result, result.pick4 ?: drawQuad(result), prizeConfig.pick4Straight)
+            "P3BOX" -> resolveBox(play, digits, result, result.pick3 ?: drawTriple(result), "P3BOX", prizeConfig)
+            "P4BOX" -> resolveBox(play, digits, result, result.pick4 ?: drawQuad(result), "P4BOX", prizeConfig)
+            "P3B" -> resolveBackPair(play, digits, result, result.pick3 ?: drawTriple(result), prizeConfig.pick3BackPair)
+            "P4B" -> resolveBackPair(play, digits, result, result.pick4 ?: drawQuad(result), prizeConfig.pick4BackPair)
             else -> PlayPrizeResolution(relevantRowsFound = true)
         }
     }
@@ -106,13 +116,15 @@ class PrizeValidationEngine(
         prizeConfig: PrizeTableConfig,
     ): PlayPrizeResolution {
         val multiplier = when (digits) {
-            result.first -> prizeConfig.q1.toDouble()
-            result.second -> prizeConfig.q2.toDouble()
-            result.third -> prizeConfig.q3.toDouble()
+            result.first -> "1" to prizeConfig.q1.toDouble()
+            result.second -> "2" to prizeConfig.q2.toDouble()
+            result.third -> "3" to prizeConfig.q3.toDouble()
             else -> null
         }
         return if (multiplier != null) {
-            PlayPrizeResolution(amount * multiplier, 1, true)
+            val (hitPosition, value) = multiplier
+            val payout = amount * value
+            PlayPrizeResolution(payout, 1, true, winningDetail(amount, digits, "Q", result, hitPosition, payout))
         } else {
             PlayPrizeResolution(relevantRowsFound = true)
         }
@@ -130,13 +142,15 @@ class PrizeValidationEngine(
         val second = result.second.orEmpty()
         val third = result.third.orEmpty()
         val matchedPayout = when {
-            containsBoth(parts, first, second) -> prizeConfig.pale12
-            containsBoth(parts, first, third) -> prizeConfig.pale13
-            containsBoth(parts, second, third) -> prizeConfig.pale23
+            containsBoth(parts, first, second) -> "1-2" to prizeConfig.pale12
+            containsBoth(parts, first, third) -> "1-3" to prizeConfig.pale13
+            containsBoth(parts, second, third) -> "2-3" to prizeConfig.pale23
             else -> null
         }
         return if (matchedPayout != null) {
-            PlayPrizeResolution(amount * matchedPayout, 1, true)
+            val (hitPosition, value) = matchedPayout
+            val payout = amount * value
+            PlayPrizeResolution(payout, 1, true, winningDetail(amount, digits, "P", result, hitPosition, payout))
         } else {
             PlayPrizeResolution(relevantRowsFound = true)
         }
@@ -152,8 +166,14 @@ class PrizeValidationEngine(
         val drawn = listOfNotNull(result.first, result.second, result.third)
         val matched = if (parts.size == 3 && drawn.size == 3) drawn.count(parts::contains) else 0
         return when (matched) {
-            3 -> PlayPrizeResolution(amount * prizeConfig.tripleta3, 1, true)
-            2 -> PlayPrizeResolution(amount * prizeConfig.tripleta2, 1, true)
+            3 -> {
+                val payout = amount * prizeConfig.tripleta3
+                PlayPrizeResolution(payout, 1, true, winningDetail(amount, digits, "T", result, "3", payout))
+            }
+            2 -> {
+                val payout = amount * prizeConfig.tripleta2
+                PlayPrizeResolution(payout, 1, true, winningDetail(amount, digits, "T", result, "2", payout))
+            }
             else -> PlayPrizeResolution(relevantRowsFound = true)
         }
     }
@@ -163,17 +183,30 @@ class PrizeValidationEngine(
         return parts.contains(a) && parts.contains(b)
     }
 
-    private fun resolveExact(amount: Double, digits: String, drawn: String, multiplier: Int): PlayPrizeResolution {
+    private fun resolveExact(
+        play: PlayItem,
+        digits: String,
+        result: LotteryResult,
+        drawn: String,
+        multiplier: Int,
+    ): PlayPrizeResolution {
         return if (digits.isNotBlank() && digits == digitsOnly(drawn)) {
-            PlayPrizeResolution(amount * multiplier, 1, true)
+            val payout = play.amount * multiplier
+            PlayPrizeResolution(
+                totalPrize = payout,
+                matchCount = 1,
+                relevantRowsFound = true,
+                detail = winningDetail(play.amount, digits, play.playType, result, "straight", payout).copy(resultNumber = drawn),
+            )
         } else {
             PlayPrizeResolution(relevantRowsFound = drawn.isNotBlank())
         }
     }
 
     private fun resolveBox(
-        amount: Double,
+        play: PlayItem,
         digits: String,
+        result: LotteryResult,
         drawn: String,
         playType: String,
         prizeConfig: PrizeTableConfig,
@@ -193,16 +226,35 @@ class PrizeValidationEngine(
             }
         }
         return if (multiplier > 0 && isPermutationMatch(drawn, digits)) {
-            PlayPrizeResolution(amount * multiplier, 1, true)
+            val payout = play.amount * multiplier
+            PlayPrizeResolution(
+                totalPrize = payout,
+                matchCount = 1,
+                relevantRowsFound = true,
+                detail = winningDetail(play.amount, digits, play.playType, result, playType.removePrefix("P").lowercase(Locale.ROOT), payout)
+                    .copy(resultNumber = drawn),
+            )
         } else {
             PlayPrizeResolution(relevantRowsFound = drawn.isNotBlank())
         }
     }
 
-    private fun resolveBackPair(amount: Double, digits: String, drawn: String, multiplier: Int): PlayPrizeResolution {
+    private fun resolveBackPair(
+        play: PlayItem,
+        digits: String,
+        result: LotteryResult,
+        drawn: String,
+        multiplier: Int,
+    ): PlayPrizeResolution {
         val normalized = digitsOnly(drawn)
         return if (digits.length == 2 && normalized.takeLast(2) == digits) {
-            PlayPrizeResolution(amount * multiplier, 1, true)
+            val payout = play.amount * multiplier
+            PlayPrizeResolution(
+                totalPrize = payout,
+                matchCount = 1,
+                relevantRowsFound = true,
+                detail = winningDetail(play.amount, digits, play.playType, result, "back", payout).copy(resultNumber = drawn),
+            )
         } else {
             PlayPrizeResolution(relevantRowsFound = normalized.isNotBlank())
         }
@@ -232,6 +284,48 @@ class PrizeValidationEngine(
 
     private fun drawQuad(result: LotteryResult): String =
         digitsOnly(result.pick4 ?: result.pick3 ?: drawTriple(result))
+
+    private fun winningDetail(
+        play: PlayItem,
+        result: LotteryResult,
+        hitPosition: String,
+        payout: Double,
+    ): WinningPlayDetail {
+        return winningDetail(
+            amount = play.amount,
+            digits = play.number,
+            playType = play.playType,
+            result = result,
+            hitPosition = hitPosition,
+            payout = payout,
+            fallbackLotteryName = play.lotteryName,
+        )
+    }
+
+    private fun winningDetail(
+        amount: Double,
+        digits: String,
+        playType: String,
+        result: LotteryResult,
+        hitPosition: String,
+        payout: Double,
+        fallbackLotteryName: String? = null,
+    ): WinningPlayDetail {
+        return WinningPlayDetail(
+            lotteryName = result.lotteryName?.takeIf { it.isNotBlank() } ?: fallbackLotteryName.orEmpty(),
+            playType = playType,
+            playedNumber = digits,
+            resultNumber = listOfNotNull(result.first, result.second, result.third)
+                .takeIf { it.isNotEmpty() }
+                ?.joinToString("-")
+                ?: result.pick4
+                ?: result.pick3
+                ?: "",
+            hitPosition = hitPosition,
+            amount = amount,
+            payoutAmount = payout,
+        )
+    }
 
     private fun splitDigits(raw: String, chunk: Int): List<String> {
         val normalized = digitsOnly(raw)
@@ -279,4 +373,5 @@ private data class PlayPrizeResolution(
     val totalPrize: Double = 0.0,
     val matchCount: Int = 0,
     val relevantRowsFound: Boolean = false,
+    val detail: WinningPlayDetail? = null,
 )

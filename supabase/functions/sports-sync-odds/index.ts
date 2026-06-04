@@ -1,4 +1,4 @@
-import { corsHeaders, json, clean, requireSharedSecret, supabaseAdmin } from "../_shared/lotterynet-admin.ts";
+import { bearerToken, corsHeaders, json, clean, lower, supabaseAdmin } from "../_shared/lotterynet-admin.ts";
 
 type JsonMap = Record<string, unknown>;
 
@@ -17,6 +17,33 @@ function asObject(value: unknown): JsonMap {
   return value && typeof value === "object" && !Array.isArray(value) ? value as JsonMap : {};
 }
 
+function sharedSecretMatches(req: Request): boolean {
+  const expected = Deno.env.get("LOTTERYNET_ADMIN_SHARED_SECRET") ?? "";
+  if (!expected) return false;
+  const provided = req.headers.get("x-lotterynet-admin-secret") ?? "";
+  return provided === expected;
+}
+
+async function adminJwtMatches(req: Request, body: JsonMap): Promise<boolean> {
+  const token = bearerToken(req);
+  if (!token) return false;
+  const { data, error } = await supabaseAdmin().auth.getUser(token);
+  if (error || !data.user) return false;
+  const metadata = asObject(data.user.app_metadata);
+  const role = lower(metadata.role || body.actorRole);
+  if (role !== "admin" && role !== "master") return false;
+  const actorKey = lower(body.actorKey || body.adminKey);
+  if (!actorKey) return true;
+  const accepted = [
+    metadata.legacy_id,
+    metadata.username,
+    metadata.user,
+    metadata.admin_id,
+    metadata.admin_user,
+  ].map(lower).filter(Boolean);
+  return accepted.length === 0 || accepted.includes(actorKey);
+}
+
 function number(value: unknown): number {
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : 0;
@@ -27,10 +54,12 @@ function unixSecondsToIso(value: unknown): string {
   return new Date((seconds > 0 ? seconds : Math.floor(Date.now() / 1000)) * 1000).toISOString();
 }
 
-function marketKey(value: unknown): string {
-  const raw = clean(value).toLowerCase();
+function marketKey(value: unknown, betTypeValue: unknown = ""): string {
+  const raw = clean(betTypeValue || value).toLowerCase();
   if (raw.startsWith("moneyline/") || raw === "moneyline") return "moneyline";
   if (raw.startsWith("total/") || raw === "total" || raw === "totals") return "total";
+  if (raw.startsWith("runline/") || raw === "runline") return "runline";
+  if (raw === "handicap" || raw === "spread") return "spread";
   if (raw.startsWith("handicap/")) {
     if (raw.includes("5 innings")) return "first_five";
     if (raw.includes("1st half")) return "first_half";
@@ -68,6 +97,14 @@ function sportsFromBody(body: JsonMap): string[] {
   return clean(raw).split(",").map((item) => item.trim()).filter(Boolean).slice(0, 6);
 }
 
+function leaguesForSport(body: JsonMap, sport: string): string[] {
+  const leagues = asObject(body.leagues);
+  const raw = leagues[sport] ?? leagues[sport.toLowerCase()] ?? body.league ?? "";
+  if (Array.isArray(raw)) return raw.map(clean).filter(Boolean).slice(0, 4);
+  const parsed = clean(raw).split(",").map((item) => item.trim()).filter(Boolean).slice(0, 4);
+  return parsed.length > 0 ? parsed : [""];
+}
+
 function selectionLabel(odd: JsonMap, selectionKey: string): string {
   const explicit = clean(odd.selection_name);
   if (explicit) return explicit;
@@ -97,12 +134,14 @@ async function oddsApiGet(path: string, params: URLSearchParams, apiKey: string)
   return payload;
 }
 
-async function oddsSnapshot(providerEventId: string, marketKeys: string, apiKey: string): Promise<JsonMap> {
+async function oddsSnapshot(providerEventId: string, marketKeys: string, marketTypes: string, periods: string, apiKey: string): Promise<JsonMap> {
   const filtered = await oddsApiGet(
     `/events/${encodeURIComponent(providerEventId)}/odds/snapshot`,
     new URLSearchParams({
       limit: "50",
+      types: marketTypes,
       market_keys: marketKeys,
+      periods,
       price_fields: "odds",
     }),
     apiKey,
@@ -114,6 +153,7 @@ async function oddsSnapshot(providerEventId: string, marketKeys: string, apiKey:
     `/events/${encodeURIComponent(providerEventId)}/odds/snapshot`,
     new URLSearchParams({
       limit: "50",
+      types: marketTypes,
       price_fields: "odds",
     }),
     apiKey,
@@ -124,9 +164,6 @@ async function handle(req: Request): Promise<Response> {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (req.method !== "POST") return json({ ok: false, message: "Metodo no permitido." }, 405);
 
-  const secretError = requireSharedSecret(req);
-  if (secretError) return secretError;
-
   let body: JsonMap = {};
   try {
     body = await req.json();
@@ -134,8 +171,55 @@ async function handle(req: Request): Promise<Response> {
     body = {};
   }
 
+  if (!sharedSecretMatches(req) && !(await adminJwtMatches(req, body))) {
+    return json({ ok: false, message: "Admin deportivo requerido." }, 403);
+  }
+
   const apiKey = Deno.env.get("ODDS_API_KEY") ?? "";
   if (!apiKey) return json({ ok: false, message: "ODDS_API_KEY no esta configurada." }, 500);
+
+  if (body.discover === "sports") {
+    const payload = await oddsApiGet("/sports", new URLSearchParams({ limit: String(number(body.limit) || 100) }), apiKey);
+    return ok({
+      source: "odds-api.net/sports",
+      items: asArray(payload.items).slice(0, 80),
+      total: asArray(payload.items).length,
+    });
+  }
+
+  if (body.discover === "leagues") {
+    const sport = clean(body.sport || sportsFromBody(body)[0] || "baseball");
+    const payload = await oddsApiGet("/leagues", new URLSearchParams({ sport }), apiKey);
+    return ok({
+      source: "odds-api.net/leagues",
+      sport,
+      items: asArray(payload.items).slice(0, 120),
+      total: asArray(payload.items).length,
+    });
+  }
+
+  if (body.discover === "events") {
+    const now = Math.floor(Date.now() / 1000);
+    const sport = clean(body.sport || sportsFromBody(body)[0] || "baseball");
+    const league = clean(body.league || "");
+    const params = new URLSearchParams({
+      sport,
+      start_from: String(number(body.startFrom) || now - 60 * 60),
+      start_to: String(number(body.startTo) || now + 7 * 24 * 60 * 60),
+      limit: String(Math.min(Math.max(number(body.limit) || 10, 1), 50)),
+    });
+    if (league) params.set("league", league);
+    const payload = await oddsApiGet("/events", params, apiKey);
+    return ok({
+      source: "odds-api.net/events",
+      sport,
+      league,
+      params: Object.fromEntries(params.entries()),
+      items: asArray(payload.items).slice(0, 20),
+      total: asArray(payload.items).length,
+      next_cursor: payload.next_cursor ?? null,
+    });
+  }
 
   const supabase = supabaseAdmin();
   const now = Math.floor(Date.now() / 1000);
@@ -143,6 +227,8 @@ async function handle(req: Request): Promise<Response> {
   const startTo = number(body.startTo) || now + 36 * 60 * 60;
   const limit = Math.min(Math.max(number(body.limit) || 25, 1), 50);
   const marketKeys = clean(body.marketKeys || "moneyline,runline,spread,total");
+  const marketTypes = clean(body.marketTypes || body.types || "moneyline,runline,spread,total,handicap");
+  const periods = clean(body.periods || "full time");
   let eventsSaved = 0;
   let marketsSaved = 0;
   let oddsSaved = 0;
@@ -151,18 +237,21 @@ async function handle(req: Request): Promise<Response> {
   const errors: string[] = [];
 
   for (const sport of sportsFromBody(body)) {
-    const eventsPayload = await oddsApiGet(
-      "/events",
-      new URLSearchParams({
-        sport,
-        start_from: String(startFrom),
-        start_to: String(startTo),
-        limit: String(limit),
-      }),
-      apiKey,
-    );
+    for (const league of leaguesForSport(body, sport)) {
+      const eventParams = new URLSearchParams({
+          sport,
+          start_from: String(startFrom),
+          start_to: String(startTo),
+          limit: String(limit),
+        });
+      if (league) eventParams.set("league", league);
+      const eventsPayload = await oddsApiGet(
+        "/events",
+        eventParams,
+        apiKey,
+      );
 
-    for (const rawEvent of asArray(eventsPayload.items)) {
+      for (const rawEvent of asArray(eventsPayload.items)) {
       const event = asObject(rawEvent);
       const providerEventId = clean(event.event_id);
       if (!providerEventId) continue;
@@ -196,7 +285,7 @@ async function handle(req: Request): Promise<Response> {
 
       let oddsPayload: JsonMap;
       try {
-        oddsPayload = await oddsSnapshot(providerEventId, marketKeys, apiKey);
+        oddsPayload = await oddsSnapshot(providerEventId, marketKeys, marketTypes, periods, apiKey);
       } catch (error) {
         errors.push(`odds ${providerEventId}: ${error instanceof Error ? error.message : String(error)}`);
         continue;
@@ -206,7 +295,7 @@ async function handle(req: Request): Promise<Response> {
       for (const rawOdd of asArray(oddsPayload.items)) {
         oddsItemsSeen += 1;
         const odd = asObject(rawOdd);
-        const key = marketKey(odd.market_key);
+        const key = marketKey(odd.market_key, odd.bet_type);
         const decimalOdds = number(odd.odds);
         if (!key || decimalOdds <= 1) continue;
         oddsItemsAccepted += 1;
@@ -266,6 +355,7 @@ async function handle(req: Request): Promise<Response> {
           oddsSaved += 1;
         }
       }
+    }
     }
   }
 

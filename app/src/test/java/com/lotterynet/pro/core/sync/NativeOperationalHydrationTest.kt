@@ -1,6 +1,7 @@
 package com.lotterynet.pro.core.sync
 
 import com.lotterynet.pro.core.model.RechargeRecord
+import com.lotterynet.pro.core.model.PlayItem
 import com.lotterynet.pro.core.model.TicketRecord
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -51,6 +52,26 @@ class NativeOperationalHydrationTest {
     }
 
     @Test
+    fun `active remote tickets with total but no plays are ignored`() {
+        val payload = """
+            [
+              {
+                "id": "BAD-EMPTY",
+                "serial": "LN-BAD",
+                "createdAtMs": 1714151800000,
+                "total": 16.0,
+                "status": "active",
+                "items": []
+              }
+            ]
+        """.trimIndent()
+
+        val result = parseWebTicketsPayload(payload)
+
+        assertTrue(result.isEmpty())
+    }
+
+    @Test
     fun `ticket merge keeps imported version for matching ids`() {
         val existing = listOf(
             TicketRecord(id = "A", total = 10.0, createdAtEpochMs = 100L),
@@ -65,6 +86,37 @@ class NativeOperationalHydrationTest {
 
         assertEquals(listOf("C", "B", "A"), merged.map { it.id })
         assertEquals(99.0, merged.first { it.id == "B" }.total, 0.0)
+    }
+
+    @Test
+    fun `ticket merge replaces stale local copy when remote winner has same serial and different id`() {
+        val existing = listOf(
+            TicketRecord(
+                id = "native-1780487188705",
+                serial = "LN-D79F72-43362F",
+                status = "active",
+                total = 149.0,
+                totalPrize = 0.0,
+                createdAtEpochMs = 200L,
+            ),
+        )
+        val imported = listOf(
+            TicketRecord(
+                id = "eb702835-0ae5-4d4f-9a88-af718fef5dee",
+                serial = "LN-D79F72-43362F",
+                status = "winner",
+                total = 149.0,
+                totalPrize = 76.0,
+                createdAtEpochMs = 200L,
+            ),
+        )
+
+        val merged = mergeTicketsPreferImported(existing, imported)
+
+        assertEquals(1, merged.size)
+        assertEquals("eb702835-0ae5-4d4f-9a88-af718fef5dee", merged.single().id)
+        assertEquals("winner", merged.single().status)
+        assertEquals(76.0, merged.single().totalPrize, 0.0)
     }
 
     @Test
@@ -201,7 +253,13 @@ class NativeOperationalHydrationTest {
 
     @Test
     fun `remote ticket payload keeps deleted ids outside visible tickets`() {
-        val visible = TicketRecord(id = "ACTIVE-1", status = "active", total = 25.0, createdAtEpochMs = 300L)
+        val visible = TicketRecord(
+            id = "ACTIVE-1",
+            status = "active",
+            total = 25.0,
+            createdAtEpochMs = 300L,
+            plays = listOf(PlayItem(number = "12", playType = "Q", amount = 25.0)),
+        )
         val payload = buildWebTicketRemotePayload(
             tickets = listOf(visible),
             deletedIds = setOf("DELETED-1"),

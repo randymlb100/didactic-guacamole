@@ -1,0 +1,69 @@
+{
+  "nodes": [
+    {
+      "id": "file:app/src/main/res/xml/backup_rules.xml",
+      "type": "config",
+      "name": "backup_rules.xml",
+      "summary": "Configuration file for backup_rules.xml.",
+      "tags": [
+        "config",
+        "configuration"
+      ],
+      "complexity": "simple",
+      "filePath": "app/src/main/res/xml/backup_rules.xml",
+      "lineRange": [
+        1,
+        8
+      ]
+    },
+    {
+      "id": "file:app/src/main/res/xml/data_extraction_rules.xml",
+      "type": "config",
+      "name": "data_extraction_rules.xml",
+      "summary": "Configuration file for data_extraction_rules.xml.",
+      "tags": [
+        "config",
+        "configuration"
+      ],
+      "complexity": "simple",
+      "filePath": "app/src/main/res/xml/data_extraction_rules.xml",
+      "lineRange": [
+        1,
+        18
+      ]
+    },
+    {
+      "id": "file:app/src/main/res/xml/file_paths.xml",
+      "type": "config",
+      "name": "file_paths.xml",
+      "summary": "Configuration file for file_paths.xml.",
+      "tags": [
+        "config",
+        "configuration"
+      ],
+      "complexity": "simple",
+      "filePath": "app/src/main/res/xml/file_paths.xml",
+      "lineRange": [
+        1,
+        15
+      ]
+    },
+    {
+      "id": "file:app/src/main/res/xml/network_security_config.xml",
+      "type": "config",
+      "name": "network_security_config.xml",
+      "summary": "Configuration file for network_security_config.xml.",
+      "tags": [
+        "config",
+        "configuration"
+      ],
+      "complexity": "simple",
+      "filePath": "app/src/main/res/xml/network_security_config.xml",
+      "lineRange": [
+        1,
+        13
+      ]
+    }
+  ],
+  "edges": []
+}

@@ -126,6 +126,7 @@ import com.lotterynet.pro.core.notification.LotteryClosingNotifier
 import com.lotterynet.pro.core.notification.WinningTicketNotifier
 import com.lotterynet.pro.core.notification.buildLotteryClosingAlerts
 import com.lotterynet.pro.core.perf.PosPerformanceBudget
+import com.lotterynet.pro.core.delivery.TicketDeliveryPolicy
 import com.lotterynet.pro.core.render.LocalRenderCacheRepository
 import com.lotterynet.pro.core.render.ticketRenderCacheKey
 import com.lotterynet.pro.core.realtime.LotterynetRealtimeClient
@@ -2422,7 +2423,12 @@ private fun SalesRoute(
         val envelope = exportRepository.buildTicketWhatsAppShare(ticket, bancaName)
         val title = envelope.title
         val fileName = envelope.fileName ?: "ticket-${ticket.id}.png"
-        val renderKey = ticketRenderCacheKey(ticket, bancaName = bancaName, logoUri = bancaLogoUri.orEmpty())
+        val securityCode = TicketSecurity.resolveSecurityCode(ticket, bancaName)
+        val estimatedHeight = NativeBitmapExport.estimateOfficialTicketBitmapHeight(ticket, securityCode)
+        val usePreviewBitmap = TicketDeliveryPolicy.shouldRenderPreviewBitmap(ticket, estimatedHeight)
+        val renderKey = ticketRenderCacheKey(ticket, bancaName = bancaName, logoUri = bancaLogoUri.orEmpty()).let {
+            if (usePreviewBitmap) it else "$it|compact-thermal-share"
+        }
         val cachedUri = renderCache.getUriIfPresent(renderKey)
         if (cachedUri != null) {
             validationMessage = NativeBitmapExport.shareImageUris(
@@ -2433,16 +2439,27 @@ private fun SalesRoute(
             ).message
             printPreviewTicket = null
         } else {
-            validationMessage = "Preparando imagen del ticket..."
+            validationMessage = if (usePreviewBitmap) {
+                "Preparando imagen del ticket..."
+            } else {
+                "Ticket grande: preparando plantilla compacta para WhatsApp..."
+            }
             thread(name = "native-ticket-share-render") {
                 val bitmap = runCatching {
-                    NativeBitmapExport.renderOfficialTicketBitmap(
-                        context = localContext,
-                        ticket = ticket,
-                        bancaName = bancaName,
-                        securityCode = TicketSecurity.resolveSecurityCode(ticket, bancaName),
-                        bancaLogoUri = bancaLogoUri,
-                    )
+                    if (usePreviewBitmap) {
+                        NativeBitmapExport.renderOfficialTicketBitmap(
+                            context = localContext,
+                            ticket = ticket,
+                            bancaName = bancaName,
+                            securityCode = securityCode,
+                            bancaLogoUri = bancaLogoUri,
+                        )
+                    } else {
+                        ThermalTicketRenderer().renderCompactShareBitmap(
+                            ticket = ticket,
+                            bancaName = bancaName,
+                        )
+                    }
                 }.getOrNull()
                 if (bitmap == null) {
                     (localContext as? android.app.Activity)?.runOnUiThread {

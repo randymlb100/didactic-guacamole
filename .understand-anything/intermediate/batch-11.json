@@ -1,0 +1,1075 @@
+{
+  "nodes": [
+    {
+      "id": "file:app.py",
+      "type": "file",
+      "name": "app.py",
+      "summary": "Source file app.py containing 80 function(s).",
+      "tags": [
+        "code",
+        "large-module"
+      ],
+      "complexity": "complex",
+      "filePath": "app.py",
+      "lineRange": [
+        1,
+        1409
+      ]
+    },
+    {
+      "id": "function:app.py:json_utf8",
+      "type": "function",
+      "name": "json_utf8",
+      "summary": "Function json_utf8 in app.py.",
+      "tags": [
+        "function",
+        "python"
+      ],
+      "complexity": "moderate",
+      "filePath": "app.py",
+      "lineRange": [
+        55,
+        64
+      ]
+    },
+    {
+      "id": "function:app.py:normalize_result_row",
+      "type": "function",
+      "name": "normalize_result_row",
+      "summary": "Function normalize_result_row in app.py.",
+      "tags": [
+        "function",
+        "python"
+      ],
+      "complexity": "moderate",
+      "filePath": "app.py",
+      "lineRange": [
+        67,
+        93
+      ]
+    },
+    {
+      "id": "function:app.py:normalize_pick_row",
+      "type": "function",
+      "name": "normalize_pick_row",
+      "summary": "Function normalize_pick_row in app.py.",
+      "tags": [
+        "function",
+        "python"
+      ],
+      "complexity": "moderate",
+      "filePath": "app.py",
+      "lineRange": [
+        96,
+        106
+      ]
+    },
+    {
+      "id": "function:app.py:unique_sorted_results",
+      "type": "function",
+      "name": "unique_sorted_results",
+      "summary": "Function unique_sorted_results in app.py.",
+      "tags": [
+        "function",
+        "python"
+      ],
+      "complexity": "moderate",
+      "filePath": "app.py",
+      "lineRange": [
+        109,
+        116
+      ]
+    },
+    {
+      "id": "function:app.py:unique_sorted_pick_results",
+      "type": "function",
+      "name": "unique_sorted_pick_results",
+      "summary": "Function unique_sorted_pick_results in app.py.",
+      "tags": [
+        "function",
+        "python"
+      ],
+      "complexity": "moderate",
+      "filePath": "app.py",
+      "lineRange": [
+        119,
+        125
+      ]
+    },
+    {
+      "id": "function:app.py:is_pick_result_row",
+      "type": "function",
+      "name": "is_pick_result_row",
+      "summary": "Function is_pick_result_row in app.py.",
+      "tags": [
+        "function",
+        "python"
+      ],
+      "complexity": "moderate",
+      "filePath": "app.py",
+      "lineRange": [
+        128,
+        140
+      ]
+    },
+    {
+      "id": "function:app.py:utc_now_iso",
+      "type": "function",
+      "name": "utc_now_iso",
+      "summary": "Function utc_now_iso in app.py.",
+      "tags": [
+        "function",
+        "python"
+      ],
+      "complexity": "moderate",
+      "filePath": "app.py",
+      "lineRange": [
+        143,
+        144
+      ]
+    },
+    {
+      "id": "function:app.py:fetch_supabase_results_cache",
+      "type": "function",
+      "name": "fetch_supabase_results_cache",
+      "summary": "Function fetch_supabase_results_cache in app.py.",
+      "tags": [
+        "function",
+        "python"
+      ],
+      "complexity": "moderate",
+      "filePath": "app.py",
+      "lineRange": [
+        147,
+        169
+      ]
+    },
+    {
+      "id": "function:app.py:fetch_supabase_results_cache_cached",
+      "type": "function",
+      "name": "fetch_supabase_results_cache_cached",
+      "summary": "Function fetch_supabase_results_cache_cached in app.py.",
+      "tags": [
+        "function",
+        "python"
+      ],
+      "complexity": "moderate",
+      "filePath": "app.py",
+      "lineRange": [
+        172,
+        181
+      ]
+    },
+    {
+      "id": "function:app.py:cache_results_snapshot",
+      "type": "function",
+      "name": "cache_results_snapshot",
+      "summary": "Function cache_results_snapshot in app.py.",
+      "tags": [
+        "function",
+        "python"
+      ],
+      "complexity": "moderate",
+      "filePath": "app.py",
+      "lineRange": [
+        184,
+        185
+      ]
+    },
+    {
+      "id": "function:app.py:invalidate_results_cache_key",
+      "type": "function",
+      "name": "invalidate_results_cache_key",
+      "summary": "Function invalidate_results_cache_key in app.py.",
+      "tags": [
+        "function",
+        "python"
+      ],
+      "complexity": "moderate",
+      "filePath": "app.py",
+      "lineRange": [
+        188,
+        205
+      ]
+    },
+    {
+      "id": "function:app.py:is_internal_secret_valid",
+      "type": "function",
+      "name": "is_internal_secret_valid",
+      "summary": "Function is_internal_secret_valid in app.py.",
+      "tags": [
+        "function",
+        "python"
+      ],
+      "complexity": "moderate",
+      "filePath": "app.py",
+      "lineRange": [
+        208,
+        212
+      ]
+    },
+    {
+      "id": "function:app.py:is_public_cache_invalidation_key",
+      "type": "function",
+      "name": "is_public_cache_invalidation_key",
+      "summary": "Function is_public_cache_invalidation_key in app.py.",
+      "tags": [
+        "function",
+        "python"
+      ],
+      "complexity": "moderate",
+      "filePath": "app.py",
+      "lineRange": [
+        215,
+        216
+      ]
+    },
+    {
+      "id": "function:app.py:load_cached_sections",
+      "type": "function",
+      "name": "load_cached_sections",
+      "summary": "Function load_cached_sections in app.py.",
+      "tags": [
+        "function",
+        "python"
+      ],
+      "complexity": "moderate",
+      "filePath": "app.py",
+      "lineRange": [
+        219,
+        224
+      ]
+    },
+    {
+      "id": "function:app.py:load_pick_only_cached",
+      "type": "function",
+      "name": "load_pick_only_cached",
+      "summary": "Function load_pick_only_cached in app.py.",
+      "tags": [
+        "function",
+        "python"
+      ],
+      "complexity": "moderate",
+      "filePath": "app.py",
+      "lineRange": [
+        227,
+        233
+      ]
+    },
+    {
+      "id": "function:app.py:load_lottery_only_cached",
+      "type": "function",
+      "name": "load_lottery_only_cached",
+      "summary": "Function load_lottery_only_cached in app.py.",
+      "tags": [
+        "function",
+        "python"
+      ],
+      "complexity": "moderate",
+      "filePath": "app.py",
+      "lineRange": [
+        236,
+        239
+      ]
+    },
+    {
+      "id": "function:app.py:split_lottery_and_pick_rows",
+      "type": "function",
+      "name": "split_lottery_and_pick_rows",
+      "summary": "Function split_lottery_and_pick_rows in app.py.",
+      "tags": [
+        "function",
+        "python"
+      ],
+      "complexity": "moderate",
+      "filePath": "app.py",
+      "lineRange": [
+        242,
+        250
+      ]
+    },
+    {
+      "id": "function:app.py:should_use_live_scrape",
+      "type": "function",
+      "name": "should_use_live_scrape",
+      "summary": "Function should_use_live_scrape in app.py.",
+      "tags": [
+        "function",
+        "python"
+      ],
+      "complexity": "moderate",
+      "filePath": "app.py",
+      "lineRange": [
+        253,
+        254
+      ]
+    },
+    {
+      "id": "file:scraper/render_app_test.py",
+      "type": "file",
+      "name": "render_app_test.py",
+      "summary": "Source file scraper/render_app_test.py containing 1 class(es) and 1 function(s).",
+      "tags": [
+        "code"
+      ],
+      "complexity": "complex",
+      "filePath": "scraper/render_app_test.py",
+      "lineRange": [
+        1,
+        452
+      ]
+    },
+    {
+      "id": "function:scraper/render_app_test.py:fake_results",
+      "type": "function",
+      "name": "fake_results",
+      "summary": "Function fake_results in render_app_test.py.",
+      "tags": [
+        "function",
+        "python"
+      ],
+      "complexity": "moderate",
+      "filePath": "scraper/render_app_test.py",
+      "lineRange": [
+        9,
+        25
+      ]
+    },
+    {
+      "id": "class:scraper/render_app_test.py:RenderAppContractsTest",
+      "type": "class",
+      "name": "RenderAppContractsTest",
+      "summary": "Class RenderAppContractsTest in render_app_test.py.",
+      "tags": [
+        "class",
+        "python"
+      ],
+      "complexity": "moderate",
+      "filePath": "scraper/render_app_test.py",
+      "lineRange": [
+        28,
+        448
+      ]
+    },
+    {
+      "id": "file:scraper/scrape_and_save.py",
+      "type": "file",
+      "name": "scrape_and_save.py",
+      "summary": "Source file scraper/scrape_and_save.py containing 96 function(s).",
+      "tags": [
+        "code",
+        "large-module"
+      ],
+      "complexity": "complex",
+      "filePath": "scraper/scrape_and_save.py",
+      "lineRange": [
+        1,
+        2030
+      ]
+    },
+    {
+      "id": "function:scraper/scrape_and_save.py:get_http_client",
+      "type": "function",
+      "name": "get_http_client",
+      "summary": "Function get_http_client in scrape_and_save.py.",
+      "tags": [
+        "function",
+        "python"
+      ],
+      "complexity": "moderate",
+      "filePath": "scraper/scrape_and_save.py",
+      "lineRange": [
+        202,
+        211
+      ]
+    },
+    {
+      "id": "function:scraper/scrape_and_save.py:close_http_client",
+      "type": "function",
+      "name": "close_http_client",
+      "summary": "Function close_http_client in scrape_and_save.py.",
+      "tags": [
+        "function",
+        "python"
+      ],
+      "complexity": "moderate",
+      "filePath": "scraper/scrape_and_save.py",
+      "lineRange": [
+        214,
+        218
+      ]
+    },
+    {
+      "id": "function:scraper/scrape_and_save.py:async_http_get",
+      "type": "function",
+      "name": "async_http_get",
+      "summary": "Function async_http_get in scrape_and_save.py.",
+      "tags": [
+        "function",
+        "python"
+      ],
+      "complexity": "moderate",
+      "filePath": "scraper/scrape_and_save.py",
+      "lineRange": [
+        221,
+        247
+      ]
+    },
+    {
+      "id": "function:scraper/scrape_and_save.py:async_http_post",
+      "type": "function",
+      "name": "async_http_post",
+      "summary": "Function async_http_post in scrape_and_save.py.",
+      "tags": [
+        "function",
+        "python"
+      ],
+      "complexity": "moderate",
+      "filePath": "scraper/scrape_and_save.py",
+      "lineRange": [
+        250,
+        276
+      ]
+    },
+    {
+      "id": "function:scraper/scrape_and_save.py:is_pick_result_row",
+      "type": "function",
+      "name": "is_pick_result_row",
+      "summary": "Function is_pick_result_row in scrape_and_save.py.",
+      "tags": [
+        "function",
+        "python"
+      ],
+      "complexity": "moderate",
+      "filePath": "scraper/scrape_and_save.py",
+      "lineRange": [
+        279,
+        291
+      ]
+    },
+    {
+      "id": "function:scraper/scrape_and_save.py:split_lottery_and_pick_rows",
+      "type": "function",
+      "name": "split_lottery_and_pick_rows",
+      "summary": "Function split_lottery_and_pick_rows in scrape_and_save.py.",
+      "tags": [
+        "function",
+        "python"
+      ],
+      "complexity": "moderate",
+      "filePath": "scraper/scrape_and_save.py",
+      "lineRange": [
+        294,
+        302
+      ]
+    },
+    {
+      "id": "function:scraper/scrape_and_save.py:sync_run",
+      "type": "function",
+      "name": "sync_run",
+      "summary": "Function sync_run in scrape_and_save.py.",
+      "tags": [
+        "function",
+        "python"
+      ],
+      "complexity": "moderate",
+      "filePath": "scraper/scrape_and_save.py",
+      "lineRange": [
+        305,
+        316
+      ]
+    },
+    {
+      "id": "function:scraper/scrape_and_save.py:_renew_http_client",
+      "type": "function",
+      "name": "_renew_http_client",
+      "summary": "Function _renew_http_client in scrape_and_save.py.",
+      "tags": [
+        "function",
+        "python"
+      ],
+      "complexity": "moderate",
+      "filePath": "scraper/scrape_and_save.py",
+      "lineRange": [
+        319,
+        335
+      ]
+    },
+    {
+      "id": "function:scraper/scrape_and_save.py:_run_with_fresh_client",
+      "type": "function",
+      "name": "_run_with_fresh_client",
+      "summary": "Function _run_with_fresh_client in scrape_and_save.py.",
+      "tags": [
+        "function",
+        "python"
+      ],
+      "complexity": "moderate",
+      "filePath": "scraper/scrape_and_save.py",
+      "lineRange": [
+        338,
+        340
+      ]
+    },
+    {
+      "id": "function:scraper/scrape_and_save.py:should_fail_without_supabase_key",
+      "type": "function",
+      "name": "should_fail_without_supabase_key",
+      "summary": "Function should_fail_without_supabase_key in scrape_and_save.py.",
+      "tags": [
+        "function",
+        "python"
+      ],
+      "complexity": "moderate",
+      "filePath": "scraper/scrape_and_save.py",
+      "lineRange": [
+        343,
+        346
+      ]
+    },
+    {
+      "id": "function:scraper/scrape_and_save.py:get_dr_now",
+      "type": "function",
+      "name": "get_dr_now",
+      "summary": "Function get_dr_now in scrape_and_save.py.",
+      "tags": [
+        "function",
+        "python"
+      ],
+      "complexity": "moderate",
+      "filePath": "scraper/scrape_and_save.py",
+      "lineRange": [
+        348,
+        350
+      ]
+    },
+    {
+      "id": "function:scraper/scrape_and_save.py:get_et_date_str",
+      "type": "function",
+      "name": "get_et_date_str",
+      "summary": "Function get_et_date_str in scrape_and_save.py.",
+      "tags": [
+        "function",
+        "python"
+      ],
+      "complexity": "moderate",
+      "filePath": "scraper/scrape_and_save.py",
+      "lineRange": [
+        352,
+        354
+      ]
+    },
+    {
+      "id": "function:scraper/scrape_and_save.py:get_dr_date_str",
+      "type": "function",
+      "name": "get_dr_date_str",
+      "summary": "Function get_dr_date_str in scrape_and_save.py.",
+      "tags": [
+        "function",
+        "python"
+      ],
+      "complexity": "moderate",
+      "filePath": "scraper/scrape_and_save.py",
+      "lineRange": [
+        356,
+        358
+      ]
+    },
+    {
+      "id": "function:scraper/scrape_and_save.py:get_dr_date_str_for_offset",
+      "type": "function",
+      "name": "get_dr_date_str_for_offset",
+      "summary": "Function get_dr_date_str_for_offset in scrape_and_save.py.",
+      "tags": [
+        "function",
+        "python"
+      ],
+      "complexity": "moderate",
+      "filePath": "scraper/scrape_and_save.py",
+      "lineRange": [
+        360,
+        362
+      ]
+    },
+    {
+      "id": "function:scraper/scrape_and_save.py:parse_miloteria_date",
+      "type": "function",
+      "name": "parse_miloteria_date",
+      "summary": "Function parse_miloteria_date in scrape_and_save.py.",
+      "tags": [
+        "function",
+        "python"
+      ],
+      "complexity": "moderate",
+      "filePath": "scraper/scrape_and_save.py",
+      "lineRange": [
+        365,
+        376
+      ]
+    },
+    {
+      "id": "function:scraper/scrape_and_save.py:parse_lotteryusa_date",
+      "type": "function",
+      "name": "parse_lotteryusa_date",
+      "summary": "Function parse_lotteryusa_date in scrape_and_save.py.",
+      "tags": [
+        "function",
+        "python"
+      ],
+      "complexity": "moderate",
+      "filePath": "scraper/scrape_and_save.py",
+      "lineRange": [
+        378,
+        386
+      ]
+    },
+    {
+      "id": "function:scraper/scrape_and_save.py:slug_token",
+      "type": "function",
+      "name": "slug_token",
+      "summary": "Function slug_token in scrape_and_save.py.",
+      "tags": [
+        "function",
+        "python"
+      ],
+      "complexity": "moderate",
+      "filePath": "scraper/scrape_and_save.py",
+      "lineRange": [
+        389,
+        392
+      ]
+    },
+    {
+      "id": "function:scraper/scrape_and_save.py:normalize_us_pick_game",
+      "type": "function",
+      "name": "normalize_us_pick_game",
+      "summary": "Function normalize_us_pick_game in scrape_and_save.py.",
+      "tags": [
+        "function",
+        "python"
+      ],
+      "complexity": "moderate",
+      "filePath": "scraper/scrape_and_save.py",
+      "lineRange": [
+        395,
+        401
+      ]
+    },
+    {
+      "id": "file:scraper/scrape_and_save_test.py",
+      "type": "file",
+      "name": "scrape_and_save_test.py",
+      "summary": "Source file scraper/scrape_and_save_test.py containing 1 class(es).",
+      "tags": [
+        "code"
+      ],
+      "complexity": "complex",
+      "filePath": "scraper/scrape_and_save_test.py",
+      "lineRange": [
+        1,
+        801
+      ]
+    },
+    {
+      "id": "class:scraper/scrape_and_save_test.py:ScraperContractsTest",
+      "type": "class",
+      "name": "ScraperContractsTest",
+      "summary": "Class ScraperContractsTest in scrape_and_save_test.py.",
+      "tags": [
+        "class",
+        "python"
+      ],
+      "complexity": "moderate",
+      "filePath": "scraper/scrape_and_save_test.py",
+      "lineRange": [
+        9,
+        797
+      ]
+    },
+    {
+      "id": "file:tests_app_contracts.py",
+      "type": "file",
+      "name": "tests_app_contracts.py",
+      "summary": "Source file tests_app_contracts.py containing 1 class(es).",
+      "tags": [
+        "code"
+      ],
+      "complexity": "simple",
+      "filePath": "tests_app_contracts.py",
+      "lineRange": [
+        1,
+        50
+      ]
+    },
+    {
+      "id": "class:tests_app_contracts.py:AppContractsTest",
+      "type": "class",
+      "name": "AppContractsTest",
+      "summary": "Class AppContractsTest in tests_app_contracts.py.",
+      "tags": [
+        "class",
+        "python"
+      ],
+      "complexity": "moderate",
+      "filePath": "tests_app_contracts.py",
+      "lineRange": [
+        7,
+        46
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "source": "file:app.py",
+      "target": "function:app.py:json_utf8",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "app.py contains json_utf8"
+    },
+    {
+      "source": "file:app.py",
+      "target": "function:app.py:normalize_result_row",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "app.py contains normalize_result_row"
+    },
+    {
+      "source": "file:app.py",
+      "target": "function:app.py:normalize_pick_row",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "app.py contains normalize_pick_row"
+    },
+    {
+      "source": "file:app.py",
+      "target": "function:app.py:unique_sorted_results",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "app.py contains unique_sorted_results"
+    },
+    {
+      "source": "file:app.py",
+      "target": "function:app.py:unique_sorted_pick_results",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "app.py contains unique_sorted_pick_results"
+    },
+    {
+      "source": "file:app.py",
+      "target": "function:app.py:is_pick_result_row",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "app.py contains is_pick_result_row"
+    },
+    {
+      "source": "file:app.py",
+      "target": "function:app.py:utc_now_iso",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "app.py contains utc_now_iso"
+    },
+    {
+      "source": "file:app.py",
+      "target": "function:app.py:fetch_supabase_results_cache",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "app.py contains fetch_supabase_results_cache"
+    },
+    {
+      "source": "file:app.py",
+      "target": "function:app.py:fetch_supabase_results_cache_cached",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "app.py contains fetch_supabase_results_cache_cached"
+    },
+    {
+      "source": "file:app.py",
+      "target": "function:app.py:cache_results_snapshot",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "app.py contains cache_results_snapshot"
+    },
+    {
+      "source": "file:app.py",
+      "target": "function:app.py:invalidate_results_cache_key",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "app.py contains invalidate_results_cache_key"
+    },
+    {
+      "source": "file:app.py",
+      "target": "function:app.py:is_internal_secret_valid",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "app.py contains is_internal_secret_valid"
+    },
+    {
+      "source": "file:app.py",
+      "target": "function:app.py:is_public_cache_invalidation_key",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "app.py contains is_public_cache_invalidation_key"
+    },
+    {
+      "source": "file:app.py",
+      "target": "function:app.py:load_cached_sections",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "app.py contains load_cached_sections"
+    },
+    {
+      "source": "file:app.py",
+      "target": "function:app.py:load_pick_only_cached",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "app.py contains load_pick_only_cached"
+    },
+    {
+      "source": "file:app.py",
+      "target": "function:app.py:load_lottery_only_cached",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "app.py contains load_lottery_only_cached"
+    },
+    {
+      "source": "file:app.py",
+      "target": "function:app.py:split_lottery_and_pick_rows",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "app.py contains split_lottery_and_pick_rows"
+    },
+    {
+      "source": "file:app.py",
+      "target": "function:app.py:should_use_live_scrape",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "app.py contains should_use_live_scrape"
+    },
+    {
+      "source": "file:app.py",
+      "target": "file:scraper/scrape_and_save.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7,
+      "description": "app.py imports scraper/scrape_and_save.py"
+    },
+    {
+      "source": "file:scraper/render_app_test.py",
+      "target": "function:scraper/render_app_test.py:fake_results",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "render_app_test.py contains fake_results"
+    },
+    {
+      "source": "file:scraper/render_app_test.py",
+      "target": "class:scraper/render_app_test.py:RenderAppContractsTest",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "render_app_test.py contains RenderAppContractsTest"
+    },
+    {
+      "source": "file:scraper/render_app_test.py",
+      "target": "file:app.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7,
+      "description": "scraper/render_app_test.py imports app.py"
+    },
+    {
+      "source": "file:scraper/scrape_and_save.py",
+      "target": "function:scraper/scrape_and_save.py:get_http_client",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "scrape_and_save.py contains get_http_client"
+    },
+    {
+      "source": "file:scraper/scrape_and_save.py",
+      "target": "function:scraper/scrape_and_save.py:close_http_client",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "scrape_and_save.py contains close_http_client"
+    },
+    {
+      "source": "file:scraper/scrape_and_save.py",
+      "target": "function:scraper/scrape_and_save.py:async_http_get",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "scrape_and_save.py contains async_http_get"
+    },
+    {
+      "source": "file:scraper/scrape_and_save.py",
+      "target": "function:scraper/scrape_and_save.py:async_http_post",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "scrape_and_save.py contains async_http_post"
+    },
+    {
+      "source": "file:scraper/scrape_and_save.py",
+      "target": "function:scraper/scrape_and_save.py:is_pick_result_row",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "scrape_and_save.py contains is_pick_result_row"
+    },
+    {
+      "source": "file:scraper/scrape_and_save.py",
+      "target": "function:scraper/scrape_and_save.py:split_lottery_and_pick_rows",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "scrape_and_save.py contains split_lottery_and_pick_rows"
+    },
+    {
+      "source": "file:scraper/scrape_and_save.py",
+      "target": "function:scraper/scrape_and_save.py:sync_run",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "scrape_and_save.py contains sync_run"
+    },
+    {
+      "source": "file:scraper/scrape_and_save.py",
+      "target": "function:scraper/scrape_and_save.py:_renew_http_client",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "scrape_and_save.py contains _renew_http_client"
+    },
+    {
+      "source": "file:scraper/scrape_and_save.py",
+      "target": "function:scraper/scrape_and_save.py:_run_with_fresh_client",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "scrape_and_save.py contains _run_with_fresh_client"
+    },
+    {
+      "source": "file:scraper/scrape_and_save.py",
+      "target": "function:scraper/scrape_and_save.py:should_fail_without_supabase_key",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "scrape_and_save.py contains should_fail_without_supabase_key"
+    },
+    {
+      "source": "file:scraper/scrape_and_save.py",
+      "target": "function:scraper/scrape_and_save.py:get_dr_now",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "scrape_and_save.py contains get_dr_now"
+    },
+    {
+      "source": "file:scraper/scrape_and_save.py",
+      "target": "function:scraper/scrape_and_save.py:get_et_date_str",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "scrape_and_save.py contains get_et_date_str"
+    },
+    {
+      "source": "file:scraper/scrape_and_save.py",
+      "target": "function:scraper/scrape_and_save.py:get_dr_date_str",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "scrape_and_save.py contains get_dr_date_str"
+    },
+    {
+      "source": "file:scraper/scrape_and_save.py",
+      "target": "function:scraper/scrape_and_save.py:get_dr_date_str_for_offset",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "scrape_and_save.py contains get_dr_date_str_for_offset"
+    },
+    {
+      "source": "file:scraper/scrape_and_save.py",
+      "target": "function:scraper/scrape_and_save.py:parse_miloteria_date",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "scrape_and_save.py contains parse_miloteria_date"
+    },
+    {
+      "source": "file:scraper/scrape_and_save.py",
+      "target": "function:scraper/scrape_and_save.py:parse_lotteryusa_date",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "scrape_and_save.py contains parse_lotteryusa_date"
+    },
+    {
+      "source": "file:scraper/scrape_and_save.py",
+      "target": "function:scraper/scrape_and_save.py:slug_token",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "scrape_and_save.py contains slug_token"
+    },
+    {
+      "source": "file:scraper/scrape_and_save.py",
+      "target": "function:scraper/scrape_and_save.py:normalize_us_pick_game",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "scrape_and_save.py contains normalize_us_pick_game"
+    },
+    {
+      "source": "file:scraper/scrape_and_save_test.py",
+      "target": "class:scraper/scrape_and_save_test.py:ScraperContractsTest",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "scrape_and_save_test.py contains ScraperContractsTest"
+    },
+    {
+      "source": "file:scraper/scrape_and_save_test.py",
+      "target": "file:scraper/scrape_and_save.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7,
+      "description": "scraper/scrape_and_save_test.py imports scraper/scrape_and_save.py"
+    },
+    {
+      "source": "file:tests_app_contracts.py",
+      "target": "class:tests_app_contracts.py:AppContractsTest",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "tests_app_contracts.py contains AppContractsTest"
+    },
+    {
+      "source": "file:tests_app_contracts.py",
+      "target": "file:app.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7,
+      "description": "tests_app_contracts.py imports app.py"
+    }
+  ]
+}

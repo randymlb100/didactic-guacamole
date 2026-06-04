@@ -1,0 +1,182 @@
+{
+  "projectRoot": "C:\\Users\\Randy Cordero\\Desktop\\lotterynet_android",
+  "batchFiles": [
+    {
+      "path": "app/src/main/res/values/strings.xml",
+      "language": "xml",
+      "sizeLines": 19,
+      "fileCategory": "config"
+    },
+    {
+      "path": "app/src/main/res/values/themes.xml",
+      "language": "xml",
+      "sizeLines": 27,
+      "fileCategory": "config"
+    },
+    {
+      "path": "app/src/test/java/com/lotterynet/pro/core/calendar/LotteryTimeZonesTest.kt",
+      "language": "kotlin",
+      "sizeLines": 34,
+      "fileCategory": "code"
+    },
+    {
+      "path": "app/src/test/java/com/lotterynet/pro/core/catalog/LotteryAssetResolverTest.kt",
+      "language": "kotlin",
+      "sizeLines": 71,
+      "fileCategory": "code"
+    },
+    {
+      "path": "app/src/test/java/com/lotterynet/pro/core/catalog/LotteryLogoBitmapLoaderTest.kt",
+      "language": "kotlin",
+      "sizeLines": 92,
+      "fileCategory": "code"
+    },
+    {
+      "path": "app/src/test/java/com/lotterynet/pro/core/catalog/StaticLotteryCatalogRepositoryTest.kt",
+      "language": "kotlin",
+      "sizeLines": 241,
+      "fileCategory": "code"
+    },
+    {
+      "path": "app/src/test/java/com/lotterynet/pro/core/delivery/TicketDeliveryPolicyTest.kt",
+      "language": "kotlin",
+      "sizeLines": 52,
+      "fileCategory": "code"
+    },
+    {
+      "path": "app/src/test/java/com/lotterynet/pro/core/export/OfficialTicketShareContractsTest.kt",
+      "language": "kotlin",
+      "sizeLines": 350,
+      "fileCategory": "code"
+    },
+    {
+      "path": "app/src/test/java/com/lotterynet/pro/core/export/ResultsShareLayoutContractsTest.kt",
+      "language": "kotlin",
+      "sizeLines": 335,
+      "fileCategory": "code"
+    },
+    {
+      "path": "app/src/test/java/com/lotterynet/pro/core/export/ShareIntentContractsTest.kt",
+      "language": "kotlin",
+      "sizeLines": 16,
+      "fileCategory": "code"
+    },
+    {
+      "path": "app/src/test/java/com/lotterynet/pro/core/finance/FinanceCachePolicyContractsTest.kt",
+      "language": "kotlin",
+      "sizeLines": 54,
+      "fileCategory": "code"
+    },
+    {
+      "path": "app/src/test/java/com/lotterynet/pro/core/format/MoneyFormatterTest.kt",
+      "language": "kotlin",
+      "sizeLines": 29,
+      "fileCategory": "code"
+    },
+    {
+      "path": "app/src/test/java/com/lotterynet/pro/core/model/OperationalFeedbackContractsTest.kt",
+      "language": "kotlin",
+      "sizeLines": 26,
+      "fileCategory": "code"
+    },
+    {
+      "path": "app/src/test/java/com/lotterynet/pro/core/network/ProductionNetworkGuardTest.kt",
+      "language": "kotlin",
+      "sizeLines": 23,
+      "fileCategory": "code"
+    },
+    {
+      "path": "app/src/test/java/com/lotterynet/pro/core/notification/LotteryClosingNotifierContractsTest.kt",
+      "language": "kotlin",
+      "sizeLines": 71,
+      "fileCategory": "code"
+    },
+    {
+      "path": "app/src/test/java/com/lotterynet/pro/core/perf/PosPerformanceBudgetTest.kt",
+      "language": "kotlin",
+      "sizeLines": 26,
+      "fileCategory": "code"
+    },
+    {
+      "path": "app/src/test/java/com/lotterynet/pro/core/printing/ThermalTicketRendererTest.kt",
+      "language": "kotlin",
+      "sizeLines": 695,
+      "fileCategory": "code"
+    },
+    {
+      "path": "app/src/test/java/com/lotterynet/pro/core/realtime/LotterynetRealtimeOrchestratorTest.kt",
+      "language": "kotlin",
+      "sizeLines": 71,
+      "fileCategory": "code"
+    },
+    {
+      "path": "app/src/test/java/com/lotterynet/pro/core/realtime/LotterynetRealtimeSubscriptionTest.kt",
+      "language": "kotlin",
+      "sizeLines": 36,
+      "fileCategory": "code"
+    },
+    {
+      "path": "app/src/test/java/com/lotterynet/pro/core/recharge/recargasrapidas/RecargasRapidasContractsTest.kt",
+      "language": "kotlin",
+      "sizeLines": 198,
+      "fileCategory": "code"
+    },
+    {
+      "path": "app/src/test/java/com/lotterynet/pro/core/remote/SupabaseEdgeClientTest.kt",
+      "language": "kotlin",
+      "sizeLines": 61,
+      "fileCategory": "code"
+    },
+    {
+      "path": "app/src/test/java/com/lotterynet/pro/core/render/LocalRenderCacheRepositoryContractTest.kt",
+      "language": "kotlin",
+      "sizeLines": 11,
+      "fileCategory": "code"
+    },
+    {
+      "path": "app/src/test/java/com/lotterynet/pro/core/render/RenderCacheKeysTest.kt",
+      "language": "kotlin",
+      "sizeLines": 59,
+      "fileCategory": "code"
+    },
+    {
+      "path": "app/src/test/java/com/lotterynet/pro/core/results/PrizeValidationEngineTest.kt",
+      "language": "kotlin",
+      "sizeLines": 163,
+      "fileCategory": "code"
+    },
+    {
+      "path": "app/src/test/java/com/lotterynet/pro/core/sales/SaleValidatorContractsTest.kt",
+      "language": "kotlin",
+      "sizeLines": 543,
+      "fileCategory": "code"
+    }
+  ],
+  "batchImportData": {
+    "app/src/main/res/values/strings.xml": [],
+    "app/src/main/res/values/themes.xml": [],
+    "app/src/test/java/com/lotterynet/pro/core/calendar/LotteryTimeZonesTest.kt": [],
+    "app/src/test/java/com/lotterynet/pro/core/catalog/LotteryAssetResolverTest.kt": [],
+    "app/src/test/java/com/lotterynet/pro/core/catalog/LotteryLogoBitmapLoaderTest.kt": [],
+    "app/src/test/java/com/lotterynet/pro/core/catalog/StaticLotteryCatalogRepositoryTest.kt": [],
+    "app/src/test/java/com/lotterynet/pro/core/delivery/TicketDeliveryPolicyTest.kt": [],
+    "app/src/test/java/com/lotterynet/pro/core/export/OfficialTicketShareContractsTest.kt": [],
+    "app/src/test/java/com/lotterynet/pro/core/export/ResultsShareLayoutContractsTest.kt": [],
+    "app/src/test/java/com/lotterynet/pro/core/export/ShareIntentContractsTest.kt": [],
+    "app/src/test/java/com/lotterynet/pro/core/finance/FinanceCachePolicyContractsTest.kt": [],
+    "app/src/test/java/com/lotterynet/pro/core/format/MoneyFormatterTest.kt": [],
+    "app/src/test/java/com/lotterynet/pro/core/model/OperationalFeedbackContractsTest.kt": [],
+    "app/src/test/java/com/lotterynet/pro/core/network/ProductionNetworkGuardTest.kt": [],
+    "app/src/test/java/com/lotterynet/pro/core/notification/LotteryClosingNotifierContractsTest.kt": [],
+    "app/src/test/java/com/lotterynet/pro/core/perf/PosPerformanceBudgetTest.kt": [],
+    "app/src/test/java/com/lotterynet/pro/core/printing/ThermalTicketRendererTest.kt": [],
+    "app/src/test/java/com/lotterynet/pro/core/realtime/LotterynetRealtimeOrchestratorTest.kt": [],
+    "app/src/test/java/com/lotterynet/pro/core/realtime/LotterynetRealtimeSubscriptionTest.kt": [],
+    "app/src/test/java/com/lotterynet/pro/core/recharge/recargasrapidas/RecargasRapidasContractsTest.kt": [],
+    "app/src/test/java/com/lotterynet/pro/core/remote/SupabaseEdgeClientTest.kt": [],
+    "app/src/test/java/com/lotterynet/pro/core/render/LocalRenderCacheRepositoryContractTest.kt": [],
+    "app/src/test/java/com/lotterynet/pro/core/render/RenderCacheKeysTest.kt": [],
+    "app/src/test/java/com/lotterynet/pro/core/results/PrizeValidationEngineTest.kt": [],
+    "app/src/test/java/com/lotterynet/pro/core/sales/SaleValidatorContractsTest.kt": []
+  }
+}

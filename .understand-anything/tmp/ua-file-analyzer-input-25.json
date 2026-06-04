@@ -1,0 +1,182 @@
+{
+  "projectRoot": "C:\\Users\\Randy Cordero\\Desktop\\lotterynet_android",
+  "batchFiles": [
+    {
+      "path": ".agents/skills/supabase-postgres-best-practices/SKILL.md",
+      "language": "markdown",
+      "sizeLines": 64,
+      "fileCategory": "docs"
+    },
+    {
+      "path": ".agents/skills/supabase/assets/feedback-issue-template.md",
+      "language": "markdown",
+      "sizeLines": 17,
+      "fileCategory": "docs"
+    },
+    {
+      "path": ".agents/skills/supabase/references/skill-feedback.md",
+      "language": "markdown",
+      "sizeLines": 17,
+      "fileCategory": "docs"
+    },
+    {
+      "path": ".agents/skills/supabase/SKILL.md",
+      "language": "markdown",
+      "sizeLines": 135,
+      "fileCategory": "docs"
+    },
+    {
+      "path": ".gitattributes",
+      "language": "unknown",
+      "sizeLines": 2,
+      "fileCategory": "code"
+    },
+    {
+      "path": ".understand-anything/.understandignore",
+      "language": "unknown",
+      "sizeLines": 41,
+      "fileCategory": "code"
+    },
+    {
+      "path": "app/build.gradle.kts",
+      "language": "kotlin",
+      "sizeLines": 144,
+      "fileCategory": "code"
+    },
+    {
+      "path": "app/proguard-rules.pro",
+      "language": "pro",
+      "sizeLines": 38,
+      "fileCategory": "code"
+    },
+    {
+      "path": "app/src/main/AndroidManifest.xml",
+      "language": "xml",
+      "sizeLines": 254,
+      "fileCategory": "config"
+    },
+    {
+      "path": "app/src/main/assets/fonts/MaterialSymbols-LICENSE.txt",
+      "language": "txt",
+      "sizeLines": 201,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "app/src/main/assets/fonts/RobotoFlex-OFL.txt",
+      "language": "txt",
+      "sizeLines": 93,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/core/export/ResultsWhatsAppShare.kt",
+      "language": "kotlin",
+      "sizeLines": 13,
+      "fileCategory": "code"
+    },
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/core/finance/FinanceModels.kt",
+      "language": "kotlin",
+      "sizeLines": 128,
+      "fileCategory": "code"
+    },
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/core/finance/FinanceRemoteRefreshPolicy.kt",
+      "language": "kotlin",
+      "sizeLines": 48,
+      "fileCategory": "code"
+    },
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/core/format/MoneyFormatter.kt",
+      "language": "kotlin",
+      "sizeLines": 24,
+      "fileCategory": "code"
+    },
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/core/master/ReloadlyConnectionTester.kt",
+      "language": "kotlin",
+      "sizeLines": 83,
+      "fileCategory": "code"
+    },
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/core/model/AlertModels.kt",
+      "language": "kotlin",
+      "sizeLines": 10,
+      "fileCategory": "code"
+    },
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/core/model/AuditModels.kt",
+      "language": "kotlin",
+      "sizeLines": 9,
+      "fileCategory": "code"
+    },
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/core/model/CalendarModels.kt",
+      "language": "kotlin",
+      "sizeLines": 31,
+      "fileCategory": "code"
+    },
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/core/model/ExportModels.kt",
+      "language": "kotlin",
+      "sizeLines": 75,
+      "fileCategory": "code"
+    },
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/core/model/LotteryCatalogModels.kt",
+      "language": "kotlin",
+      "sizeLines": 46,
+      "fileCategory": "code"
+    },
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/core/model/PlayNumberFormatting.kt",
+      "language": "kotlin",
+      "sizeLines": 23,
+      "fileCategory": "code"
+    },
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/core/model/PrintingModels.kt",
+      "language": "kotlin",
+      "sizeLines": 34,
+      "fileCategory": "code"
+    },
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/core/model/PrizeModels.kt",
+      "language": "kotlin",
+      "sizeLines": 41,
+      "fileCategory": "code"
+    },
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/core/model/RechargeModels.kt",
+      "language": "kotlin",
+      "sizeLines": 17,
+      "fileCategory": "code"
+    }
+  ],
+  "batchImportData": {
+    ".agents/skills/supabase-postgres-best-practices/SKILL.md": [],
+    ".agents/skills/supabase/assets/feedback-issue-template.md": [],
+    ".agents/skills/supabase/references/skill-feedback.md": [],
+    ".agents/skills/supabase/SKILL.md": [],
+    ".gitattributes": [],
+    ".understand-anything/.understandignore": [],
+    "app/build.gradle.kts": [],
+    "app/proguard-rules.pro": [],
+    "app/src/main/AndroidManifest.xml": [],
+    "app/src/main/assets/fonts/MaterialSymbols-LICENSE.txt": [],
+    "app/src/main/assets/fonts/RobotoFlex-OFL.txt": [],
+    "app/src/main/java/com/lotterynet/pro/core/export/ResultsWhatsAppShare.kt": [],
+    "app/src/main/java/com/lotterynet/pro/core/finance/FinanceModels.kt": [],
+    "app/src/main/java/com/lotterynet/pro/core/finance/FinanceRemoteRefreshPolicy.kt": [],
+    "app/src/main/java/com/lotterynet/pro/core/format/MoneyFormatter.kt": [],
+    "app/src/main/java/com/lotterynet/pro/core/master/ReloadlyConnectionTester.kt": [],
+    "app/src/main/java/com/lotterynet/pro/core/model/AlertModels.kt": [],
+    "app/src/main/java/com/lotterynet/pro/core/model/AuditModels.kt": [],
+    "app/src/main/java/com/lotterynet/pro/core/model/CalendarModels.kt": [],
+    "app/src/main/java/com/lotterynet/pro/core/model/ExportModels.kt": [],
+    "app/src/main/java/com/lotterynet/pro/core/model/LotteryCatalogModels.kt": [],
+    "app/src/main/java/com/lotterynet/pro/core/model/PlayNumberFormatting.kt": [],
+    "app/src/main/java/com/lotterynet/pro/core/model/PrintingModels.kt": [],
+    "app/src/main/java/com/lotterynet/pro/core/model/PrizeModels.kt": [],
+    "app/src/main/java/com/lotterynet/pro/core/model/RechargeModels.kt": []
+  }
+}

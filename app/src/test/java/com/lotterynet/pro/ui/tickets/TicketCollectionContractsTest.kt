@@ -170,6 +170,31 @@ class TicketCollectionContractsTest {
     }
 
     @Test
+    fun `ticket owner label resolves admin session alias for admin sold tickets`() {
+        val session = ActiveSession(
+            role = UserRole.ADMIN,
+            userId = "ADM-PODER",
+            username = "podero02",
+            adminId = "ADM-PODER",
+            adminUser = "podero02",
+            banca = "Poderoso",
+        )
+        val ticket = TicketRecord(
+            id = "ticket-admin",
+            sellerId = "ADM-PODER",
+            sellerUser = "podero02",
+            adminId = "ADM-PODER",
+            adminUser = "podero02",
+            role = UserRole.ADMIN,
+            plays = listOf(PlayItem(number = "22", playType = "Q", amount = 20.0)),
+            total = 20.0,
+        )
+        val directory = buildTicketDirectory(session, listOf(ticket), emptyList())
+
+        assertEquals("Poderoso", ticketOwnerLabel(ticket, directory.actorLabelsByKey))
+    }
+
+    @Test
     fun `admin owner filter includes tickets keyed by session admin id`() {
         val session = ActiveSession(
             role = UserRole.ADMIN,

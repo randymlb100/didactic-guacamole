@@ -76,6 +76,7 @@ class AdminLotteryConfigContractsTest {
         )
 
         assertTrue(payload.contains("\"posLiteEnabled\":true"))
+        assertTrue(payload.contains("\"configured\":true"))
         assertFalse(payload.contains("futureSaleEnabled"))
         assertTrue(payload.contains("\"lotteryModeEnabled\":true"))
         assertTrue(payload.contains("\"pickModeEnabled\":true"))
@@ -83,10 +84,57 @@ class AdminLotteryConfigContractsTest {
         assertTrue(payload.contains("\"cashierModeEnabled\":false"))
         assertTrue(payload.contains("\"cashierLotteryModeEnabled\":true"))
         assertTrue(payload.contains("\"cashierPickModeEnabled\":false"))
+        assertTrue(payload.contains("\"blockedSalePlays\":[]"))
         assertEquals(
             AdminSystemModeConfig(posLiteEnabled = true, lotteryModeEnabled = true, pickModeEnabled = true),
             decodeAdminSystemModeConfig(payload),
         )
+    }
+
+    @Test
+    fun `legacy remote pick only mode falls back to lottery until admin saves explicitly`() {
+        val decoded = decodeAdminSystemModeConfig(
+            """{"lotteryModeEnabled":false,"pickModeEnabled":true,"cashierModeEnabled":false}""",
+        )
+
+        assertTrue(decoded.lotteryModeEnabled)
+        assertFalse(decoded.pickModeEnabled)
+    }
+
+    @Test
+    fun `explicit remote pick only mode is respected after admin saves`() {
+        val decoded = decodeAdminSystemModeConfig(
+            """{"configured":true,"lotteryModeEnabled":false,"pickModeEnabled":true,"cashierModeEnabled":false}""",
+        )
+
+        assertFalse(decoded.lotteryModeEnabled)
+        assertTrue(decoded.pickModeEnabled)
+    }
+
+    @Test
+    fun `system mode config serializes blocked sale plays by exact number`() {
+        val payload = encodeAdminSystemModeConfig(
+            AdminSystemModeConfig(
+                blockedSalePlays = setOf(
+                    AdminBlockedSalePlay(playType = "Q", number = "03"),
+                    AdminBlockedSalePlay(playType = "P3BOX", number = "852"),
+                ),
+            ),
+        )
+        val decoded = decodeAdminSystemModeConfig(payload)
+
+        assertEquals(
+            setOf(
+                AdminBlockedSalePlay(playType = "P3BOX", number = "852"),
+                AdminBlockedSalePlay(playType = "Q", number = "03"),
+            ),
+            decoded.blockedSalePlays,
+        )
+        assertTrue(isSalePlayBlocked("Q", "03", decoded))
+        assertFalse(isSalePlayBlocked("Q", "04", decoded))
+        assertTrue(isSalePlayBlocked("P3BOX", "852", decoded))
+        assertFalse(isSalePlayBlocked("P3", "852", decoded))
+        assertEquals("Quiniela 03", firstBlockedSalePlayLabel(listOf(AdminBlockedSalePlay("Q", "03")), decoded))
     }
 
     @Test

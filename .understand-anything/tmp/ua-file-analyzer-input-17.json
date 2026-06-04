@@ -1,0 +1,63 @@
+{
+  "projectRoot": "C:\\Users\\Randy Cordero\\Desktop\\lotterynet_android",
+  "batchFiles": [
+    {
+      "path": "app/src/main/res/drawable/bg_login_primary_button.xml",
+      "language": "xml",
+      "sizeLines": 15,
+      "fileCategory": "config"
+    },
+    {
+      "path": "app/src/main/res/drawable/bg_login_secondary_button.xml",
+      "language": "xml",
+      "sizeLines": 8,
+      "fileCategory": "config"
+    },
+    {
+      "path": "app/src/main/res/drawable/bg_login_surface.xml",
+      "language": "xml",
+      "sizeLines": 8,
+      "fileCategory": "config"
+    },
+    {
+      "path": "app/src/main/res/drawable/ic_launcher.xml",
+      "language": "xml",
+      "sizeLines": 5,
+      "fileCategory": "config"
+    },
+    {
+      "path": "app/src/main/res/drawable/ic_launcher_background.xml",
+      "language": "xml",
+      "sizeLines": 10,
+      "fileCategory": "config"
+    },
+    {
+      "path": "app/src/main/res/drawable/ic_launcher_foreground.xml",
+      "language": "xml",
+      "sizeLines": 20,
+      "fileCategory": "config"
+    },
+    {
+      "path": "app/src/main/res/drawable/ic_launcher_monochrome.xml",
+      "language": "xml",
+      "sizeLines": 19,
+      "fileCategory": "config"
+    },
+    {
+      "path": "app/src/main/res/drawable/ic_launcher_round.xml",
+      "language": "xml",
+      "sizeLines": 5,
+      "fileCategory": "config"
+    }
+  ],
+  "batchImportData": {
+    "app/src/main/res/drawable/bg_login_primary_button.xml": [],
+    "app/src/main/res/drawable/bg_login_secondary_button.xml": [],
+    "app/src/main/res/drawable/bg_login_surface.xml": [],
+    "app/src/main/res/drawable/ic_launcher.xml": [],
+    "app/src/main/res/drawable/ic_launcher_background.xml": [],
+    "app/src/main/res/drawable/ic_launcher_foreground.xml": [],
+    "app/src/main/res/drawable/ic_launcher_monochrome.xml": [],
+    "app/src/main/res/drawable/ic_launcher_round.xml": []
+  }
+}

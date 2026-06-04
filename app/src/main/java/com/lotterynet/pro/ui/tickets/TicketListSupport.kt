@@ -47,6 +47,7 @@ import com.lotterynet.pro.core.model.isPaidTicketStatus
 import com.lotterynet.pro.core.model.isPendingWinnerTicketStatus
 import com.lotterynet.pro.core.model.UserAccount
 import com.lotterynet.pro.core.model.UserRole
+import com.lotterynet.pro.core.operations.buildActorLabelLookup
 import com.lotterynet.pro.core.operations.buildUserActorLabelLookup
 import com.lotterynet.pro.core.operations.filterCashiersForSession
 import com.lotterynet.pro.core.operations.filterTicketsForOperationalScope
@@ -237,7 +238,21 @@ internal fun buildTicketDirectory(
         tickets = baseTickets.sortedByDescending { it.createdAtEpochMs },
         adminKeys = adminKeys,
         cashierOptions = visibleCashiers,
-        actorLabelsByKey = buildUserActorLabelLookup(allCashiers),
+        actorLabelsByKey = buildTicketActorLabelLookup(session, allCashiers),
+    )
+}
+
+private fun buildTicketActorLabelLookup(
+    session: ActiveSession,
+    cashiers: List<UserAccount>,
+): Map<String, String> {
+    return buildUserActorLabelLookup(cashiers) + buildActorLabelLookup(
+        listOf(
+            session.userId to session.banca,
+            session.username to session.banca,
+            session.adminId to session.banca,
+            session.adminUser to session.banca,
+        ),
     )
 }
 

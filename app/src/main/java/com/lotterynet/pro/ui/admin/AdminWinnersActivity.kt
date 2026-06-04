@@ -44,6 +44,7 @@ import com.lotterynet.pro.core.model.LotteryResult
 import com.lotterynet.pro.core.model.PrizeTableConfig
 import com.lotterynet.pro.core.model.TicketRecord
 import com.lotterynet.pro.core.model.UserRole
+import com.lotterynet.pro.core.model.effectiveDrawDateKey
 import com.lotterynet.pro.core.model.isPaidStatus
 import com.lotterynet.pro.core.model.isPendingWinnerStatus
 import com.lotterynet.pro.core.operations.filterTicketsForOperationalScope
@@ -57,8 +58,13 @@ import com.lotterynet.pro.core.storage.LocalSessionRepository
 import com.lotterynet.pro.core.storage.LocalUsersRepository
 import com.lotterynet.pro.core.sync.NativeOperationalSyncCoordinator
 import com.lotterynet.pro.core.sync.NativeTicketCloudSyncCoordinator
+import com.lotterynet.pro.core.sync.NativeTicketRemoteStore
 import com.lotterynet.pro.core.sync.NativeTicketSyncQueueRepository
+import com.lotterynet.pro.core.sync.ForegroundCatchUpInput
+import com.lotterynet.pro.core.sync.ForegroundCatchUpPolicy
+import com.lotterynet.pro.core.sync.OperationalSyncThrottle
 import com.lotterynet.pro.core.sync.resolveOperationalOwnerKey
+import com.lotterynet.pro.core.sync.resolveOperationalOwnerKeys
 import com.lotterynet.pro.ui.common.BottomNavBar
 import com.lotterynet.pro.ui.common.CompactPanel
 import com.lotterynet.pro.ui.common.CompactStatusBadge
@@ -84,6 +90,10 @@ class AdminWinnersActivity : AppCompatActivity() {
     private val realtimeClient = LotterynetRealtimeClient()
     private val realtimeSubscriptions = mutableListOf<LotterynetRealtimeClient.SubscriptionHandle>()
     private val winnersSyncInFlight = AtomicBoolean(false)
+    private val remoteStampStore = NativeTicketRemoteStore()
+    private val foregroundCatchUpPolicy = ForegroundCatchUpPolicy(
+        OperationalSyncThrottle(ADMIN_WINNERS_FOREGROUND_CATCH_UP_THROTTLE_MS),
+    )
     private lateinit var session: ActiveSession
     private lateinit var dayKey: String
     private lateinit var salesRepository: LocalSalesRepository
@@ -93,6 +103,7 @@ class AdminWinnersActivity : AppCompatActivity() {
     private lateinit var operationalSyncCoordinator: NativeOperationalSyncCoordinator
     private var ticketsState by mutableStateOf<List<TicketRecord>>(emptyList())
     private var lastRemoteUpdatedAt: String? = null
+    private val resumeSyncRunnable = Runnable { runForegroundCatchUp(force = false) }
     private val syncPollRunnable = object : Runnable {
         override fun run() {
             syncWinners(force = false)
@@ -140,11 +151,21 @@ class AdminWinnersActivity : AppCompatActivity() {
             }
         }
         syncWinners(force = true)
-        subscribeRealtime()
+        subscribeRealtime(reset = false)
         syncHandler.postDelayed(syncPollRunnable, resolveAdminWinnersPollIntervalMs(realtimeClient.isConfigured()))
     }
 
+    override fun onResume() {
+        super.onResume()
+        if (::salesRepository.isInitialized) {
+            refreshWinnersData()
+            syncHandler.removeCallbacks(resumeSyncRunnable)
+            syncHandler.postDelayed(resumeSyncRunnable, ADMIN_WINNERS_RESUME_SYNC_DELAY_MS)
+        }
+    }
+
     override fun onDestroy() {
+        syncHandler.removeCallbacks(resumeSyncRunnable)
         syncHandler.removeCallbacks(syncPollRunnable)
         realtimeSubscriptions.forEach { it.close() }
         realtimeSubscriptions.clear()
@@ -153,14 +174,21 @@ class AdminWinnersActivity : AppCompatActivity() {
     }
 
     private fun refreshWinnersData() {
+        val winnerDayKeys = salesRepository.getAvailableDayKeys()
+            .sortedDescending()
+            .take(ADMIN_WINNERS_LOOKBACK_DAYS)
         val scopedTickets = filterTicketsForOperationalScope(
             session = session,
-            tickets = salesRepository.getTicketsForDay(dayKey),
+            tickets = winnerDayKeys.flatMap(salesRepository::getTicketsForDay),
             cashiers = usersRepository.getCashiers(),
         )
-        ticketsState = buildAdminWinnerTickets(
+        val resultsByDate = scopedTickets
+            .map { it.effectiveDrawDateKey() }
+            .distinct()
+            .associateWith(resultsRepository::getResultsForDate)
+        ticketsState = buildAdminWinnerTicketsByDrawDate(
             tickets = scopedTickets,
-            results = resultsRepository.getResultsForDate(dayKey),
+            resultsByDate = resultsByDate,
             prizeConfig = PrizeTableConfig(),
             prizeConfigResolver = { ticket ->
                 prizePayoutRepository.resolveForTicket(
@@ -190,12 +218,55 @@ class AdminWinnersActivity : AppCompatActivity() {
         }
     }
 
-    private fun subscribeRealtime() {
+    private fun runForegroundCatchUp(force: Boolean) {
+        if (!::operationalSyncCoordinator.isInitialized || !::salesRepository.isInitialized) return
+        refreshWinnersData()
+        val ownerKeys = resolveOperationalOwnerKeys(session)
+        if (ownerKeys.isEmpty()) return
+        thread(name = "admin-winners-foreground-catch-up") {
+            val remoteStamps = ownerKeys.mapNotNull { ownerKey ->
+                runCatching { remoteStampStore.fetchUpdatedAtFresh(ownerKey) }.getOrNull()
+            }
+            val remoteUpdatedAt = remoteStamps.asSequence()
+                .firstOrNull { stamp -> !stamp.equals(lastRemoteUpdatedAt.orEmpty(), ignoreCase = true) }
+                ?: remoteStamps.firstOrNull()
+            val decision = foregroundCatchUpPolicy.decide(
+                resolveAdminWinnersForegroundCatchUpInput(
+                    session = session,
+                    tickets = salesRepository.getTicketsForDay(dayKey),
+                    dayKey = dayKey,
+                    lastRemoteUpdatedAt = lastRemoteUpdatedAt,
+                    remoteUpdatedAt = remoteUpdatedAt,
+                    realtimeConfigured = realtimeClient.isConfigured(),
+                    hasRealtimeSubscription = realtimeSubscriptions.isNotEmpty(),
+                    nowEpochMs = System.currentTimeMillis(),
+                    force = force,
+                ),
+            )
+            if (!decision.shouldRun) return@thread
+            if (decision.reconnectRealtime) {
+                runOnUiThread { subscribeRealtime(reset = true) }
+            }
+            if (decision.refreshTickets) {
+                runOnUiThread { syncWinners(force = force || decision.refreshTickets) }
+            } else if (remoteUpdatedAt != null) {
+                lastRemoteUpdatedAt = remoteUpdatedAt
+            }
+        }
+    }
+
+    private fun subscribeRealtime(reset: Boolean) {
         if (!realtimeClient.isConfigured()) return
-        val ownerKey = resolveOperationalOwnerKey(session)
-        if (ownerKey.isBlank()) return
-        realtimeSubscriptions += realtimeClient.subscribe(LotterynetRealtimeSubscription.ticketOwner(ownerKey)) {
-            syncWinners(force = true)
+        if (reset) {
+            realtimeSubscriptions.forEach { it.close() }
+            realtimeSubscriptions.clear()
+        } else if (realtimeSubscriptions.isNotEmpty()) {
+            return
+        }
+        resolveOperationalOwnerKeys(session).forEach { ownerKey ->
+            realtimeSubscriptions += realtimeClient.subscribe(LotterynetRealtimeSubscription.ticketOwner(ownerKey)) {
+                syncWinners(force = true)
+            }
         }
     }
 }
@@ -219,16 +290,48 @@ internal fun buildAdminWinnerTickets(
 ): List<TicketRecord> {
     val engine = PrizeValidationEngine()
     return tickets.map { ticket ->
-        if (isWinnerListTicket(ticket) || results.isEmpty()) {
+        if (results.isEmpty()) {
             ticket
         } else {
-            engine.validate(
+            val validation = engine.validate(
                 ticket = ticket,
                 results = results,
                 prizeConfig = prizeConfigResolver?.invoke(ticket) ?: prizeConfig,
-            ).ticket
+            )
+            if (validation.didValidate) {
+                resolveWinnerListTicketAfterValidation(ticket, validation.ticket)
+            } else {
+                ticket
+            }
         }
     }.filter(::isWinnerListTicket)
+}
+
+internal fun buildAdminWinnerTicketsByDrawDate(
+    tickets: List<TicketRecord>,
+    resultsByDate: Map<String, List<LotteryResult>>,
+    prizeConfig: PrizeTableConfig = PrizeTableConfig(),
+    prizeConfigResolver: ((TicketRecord) -> PrizeTableConfig)? = null,
+): List<TicketRecord> {
+    return tickets
+        .groupBy { it.effectiveDrawDateKey() }
+        .flatMap { (drawDateKey, dayTickets) ->
+            buildAdminWinnerTickets(
+                tickets = dayTickets,
+                results = resultsByDate[drawDateKey].orEmpty(),
+                prizeConfig = prizeConfig,
+                prizeConfigResolver = prizeConfigResolver,
+            )
+        }
+}
+
+internal fun resolveWinnerListTicketAfterValidation(
+    current: TicketRecord,
+    validated: TicketRecord,
+): TicketRecord {
+    val currentHasPrize = isWinnerListTicket(current)
+    val validationRemovedPrize = !isWinnerListTicket(validated) || validated.totalPrize <= 0.0
+    return if (currentHasPrize && validationRemovedPrize) current else validated
 }
 
 private fun isPendingWinnerListTicket(ticket: TicketRecord): Boolean {
@@ -252,9 +355,39 @@ private enum class WinnersFilter {
 
 internal const val ADMIN_WINNERS_POLL_MS = 60_000L
 internal const val ADMIN_WINNERS_REALTIME_FALLBACK_POLL_MS = 300_000L
+internal const val ADMIN_WINNERS_RESUME_SYNC_DELAY_MS = 100L
+internal const val ADMIN_WINNERS_FOREGROUND_CATCH_UP_THROTTLE_MS = 10_000L
+internal const val ADMIN_WINNERS_LOOKBACK_DAYS = 30
 
 internal fun resolveAdminWinnersPollIntervalMs(realtimeEnabled: Boolean): Long {
     return if (realtimeEnabled) ADMIN_WINNERS_REALTIME_FALLBACK_POLL_MS else ADMIN_WINNERS_POLL_MS
+}
+
+internal fun resolveAdminWinnersForegroundCatchUpInput(
+    session: ActiveSession,
+    tickets: List<TicketRecord>,
+    dayKey: String,
+    lastRemoteUpdatedAt: String?,
+    remoteUpdatedAt: String?,
+    realtimeConfigured: Boolean,
+    hasRealtimeSubscription: Boolean,
+    nowEpochMs: Long,
+    force: Boolean = false,
+): ForegroundCatchUpInput {
+    return ForegroundCatchUpInput(
+        ownerKey = resolveOperationalOwnerKey(session),
+        dateKey = dayKey,
+        hasLocalTickets = tickets.any { ticket ->
+            ticket.effectiveDrawDateKey().equals(dayKey, ignoreCase = true)
+        },
+        hasLocalResults = true,
+        ticketStampChanged = remoteUpdatedAt.isNullOrBlank() ||
+            !remoteUpdatedAt.equals(lastRemoteUpdatedAt.orEmpty(), ignoreCase = true),
+        resultsStampChanged = false,
+        realtimeConnected = !realtimeConfigured || hasRealtimeSubscription,
+        nowMs = nowEpochMs,
+        force = force,
+    )
 }
 
 @Composable

@@ -20,9 +20,7 @@ fun resolveOperationalScope(
     cashiers: List<UserAccount> = emptyList(),
 ): OperationalScope {
     val scopedCashiers = filterCashiersForSession(session, cashiers)
-    val cashierKeys = scopedCashiers.flatMapTo(mutableSetOf()) { cashier ->
-        identityKeys(cashier.id, cashier.user, cashier.displayName)
-    }
+    val cashierKeys = cashierIdentityKeys(scopedCashiers)
     return OperationalScope(
         role = session.role,
         bancaName = session.banca,
@@ -110,6 +108,21 @@ private fun matchesTicketAdmin(ticket: TicketRecord, keys: Set<String>): Boolean
 private fun matchesTicketSeller(ticket: TicketRecord, keys: Set<String>): Boolean {
     if (keys.isEmpty()) return false
     return normalizeKey(ticket.sellerId) in keys || normalizeKey(ticket.sellerUser) in keys
+}
+
+private fun cashierIdentityKeys(cashiers: List<UserAccount>): Set<String> {
+    val displayNameCounts = cashiers
+        .mapNotNull { normalizeKey(it.displayName) }
+        .groupingBy { it }
+        .eachCount()
+    return cashiers.flatMapTo(mutableSetOf()) { cashier ->
+        val keys = identityKeys(cashier.id, cashier.user).toMutableSet()
+        val displayNameKey = normalizeKey(cashier.displayName)
+        if (displayNameKey != null && displayNameCounts[displayNameKey] == 1) {
+            keys += displayNameKey
+        }
+        keys
+    }
 }
 
 private fun identityKeys(vararg values: String?): Set<String> {

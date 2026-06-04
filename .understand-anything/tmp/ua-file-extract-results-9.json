@@ -1,0 +1,2170 @@
+{
+  "scriptCompleted": true,
+  "filesAnalyzed": 14,
+  "filesSkipped": [],
+  "results": [
+    {
+      "path": "supabase/functions/_shared/lotterynet-admin.ts",
+      "language": "typescript",
+      "fileCategory": "code",
+      "totalLines": 90,
+      "nonEmptyLines": 79,
+      "functions": [
+        {
+          "name": "json",
+          "startLine": 9,
+          "endLine": 17,
+          "params": [
+            "body",
+            "status"
+          ]
+        },
+        {
+          "name": "clean",
+          "startLine": 19,
+          "endLine": 21,
+          "params": [
+            "value"
+          ]
+        },
+        {
+          "name": "lower",
+          "startLine": 23,
+          "endLine": 25,
+          "params": [
+            "value"
+          ]
+        },
+        {
+          "name": "requireSharedSecret",
+          "startLine": 27,
+          "endLine": 37,
+          "params": [
+            "req"
+          ]
+        },
+        {
+          "name": "requireAdminRole",
+          "startLine": 39,
+          "endLine": 45,
+          "params": [
+            "role"
+          ]
+        },
+        {
+          "name": "bearerToken",
+          "startLine": 47,
+          "endLine": 50,
+          "params": [
+            "req"
+          ]
+        },
+        {
+          "name": "requireAdminJwt",
+          "startLine": 52,
+          "endLine": 62,
+          "params": [
+            "req"
+          ]
+        },
+        {
+          "name": "supabaseAdmin",
+          "startLine": 64,
+          "endLine": 70,
+          "params": []
+        },
+        {
+          "name": "fetchKvValue",
+          "startLine": 72,
+          "endLine": 81,
+          "params": [
+            "key"
+          ]
+        },
+        {
+          "name": "upsertKvValue",
+          "startLine": 83,
+          "endLine": 90,
+          "params": [
+            "key",
+            "value"
+          ]
+        }
+      ],
+      "exports": [
+        {
+          "name": "corsHeaders",
+          "line": 3,
+          "isDefault": false
+        },
+        {
+          "name": "json",
+          "line": 9,
+          "isDefault": false
+        },
+        {
+          "name": "clean",
+          "line": 19,
+          "isDefault": false
+        },
+        {
+          "name": "lower",
+          "line": 23,
+          "isDefault": false
+        },
+        {
+          "name": "requireSharedSecret",
+          "line": 27,
+          "isDefault": false
+        },
+        {
+          "name": "requireAdminRole",
+          "line": 39,
+          "isDefault": false
+        },
+        {
+          "name": "bearerToken",
+          "line": 47,
+          "isDefault": false
+        },
+        {
+          "name": "requireAdminJwt",
+          "line": 52,
+          "isDefault": false
+        },
+        {
+          "name": "supabaseAdmin",
+          "line": 64,
+          "isDefault": false
+        },
+        {
+          "name": "fetchKvValue",
+          "line": 72,
+          "isDefault": false
+        },
+        {
+          "name": "upsertKvValue",
+          "line": 83,
+          "isDefault": false
+        }
+      ],
+      "callGraph": [
+        {
+          "caller": "json",
+          "callee": "JSON.stringify",
+          "lineNumber": 10
+        },
+        {
+          "caller": "clean",
+          "callee": "String(value ?? \"\").trim",
+          "lineNumber": 20
+        },
+        {
+          "caller": "clean",
+          "callee": "String",
+          "lineNumber": 20
+        },
+        {
+          "caller": "lower",
+          "callee": "clean(value).toLowerCase",
+          "lineNumber": 24
+        },
+        {
+          "caller": "lower",
+          "callee": "clean",
+          "lineNumber": 24
+        },
+        {
+          "caller": "requireSharedSecret",
+          "callee": "Deno.env.get",
+          "lineNumber": 28
+        },
+        {
+          "caller": "requireSharedSecret",
+          "callee": "json",
+          "lineNumber": 30
+        },
+        {
+          "caller": "requireSharedSecret",
+          "callee": "req.headers.get",
+          "lineNumber": 32
+        },
+        {
+          "caller": "requireSharedSecret",
+          "callee": "json",
+          "lineNumber": 34
+        },
+        {
+          "caller": "requireAdminRole",
+          "callee": "lower",
+          "lineNumber": 40
+        },
+        {
+          "caller": "requireAdminRole",
+          "callee": "json",
+          "lineNumber": 42
+        },
+        {
+          "caller": "bearerToken",
+          "callee": "req.headers.get",
+          "lineNumber": 48
+        },
+        {
+          "caller": "bearerToken",
+          "callee": "header.replace(/^Bearer\\s+/i, \"\").trim",
+          "lineNumber": 49
+        },
+        {
+          "caller": "bearerToken",
+          "callee": "header.replace",
+          "lineNumber": 49
+        },
+        {
+          "caller": "requireAdminJwt",
+          "callee": "bearerToken",
+          "lineNumber": 53
+        },
+        {
+          "caller": "requireAdminJwt",
+          "callee": "json",
+          "lineNumber": 54
+        },
+        {
+          "caller": "requireAdminJwt",
+          "callee": "supabaseAdmin().auth.getUser",
+          "lineNumber": 55
+        },
+        {
+          "caller": "requireAdminJwt",
+          "callee": "supabaseAdmin",
+          "lineNumber": 55
+        },
+        {
+          "caller": "requireAdminJwt",
+          "callee": "json",
+          "lineNumber": 56
+        },
+        {
+          "caller": "requireAdminJwt",
+          "callee": "lower",
+          "lineNumber": 57
+        },
+        {
+          "caller": "requireAdminJwt",
+          "callee": "json",
+          "lineNumber": 59
+        },
+        {
+          "caller": "supabaseAdmin",
+          "callee": "createClient",
+          "lineNumber": 65
+        },
+        {
+          "caller": "supabaseAdmin",
+          "callee": "Deno.env.get",
+          "lineNumber": 66
+        },
+        {
+          "caller": "supabaseAdmin",
+          "callee": "Deno.env.get",
+          "lineNumber": 67
+        },
+        {
+          "caller": "fetchKvValue",
+          "callee": "supabaseAdmin",
+          "lineNumber": 73
+        },
+        {
+          "caller": "fetchKvValue",
+          "callee": "supabase\n    .from(\"lotterynet_kv\")\n    .select(\"value\")\n    .eq(\"key\", key)\n    .maybeSingle",
+          "lineNumber": 74
+        },
+        {
+          "caller": "fetchKvValue",
+          "callee": "supabase\n    .from(\"lotterynet_kv\")\n    .select(\"value\")\n    .eq",
+          "lineNumber": 74
+        },
+        {
+          "caller": "fetchKvValue",
+          "callee": "supabase\n    .from(\"lotterynet_kv\")\n    .select",
+          "lineNumber": 74
+        },
+        {
+          "caller": "fetchKvValue",
+          "callee": "supabase\n    .from",
+          "lineNumber": 74
+        },
+        {
+          "caller": "upsertKvValue",
+          "callee": "supabaseAdmin",
+          "lineNumber": 84
+        },
+        {
+          "caller": "upsertKvValue",
+          "callee": "JSON.stringify",
+          "lineNumber": 85
+        },
+        {
+          "caller": "upsertKvValue",
+          "callee": "supabase\n    .from(\"lotterynet_kv\")\n    .upsert",
+          "lineNumber": 86
+        },
+        {
+          "caller": "upsertKvValue",
+          "callee": "supabase\n    .from",
+          "lineNumber": 86
+        },
+        {
+          "caller": "upsertKvValue",
+          "callee": "new Date().toISOString",
+          "lineNumber": 88
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 11,
+        "functionCount": 10,
+        "classCount": 0
+      }
+    },
+    {
+      "path": "supabase/functions/admin-cashier-limits/index.ts",
+      "language": "typescript",
+      "fileCategory": "code",
+      "totalLines": 30,
+      "nonEmptyLines": 27,
+      "metrics": {
+        "importCount": 1,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0
+      }
+    },
+    {
+      "path": "supabase/functions/admin-manual-results-override/index.ts",
+      "language": "typescript",
+      "fileCategory": "code",
+      "totalLines": 107,
+      "nonEmptyLines": 96,
+      "functions": [
+        {
+          "name": "isValidNumber",
+          "startLine": 14,
+          "endLine": 18,
+          "params": [
+            "number",
+            "game"
+          ]
+        },
+        {
+          "name": "dateKey",
+          "startLine": 20,
+          "endLine": 22,
+          "params": [
+            "value"
+          ]
+        },
+        {
+          "name": "resultDateFromDayKey",
+          "startLine": 24,
+          "endLine": 28,
+          "params": [
+            "date"
+          ]
+        }
+      ],
+      "callGraph": [
+        {
+          "caller": "isValidNumber",
+          "callee": "/^\\d-\\d-\\d$/.test",
+          "lineNumber": 15
+        },
+        {
+          "caller": "isValidNumber",
+          "callee": "/^\\d-\\d-\\d-\\d$/.test",
+          "lineNumber": 16
+        },
+        {
+          "caller": "isValidNumber",
+          "callee": "/^\\d{2}-\\d{2}-\\d{2}$/.test",
+          "lineNumber": 17
+        },
+        {
+          "caller": "dateKey",
+          "callee": "clean",
+          "lineNumber": 21
+        },
+        {
+          "caller": "resultDateFromDayKey",
+          "callee": "/^\\d{4}-\\d{2}-\\d{2}$/.test",
+          "lineNumber": 25
+        },
+        {
+          "caller": "resultDateFromDayKey",
+          "callee": "date.split",
+          "lineNumber": 26
+        }
+      ],
+      "metrics": {
+        "importCount": 1,
+        "exportCount": 0,
+        "functionCount": 3,
+        "classCount": 0
+      }
+    },
+    {
+      "path": "supabase/functions/admin-master-state/index.ts",
+      "language": "typescript",
+      "fileCategory": "code",
+      "totalLines": 30,
+      "nonEmptyLines": 26,
+      "metrics": {
+        "importCount": 1,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0
+      }
+    },
+    {
+      "path": "supabase/functions/admin-users-state/index.ts",
+      "language": "typescript",
+      "fileCategory": "code",
+      "totalLines": 38,
+      "nonEmptyLines": 35,
+      "metrics": {
+        "importCount": 1,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0
+      }
+    },
+    {
+      "path": "supabase/functions/client-health-batch/index.ts",
+      "language": "typescript",
+      "fileCategory": "code",
+      "totalLines": 49,
+      "nonEmptyLines": 40,
+      "functions": [
+        {
+          "name": "eventType",
+          "startLine": 8,
+          "endLine": 10,
+          "params": [
+            "event"
+          ]
+        },
+        {
+          "name": "safePayload",
+          "startLine": 12,
+          "endLine": 18,
+          "params": [
+            "event"
+          ]
+        }
+      ],
+      "callGraph": [
+        {
+          "caller": "eventType",
+          "callee": "clean(event.eventType ?? event.type ?? \"client_event\").slice",
+          "lineNumber": 9
+        },
+        {
+          "caller": "eventType",
+          "callee": "clean",
+          "lineNumber": 9
+        },
+        {
+          "caller": "safePayload",
+          "callee": "Array.isArray",
+          "lineNumber": 14
+        }
+      ],
+      "metrics": {
+        "importCount": 1,
+        "exportCount": 0,
+        "functionCount": 2,
+        "classCount": 0
+      }
+    },
+    {
+      "path": "supabase/functions/get-master-config/index.ts",
+      "language": "typescript",
+      "fileCategory": "code",
+      "totalLines": 37,
+      "nonEmptyLines": 31,
+      "functions": [
+        {
+          "name": "isAllowedKey",
+          "startLine": 4,
+          "endLine": 7,
+          "params": [
+            "key"
+          ]
+        }
+      ],
+      "callGraph": [
+        {
+          "caller": "isAllowedKey",
+          "callee": "/^(cashier_limits|cashier_prize_payouts|recharge_limits|admin_operational_limits|system_modes|manual_disabled_lotteries):[A-Za-z0-9_.:-]+$/.test",
+          "lineNumber": 5
+        },
+        {
+          "caller": "isAllowedKey",
+          "callee": "/^sys_[A-Za-z0-9_.:-]+$/.test",
+          "lineNumber": 6
+        }
+      ],
+      "metrics": {
+        "importCount": 1,
+        "exportCount": 0,
+        "functionCount": 1,
+        "classCount": 0
+      }
+    },
+    {
+      "path": "supabase/functions/get-results-status/index.ts",
+      "language": "typescript",
+      "fileCategory": "code",
+      "totalLines": 77,
+      "nonEmptyLines": 68,
+      "functions": [
+        {
+          "name": "normalizeDayKey",
+          "startLine": 11,
+          "endLine": 24,
+          "params": [
+            "value"
+          ]
+        },
+        {
+          "name": "latestVersion",
+          "startLine": 26,
+          "endLine": 28,
+          "params": [
+            "rows"
+          ]
+        },
+        {
+          "name": "isPick",
+          "startLine": 30,
+          "endLine": 33,
+          "params": [
+            "row"
+          ]
+        },
+        {
+          "name": "isManualOverride",
+          "startLine": 35,
+          "endLine": 38,
+          "params": [
+            "row"
+          ]
+        }
+      ],
+      "callGraph": [
+        {
+          "caller": "normalizeDayKey",
+          "callee": "clean",
+          "lineNumber": 12
+        },
+        {
+          "caller": "normalizeDayKey",
+          "callee": "/^\\d{2}-\\d{2}-\\d{4}$/.test",
+          "lineNumber": 13
+        },
+        {
+          "caller": "normalizeDayKey",
+          "callee": "/^\\d{4}-\\d{2}-\\d{2}$/.test",
+          "lineNumber": 14
+        },
+        {
+          "caller": "normalizeDayKey",
+          "callee": "raw.split",
+          "lineNumber": 15
+        },
+        {
+          "caller": "normalizeDayKey",
+          "callee": "new Intl.DateTimeFormat(\"en-GB\", {\n    timeZone: \"America/Santo_Domingo\",\n    day: \"2-digit\",\n    month: \"2-digit\",\n    year: \"numeric\",\n  }).format(new Date()).replaceAll",
+          "lineNumber": 18
+        },
+        {
+          "caller": "normalizeDayKey",
+          "callee": "new Intl.DateTimeFormat(\"en-GB\", {\n    timeZone: \"America/Santo_Domingo\",\n    day: \"2-digit\",\n    month: \"2-digit\",\n    year: \"numeric\",\n  }).format",
+          "lineNumber": 18
+        },
+        {
+          "caller": "latestVersion",
+          "callee": "rows.map((row) => clean(row.updated_at)).filter(Boolean).sort().at",
+          "lineNumber": 27
+        },
+        {
+          "caller": "latestVersion",
+          "callee": "rows.map((row) => clean(row.updated_at)).filter(Boolean).sort",
+          "lineNumber": 27
+        },
+        {
+          "caller": "latestVersion",
+          "callee": "rows.map((row) => clean(row.updated_at)).filter",
+          "lineNumber": 27
+        },
+        {
+          "caller": "latestVersion",
+          "callee": "rows.map",
+          "lineNumber": 27
+        },
+        {
+          "caller": "latestVersion",
+          "callee": "clean",
+          "lineNumber": 27
+        },
+        {
+          "caller": "isPick",
+          "callee": "clean(row.game).toLowerCase",
+          "lineNumber": 31
+        },
+        {
+          "caller": "isPick",
+          "callee": "clean",
+          "lineNumber": 31
+        },
+        {
+          "caller": "isManualOverride",
+          "callee": "clean(payload.source).toLowerCase",
+          "lineNumber": 37
+        },
+        {
+          "caller": "isManualOverride",
+          "callee": "clean",
+          "lineNumber": 37
+        }
+      ],
+      "metrics": {
+        "importCount": 1,
+        "exportCount": 0,
+        "functionCount": 4,
+        "classCount": 0
+      }
+    },
+    {
+      "path": "supabase/functions/get-results-v2/index.ts",
+      "language": "typescript",
+      "fileCategory": "code",
+      "totalLines": 58,
+      "nonEmptyLines": 53,
+      "functions": [
+        {
+          "name": "normalizeDayKey",
+          "startLine": 4,
+          "endLine": 17,
+          "params": [
+            "value"
+          ]
+        },
+        {
+          "name": "rowsFromRpc",
+          "startLine": 19,
+          "endLine": 29,
+          "params": [
+            "value"
+          ]
+        }
+      ],
+      "callGraph": [
+        {
+          "caller": "normalizeDayKey",
+          "callee": "clean",
+          "lineNumber": 5
+        },
+        {
+          "caller": "normalizeDayKey",
+          "callee": "/^\\d{2}-\\d{2}-\\d{4}$/.test",
+          "lineNumber": 6
+        },
+        {
+          "caller": "normalizeDayKey",
+          "callee": "/^\\d{4}-\\d{2}-\\d{2}$/.test",
+          "lineNumber": 7
+        },
+        {
+          "caller": "normalizeDayKey",
+          "callee": "raw.split",
+          "lineNumber": 8
+        },
+        {
+          "caller": "normalizeDayKey",
+          "callee": "new Intl.DateTimeFormat(\"en-GB\", {\n    timeZone: \"America/Santo_Domingo\",\n    day: \"2-digit\",\n    month: \"2-digit\",\n    year: \"numeric\",\n  }).format(new Date()).replaceAll",
+          "lineNumber": 11
+        },
+        {
+          "caller": "normalizeDayKey",
+          "callee": "new Intl.DateTimeFormat(\"en-GB\", {\n    timeZone: \"America/Santo_Domingo\",\n    day: \"2-digit\",\n    month: \"2-digit\",\n    year: \"numeric\",\n  }).format",
+          "lineNumber": 11
+        },
+        {
+          "caller": "rowsFromRpc",
+          "callee": "Array.isArray",
+          "lineNumber": 20
+        },
+        {
+          "caller": "rowsFromRpc",
+          "callee": "rowsFromRpc",
+          "lineNumber": 23
+        },
+        {
+          "caller": "rowsFromRpc",
+          "callee": "JSON.parse",
+          "lineNumber": 23
+        }
+      ],
+      "metrics": {
+        "importCount": 1,
+        "exportCount": 0,
+        "functionCount": 2,
+        "classCount": 0
+      }
+    },
+    {
+      "path": "supabase/functions/get-ticket-delta/index.ts",
+      "language": "typescript",
+      "fileCategory": "code",
+      "totalLines": 98,
+      "nonEmptyLines": 87,
+      "functions": [
+        {
+          "name": "limitFrom",
+          "startLine": 8,
+          "endLine": 12,
+          "params": [
+            "value"
+          ]
+        },
+        {
+          "name": "stampFrom",
+          "startLine": 14,
+          "endLine": 16,
+          "params": [
+            "row"
+          ]
+        },
+        {
+          "name": "latestStamp",
+          "startLine": 18,
+          "endLine": 20,
+          "params": [
+            "rows",
+            "fallback"
+          ]
+        },
+        {
+          "name": "fetchTicketRows",
+          "startLine": 22,
+          "endLine": 49,
+          "params": [
+            "ownerKey",
+            "sinceCursor",
+            "limit"
+          ]
+        },
+        {
+          "name": "fetchTicketItems",
+          "startLine": 51,
+          "endLine": 66,
+          "params": [
+            "ticketIds"
+          ]
+        }
+      ],
+      "callGraph": [
+        {
+          "caller": "limitFrom",
+          "callee": "Number",
+          "lineNumber": 9
+        },
+        {
+          "caller": "limitFrom",
+          "callee": "Number.isFinite",
+          "lineNumber": 10
+        },
+        {
+          "caller": "limitFrom",
+          "callee": "Math.min",
+          "lineNumber": 11
+        },
+        {
+          "caller": "limitFrom",
+          "callee": "Math.trunc",
+          "lineNumber": 11
+        },
+        {
+          "caller": "stampFrom",
+          "callee": "clean",
+          "lineNumber": 15
+        },
+        {
+          "caller": "latestStamp",
+          "callee": "rows.map(stampFrom).filter(Boolean).sort().at",
+          "lineNumber": 19
+        },
+        {
+          "caller": "latestStamp",
+          "callee": "rows.map(stampFrom).filter(Boolean).sort",
+          "lineNumber": 19
+        },
+        {
+          "caller": "latestStamp",
+          "callee": "rows.map(stampFrom).filter",
+          "lineNumber": 19
+        },
+        {
+          "caller": "latestStamp",
+          "callee": "rows.map",
+          "lineNumber": 19
+        },
+        {
+          "caller": "fetchTicketRows",
+          "callee": "supabaseAdmin",
+          "lineNumber": 23
+        },
+        {
+          "caller": "fetchTicketRows",
+          "callee": "supabase\n      .from(\"tickets\")\n      .select(\"*\")\n      .eq(column, ownerKey)\n      .order(\"server_created_at\", { ascending: false, nullsFirst: false })\n      .order(\"created_at\", { ascending: false, nullsFirst: false })\n      .limit",
+          "lineNumber": 27
+        },
+        {
+          "caller": "fetchTicketRows",
+          "callee": "supabase\n      .from(\"tickets\")\n      .select(\"*\")\n      .eq(column, ownerKey)\n      .order(\"server_created_at\", { ascending: false, nullsFirst: false })\n      .order",
+          "lineNumber": 27
+        },
+        {
+          "caller": "fetchTicketRows",
+          "callee": "supabase\n      .from(\"tickets\")\n      .select(\"*\")\n      .eq(column, ownerKey)\n      .order",
+          "lineNumber": 27
+        },
+        {
+          "caller": "fetchTicketRows",
+          "callee": "supabase\n      .from(\"tickets\")\n      .select(\"*\")\n      .eq",
+          "lineNumber": 27
+        },
+        {
+          "caller": "fetchTicketRows",
+          "callee": "supabase\n      .from(\"tickets\")\n      .select",
+          "lineNumber": 27
+        },
+        {
+          "caller": "fetchTicketRows",
+          "callee": "supabase\n      .from",
+          "lineNumber": 27
+        },
+        {
+          "caller": "fetchTicketRows",
+          "callee": "query.or",
+          "lineNumber": 35
+        },
+        {
+          "caller": "fetchTicketRows",
+          "callee": "rows.push",
+          "lineNumber": 39
+        },
+        {
+          "caller": "fetchTicketRows",
+          "callee": "clean",
+          "lineNumber": 43
+        },
+        {
+          "caller": "fetchTicketRows",
+          "callee": "byId.set",
+          "lineNumber": 44
+        },
+        {
+          "caller": "fetchTicketRows",
+          "callee": "[...byId.values()]\n    .sort((a, b) => stampFrom(b).localeCompare(stampFrom(a)))\n    .slice",
+          "lineNumber": 46
+        },
+        {
+          "caller": "fetchTicketRows",
+          "callee": "[...byId.values()]\n    .sort",
+          "lineNumber": 46
+        },
+        {
+          "caller": "fetchTicketRows",
+          "callee": "byId.values",
+          "lineNumber": 46
+        },
+        {
+          "caller": "fetchTicketRows",
+          "callee": "stampFrom(b).localeCompare",
+          "lineNumber": 47
+        },
+        {
+          "caller": "fetchTicketRows",
+          "callee": "stampFrom",
+          "lineNumber": 47
+        },
+        {
+          "caller": "fetchTicketRows",
+          "callee": "stampFrom",
+          "lineNumber": 47
+        },
+        {
+          "caller": "fetchTicketItems",
+          "callee": "supabaseAdmin",
+          "lineNumber": 53
+        },
+        {
+          "caller": "fetchTicketItems",
+          "callee": "ticketIds.slice",
+          "lineNumber": 56
+        },
+        {
+          "caller": "fetchTicketItems",
+          "callee": "supabase\n      .from(\"ticket_items\")\n      .select(\"*\")\n      .in(\"ticket_id\", idChunk)\n      .range",
+          "lineNumber": 57
+        },
+        {
+          "caller": "fetchTicketItems",
+          "callee": "supabase\n      .from(\"ticket_items\")\n      .select(\"*\")\n      .in",
+          "lineNumber": 57
+        },
+        {
+          "caller": "fetchTicketItems",
+          "callee": "supabase\n      .from(\"ticket_items\")\n      .select",
+          "lineNumber": 57
+        },
+        {
+          "caller": "fetchTicketItems",
+          "callee": "supabase\n      .from",
+          "lineNumber": 57
+        },
+        {
+          "caller": "fetchTicketItems",
+          "callee": "rows.push",
+          "lineNumber": 63
+        }
+      ],
+      "metrics": {
+        "importCount": 1,
+        "exportCount": 0,
+        "functionCount": 5,
+        "classCount": 0
+      }
+    },
+    {
+      "path": "supabase/functions/get-ticket-summary/index.ts",
+      "language": "typescript",
+      "fileCategory": "code",
+      "totalLines": 90,
+      "nonEmptyLines": 81,
+      "functions": [
+        {
+          "name": "isoDateFromDayKey",
+          "startLine": 6,
+          "endLine": 19,
+          "params": [
+            "value"
+          ]
+        },
+        {
+          "name": "amount",
+          "startLine": 21,
+          "endLine": 24,
+          "params": [
+            "row"
+          ]
+        },
+        {
+          "name": "status",
+          "startLine": 26,
+          "endLine": 28,
+          "params": [
+            "row"
+          ]
+        },
+        {
+          "name": "fetchRows",
+          "startLine": 30,
+          "endLine": 50,
+          "params": [
+            "ownerKey",
+            "dayIso"
+          ]
+        }
+      ],
+      "callGraph": [
+        {
+          "caller": "isoDateFromDayKey",
+          "callee": "clean",
+          "lineNumber": 7
+        },
+        {
+          "caller": "isoDateFromDayKey",
+          "callee": "/^\\d{4}-\\d{2}-\\d{2}$/.test",
+          "lineNumber": 8
+        },
+        {
+          "caller": "isoDateFromDayKey",
+          "callee": "/^\\d{2}-\\d{2}-\\d{4}$/.test",
+          "lineNumber": 9
+        },
+        {
+          "caller": "isoDateFromDayKey",
+          "callee": "raw.split",
+          "lineNumber": 10
+        },
+        {
+          "caller": "isoDateFromDayKey",
+          "callee": "new Intl.DateTimeFormat(\"en-CA\", {\n    timeZone: \"America/Santo_Domingo\",\n    year: \"numeric\",\n    month: \"2-digit\",\n    day: \"2-digit\",\n  }).format",
+          "lineNumber": 13
+        },
+        {
+          "caller": "amount",
+          "callee": "Number",
+          "lineNumber": 22
+        },
+        {
+          "caller": "amount",
+          "callee": "Number.isFinite",
+          "lineNumber": 23
+        },
+        {
+          "caller": "status",
+          "callee": "clean(row.status ?? row.estado ?? \"ACTIVO\").toUpperCase",
+          "lineNumber": 27
+        },
+        {
+          "caller": "status",
+          "callee": "clean",
+          "lineNumber": 27
+        },
+        {
+          "caller": "fetchRows",
+          "callee": "supabaseAdmin",
+          "lineNumber": 31
+        },
+        {
+          "caller": "fetchRows",
+          "callee": "dayIso.split(\"-\").reverse().join",
+          "lineNumber": 33
+        },
+        {
+          "caller": "fetchRows",
+          "callee": "dayIso.split(\"-\").reverse",
+          "lineNumber": 33
+        },
+        {
+          "caller": "fetchRows",
+          "callee": "dayIso.split",
+          "lineNumber": 33
+        },
+        {
+          "caller": "fetchRows",
+          "callee": "supabase\n      .from(\"tickets\")\n      .select(\"id,admin_key,cashier_key,total_amount,status,estado,draw_date_real,legacy_day_key,created_at,server_created_at\")\n      .eq(column, ownerKey)\n      .or(`draw_date_real.eq.${dayIso},legacy_day_key.eq.${dayKey},legacy_day_key.eq.${dayIso}`)\n      .limit",
+          "lineNumber": 35
+        },
+        {
+          "caller": "fetchRows",
+          "callee": "supabase\n      .from(\"tickets\")\n      .select(\"id,admin_key,cashier_key,total_amount,status,estado,draw_date_real,legacy_day_key,created_at,server_created_at\")\n      .eq(column, ownerKey)\n      .or",
+          "lineNumber": 35
+        },
+        {
+          "caller": "fetchRows",
+          "callee": "supabase\n      .from(\"tickets\")\n      .select(\"id,admin_key,cashier_key,total_amount,status,estado,draw_date_real,legacy_day_key,created_at,server_created_at\")\n      .eq",
+          "lineNumber": 35
+        },
+        {
+          "caller": "fetchRows",
+          "callee": "supabase\n      .from(\"tickets\")\n      .select",
+          "lineNumber": 35
+        },
+        {
+          "caller": "fetchRows",
+          "callee": "supabase\n      .from",
+          "lineNumber": 35
+        },
+        {
+          "caller": "fetchRows",
+          "callee": "rows.push",
+          "lineNumber": 42
+        },
+        {
+          "caller": "fetchRows",
+          "callee": "clean",
+          "lineNumber": 46
+        },
+        {
+          "caller": "fetchRows",
+          "callee": "byId.set",
+          "lineNumber": 47
+        },
+        {
+          "caller": "fetchRows",
+          "callee": "byId.values",
+          "lineNumber": 49
+        }
+      ],
+      "metrics": {
+        "importCount": 1,
+        "exportCount": 0,
+        "functionCount": 4,
+        "classCount": 0
+      }
+    },
+    {
+      "path": "supabase/functions/lotterynet-users-state/index.ts",
+      "language": "typescript",
+      "fileCategory": "code",
+      "totalLines": 48,
+      "nonEmptyLines": 43,
+      "metrics": {
+        "importCount": 1,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0
+      }
+    },
+    {
+      "path": "supabase/functions/results-server-refresh/index.ts",
+      "language": "typescript",
+      "fileCategory": "code",
+      "totalLines": 358,
+      "nonEmptyLines": 328,
+      "functions": [
+        {
+          "name": "normalizeDateKey",
+          "startLine": 10,
+          "endLine": 23,
+          "params": [
+            "value"
+          ]
+        },
+        {
+          "name": "renderDateKey",
+          "startLine": 25,
+          "endLine": 28,
+          "params": [
+            "date"
+          ]
+        },
+        {
+          "name": "stableStringify",
+          "startLine": 30,
+          "endLine": 38,
+          "params": [
+            "value"
+          ]
+        },
+        {
+          "name": "rowsFrom",
+          "startLine": 40,
+          "endLine": 56,
+          "params": [
+            "value"
+          ]
+        },
+        {
+          "name": "rowIdentity",
+          "startLine": 58,
+          "endLine": 60,
+          "params": [
+            "row"
+          ]
+        },
+        {
+          "name": "hasPublishedNumbers",
+          "startLine": 62,
+          "endLine": 72,
+          "params": [
+            "row"
+          ]
+        },
+        {
+          "name": "isProtectedNoDrawRow",
+          "startLine": 74,
+          "endLine": 88,
+          "params": [
+            "row"
+          ]
+        },
+        {
+          "name": "mergeProtectedNoDrawRows",
+          "startLine": 90,
+          "endLine": 99,
+          "params": [
+            "currentRows",
+            "nextRows"
+          ]
+        },
+        {
+          "name": "mergeMissingCurrentRows",
+          "startLine": 101,
+          "endLine": 109,
+          "params": [
+            "currentRows",
+            "nextRows"
+          ]
+        },
+        {
+          "name": "mergeHolidayNoDrawRows",
+          "startLine": 111,
+          "endLine": 126,
+          "params": [
+            "nextRows",
+            "holidayRows"
+          ]
+        },
+        {
+          "name": "dateIsoFromKey",
+          "startLine": 128,
+          "endLine": 131,
+          "params": [
+            "date"
+          ]
+        },
+        {
+          "name": "annualDateFromKey",
+          "startLine": 133,
+          "endLine": 136,
+          "params": [
+            "date"
+          ]
+        },
+        {
+          "name": "matchesHolidayRuleDate",
+          "startLine": 138,
+          "endLine": 144,
+          "params": [
+            "rule",
+            "date"
+          ]
+        },
+        {
+          "name": "fetchHolidayNoDrawRows",
+          "startLine": 146,
+          "endLine": 184,
+          "params": [
+            "date"
+          ]
+        },
+        {
+          "name": "payloadRows",
+          "startLine": 186,
+          "endLine": 189,
+          "params": [
+            "payload",
+            "section"
+          ]
+        },
+        {
+          "name": "rowText",
+          "startLine": 191,
+          "endLine": 200,
+          "params": [
+            "row"
+          ]
+        },
+        {
+          "name": "isPickRow",
+          "startLine": 202,
+          "endLine": 215,
+          "params": [
+            "row"
+          ]
+        },
+        {
+          "name": "splitPayload",
+          "startLine": 217,
+          "endLine": 228,
+          "params": [
+            "payload"
+          ]
+        },
+        {
+          "name": "fetchLiveResults",
+          "startLine": 230,
+          "endLine": 243,
+          "params": [
+            "date"
+          ]
+        },
+        {
+          "name": "fetchLiveResultsOrEmpty",
+          "startLine": 245,
+          "endLine": 254,
+          "params": [
+            "date"
+          ]
+        },
+        {
+          "name": "currentRowsFor",
+          "startLine": 256,
+          "endLine": 265,
+          "params": [
+            "date",
+            "source"
+          ]
+        },
+        {
+          "name": "upsertIfChanged",
+          "startLine": 267,
+          "endLine": 280,
+          "params": [
+            "source",
+            "date",
+            "rows"
+          ]
+        },
+        {
+          "name": "saveLegacyResultCaches",
+          "startLine": 282,
+          "endLine": 289,
+          "params": [
+            "date",
+            "lotteryRows",
+            "pickRows"
+          ]
+        },
+        {
+          "name": "configuredCronSecret",
+          "startLine": 291,
+          "endLine": 305,
+          "params": []
+        },
+        {
+          "name": "authorize",
+          "startLine": 307,
+          "endLine": 317,
+          "params": [
+            "req"
+          ]
+        }
+      ],
+      "callGraph": [
+        {
+          "caller": "normalizeDateKey",
+          "callee": "clean",
+          "lineNumber": 11
+        },
+        {
+          "caller": "normalizeDateKey",
+          "callee": "/^\\d{2}-\\d{2}-\\d{4}$/.test",
+          "lineNumber": 12
+        },
+        {
+          "caller": "normalizeDateKey",
+          "callee": "/^\\d{4}-\\d{2}-\\d{2}$/.test",
+          "lineNumber": 13
+        },
+        {
+          "caller": "normalizeDateKey",
+          "callee": "raw.split",
+          "lineNumber": 14
+        },
+        {
+          "caller": "normalizeDateKey",
+          "callee": "new Intl.DateTimeFormat(\"en-GB\", {\n    timeZone: \"America/Santo_Domingo\",\n    day: \"2-digit\",\n    month: \"2-digit\",\n    year: \"numeric\",\n  }).format(new Date()).replaceAll",
+          "lineNumber": 17
+        },
+        {
+          "caller": "normalizeDateKey",
+          "callee": "new Intl.DateTimeFormat(\"en-GB\", {\n    timeZone: \"America/Santo_Domingo\",\n    day: \"2-digit\",\n    month: \"2-digit\",\n    year: \"numeric\",\n  }).format",
+          "lineNumber": 17
+        },
+        {
+          "caller": "renderDateKey",
+          "callee": "date.split",
+          "lineNumber": 26
+        },
+        {
+          "caller": "stableStringify",
+          "callee": "Array.isArray",
+          "lineNumber": 31
+        },
+        {
+          "caller": "stableStringify",
+          "callee": "value.map(stableStringify).join",
+          "lineNumber": 31
+        },
+        {
+          "caller": "stableStringify",
+          "callee": "value.map",
+          "lineNumber": 31
+        },
+        {
+          "caller": "stableStringify",
+          "callee": "Object.keys(value as Record<string, unknown>).sort().map((key) => {\n      return `${JSON.stringify(key)}:${stableStringify((value as Record<string, unknown>)[key])}`;\n    }).join",
+          "lineNumber": 33
+        },
+        {
+          "caller": "stableStringify",
+          "callee": "Object.keys(value as Record<string, unknown>).sort().map",
+          "lineNumber": 33
+        },
+        {
+          "caller": "stableStringify",
+          "callee": "Object.keys(value as Record<string, unknown>).sort",
+          "lineNumber": 33
+        },
+        {
+          "caller": "stableStringify",
+          "callee": "Object.keys",
+          "lineNumber": 33
+        },
+        {
+          "caller": "stableStringify",
+          "callee": "JSON.stringify",
+          "lineNumber": 34
+        },
+        {
+          "caller": "stableStringify",
+          "callee": "stableStringify",
+          "lineNumber": 34
+        },
+        {
+          "caller": "stableStringify",
+          "callee": "JSON.stringify",
+          "lineNumber": 37
+        },
+        {
+          "caller": "rowsFrom",
+          "callee": "rowsFrom",
+          "lineNumber": 44
+        },
+        {
+          "caller": "rowsFrom",
+          "callee": "JSON.parse",
+          "lineNumber": 44
+        },
+        {
+          "caller": "rowsFrom",
+          "callee": "Array.isArray",
+          "lineNumber": 49
+        },
+        {
+          "caller": "rowsFrom",
+          "callee": "value.filter",
+          "lineNumber": 49
+        },
+        {
+          "caller": "rowsFrom",
+          "callee": "Array.isArray",
+          "lineNumber": 49
+        },
+        {
+          "caller": "rowsFrom",
+          "callee": "Array.isArray",
+          "lineNumber": 52
+        },
+        {
+          "caller": "rowsFrom",
+          "callee": "rowsFrom",
+          "lineNumber": 52
+        },
+        {
+          "caller": "rowsFrom",
+          "callee": "Array.isArray",
+          "lineNumber": 53
+        },
+        {
+          "caller": "rowsFrom",
+          "callee": "rowsFrom",
+          "lineNumber": 53
+        },
+        {
+          "caller": "rowsFrom",
+          "callee": "rowsFrom",
+          "lineNumber": 54
+        },
+        {
+          "caller": "rowIdentity",
+          "callee": "clean",
+          "lineNumber": 59
+        },
+        {
+          "caller": "rowIdentity",
+          "callee": "clean",
+          "lineNumber": 59
+        },
+        {
+          "caller": "rowIdentity",
+          "callee": "rowText",
+          "lineNumber": 59
+        },
+        {
+          "caller": "hasPublishedNumbers",
+          "callee": "clean",
+          "lineNumber": 63
+        },
+        {
+          "caller": "hasPublishedNumbers",
+          "callee": "clean",
+          "lineNumber": 64
+        },
+        {
+          "caller": "hasPublishedNumbers",
+          "callee": "clean",
+          "lineNumber": 65
+        },
+        {
+          "caller": "hasPublishedNumbers",
+          "callee": "clean",
+          "lineNumber": 66
+        },
+        {
+          "caller": "hasPublishedNumbers",
+          "callee": "clean",
+          "lineNumber": 67
+        },
+        {
+          "caller": "hasPublishedNumbers",
+          "callee": "clean",
+          "lineNumber": 68
+        },
+        {
+          "caller": "hasPublishedNumbers",
+          "callee": "clean",
+          "lineNumber": 69
+        },
+        {
+          "caller": "hasPublishedNumbers",
+          "callee": "clean",
+          "lineNumber": 70
+        },
+        {
+          "caller": "hasPublishedNumbers",
+          "callee": "Array.isArray",
+          "lineNumber": 71
+        },
+        {
+          "caller": "isProtectedNoDrawRow",
+          "callee": "[\n    row.status,\n    row.estado,\n    row.source,\n    row.reason,\n    row.message,\n  ].map((value) => clean(value).toLowerCase()).join",
+          "lineNumber": 75
+        },
+        {
+          "caller": "isProtectedNoDrawRow",
+          "callee": "[\n    row.status,\n    row.estado,\n    row.source,\n    row.reason,\n    row.message,\n  ].map",
+          "lineNumber": 75
+        },
+        {
+          "caller": "isProtectedNoDrawRow",
+          "callee": "clean(value).toLowerCase",
+          "lineNumber": 81
+        },
+        {
+          "caller": "isProtectedNoDrawRow",
+          "callee": "clean",
+          "lineNumber": 81
+        },
+        {
+          "caller": "isProtectedNoDrawRow",
+          "callee": "text.includes",
+          "lineNumber": 82
+        },
+        {
+          "caller": "isProtectedNoDrawRow",
+          "callee": "text.includes",
+          "lineNumber": 83
+        },
+        {
+          "caller": "isProtectedNoDrawRow",
+          "callee": "text.includes",
+          "lineNumber": 84
+        },
+        {
+          "caller": "isProtectedNoDrawRow",
+          "callee": "text.includes",
+          "lineNumber": 85
+        },
+        {
+          "caller": "isProtectedNoDrawRow",
+          "callee": "text.includes",
+          "lineNumber": 86
+        },
+        {
+          "caller": "isProtectedNoDrawRow",
+          "callee": "text.includes",
+          "lineNumber": 87
+        },
+        {
+          "caller": "mergeProtectedNoDrawRows",
+          "callee": "nextRows.filter(hasPublishedNumbers).map(rowIdentity).filter",
+          "lineNumber": 92
+        },
+        {
+          "caller": "mergeProtectedNoDrawRows",
+          "callee": "nextRows.filter(hasPublishedNumbers).map",
+          "lineNumber": 92
+        },
+        {
+          "caller": "mergeProtectedNoDrawRows",
+          "callee": "nextRows.filter",
+          "lineNumber": 92
+        },
+        {
+          "caller": "mergeProtectedNoDrawRows",
+          "callee": "nextRows.map(rowIdentity).filter",
+          "lineNumber": 93
+        },
+        {
+          "caller": "mergeProtectedNoDrawRows",
+          "callee": "nextRows.map",
+          "lineNumber": 93
+        },
+        {
+          "caller": "mergeProtectedNoDrawRows",
+          "callee": "currentRows.filter",
+          "lineNumber": 94
+        },
+        {
+          "caller": "mergeProtectedNoDrawRows",
+          "callee": "rowIdentity",
+          "lineNumber": 95
+        },
+        {
+          "caller": "mergeProtectedNoDrawRows",
+          "callee": "isProtectedNoDrawRow",
+          "lineNumber": 96
+        },
+        {
+          "caller": "mergeProtectedNoDrawRows",
+          "callee": "nextPublishedIds.has",
+          "lineNumber": 96
+        },
+        {
+          "caller": "mergeProtectedNoDrawRows",
+          "callee": "nextIds.has",
+          "lineNumber": 96
+        },
+        {
+          "caller": "mergeMissingCurrentRows",
+          "callee": "nextRows.map(rowIdentity).filter",
+          "lineNumber": 103
+        },
+        {
+          "caller": "mergeMissingCurrentRows",
+          "callee": "nextRows.map",
+          "lineNumber": 103
+        },
+        {
+          "caller": "mergeMissingCurrentRows",
+          "callee": "currentRows.filter",
+          "lineNumber": 104
+        },
+        {
+          "caller": "mergeMissingCurrentRows",
+          "callee": "rowIdentity",
+          "lineNumber": 105
+        },
+        {
+          "caller": "mergeMissingCurrentRows",
+          "callee": "nextIds.has",
+          "lineNumber": 106
+        },
+        {
+          "caller": "mergeHolidayNoDrawRows",
+          "callee": "holidayRows\n      .map((row): [string, ResultRow] => [rowIdentity(row), row])\n      .filter",
+          "lineNumber": 114
+        },
+        {
+          "caller": "mergeHolidayNoDrawRows",
+          "callee": "holidayRows\n      .map",
+          "lineNumber": 114
+        },
+        {
+          "caller": "mergeHolidayNoDrawRows",
+          "callee": "rowIdentity",
+          "lineNumber": 115
+        },
+        {
+          "caller": "mergeHolidayNoDrawRows",
+          "callee": "nextRows.map",
+          "lineNumber": 118
+        },
+        {
+          "caller": "mergeHolidayNoDrawRows",
+          "callee": "rowIdentity",
+          "lineNumber": 119
+        },
+        {
+          "caller": "mergeHolidayNoDrawRows",
+          "callee": "holidayById.has",
+          "lineNumber": 120
+        },
+        {
+          "caller": "mergeHolidayNoDrawRows",
+          "callee": "hasPublishedNumbers",
+          "lineNumber": 120
+        },
+        {
+          "caller": "mergeHolidayNoDrawRows",
+          "callee": "holidayById.get",
+          "lineNumber": 121
+        },
+        {
+          "caller": "mergeHolidayNoDrawRows",
+          "callee": "holidayById.delete",
+          "lineNumber": 122
+        },
+        {
+          "caller": "mergeHolidayNoDrawRows",
+          "callee": "holidayById.values",
+          "lineNumber": 125
+        },
+        {
+          "caller": "dateIsoFromKey",
+          "callee": "date.split",
+          "lineNumber": 129
+        },
+        {
+          "caller": "annualDateFromKey",
+          "callee": "date.split",
+          "lineNumber": 134
+        },
+        {
+          "caller": "matchesHolidayRuleDate",
+          "callee": "dateIsoFromKey",
+          "lineNumber": 139
+        },
+        {
+          "caller": "matchesHolidayRuleDate",
+          "callee": "annualDateFromKey",
+          "lineNumber": 140
+        },
+        {
+          "caller": "matchesHolidayRuleDate",
+          "callee": "Array.isArray",
+          "lineNumber": 141
+        },
+        {
+          "caller": "matchesHolidayRuleDate",
+          "callee": "rule.dates.map",
+          "lineNumber": 141
+        },
+        {
+          "caller": "matchesHolidayRuleDate",
+          "callee": "Array.isArray",
+          "lineNumber": 142
+        },
+        {
+          "caller": "matchesHolidayRuleDate",
+          "callee": "rule.annualDates.map",
+          "lineNumber": 142
+        },
+        {
+          "caller": "matchesHolidayRuleDate",
+          "callee": "dates.includes",
+          "lineNumber": 143
+        },
+        {
+          "caller": "matchesHolidayRuleDate",
+          "callee": "dates.includes",
+          "lineNumber": 143
+        },
+        {
+          "caller": "matchesHolidayRuleDate",
+          "callee": "annualDates.includes",
+          "lineNumber": 143
+        },
+        {
+          "caller": "fetchHolidayNoDrawRows",
+          "callee": "fetchKvValue",
+          "lineNumber": 147
+        },
+        {
+          "caller": "fetchHolidayNoDrawRows",
+          "callee": "(() => {\n      try {\n        return JSON.parse(rawConfig) as unknown;\n      } catch {\n        return null;\n      }\n    })",
+          "lineNumber": 149
+        },
+        {
+          "caller": "fetchHolidayNoDrawRows",
+          "callee": "JSON.parse",
+          "lineNumber": 151
+        },
+        {
+          "caller": "fetchHolidayNoDrawRows",
+          "callee": "Array.isArray",
+          "lineNumber": 157
+        },
+        {
+          "caller": "fetchHolidayNoDrawRows",
+          "callee": "Array.isArray",
+          "lineNumber": 158
+        },
+        {
+          "caller": "fetchHolidayNoDrawRows",
+          "callee": "rules.flatMap",
+          "lineNumber": 161
+        },
+        {
+          "caller": "fetchHolidayNoDrawRows",
+          "callee": "matchesHolidayRuleDate",
+          "lineNumber": 162
+        },
+        {
+          "caller": "fetchHolidayNoDrawRows",
+          "callee": "clean",
+          "lineNumber": 163
+        },
+        {
+          "caller": "fetchHolidayNoDrawRows",
+          "callee": "clean",
+          "lineNumber": 163
+        },
+        {
+          "caller": "fetchHolidayNoDrawRows",
+          "callee": "Array.isArray",
+          "lineNumber": 164
+        },
+        {
+          "caller": "fetchHolidayNoDrawRows",
+          "callee": "lotteries.flatMap",
+          "lineNumber": 165
+        },
+        {
+          "caller": "fetchHolidayNoDrawRows",
+          "callee": "Array.isArray",
+          "lineNumber": 166
+        },
+        {
+          "caller": "fetchHolidayNoDrawRows",
+          "callee": "clean",
+          "lineNumber": 168
+        },
+        {
+          "caller": "fetchHolidayNoDrawRows",
+          "callee": "clean",
+          "lineNumber": 169
+        },
+        {
+          "caller": "payloadRows",
+          "callee": "Array.isArray",
+          "lineNumber": 187
+        },
+        {
+          "caller": "payloadRows",
+          "callee": "rowsFrom",
+          "lineNumber": 188
+        },
+        {
+          "caller": "rowText",
+          "callee": "[\n    row.id,\n    row.lotteryId,\n    row.name,\n    row.lotteryName,\n    row.game,\n    row.gameName,\n  ].map((value) => clean(value).toLowerCase()).join",
+          "lineNumber": 192
+        },
+        {
+          "caller": "rowText",
+          "callee": "[\n    row.id,\n    row.lotteryId,\n    row.name,\n    row.lotteryName,\n    row.game,\n    row.gameName,\n  ].map",
+          "lineNumber": 192
+        },
+        {
+          "caller": "rowText",
+          "callee": "clean(value).toLowerCase",
+          "lineNumber": 199
+        },
+        {
+          "caller": "rowText",
+          "callee": "clean",
+          "lineNumber": 199
+        },
+        {
+          "caller": "isPickRow",
+          "callee": "rowText(row).replace",
+          "lineNumber": 203
+        },
+        {
+          "caller": "isPickRow",
+          "callee": "rowText",
+          "lineNumber": 203
+        },
+        {
+          "caller": "isPickRow",
+          "callee": "clean",
+          "lineNumber": 204
+        },
+        {
+          "caller": "isPickRow",
+          "callee": "clean",
+          "lineNumber": 205
+        },
+        {
+          "caller": "isPickRow",
+          "callee": "text.includes",
+          "lineNumber": 206
+        },
+        {
+          "caller": "isPickRow",
+          "callee": "text.includes",
+          "lineNumber": 207
+        },
+        {
+          "caller": "isPickRow",
+          "callee": "text.includes",
+          "lineNumber": 208
+        },
+        {
+          "caller": "isPickRow",
+          "callee": "text.includes",
+          "lineNumber": 209
+        },
+        {
+          "caller": "isPickRow",
+          "callee": "text.includes",
+          "lineNumber": 210
+        },
+        {
+          "caller": "isPickRow",
+          "callee": "text.includes",
+          "lineNumber": 211
+        },
+        {
+          "caller": "isPickRow",
+          "callee": "text.includes",
+          "lineNumber": 212
+        },
+        {
+          "caller": "isPickRow",
+          "callee": "text.includes",
+          "lineNumber": 213
+        },
+        {
+          "caller": "isPickRow",
+          "callee": "text.includes",
+          "lineNumber": 214
+        },
+        {
+          "caller": "splitPayload",
+          "callee": "payloadRows",
+          "lineNumber": 218
+        },
+        {
+          "caller": "splitPayload",
+          "callee": "payloadRows",
+          "lineNumber": 219
+        },
+        {
+          "caller": "splitPayload",
+          "callee": "rowsFrom",
+          "lineNumber": 223
+        },
+        {
+          "caller": "splitPayload",
+          "callee": "rows.filter",
+          "lineNumber": 225
+        },
+        {
+          "caller": "splitPayload",
+          "callee": "isPickRow",
+          "lineNumber": 225
+        },
+        {
+          "caller": "splitPayload",
+          "callee": "rows.filter",
+          "lineNumber": 226
+        },
+        {
+          "caller": "fetchLiveResults",
+          "callee": "url.searchParams.set",
+          "lineNumber": 232
+        },
+        {
+          "caller": "fetchLiveResults",
+          "callee": "renderDateKey",
+          "lineNumber": 232
+        },
+        {
+          "caller": "fetchLiveResults",
+          "callee": "url.searchParams.set",
+          "lineNumber": 233
+        },
+        {
+          "caller": "fetchLiveResults",
+          "callee": "fetch",
+          "lineNumber": 234
+        },
+        {
+          "caller": "fetchLiveResults",
+          "callee": "AbortSignal.timeout",
+          "lineNumber": 237
+        },
+        {
+          "caller": "fetchLiveResults",
+          "callee": "response.json",
+          "lineNumber": 242
+        },
+        {
+          "caller": "fetchLiveResultsOrEmpty",
+          "callee": "fetchLiveResults",
+          "lineNumber": 247
+        },
+        {
+          "caller": "currentRowsFor",
+          "callee": "supabaseAdmin()\n    .from(\"result_draws\")\n    .select(\"source_payload\")\n    .eq(\"result_day_key\", date)\n    .in",
+          "lineNumber": 258
+        },
+        {
+          "caller": "currentRowsFor",
+          "callee": "supabaseAdmin()\n    .from(\"result_draws\")\n    .select(\"source_payload\")\n    .eq",
+          "lineNumber": 258
+        },
+        {
+          "caller": "currentRowsFor",
+          "callee": "supabaseAdmin()\n    .from(\"result_draws\")\n    .select",
+          "lineNumber": 258
+        },
+        {
+          "caller": "currentRowsFor",
+          "callee": "supabaseAdmin()\n    .from",
+          "lineNumber": 258
+        },
+        {
+          "caller": "currentRowsFor",
+          "callee": "supabaseAdmin",
+          "lineNumber": 258
+        },
+        {
+          "caller": "currentRowsFor",
+          "callee": "(data ?? []).map((row) => row.source_payload as ResultRow).filter",
+          "lineNumber": 264
+        },
+        {
+          "caller": "currentRowsFor",
+          "callee": "(data ?? []).map",
+          "lineNumber": 264
+        },
+        {
+          "caller": "upsertIfChanged",
+          "callee": "currentRowsFor",
+          "lineNumber": 269
+        },
+        {
+          "caller": "upsertIfChanged",
+          "callee": "mergeMissingCurrentRows",
+          "lineNumber": 270
+        },
+        {
+          "caller": "upsertIfChanged",
+          "callee": "mergeProtectedNoDrawRows",
+          "lineNumber": 270
+        },
+        {
+          "caller": "upsertIfChanged",
+          "callee": "stableStringify",
+          "lineNumber": 271
+        },
+        {
+          "caller": "upsertIfChanged",
+          "callee": "stableStringify",
+          "lineNumber": 271
+        },
+        {
+          "caller": "upsertIfChanged",
+          "callee": "supabaseAdmin()\n    .rpc",
+          "lineNumber": 272
+        },
+        {
+          "caller": "upsertIfChanged",
+          "callee": "supabaseAdmin",
+          "lineNumber": 272
+        },
+        {
+          "caller": "upsertIfChanged",
+          "callee": "Number",
+          "lineNumber": 279
+        },
+        {
+          "caller": "saveLegacyResultCaches",
+          "callee": "upsertKvValue",
+          "lineNumber": 284
+        },
+        {
+          "caller": "saveLegacyResultCaches",
+          "callee": "upsertKvValue",
+          "lineNumber": 287
+        },
+        {
+          "caller": "configuredCronSecret",
+          "callee": "fetchKvValue",
+          "lineNumber": 293
+        },
+        {
+          "caller": "configuredCronSecret",
+          "callee": "JSON.parse",
+          "lineNumber": 296
+        },
+        {
+          "caller": "configuredCronSecret",
+          "callee": "clean",
+          "lineNumber": 297
+        },
+        {
+          "caller": "configuredCronSecret",
+          "callee": "clean",
+          "lineNumber": 303
+        },
+        {
+          "caller": "authorize",
+          "callee": "configuredCronSecret",
+          "lineNumber": 308
+        },
+        {
+          "caller": "authorize",
+          "callee": "json",
+          "lineNumber": 310
+        },
+        {
+          "caller": "authorize",
+          "callee": "req.headers.get",
+          "lineNumber": 312
+        },
+        {
+          "caller": "authorize",
+          "callee": "req.headers.get",
+          "lineNumber": 312
+        },
+        {
+          "caller": "authorize",
+          "callee": "json",
+          "lineNumber": 314
+        }
+      ],
+      "metrics": {
+        "importCount": 1,
+        "exportCount": 0,
+        "functionCount": 25,
+        "classCount": 0
+      }
+    },
+    {
+      "path": "supabase/functions/update-master-config/index.ts",
+      "language": "typescript",
+      "fileCategory": "code",
+      "totalLines": 32,
+      "nonEmptyLines": 28,
+      "functions": [
+        {
+          "name": "isAllowedKey",
+          "startLine": 4,
+          "endLine": 7,
+          "params": [
+            "key"
+          ]
+        }
+      ],
+      "callGraph": [
+        {
+          "caller": "isAllowedKey",
+          "callee": "/^(cashier_limits|cashier_prize_payouts|recharge_limits|admin_operational_limits|system_modes|manual_disabled_lotteries):[A-Za-z0-9_.:-]+$/.test",
+          "lineNumber": 5
+        },
+        {
+          "caller": "isAllowedKey",
+          "callee": "/^sys_[A-Za-z0-9_.:-]+$/.test",
+          "lineNumber": 6
+        }
+      ],
+      "metrics": {
+        "importCount": 1,
+        "exportCount": 0,
+        "functionCount": 1,
+        "classCount": 0
+      }
+    }
+  ]
+}

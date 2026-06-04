@@ -1,0 +1,970 @@
+{
+  "scriptCompleted": true,
+  "filesAnalyzed": 8,
+  "filesSkipped": [],
+  "results": [
+    {
+      "path": "docs/superpowers/specs/2026-04-18-lotterynet-recovery-design.md",
+      "language": "markdown",
+      "fileCategory": "docs",
+      "totalLines": 48,
+      "nonEmptyLines": 32,
+      "sections": [
+        {
+          "heading": "LotteryNet Recovery Design",
+          "level": 1,
+          "line": 1
+        },
+        {
+          "heading": "Objective",
+          "level": 2,
+          "line": 3
+        },
+        {
+          "heading": "Navigation Model",
+          "level": 2,
+          "line": 7
+        },
+        {
+          "heading": "Screen Ownership",
+          "level": 2,
+          "line": 14
+        },
+        {
+          "heading": "Information Architecture",
+          "level": 2,
+          "line": 21
+        },
+        {
+          "heading": "Master",
+          "level": 3,
+          "line": 23
+        },
+        {
+          "heading": "Admin/Cashier",
+          "level": 3,
+          "line": 29
+        },
+        {
+          "heading": "Naming Rules",
+          "level": 2,
+          "line": 35
+        },
+        {
+          "heading": "Figma Follow-Up",
+          "level": 2,
+          "line": 41
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "sectionCount": 9
+      }
+    },
+    {
+      "path": "docs/superpowers/specs/2026-04-21-figma-library-phase0-discovery.md",
+      "language": "markdown",
+      "fileCategory": "docs",
+      "totalLines": 478,
+      "nonEmptyLines": 391,
+      "sections": [
+        {
+          "heading": "LotteryNet Android Figma Library Phase 0 Discovery",
+          "level": 1,
+          "line": 1
+        },
+        {
+          "heading": "Estado",
+          "level": 2,
+          "line": 3
+        },
+        {
+          "heading": "Stacks usadas",
+          "level": 2,
+          "line": 9
+        },
+        {
+          "heading": "Codebase audit",
+          "level": 2,
+          "line": 26
+        },
+        {
+          "heading": "Foundations ya existentes",
+          "level": 3,
+          "line": 28
+        },
+        {
+          "heading": "Colors",
+          "level": 4,
+          "line": 30
+        },
+        {
+          "heading": "Typography",
+          "level": 4,
+          "line": 46
+        },
+        {
+          "heading": "Size profiles",
+          "level": 4,
+          "line": 69
+        },
+        {
+          "heading": "Shared UI primitives detectados",
+          "level": 2,
+          "line": 105
+        },
+        {
+          "heading": "Core product surfaces",
+          "level": 2,
+          "line": 123
+        },
+        {
+          "heading": "Login",
+          "level": 3,
+          "line": 125
+        },
+        {
+          "heading": "Shell / Menu",
+          "level": 3,
+          "line": 144
+        },
+        {
+          "heading": "Venta",
+          "level": 3,
+          "line": 161
+        },
+        {
+          "heading": "Ticket oficial",
+          "level": 3,
+          "line": 196
+        },
+        {
+          "heading": "Resultados",
+          "level": 3,
+          "line": 227
+        },
+        {
+          "heading": "Impresora térmica",
+          "level": 3,
+          "line": 253
+        },
+        {
+          "heading": "Usuarios",
+          "level": 3,
+          "line": 275
+        },
+        {
+          "heading": "Tokens v1 lock",
+          "level": 2,
+          "line": 290
+        },
+        {
+          "heading": "Color tokens",
+          "level": 3,
+          "line": 292
+        },
+        {
+          "heading": "Primitive",
+          "level": 4,
+          "line": 294
+        },
+        {
+          "heading": "Semantic",
+          "level": 4,
+          "line": 312
+        },
+        {
+          "heading": "Typography tokens",
+          "level": 3,
+          "line": 335
+        },
+        {
+          "heading": "Space tokens",
+          "level": 3,
+          "line": 349
+        },
+        {
+          "heading": "Radius tokens",
+          "level": 3,
+          "line": 357
+        },
+        {
+          "heading": "Size tokens",
+          "level": 3,
+          "line": 363
+        },
+        {
+          "heading": "Components v1 lock",
+          "level": 2,
+          "line": 372
+        },
+        {
+          "heading": "Foundations pages",
+          "level": 3,
+          "line": 374
+        },
+        {
+          "heading": "Components pages",
+          "level": 3,
+          "line": 382
+        },
+        {
+          "heading": "Naming rules for Figma",
+          "level": 2,
+          "line": 403
+        },
+        {
+          "heading": "Device scope lock",
+          "level": 2,
+          "line": 423
+        },
+        {
+          "heading": "Samsung A15",
+          "level": 3,
+          "line": 425
+        },
+        {
+          "heading": "POS 5.5",
+          "level": 3,
+          "line": 433
+        },
+        {
+          "heading": "Conflicts and decisions",
+          "level": 2,
+          "line": 441
+        },
+        {
+          "heading": "Phase 0 approval target",
+          "level": 2,
+          "line": 449
+        },
+        {
+          "heading": "Immediate next deliverable",
+          "level": 2,
+          "line": 471
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "sectionCount": 35
+      }
+    },
+    {
+      "path": "docs/superpowers/specs/2026-04-21-figma-library-phase1-foundations.md",
+      "language": "markdown",
+      "fileCategory": "docs",
+      "totalLines": 315,
+      "nonEmptyLines": 259,
+      "sections": [
+        {
+          "heading": "LotteryNet Android Figma Library Phase 1 Foundations",
+          "level": 1,
+          "line": 1
+        },
+        {
+          "heading": "Estado",
+          "level": 2,
+          "line": 3
+        },
+        {
+          "heading": "Variable collections",
+          "level": 2,
+          "line": 9
+        },
+        {
+          "heading": "Modes",
+          "level": 2,
+          "line": 20
+        },
+        {
+          "heading": "Variables v1",
+          "level": 2,
+          "line": 35
+        },
+        {
+          "heading": "Primitives / Color",
+          "level": 3,
+          "line": 37
+        },
+        {
+          "heading": "Semantic / Color",
+          "level": 3,
+          "line": 61
+        },
+        {
+          "heading": "Spacing",
+          "level": 3,
+          "line": 91
+        },
+        {
+          "heading": "Radius",
+          "level": 3,
+          "line": 105
+        },
+        {
+          "heading": "Size",
+          "level": 3,
+          "line": 116
+        },
+        {
+          "heading": "Typography",
+          "level": 3,
+          "line": 136
+        },
+        {
+          "heading": "Text styles",
+          "level": 2,
+          "line": 207
+        },
+        {
+          "heading": "Code syntax mapping",
+          "level": 2,
+          "line": 228
+        },
+        {
+          "heading": "File structure to create right after foundations",
+          "level": 2,
+          "line": 245
+        },
+        {
+          "heading": "Documentation blocks inside Foundations",
+          "level": 2,
+          "line": 262
+        },
+        {
+          "heading": "Component build order after foundations",
+          "level": 2,
+          "line": 273
+        },
+        {
+          "heading": "Validation checklist",
+          "level": 2,
+          "line": 296
+        },
+        {
+          "heading": "Immediate next step",
+          "level": 2,
+          "line": 308
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "sectionCount": 18
+      }
+    },
+    {
+      "path": "docs/superpowers/specs/2026-04-21-figma-library-phase2-component-spec.md",
+      "language": "markdown",
+      "fileCategory": "docs",
+      "totalLines": 433,
+      "nonEmptyLines": 308,
+      "sections": [
+        {
+          "heading": "LotteryNet Android Figma Library Phase 2 Component Spec",
+          "level": 1,
+          "line": 1
+        },
+        {
+          "heading": "Estado",
+          "level": 2,
+          "line": 3
+        },
+        {
+          "heading": "Page layout",
+          "level": 2,
+          "line": 11
+        },
+        {
+          "heading": "Core Chrome",
+          "level": 2,
+          "line": 22
+        },
+        {
+          "heading": "App Top Bar",
+          "level": 3,
+          "line": 24
+        },
+        {
+          "heading": "Bottom Nav",
+          "level": 3,
+          "line": 44
+        },
+        {
+          "heading": "Section Header",
+          "level": 3,
+          "line": 65
+        },
+        {
+          "heading": "Compact Panel",
+          "level": 3,
+          "line": 77
+        },
+        {
+          "heading": "Compact Action Button",
+          "level": 3,
+          "line": 90
+        },
+        {
+          "heading": "Compact Status Badge",
+          "level": 3,
+          "line": 108
+        },
+        {
+          "heading": "Compact Empty State",
+          "level": 3,
+          "line": 119
+        },
+        {
+          "heading": "Sale",
+          "level": 2,
+          "line": 130
+        },
+        {
+          "heading": "Input Display",
+          "level": 3,
+          "line": 132
+        },
+        {
+          "heading": "Lottery Selector Chip",
+          "level": 3,
+          "line": 145
+        },
+        {
+          "heading": "Stats Chip",
+          "level": 3,
+          "line": 157
+        },
+        {
+          "heading": "Total Box",
+          "level": 3,
+          "line": 168
+        },
+        {
+          "heading": "Keypad Key",
+          "level": 3,
+          "line": 185
+        },
+        {
+          "heading": "Mode Tabs",
+          "level": 3,
+          "line": 199
+        },
+        {
+          "heading": "Sale Row",
+          "level": 3,
+          "line": 213
+        },
+        {
+          "heading": "Print Delivery Menu",
+          "level": 3,
+          "line": 227
+        },
+        {
+          "heading": "Lottery Picker Overlay",
+          "level": 3,
+          "line": 246
+        },
+        {
+          "heading": "Tickets",
+          "level": 2,
+          "line": 260
+        },
+        {
+          "heading": "Ticket Preview Shell",
+          "level": 3,
+          "line": 262
+        },
+        {
+          "heading": "Ticket Action Card",
+          "level": 3,
+          "line": 283
+        },
+        {
+          "heading": "Ticket Meta Card",
+          "level": 3,
+          "line": 297
+        },
+        {
+          "heading": "Ticket Action Groups",
+          "level": 3,
+          "line": 310
+        },
+        {
+          "heading": "Results",
+          "level": 2,
+          "line": 326
+        },
+        {
+          "heading": "Result Ball",
+          "level": 3,
+          "line": 328
+        },
+        {
+          "heading": "Result Card",
+          "level": 3,
+          "line": 339
+        },
+        {
+          "heading": "Result Action Row",
+          "level": 3,
+          "line": 354
+        },
+        {
+          "heading": "Printer",
+          "level": 2,
+          "line": 365
+        },
+        {
+          "heading": "Printer Setting Row",
+          "level": 3,
+          "line": 367
+        },
+        {
+          "heading": "Printer Summary Block",
+          "level": 3,
+          "line": 385
+        },
+        {
+          "heading": "Forms",
+          "level": 2,
+          "line": 395
+        },
+        {
+          "heading": "Form Row",
+          "level": 3,
+          "line": 397
+        },
+        {
+          "heading": "Numeric Config Form",
+          "level": 3,
+          "line": 406
+        },
+        {
+          "heading": "Device frame set",
+          "level": 2,
+          "line": 415
+        },
+        {
+          "heading": "Validation checklist",
+          "level": 2,
+          "line": 425
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "sectionCount": 38
+      }
+    },
+    {
+      "path": "docs/superpowers/specs/2026-04-21-figma-redesign-handoff.md",
+      "language": "markdown",
+      "fileCategory": "docs",
+      "totalLines": 393,
+      "nonEmptyLines": 323,
+      "sections": [
+        {
+          "heading": "LotteryNet Android Figma Redesign Handoff",
+          "level": 1,
+          "line": 1
+        },
+        {
+          "heading": "Estado",
+          "level": 2,
+          "line": 3
+        },
+        {
+          "heading": "Dirección visual",
+          "level": 2,
+          "line": 10
+        },
+        {
+          "heading": "Foundations",
+          "level": 2,
+          "line": 28
+        },
+        {
+          "heading": "Colores base desde código",
+          "level": 3,
+          "line": 30
+        },
+        {
+          "heading": "Tipografía",
+          "level": 3,
+          "line": 49
+        },
+        {
+          "heading": "Tamaños y spacing",
+          "level": 3,
+          "line": 68
+        },
+        {
+          "heading": "Profiles desde código",
+          "level": 3,
+          "line": 78
+        },
+        {
+          "heading": "Archivo Figma",
+          "level": 2,
+          "line": 106
+        },
+        {
+          "heading": "Páginas",
+          "level": 3,
+          "line": 108
+        },
+        {
+          "heading": "Frames raíz por dispositivo",
+          "level": 3,
+          "line": 116
+        },
+        {
+          "heading": "Secciones de `00 Foundations`",
+          "level": 3,
+          "line": 123
+        },
+        {
+          "heading": "Secciones de `01 Components`",
+          "level": 3,
+          "line": 132
+        },
+        {
+          "heading": "Componentes obligatorios",
+          "level": 2,
+          "line": 141
+        },
+        {
+          "heading": "Navigation",
+          "level": 3,
+          "line": 143
+        },
+        {
+          "heading": "Sale System",
+          "level": 3,
+          "line": 152
+        },
+        {
+          "heading": "Ticket System",
+          "level": 3,
+          "line": 166
+        },
+        {
+          "heading": "Results System",
+          "level": 3,
+          "line": 174
+        },
+        {
+          "heading": "Forms & Status",
+          "level": 3,
+          "line": 182
+        },
+        {
+          "heading": "Thermal System",
+          "level": 3,
+          "line": 191
+        },
+        {
+          "heading": "Pantallas core",
+          "level": 2,
+          "line": 198
+        },
+        {
+          "heading": "Login",
+          "level": 3,
+          "line": 200
+        },
+        {
+          "heading": "Shell / Menu",
+          "level": 3,
+          "line": 220
+        },
+        {
+          "heading": "Venta",
+          "level": 3,
+          "line": 236
+        },
+        {
+          "heading": "Print Delivery Menu",
+          "level": 3,
+          "line": 259
+        },
+        {
+          "heading": "Ticket Oficial",
+          "level": 3,
+          "line": 275
+        },
+        {
+          "heading": "Pantallas extendidas",
+          "level": 2,
+          "line": 295
+        },
+        {
+          "heading": "Resultados",
+          "level": 3,
+          "line": 297
+        },
+        {
+          "heading": "Recargas",
+          "level": 3,
+          "line": 309
+        },
+        {
+          "heading": "Usuarios",
+          "level": 3,
+          "line": 315
+        },
+        {
+          "heading": "Impresora térmica",
+          "level": 3,
+          "line": 322
+        },
+        {
+          "heading": "Tickets",
+          "level": 3,
+          "line": 340
+        },
+        {
+          "heading": "Admin / Finance",
+          "level": 3,
+          "line": 347
+        },
+        {
+          "heading": "Flows & Handoff",
+          "level": 2,
+          "line": 352
+        },
+        {
+          "heading": "Flujo principal",
+          "level": 3,
+          "line": 354
+        },
+        {
+          "heading": "Flujo secundario",
+          "level": 3,
+          "line": 358
+        },
+        {
+          "heading": "Notas de implementación Kotlin",
+          "level": 3,
+          "line": 364
+        },
+        {
+          "heading": "Checklist de ejecución en Figma cuando se reautentique",
+          "level": 2,
+          "line": 375
+        },
+        {
+          "heading": "Criterios de aceptación",
+          "level": 2,
+          "line": 387
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "sectionCount": 39
+      }
+    },
+    {
+      "path": "docs/superpowers/specs/2026-04-21-figma-screen-spec-v1.md",
+      "language": "markdown",
+      "fileCategory": "docs",
+      "totalLines": 147,
+      "nonEmptyLines": 114,
+      "sections": [
+        {
+          "heading": "LotteryNet Android Figma Screen Spec v1",
+          "level": 1,
+          "line": 1
+        },
+        {
+          "heading": "Core screens first",
+          "level": 2,
+          "line": 3
+        },
+        {
+          "heading": "1. Login",
+          "level": 3,
+          "line": 5
+        },
+        {
+          "heading": "2. Shell / Menu",
+          "level": 3,
+          "line": 22
+        },
+        {
+          "heading": "3. Venta",
+          "level": 3,
+          "line": 35
+        },
+        {
+          "heading": "4. Print Delivery Menu",
+          "level": 3,
+          "line": 60
+        },
+        {
+          "heading": "5. Ticket Oficial",
+          "level": 3,
+          "line": 74
+        },
+        {
+          "heading": "Extended screens",
+          "level": 2,
+          "line": 91
+        },
+        {
+          "heading": "Resultados",
+          "level": 3,
+          "line": 93
+        },
+        {
+          "heading": "Usuarios",
+          "level": 3,
+          "line": 101
+        },
+        {
+          "heading": "Impresora térmica",
+          "level": 3,
+          "line": 108
+        },
+        {
+          "heading": "Tickets",
+          "level": 3,
+          "line": 118
+        },
+        {
+          "heading": "Cross-screen rules",
+          "level": 2,
+          "line": 128
+        },
+        {
+          "heading": "Acceptance",
+          "level": 2,
+          "line": 139
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "sectionCount": 14
+      }
+    },
+    {
+      "path": "docs/superpowers/specs/2026-05-04-recargas-rapidas-integration-design.md",
+      "language": "markdown",
+      "fileCategory": "docs",
+      "totalLines": 50,
+      "nonEmptyLines": 32,
+      "sections": [
+        {
+          "heading": "Recargas Rapidas Integration Design",
+          "level": 1,
+          "line": 1
+        },
+        {
+          "heading": "Goal",
+          "level": 2,
+          "line": 3
+        },
+        {
+          "heading": "Scope",
+          "level": 2,
+          "line": 7
+        },
+        {
+          "heading": "Architecture",
+          "level": 2,
+          "line": 19
+        },
+        {
+          "heading": "Data Flow",
+          "level": 2,
+          "line": 25
+        },
+        {
+          "heading": "Provider Mapping",
+          "level": 2,
+          "line": 34
+        },
+        {
+          "heading": "Safety",
+          "level": 2,
+          "line": 44
+        },
+        {
+          "heading": "Testing",
+          "level": 2,
+          "line": 48
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "sectionCount": 8
+      }
+    },
+    {
+      "path": "docs/superpowers/specs/lotterynet-figma-tokens-v1.json",
+      "language": "json",
+      "fileCategory": "config",
+      "totalLines": 92,
+      "nonEmptyLines": 92,
+      "sections": [
+        {
+          "heading": "meta",
+          "level": 1,
+          "line": 2
+        },
+        {
+          "heading": "color",
+          "level": 1,
+          "line": 8
+        },
+        {
+          "heading": "space",
+          "level": 1,
+          "line": 49
+        },
+        {
+          "heading": "radius",
+          "level": 1,
+          "line": 56
+        },
+        {
+          "heading": "size",
+          "level": 1,
+          "line": 61
+        },
+        {
+          "heading": "typography",
+          "level": 1,
+          "line": 79
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "sectionCount": 6
+      }
+    }
+  ]
+}

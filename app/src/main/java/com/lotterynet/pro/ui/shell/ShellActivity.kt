@@ -47,6 +47,7 @@ import androidx.compose.material.icons.rounded.Print
 import androidx.compose.material.icons.rounded.QueryStats
 import androidx.compose.material.icons.rounded.Sell
 import androidx.compose.material.icons.rounded.Shield
+import androidx.compose.material.icons.rounded.SportsSoccer
 import androidx.compose.material.icons.rounded.SystemUpdate
 import androidx.compose.material.icons.rounded.Today
 import androidx.compose.material.icons.rounded.Visibility
@@ -92,10 +93,15 @@ import com.lotterynet.pro.core.model.UserRole
 import com.lotterynet.pro.core.operations.filterCashiersForSession
 import com.lotterynet.pro.core.operations.filterTicketsForOperationalScope
 import com.lotterynet.pro.core.storage.LocalRechargeRepository
+import com.lotterynet.pro.core.storage.LocalMasterConfigRepository
 import com.lotterynet.pro.core.storage.LocalSalesRepository
 import com.lotterynet.pro.core.storage.LocalSessionRepository
 import com.lotterynet.pro.core.storage.LocalPosModeRepository
 import com.lotterynet.pro.core.storage.LocalUsersRepository
+import com.lotterynet.pro.core.storage.decodeMasterSportsbookSettings
+import com.lotterynet.pro.core.storage.sportsbookRemoteKey
+import com.lotterynet.pro.core.storage.toFeatureConfig
+import com.lotterynet.pro.core.master.SupabaseMasterConfigRemoteStore
 import com.lotterynet.pro.core.sync.NativeRechargeCloudSyncCoordinator
 import com.lotterynet.pro.core.sync.NativeTicketCloudSyncCoordinator
 import com.lotterynet.pro.core.sync.NativeTicketSyncQueueRepository
@@ -115,6 +121,7 @@ import com.lotterynet.pro.ui.recharge.RecargasActivity
 import com.lotterynet.pro.ui.recharge.resolveRechargeOwnerAccount
 import com.lotterynet.pro.ui.results.ResultsActivity
 import com.lotterynet.pro.ui.sales.SalesActivity
+import com.lotterynet.pro.ui.sportsbook.SportsbookActivity
 import com.lotterynet.pro.ui.tickets.TicketLookupActivity
 import com.lotterynet.pro.ui.tickets.TicketSummaryActivity
 import com.lotterynet.pro.ui.update.UpdatePromptActivity
@@ -173,8 +180,16 @@ class ShellActivity : AppCompatActivity() {
         val rechargeAccessVisible = canShowRechargeAccess(
             resolveRechargeOwnerAccount(session, LocalUsersRepository(this)),
         )
+        val sportsbookSettingsRepository = LocalMasterConfigRepository(this)
+        val initialSportsbookAccessVisible = resolveSportsbookAccessVisible(
+            session = session,
+            settingsRepository = sportsbookSettingsRepository,
+        )
         setContent {
             com.lotterynet.pro.ui.theme.LotteryNetComposeTheme {
+                var sportsbookAccessVisible by remember(session.userId) {
+                    mutableStateOf(initialSportsbookAccessVisible)
+                }
                 var dashboardSnapshot by remember(session.userId, dayKey) {
                     mutableStateOf(ShellDashboardSnapshot.empty())
                 }
@@ -210,6 +225,23 @@ class ShellActivity : AppCompatActivity() {
                         LocalUsersRepository(applicationContext).touchSession(session)
                     }
                 }
+                LaunchedEffect(session.userId, session.role) {
+                    val remoteSettings = withContext(Dispatchers.IO) {
+                        runCatching {
+                            SupabaseMasterConfigRemoteStore()
+                                .fetchValue(sportsbookRemoteKey())
+                                ?.toString()
+                                ?.let(::decodeMasterSportsbookSettings)
+                        }.getOrNull()
+                    }
+                    if (remoteSettings != null) {
+                        sportsbookSettingsRepository.saveSportsbookSettings(remoteSettings)
+                        sportsbookAccessVisible = resolveSportsbookAccessVisible(
+                            session = session,
+                            settingsRepository = sportsbookSettingsRepository,
+                        )
+                    }
+                }
                 LaunchedEffect(session.adminId, session.banca) {
                     val ownerKey = session.adminId?.takeIf { it.isNotBlank() } ?: return@LaunchedEffect
                     delay(350)
@@ -226,6 +258,7 @@ class ShellActivity : AppCompatActivity() {
                     pendingTotal = dashboardSnapshot.pendingTotal,
                     assignedCashiersCount = dashboardSnapshot.assignedCashiersCount,
                     rechargeAccessVisible = rechargeAccessVisible,
+                    sportsbookAccessVisible = sportsbookAccessVisible,
                     onOpenNativeSales = {
                         openSafeSales(this, session.role)
                     },
@@ -234,6 +267,9 @@ class ShellActivity : AppCompatActivity() {
                     },
                     onOpenNativeRecharge = {
                         startSafeNativeDestination(this, session.role, NativeDestination.RECHARGE)
+                    },
+                    onOpenNativeSportsbook = {
+                        startSafeNativeDestination(this, session.role, NativeDestination.SPORTSBOOK)
                     },
                     onOpenTicketSummary = {
                         startSafeNativeDestination(this, session.role, NativeDestination.TICKET_SUMMARY)
@@ -464,26 +500,29 @@ internal fun resolveShellScrollStrategy(): ShellScrollStrategy = ShellScrollStra
 internal fun resolveShellButtonRoutes(
     role: UserRole,
     rechargeVisible: Boolean = true,
+    sportsbookVisible: Boolean = false,
     manualPosModeEnabled: Boolean = false,
 ): List<ShellButtonRoute> {
     if (role == UserRole.MASTER) {
         return listOf(
             ShellButtonRoute("Panel master", MasterDashboardActivity::class.java.name),
             ShellButtonRoute("Finanzas", FinanceActivity::class.java.name),
+            ShellButtonRoute("Deportes", SportsbookActivity::class.java.name),
             ShellButtonRoute("Crear banca", MasterCreateBankActivity::class.java.name),
             ShellButtonRoute("Auditoría", AdminAuditActivity::class.java.name),
         )
     }
     if (role == UserRole.SUPERVISOR) {
-        return listOf(
-            ShellButtonRoute("Mis cajeros", AdminMonitorActivity::class.java.name),
-            ShellButtonRoute("Monitoreo", AdminMonitorActivity::class.java.name),
-            ShellButtonRoute("Finanzas", FinanceActivity::class.java.name),
-            ShellButtonRoute("Reporte", OperationalReportActivity::class.java.name),
-            ShellButtonRoute("Tickets", TicketSummaryActivity::class.java.name),
-            ShellButtonRoute("Resultados", ResultsActivity::class.java.name),
-            ShellButtonRoute("Impresora", PrinterActivity::class.java.name),
-        )
+        return buildList {
+            add(ShellButtonRoute("Mis cajeros", AdminMonitorActivity::class.java.name))
+            add(ShellButtonRoute("Monitoreo", AdminMonitorActivity::class.java.name))
+            add(ShellButtonRoute("Finanzas", FinanceActivity::class.java.name))
+            add(ShellButtonRoute("Reporte", OperationalReportActivity::class.java.name))
+            add(ShellButtonRoute("Tickets", TicketSummaryActivity::class.java.name))
+            add(ShellButtonRoute("Resultados", ResultsActivity::class.java.name))
+            if (sportsbookVisible) add(ShellButtonRoute("Deportes", SportsbookActivity::class.java.name))
+            add(ShellButtonRoute("Impresora", PrinterActivity::class.java.name))
+        }
     }
     return buildList {
         add(ShellButtonRoute("Vender", SalesActivity::class.java.name))
@@ -491,6 +530,9 @@ internal fun resolveShellButtonRoutes(
         add(ShellButtonRoute("Resultados", ResultsActivity::class.java.name))
         if (rechargeVisible) {
             add(ShellButtonRoute("Recargas", RecargasActivity::class.java.name))
+        }
+        if (sportsbookVisible) {
+            add(ShellButtonRoute("Deportes", SportsbookActivity::class.java.name))
         }
         add(ShellButtonRoute("Repetir ticket", TicketLookupActivity::class.java.name, lookupMode = "duplicar"))
         add(ShellButtonRoute("Cuadre", FinanceActivity::class.java.name))
@@ -521,16 +563,25 @@ internal fun resolveShellButtonRoutes(
 internal fun resolveShellRolePriorityActionTitles(
     role: UserRole,
     rechargeVisible: Boolean = true,
+    sportsbookVisible: Boolean = false,
 ): List<String> {
     return when (role) {
-        UserRole.MASTER -> listOf("Panel master", "Crear banca", "Auditoría")
-        UserRole.SUPERVISOR -> listOf("Mis cajeros", "Monitoreo", "Reporte", "Tickets", "Resultados", "Finanzas")
+        UserRole.MASTER -> listOf("Panel master", "Deportes", "Crear banca", "Auditoría")
+        UserRole.SUPERVISOR -> buildList {
+            addAll(listOf("Mis cajeros", "Monitoreo", "Reporte", "Tickets", "Resultados", "Finanzas"))
+            if (sportsbookVisible) add("Deportes")
+        }
         UserRole.CASHIER -> buildList {
             addAll(listOf("Vender", "Tickets", "Resultados"))
             if (rechargeVisible) add("Recargas")
+            if (sportsbookVisible) add("Deportes")
             addAll(listOf("Repetir ticket", "Cuadre", "Reporte", "Impresora"))
         }
-        else -> listOf("Vender", "Tickets", "Resultados", "Supervisor", "Límites", "Monitoreo")
+        else -> buildList {
+            addAll(listOf("Vender", "Tickets", "Resultados"))
+            if (sportsbookVisible) add("Deportes")
+            addAll(listOf("Supervisor", "Límites", "Monitoreo"))
+        }
     }
 }
 
@@ -540,6 +591,20 @@ internal fun shouldLoadShellBusinessSnapshot(role: UserRole): Boolean {
 
 internal fun shouldRefreshShellDashboardOnResume(role: UserRole): Boolean {
     return shouldLoadShellBusinessSnapshot(role)
+}
+
+internal fun resolveSportsbookAccessVisible(
+    session: ActiveSession,
+    settingsRepository: LocalMasterConfigRepository,
+): Boolean {
+    if (session.role == UserRole.MASTER) return true
+    return settingsRepository.getSportsbookSettings()
+        .toFeatureConfig()
+        .canOpen(
+            role = session.role,
+            actorKey = session.userId.ifBlank { session.username },
+            adminKey = session.adminId ?: session.adminUser,
+        )
 }
 
 internal fun resolveShellCashTotalForRole(
@@ -607,20 +672,27 @@ internal fun resolveShellMenuSectionTitles(
 internal fun resolveShellMenuActionTitles(
     role: UserRole,
     rechargeVisible: Boolean = true,
+    sportsbookVisible: Boolean = false,
     manualPosModeEnabled: Boolean = false,
 ): List<String> {
     return when (role) {
         UserRole.CASHIER -> buildList {
             addAll(listOf("Vender", "Tickets", "Resultados"))
             if (rechargeVisible) add("Recargas")
+            if (sportsbookVisible) add("Deportes")
             addAll(listOf("Repetir ticket", "Cuadre", "Reporte", "Impresora", "Actualizar sistema", "Cerrar Sesión"))
             add(size - 1, "Modo POS")
         }
-        UserRole.SUPERVISOR -> listOf("Mis cajeros", "Monitoreo", "Reporte", "Tickets", "Resultados", "Finanzas", "Impresora", "Actualizar sistema", "Cerrar Sesión")
-        UserRole.MASTER -> listOf("Panel master", "Crear banca", "Auditoría", "Actualizar sistema", "Cerrar sesión")
+        UserRole.SUPERVISOR -> buildList {
+            addAll(listOf("Mis cajeros", "Monitoreo", "Reporte", "Tickets", "Resultados", "Finanzas"))
+            if (sportsbookVisible) add("Deportes")
+            addAll(listOf("Impresora", "Actualizar sistema", "Cerrar Sesión"))
+        }
+        UserRole.MASTER -> listOf("Panel master", "Deportes", "Crear banca", "Auditoría", "Actualizar sistema", "Cerrar sesión")
         else -> buildList {
             addAll(listOf("Vender", "Tickets", "Resultados"))
             if (rechargeVisible) add("Recargas")
+            if (sportsbookVisible) add("Deportes")
             addAll(
                 listOf(
                     "Repetir ticket",
@@ -706,9 +778,11 @@ private fun ShellRoute(
     pendingTotal: Double,
     assignedCashiersCount: Int,
     rechargeAccessVisible: Boolean,
+    sportsbookAccessVisible: Boolean,
     onOpenNativeSales: () -> Unit,
     onOpenNativeResults: () -> Unit,
     onOpenNativeRecharge: () -> Unit,
+    onOpenNativeSportsbook: () -> Unit,
     onOpenTicketSummary: () -> Unit,
     onOpenTicketDetail: () -> Unit,
     onOpenTicketLookup: (String) -> Unit,
@@ -819,6 +893,7 @@ private fun ShellRoute(
                                     actions = listOf(
                                         ShellMenuAction("Panel master", "Bancas y estado", Icons.Rounded.AdminPanelSettings, onOpenNativeMasterDashboard, active = true),
                                         ShellMenuAction("Finanzas", "Caja global", Icons.Rounded.Analytics, onOpenNativeFinance, accent = Color(0xFF2563EB)),
+                                        ShellMenuAction("Deportes", "Control separado", Icons.Rounded.SportsSoccer, onOpenNativeSportsbook, accent = Color(0xFF16A34A)),
                                         ShellMenuAction("Crear banca", "Alta y credenciales", Icons.Rounded.ManageAccounts, onOpenNativeMasterCreate),
                                         ShellMenuAction("Auditoría", "Bitácora y cambios", Icons.Rounded.Visibility, onOpenNativeAudit),
                                     ),
@@ -864,11 +939,13 @@ private fun ShellRoute(
                             pendingTotal = pendingTotal,
                             assignedCashiersCount = assignedCashiersCount,
                             rechargeAccessVisible = rechargeAccessVisible,
+                            sportsbookAccessVisible = sportsbookAccessVisible,
                             onOpenNativeSales = onOpenNativeSales,
                             onOpenTicketSummary = onOpenTicketSummary,
                             onOpenTicketLookup = onOpenTicketLookup,
                             onOpenNativeResults = onOpenNativeResults,
                             onOpenNativeRecharge = onOpenNativeRecharge,
+                            onOpenNativeSportsbook = onOpenNativeSportsbook,
                             onOpenNativeFinance = onOpenNativeFinance,
                             onOpenNativeReport = onOpenNativeReport,
                             onOpenNativeUsers = onOpenNativeUsers,
@@ -899,11 +976,13 @@ private fun ShellDrawerStyleMenu(
     pendingTotal: Double,
     assignedCashiersCount: Int,
     rechargeAccessVisible: Boolean,
+    sportsbookAccessVisible: Boolean,
     onOpenNativeSales: () -> Unit,
     onOpenTicketSummary: () -> Unit,
     onOpenTicketLookup: (String) -> Unit,
     onOpenNativeResults: () -> Unit,
     onOpenNativeRecharge: () -> Unit,
+    onOpenNativeSportsbook: () -> Unit,
     onOpenNativeFinance: () -> Unit,
     onOpenNativeReport: () -> Unit,
     onOpenNativeUsers: () -> Unit,
@@ -938,9 +1017,12 @@ private fun ShellDrawerStyleMenu(
             add(
                 ShellMenuSection(
                     title = "Consulta",
-                    actions = listOf(
-                        ShellMenuAction("Resultados", "Sorteos del día", Icons.Rounded.Today, onOpenNativeResults, accent = Color(0xFFF59E0B)),
-                    ),
+                    actions = buildList {
+                        add(ShellMenuAction("Resultados", "Sorteos del día", Icons.Rounded.Today, onOpenNativeResults, accent = Color(0xFFF59E0B)))
+                        if (sportsbookAccessVisible) {
+                            add(ShellMenuAction("Deportes", "Apuestas separadas", Icons.Rounded.SportsSoccer, onOpenNativeSportsbook, accent = Color(0xFF16A34A)))
+                        }
+                    },
                 ),
             )
             add(
@@ -969,6 +1051,9 @@ private fun ShellDrawerStyleMenu(
                         add(ShellMenuAction("Resultados", "Sorteos del día", Icons.Rounded.Today, onOpenNativeResults, accent = Color(0xFFF59E0B)))
                         if (rechargeAccessVisible) {
                             add(ShellMenuAction("Recargas", "Carga móvil", Icons.Rounded.PhoneAndroid, onOpenNativeRecharge, accent = Color(0xFF67E8F9)))
+                        }
+                        if (sportsbookAccessVisible) {
+                            add(ShellMenuAction("Deportes", "Apuestas separadas", Icons.Rounded.SportsSoccer, onOpenNativeSportsbook, accent = Color(0xFF16A34A)))
                         }
                         add(ShellMenuAction("Repetir ticket", "Duplicar ticket anterior", Icons.Rounded.Sell, { onOpenTicketLookup("duplicar") }, accent = Color(0xFFD8B4FE)))
                     },

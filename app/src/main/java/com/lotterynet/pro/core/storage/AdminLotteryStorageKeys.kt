@@ -13,4 +13,5 @@ object AdminLotteryStorageKeys {
     const val SYSTEM_CASHIER_MODE_KEY = "admin_system_cashier_mode"
     const val SYSTEM_CASHIER_LOTTERY_MODE_KEY = "admin_system_cashier_lottery_mode"
     const val SYSTEM_CASHIER_PICK_MODE_KEY = "admin_system_cashier_pick_mode"
+    const val SYSTEM_BLOCKED_PLAYS_KEY = "admin_system_blocked_plays"
 }

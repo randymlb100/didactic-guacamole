@@ -1393,7 +1393,11 @@ def legacy_filtered_route():
         pick_rows = pick_rows_for_request_date(date_key, allow_combined_fallback=True)
         rows = unique_sorted_results(lottery_rows + pick_rows)
     if query:
-        rows = [row for row in rows if query in row["name"].lower()]
+        normalized_query = query.replace("anguilla", "anguila")
+        rows = [
+            row for row in rows
+            if normalized_query in str(row.get("name") or row.get("lotteryName") or "").lower().replace("anguilla", "anguila")
+        ]
     return json_utf8(rows)
 
 

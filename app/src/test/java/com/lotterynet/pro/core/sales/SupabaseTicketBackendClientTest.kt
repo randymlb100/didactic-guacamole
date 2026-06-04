@@ -52,6 +52,78 @@ class SupabaseTicketBackendClientTest {
     }
 
     @Test
+    fun `buildCreateTicketPayload rejects empty ticket plays`() {
+        val client = SupabaseTicketBackendClient(
+            baseUrl = "https://example.supabase.co",
+            apiKey = "test-key",
+        )
+
+        val error = runCatching {
+            client.buildCreateTicketPayload(
+                BackendTicketRequest(
+                    clientRequestId = "empty-ticket",
+                    adminKey = "admin01",
+                    actorKey = "admin01",
+                    cashierKey = "cajero01",
+                    drawDate = "2026-05-29",
+                    plays = emptyList(),
+                ),
+            )
+        }.exceptionOrNull()
+
+        assertTrue(error is IllegalArgumentException)
+        assertTrue(error?.message.orEmpty().contains("No hay jugadas"))
+    }
+
+    @Test
+    fun `buildCreateTicketPayload rejects blank play number`() {
+        val client = SupabaseTicketBackendClient(
+            baseUrl = "https://example.supabase.co",
+            apiKey = "test-key",
+        )
+
+        val error = runCatching {
+            client.buildCreateTicketPayload(
+                BackendTicketRequest(
+                    clientRequestId = "blank-play",
+                    adminKey = "admin01",
+                    actorKey = "admin01",
+                    cashierKey = "cajero01",
+                    drawDate = "2026-05-29",
+                    plays = listOf(BackendTicketPlay("Q", "", 10.0)),
+                ),
+            )
+        }.exceptionOrNull()
+
+        assertTrue(error is IllegalArgumentException)
+        assertTrue(error?.message.orEmpty().contains("incompleta"))
+    }
+
+    @Test
+    fun `buildCreateTicketPayload rejects play without lottery identity`() {
+        val client = SupabaseTicketBackendClient(
+            baseUrl = "https://example.supabase.co",
+            apiKey = "test-key",
+        )
+
+        val error = runCatching {
+            client.buildCreateTicketPayload(
+                BackendTicketRequest(
+                    clientRequestId = "blank-lottery",
+                    adminKey = "admin01",
+                    actorKey = "admin01",
+                    cashierKey = "cajero01",
+                    drawDate = "2026-05-29",
+                    plays = listOf(BackendTicketPlay("Q", "25", 10.0, lotteryId = "", lotteryName = "")),
+                ),
+            )
+        }.exceptionOrNull()
+
+        assertTrue(error is IllegalArgumentException)
+        assertTrue(error?.message.orEmpty().contains("incompleta"))
+    }
+
+    @Test
     fun `buildCreateTicketPayload sends server pick codes and keeps local mode metadata`() {
         val payload = SupabaseTicketBackendClient(
             baseUrl = "https://example.supabase.co",
@@ -64,10 +136,10 @@ class SupabaseTicketBackendClientTest {
                 cashierKey = "cajero01",
                 drawDate = "2026-05-08",
                 plays = listOf(
-                    BackendTicketPlay("P3", "358", 10.0, lotteryId = "pick3"),
-                    BackendTicketPlay("P3BOX", "358", 10.0, lotteryId = "pick3"),
-                    BackendTicketPlay("P4", "3581", 10.0, lotteryId = "pick4"),
-                    BackendTicketPlay("P4BOX", "3581", 10.0, lotteryId = "pick4"),
+                    BackendTicketPlay("P3", "358", 10.0, lotteryId = "pick3", lotteryName = "Pick 3 Dia"),
+                    BackendTicketPlay("P3BOX", "358", 10.0, lotteryId = "pick3", lotteryName = "Pick 3 Dia"),
+                    BackendTicketPlay("P4", "3581", 10.0, lotteryId = "pick4", lotteryName = "Pick 4 Dia"),
+                    BackendTicketPlay("P4BOX", "3581", 10.0, lotteryId = "pick4", lotteryName = "Pick 4 Dia"),
                 ),
             ),
         )
@@ -104,7 +176,7 @@ class SupabaseTicketBackendClientTest {
                 cashierKey = "cajero01",
                 drawDate = "2026-05-08",
                 plays = listOf(
-                    BackendTicketPlay("P3", "358", 0.50, lotteryId = "pick3"),
+                    BackendTicketPlay("P3", "358", 0.50, lotteryId = "pick3", lotteryName = "Pick 3 Dia"),
                 ),
             ),
         )
@@ -151,7 +223,7 @@ class SupabaseTicketBackendClientTest {
                 cashierKey = "cajero01",
                 sorteoId = sorteoId,
                 drawDate = "2026-05-18",
-                plays = listOf(BackendTicketPlay("QUINIELA", "15", 10.0)),
+                plays = listOf(BackendTicketPlay("QUINIELA", "15", 10.0, lotteryId = sorteoId, lotteryName = "Leidsa")),
             ),
         )
 
@@ -171,7 +243,7 @@ class SupabaseTicketBackendClientTest {
                 cashierKey = "cajero01",
                 drawDate = "2026-05-10",
                 plays = listOf(
-                    BackendTicketPlay("P3", "852", 5.0, lotteryId = "US-P3-TX-PICK-3-DAY"),
+                    BackendTicketPlay("P3", "852", 5.0, lotteryId = "US-P3-TX-PICK-3-DAY", lotteryName = "Texas Pick 3 Day"),
                 ),
             ),
         )
@@ -312,7 +384,7 @@ class SupabaseTicketBackendClientTest {
         val message = presentSupabaseTicketBackendMessage("canceling statement due to statement timeout")
 
         assertEquals(
-            "El servidor tardo demasiado validando la venta. No se guardo el ticket. Intenta de nuevo.",
+            "El servidor tardo validando. Si intentas de nuevo, se reutiliza la misma venta para no duplicarla.",
             message,
         )
     }

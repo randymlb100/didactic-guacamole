@@ -1,0 +1,643 @@
+{
+  "scriptCompleted": true,
+  "filesAnalyzed": 11,
+  "filesSkipped": [],
+  "results": [
+    {
+      "path": "docs/FIGMA_LOTTERYNET_COLORIDO_PRO.md",
+      "language": "markdown",
+      "fileCategory": "docs",
+      "totalLines": 94,
+      "nonEmptyLines": 75,
+      "sections": [
+        {
+          "heading": "LotteryNet Colorido Pro",
+          "level": 1,
+          "line": 1
+        },
+        {
+          "heading": "Foundations",
+          "level": 2,
+          "line": 5
+        },
+        {
+          "heading": "Color",
+          "level": 3,
+          "line": 7
+        },
+        {
+          "heading": "Tipografía",
+          "level": 3,
+          "line": 21
+        },
+        {
+          "heading": "Spacing y forma",
+          "level": 3,
+          "line": 26
+        },
+        {
+          "heading": "Componentes",
+          "level": 2,
+          "line": 31
+        },
+        {
+          "heading": "Shared code source",
+          "level": 3,
+          "line": 33
+        },
+        {
+          "heading": "Componentes a representar en Figma",
+          "level": 3,
+          "line": 38
+        },
+        {
+          "heading": "Regla visual",
+          "level": 3,
+          "line": 49
+        },
+        {
+          "heading": "Flows",
+          "level": 2,
+          "line": 55
+        },
+        {
+          "heading": "Mapeo con la app",
+          "level": 2,
+          "line": 66
+        },
+        {
+          "heading": "Venta",
+          "level": 3,
+          "line": 68
+        },
+        {
+          "heading": "Resultados",
+          "level": 3,
+          "line": 72
+        },
+        {
+          "heading": "Ticket",
+          "level": 3,
+          "line": 76
+        },
+        {
+          "heading": "Recargas",
+          "level": 3,
+          "line": 80
+        },
+        {
+          "heading": "Cuadre",
+          "level": 3,
+          "line": 84
+        },
+        {
+          "heading": "Admin",
+          "level": 3,
+          "line": 88
+        },
+        {
+          "heading": "Printer",
+          "level": 3,
+          "line": 92
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "sectionCount": 18
+      }
+    },
+    {
+      "path": "docs/american-picks-source-architecture.md",
+      "language": "markdown",
+      "fileCategory": "docs",
+      "totalLines": 128,
+      "nonEmptyLines": 87,
+      "sections": [
+        {
+          "heading": "American Picks Source Architecture",
+          "level": 1,
+          "line": 1
+        },
+        {
+          "heading": "Goal",
+          "level": 2,
+          "line": 3
+        },
+        {
+          "heading": "Source priority",
+          "level": 2,
+          "line": 7
+        },
+        {
+          "heading": "1. Primary live source",
+          "level": 3,
+          "line": 9
+        },
+        {
+          "heading": "2. Secondary live fallback",
+          "level": 3,
+          "line": 19
+        },
+        {
+          "heading": "3. Historical / reconciliation source",
+          "level": 3,
+          "line": 41
+        },
+        {
+          "heading": "Save rules",
+          "level": 2,
+          "line": 50
+        },
+        {
+          "heading": "Never downgrade a published pick",
+          "level": 3,
+          "line": 52
+        },
+        {
+          "heading": "Allow upgrade",
+          "level": 3,
+          "line": 62
+        },
+        {
+          "heading": "Cache strategy",
+          "level": 2,
+          "line": 69
+        },
+        {
+          "heading": "Current day",
+          "level": 3,
+          "line": 71
+        },
+        {
+          "heading": "Previous days",
+          "level": 3,
+          "line": 77
+        },
+        {
+          "heading": "Retry policy",
+          "level": 2,
+          "line": 82
+        },
+        {
+          "heading": "Request level",
+          "level": 3,
+          "line": 84
+        },
+        {
+          "heading": "State-critical fallback",
+          "level": 3,
+          "line": 90
+        },
+        {
+          "heading": "Production flow",
+          "level": 2,
+          "line": 108
+        },
+        {
+          "heading": "Operational rule",
+          "level": 2,
+          "line": 117
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "sectionCount": 17
+      }
+    },
+    {
+      "path": "docs/bug-sweep-no-emulator-2026-05-12.md",
+      "language": "markdown",
+      "fileCategory": "docs",
+      "totalLines": 94,
+      "nonEmptyLines": 76,
+      "sections": [
+        {
+          "heading": "Barrido de Bugs sin Emulador - 2026-05-12",
+          "level": 1,
+          "line": 1
+        },
+        {
+          "heading": "Resumen",
+          "level": 2,
+          "line": 3
+        },
+        {
+          "heading": "Evidencia rápida",
+          "level": 2,
+          "line": 16
+        },
+        {
+          "heading": "Bugs reproducibles",
+          "level": 2,
+          "line": 24
+        },
+        {
+          "heading": "1. `live=1` excede el SLA y puede dejar la app esperando demasiado",
+          "level": 3,
+          "line": 26
+        },
+        {
+          "heading": "2. `live=1` para hoy vacío tarda demasiado solo para confirmar ausencia de resultados",
+          "level": 3,
+          "line": 51
+        },
+        {
+          "heading": "Observaciones que NO son bug real",
+          "level": 2,
+          "line": 68
+        },
+        {
+          "heading": "A. `42` loterías en `system-results` vs `46` en cache no es inconsistencia por sí sola",
+          "level": 3,
+          "line": 70
+        },
+        {
+          "heading": "B. Hoy `12-05-2026` en `0/0` es esperado si las fuentes aún no publicaron fecha de hoy",
+          "level": 3,
+          "line": 80
+        },
+        {
+          "heading": "Prioridad sugerida",
+          "level": 2,
+          "line": 89
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "sectionCount": 10
+      }
+    },
+    {
+      "path": "docs/native-results-sync-recovery.md",
+      "language": "markdown",
+      "fileCategory": "docs",
+      "totalLines": 38,
+      "nonEmptyLines": 27,
+      "sections": [
+        {
+          "heading": "Native Results Sync Recovery",
+          "level": 2,
+          "line": 1
+        },
+        {
+          "heading": "Fuente remota",
+          "level": 3,
+          "line": 5
+        },
+        {
+          "heading": "Contrato que debe respetar la app nativa",
+          "level": 3,
+          "line": 12
+        },
+        {
+          "heading": "Reglas de integración",
+          "level": 3,
+          "line": 22
+        },
+        {
+          "heading": "Estado de recuperación aplicado",
+          "level": 3,
+          "line": 29
+        },
+        {
+          "heading": "Próximo criterio de trabajo",
+          "level": 3,
+          "line": 35
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "sectionCount": 6
+      }
+    },
+    {
+      "path": "docs/results-operations-runbook.md",
+      "language": "markdown",
+      "fileCategory": "docs",
+      "totalLines": 56,
+      "nonEmptyLines": 40,
+      "sections": [
+        {
+          "heading": "LotteryNet Results Operations Runbook",
+          "level": 1,
+          "line": 1
+        },
+        {
+          "heading": "Normal Flow",
+          "level": 2,
+          "line": 3
+        },
+        {
+          "heading": "What Must Stay True",
+          "level": 2,
+          "line": 15
+        },
+        {
+          "heading": "Daily Check",
+          "level": 2,
+          "line": 22
+        },
+        {
+          "heading": "If Results Are Late",
+          "level": 2,
+          "line": 37
+        },
+        {
+          "heading": "Manual Refresh Rule",
+          "level": 2,
+          "line": 47
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "sectionCount": 6
+      }
+    },
+    {
+      "path": "docs/sentry-android-setup.md",
+      "language": "markdown",
+      "fileCategory": "docs",
+      "totalLines": 38,
+      "nonEmptyLines": 27,
+      "sections": [
+        {
+          "heading": "Sentry Android Setup",
+          "level": 1,
+          "line": 1
+        },
+        {
+          "heading": "Runtime",
+          "level": 2,
+          "line": 5
+        },
+        {
+          "heading": "CLI / build upload",
+          "level": 2,
+          "line": 18
+        },
+        {
+          "heading": "Verificacion",
+          "level": 2,
+          "line": 32
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "sectionCount": 4
+      }
+    },
+    {
+      "path": "docs/supabase_advisor_warnings_hardening.sql",
+      "language": "sql",
+      "fileCategory": "data",
+      "totalLines": 69,
+      "nonEmptyLines": 65,
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "definitionCount": 0
+      }
+    },
+    {
+      "path": "docs/supabase_legacy_public_tables_rls_options.sql",
+      "language": "sql",
+      "fileCategory": "data",
+      "totalLines": 111,
+      "nonEmptyLines": 96,
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "definitionCount": 0
+      }
+    },
+    {
+      "path": "docs/supabase_lock_legacy_public_tables.sql",
+      "language": "sql",
+      "fileCategory": "data",
+      "totalLines": 42,
+      "nonEmptyLines": 36,
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "definitionCount": 0
+      }
+    },
+    {
+      "path": "docs/supabase_native_schema.sql",
+      "language": "sql",
+      "fileCategory": "data",
+      "totalLines": 55,
+      "nonEmptyLines": 44,
+      "definitions": [
+        {
+          "name": "public",
+          "kind": "table",
+          "fields": [
+            "scope",
+            "payload",
+            "updated_at"
+          ],
+          "startLine": 4,
+          "endLine": 8
+        },
+        {
+          "name": "public",
+          "kind": "table",
+          "fields": [
+            "config_key",
+            "payload",
+            "updated_at"
+          ],
+          "startLine": 10,
+          "endLine": 14
+        },
+        {
+          "name": "public",
+          "kind": "table",
+          "fields": [
+            "result_date",
+            "payload",
+            "updated_at"
+          ],
+          "startLine": 16,
+          "endLine": 20
+        },
+        {
+          "name": "idx_lotterynet_users_state_updated_at",
+          "kind": "index",
+          "fields": [],
+          "startLine": 48,
+          "endLine": 48
+        },
+        {
+          "name": "idx_lotterynet_master_state_updated_at",
+          "kind": "index",
+          "fields": [],
+          "startLine": 51,
+          "endLine": 51
+        },
+        {
+          "name": "idx_lotterynet_results_by_day_updated_at",
+          "kind": "index",
+          "fields": [],
+          "startLine": 54,
+          "endLine": 54
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "definitionCount": 6
+      }
+    },
+    {
+      "path": "docs/supabase_production_rls_compat.sql",
+      "language": "sql",
+      "fileCategory": "data",
+      "totalLines": 253,
+      "nonEmptyLines": 216,
+      "definitions": [
+        {
+          "name": "public",
+          "kind": "table",
+          "fields": [
+            "value",
+            "upd"
+          ],
+          "startLine": 32,
+          "endLine": 36
+        },
+        {
+          "name": "public",
+          "kind": "table",
+          "fields": [
+            "scope",
+            "payload",
+            "updated_at"
+          ],
+          "startLine": 38,
+          "endLine": 42
+        },
+        {
+          "name": "public",
+          "kind": "table",
+          "fields": [
+            "config_key",
+            "payload",
+            "updated_at"
+          ],
+          "startLine": 44,
+          "endLine": 48
+        },
+        {
+          "name": "public",
+          "kind": "table",
+          "fields": [
+            "result_date",
+            "payload",
+            "updated_at"
+          ],
+          "startLine": 50,
+          "endLine": 54
+        },
+        {
+          "name": "public",
+          "kind": "table",
+          "fields": [
+            "owner_key",
+            "payload",
+            "updated_at"
+          ],
+          "startLine": 56,
+          "endLine": 60
+        },
+        {
+          "name": "public",
+          "kind": "table",
+          "fields": [
+            "owner_key",
+            "payload",
+            "updated_at"
+          ],
+          "startLine": 62,
+          "endLine": 66
+        },
+        {
+          "name": "idx_lotterynet_kv_upd",
+          "kind": "index",
+          "fields": [],
+          "startLine": 126,
+          "endLine": 126
+        },
+        {
+          "name": "idx_lotterynet_users_state_updated_at",
+          "kind": "index",
+          "fields": [],
+          "startLine": 129,
+          "endLine": 129
+        },
+        {
+          "name": "idx_lotterynet_master_state_updated_at",
+          "kind": "index",
+          "fields": [],
+          "startLine": 132,
+          "endLine": 132
+        },
+        {
+          "name": "idx_lotterynet_results_by_day_updated_at",
+          "kind": "index",
+          "fields": [],
+          "startLine": 135,
+          "endLine": 135
+        },
+        {
+          "name": "idx_lotterynet_tickets_by_owner_updated_at",
+          "kind": "index",
+          "fields": [],
+          "startLine": 138,
+          "endLine": 138
+        },
+        {
+          "name": "idx_lotterynet_recharges_by_owner_updated_at",
+          "kind": "index",
+          "fields": [],
+          "startLine": 141,
+          "endLine": 141
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "definitionCount": 12
+      }
+    }
+  ]
+}

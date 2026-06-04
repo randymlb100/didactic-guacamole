@@ -1,0 +1,6570 @@
+{
+  "scriptCompleted": true,
+  "filesAnalyzed": 25,
+  "filesSkipped": [],
+  "results": [
+    {
+      "path": "proyecto web nuevo/scratch/list_users.js",
+      "language": "javascript",
+      "fileCategory": "code",
+      "totalLines": 43,
+      "nonEmptyLines": 35,
+      "functions": [
+        {
+          "name": "getEnvVar",
+          "startLine": 9,
+          "endLine": 12,
+          "params": [
+            "name"
+          ]
+        },
+        {
+          "name": "listUsers",
+          "startLine": 19,
+          "endLine": 41,
+          "params": []
+        }
+      ],
+      "callGraph": [
+        {
+          "caller": "getEnvVar",
+          "callee": "envContent.match",
+          "lineNumber": 10
+        },
+        {
+          "caller": "getEnvVar",
+          "callee": "match[1].trim",
+          "lineNumber": 11
+        },
+        {
+          "caller": "listUsers",
+          "callee": "console.log",
+          "lineNumber": 20
+        },
+        {
+          "caller": "listUsers",
+          "callee": "supabase.from('lotterynet_users_state').select('payload').eq('scope', 'global').maybeSingle",
+          "lineNumber": 22
+        },
+        {
+          "caller": "listUsers",
+          "callee": "supabase.from('lotterynet_users_state').select('payload').eq",
+          "lineNumber": 22
+        },
+        {
+          "caller": "listUsers",
+          "callee": "supabase.from('lotterynet_users_state').select",
+          "lineNumber": 22
+        },
+        {
+          "caller": "listUsers",
+          "callee": "supabase.from",
+          "lineNumber": 22
+        },
+        {
+          "caller": "listUsers",
+          "callee": "console.error",
+          "lineNumber": 24
+        },
+        {
+          "caller": "listUsers",
+          "callee": "console.log",
+          "lineNumber": 29
+        },
+        {
+          "caller": "listUsers",
+          "callee": "console.log",
+          "lineNumber": 34
+        },
+        {
+          "caller": "listUsers",
+          "callee": "users.forEach",
+          "lineNumber": 35
+        },
+        {
+          "caller": "listUsers",
+          "callee": "console.log",
+          "lineNumber": 36
+        },
+        {
+          "caller": "listUsers",
+          "callee": "console.error",
+          "lineNumber": 39
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 2,
+        "classCount": 0
+      }
+    },
+    {
+      "path": "proyecto web nuevo/scratch/test_browser.cjs",
+      "language": "javascript",
+      "fileCategory": "code",
+      "totalLines": 24,
+      "nonEmptyLines": 19,
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0
+      }
+    },
+    {
+      "path": "proyecto web nuevo/scratch/test_browser.js",
+      "language": "javascript",
+      "fileCategory": "code",
+      "totalLines": 24,
+      "nonEmptyLines": 19,
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0
+      }
+    },
+    {
+      "path": "proyecto web nuevo/scratch/test_or_query.js",
+      "language": "javascript",
+      "fileCategory": "code",
+      "totalLines": 46,
+      "nonEmptyLines": 38,
+      "functions": [
+        {
+          "name": "getEnvVar",
+          "startLine": 9,
+          "endLine": 12,
+          "params": [
+            "name"
+          ]
+        },
+        {
+          "name": "testOrQuery",
+          "startLine": 19,
+          "endLine": 44,
+          "params": []
+        }
+      ],
+      "callGraph": [
+        {
+          "caller": "getEnvVar",
+          "callee": "envContent.match",
+          "lineNumber": 10
+        },
+        {
+          "caller": "getEnvVar",
+          "callee": "match[1].trim",
+          "lineNumber": 11
+        },
+        {
+          "caller": "testOrQuery",
+          "callee": "console.log",
+          "lineNumber": 20
+        },
+        {
+          "caller": "testOrQuery",
+          "callee": "supabase\n      .from('lotterynet_kv')\n      .select('key, value')\n      .or",
+          "lineNumber": 22
+        },
+        {
+          "caller": "testOrQuery",
+          "callee": "supabase\n      .from('lotterynet_kv')\n      .select",
+          "lineNumber": 22
+        },
+        {
+          "caller": "testOrQuery",
+          "callee": "supabase\n      .from",
+          "lineNumber": 22
+        },
+        {
+          "caller": "testOrQuery",
+          "callee": "console.error",
+          "lineNumber": 28
+        },
+        {
+          "caller": "testOrQuery",
+          "callee": "console.log",
+          "lineNumber": 32
+        },
+        {
+          "caller": "testOrQuery",
+          "callee": "data.forEach",
+          "lineNumber": 34
+        },
+        {
+          "caller": "testOrQuery",
+          "callee": "JSON.parse",
+          "lineNumber": 35
+        },
+        {
+          "caller": "testOrQuery",
+          "callee": "Array.isArray",
+          "lineNumber": 36
+        },
+        {
+          "caller": "testOrQuery",
+          "callee": "console.log",
+          "lineNumber": 38
+        },
+        {
+          "caller": "testOrQuery",
+          "callee": "console.log",
+          "lineNumber": 40
+        },
+        {
+          "caller": "testOrQuery",
+          "callee": "console.error",
+          "lineNumber": 42
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 2,
+        "classCount": 0
+      }
+    },
+    {
+      "path": "proyecto web nuevo/src/App.css",
+      "language": "css",
+      "fileCategory": "markup",
+      "totalLines": 184,
+      "nonEmptyLines": 158,
+      "metrics": {}
+    },
+    {
+      "path": "proyecto web nuevo/src/index.css",
+      "language": "css",
+      "fileCategory": "markup",
+      "totalLines": 358,
+      "nonEmptyLines": 303,
+      "metrics": {}
+    },
+    {
+      "path": "proyecto web nuevo/vite.config.ts",
+      "language": "typescript",
+      "fileCategory": "code",
+      "totalLines": 7,
+      "nonEmptyLines": 6,
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0
+      }
+    },
+    {
+      "path": "sentry.properties.example",
+      "language": "example",
+      "fileCategory": "code",
+      "totalLines": 4,
+      "nonEmptyLines": 4,
+      "metrics": {}
+    },
+    {
+      "path": "settings.gradle.kts",
+      "language": "kotlin",
+      "fileCategory": "code",
+      "totalLines": 21,
+      "nonEmptyLines": 19,
+      "metrics": {}
+    },
+    {
+      "path": "supabase/config.toml",
+      "language": "toml",
+      "fileCategory": "config",
+      "totalLines": 67,
+      "nonEmptyLines": 45,
+      "sections": [
+        {
+          "heading": "functions.ota-check-update",
+          "level": 2,
+          "line": 3
+        },
+        {
+          "heading": "functions.ota-log-event",
+          "level": 2,
+          "line": 6
+        },
+        {
+          "heading": "functions.admin-users-state",
+          "level": 2,
+          "line": 9
+        },
+        {
+          "heading": "functions.lotterynet-users-state",
+          "level": 2,
+          "line": 12
+        },
+        {
+          "heading": "functions.admin-master-state",
+          "level": 2,
+          "line": 15
+        },
+        {
+          "heading": "functions.admin-cashier-limits",
+          "level": 2,
+          "line": 18
+        },
+        {
+          "heading": "functions.admin-manual-results-override",
+          "level": 2,
+          "line": 21
+        },
+        {
+          "heading": "functions.results-server-refresh",
+          "level": 2,
+          "line": 24
+        },
+        {
+          "heading": "functions.get-master-config",
+          "level": 2,
+          "line": 27
+        },
+        {
+          "heading": "functions.create-ticket-v2",
+          "level": 2,
+          "line": 30
+        },
+        {
+          "heading": "functions.void-ticket",
+          "level": 2,
+          "line": 33
+        },
+        {
+          "heading": "functions.pay-ticket",
+          "level": 2,
+          "line": 36
+        },
+        {
+          "heading": "functions.get-ticket-list",
+          "level": 2,
+          "line": 39
+        },
+        {
+          "heading": "functions.get-ticket-delta",
+          "level": 2,
+          "line": 42
+        },
+        {
+          "heading": "functions.get-ticket-summary",
+          "level": 2,
+          "line": 45
+        },
+        {
+          "heading": "functions.get-results-status",
+          "level": 2,
+          "line": 48
+        },
+        {
+          "heading": "functions.client-health-batch",
+          "level": 2,
+          "line": 51
+        },
+        {
+          "heading": "functions.get-admin-report",
+          "level": 2,
+          "line": 54
+        },
+        {
+          "heading": "functions.get-cashier-report",
+          "level": 2,
+          "line": 57
+        },
+        {
+          "heading": "functions.get-supervisor-report",
+          "level": 2,
+          "line": 60
+        },
+        {
+          "heading": "functions.change-user-password",
+          "level": 2,
+          "line": 63
+        },
+        {
+          "heading": "functions.update-master-config",
+          "level": 2,
+          "line": 66
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "sectionCount": 22
+      }
+    },
+    {
+      "path": "supabase/deploy-admin-functions.ps1",
+      "language": "powershell",
+      "fileCategory": "script",
+      "totalLines": 24,
+      "nonEmptyLines": 19,
+      "metrics": {}
+    },
+    {
+      "path": "supabase/functions/auth-legacy-login/index.ts",
+      "language": "typescript",
+      "fileCategory": "code",
+      "totalLines": 310,
+      "nonEmptyLines": 281,
+      "functions": [
+        {
+          "name": "json",
+          "startLine": 25,
+          "endLine": 30,
+          "params": [
+            "body",
+            "status"
+          ]
+        },
+        {
+          "name": "clean",
+          "startLine": 32,
+          "endLine": 34,
+          "params": [
+            "value"
+          ]
+        },
+        {
+          "name": "lower",
+          "startLine": 36,
+          "endLine": 38,
+          "params": [
+            "value"
+          ]
+        },
+        {
+          "name": "accountArray",
+          "startLine": 40,
+          "endLine": 42,
+          "params": [
+            "value"
+          ]
+        },
+        {
+          "name": "normalizeRole",
+          "startLine": 44,
+          "endLine": 47,
+          "params": [
+            "value"
+          ]
+        },
+        {
+          "name": "isAccountBlocked",
+          "startLine": 49,
+          "endLine": 54,
+          "params": [
+            "account"
+          ]
+        },
+        {
+          "name": "authEmailFor",
+          "startLine": 56,
+          "endLine": 64,
+          "params": [
+            "username"
+          ]
+        },
+        {
+          "name": "matchesAccount",
+          "startLine": 66,
+          "endLine": 70,
+          "params": [
+            "account",
+            "idOrUser"
+          ]
+        },
+        {
+          "name": "allAccounts",
+          "startLine": 72,
+          "endLine": 84,
+          "params": [
+            "payload"
+          ]
+        },
+        {
+          "name": "masterAccount",
+          "startLine": 86,
+          "endLine": 97,
+          "params": []
+        },
+        {
+          "name": "sha256Hex",
+          "startLine": 99,
+          "endLine": 102,
+          "params": [
+            "input"
+          ]
+        },
+        {
+          "name": "verifyLegacyPassword",
+          "startLine": 104,
+          "endLine": 110,
+          "params": [
+            "account",
+            "password"
+          ]
+        },
+        {
+          "name": "findAuthUserByEmail",
+          "startLine": 112,
+          "endLine": 122,
+          "params": [
+            "email"
+          ]
+        },
+        {
+          "name": "ensureAuthUser",
+          "startLine": 124,
+          "endLine": 164,
+          "params": [
+            "account",
+            "password"
+          ]
+        },
+        {
+          "name": "updateAuthUserPassword",
+          "startLine": 166,
+          "endLine": 187,
+          "params": [
+            "account",
+            "authUserId",
+            "password"
+          ]
+        },
+        {
+          "name": "signIn",
+          "startLine": 189,
+          "endLine": 194,
+          "params": [
+            "email",
+            "password"
+          ]
+        },
+        {
+          "name": "upsertProfile",
+          "startLine": 196,
+          "endLine": 213,
+          "params": [
+            "account",
+            "authUserId"
+          ]
+        },
+        {
+          "name": "replaceAccountWithAuth",
+          "startLine": 215,
+          "endLine": 224,
+          "params": [
+            "accounts",
+            "account",
+            "authUserId"
+          ]
+        },
+        {
+          "name": "saveAuthLink",
+          "startLine": 226,
+          "endLine": 252,
+          "params": [
+            "account",
+            "authUserId"
+          ]
+        }
+      ],
+      "callGraph": [
+        {
+          "caller": "json",
+          "callee": "JSON.stringify",
+          "lineNumber": 26
+        },
+        {
+          "caller": "clean",
+          "callee": "String(value ?? \"\").trim",
+          "lineNumber": 33
+        },
+        {
+          "caller": "clean",
+          "callee": "String",
+          "lineNumber": 33
+        },
+        {
+          "caller": "lower",
+          "callee": "clean(value).toLowerCase",
+          "lineNumber": 37
+        },
+        {
+          "caller": "lower",
+          "callee": "clean",
+          "lineNumber": 37
+        },
+        {
+          "caller": "accountArray",
+          "callee": "Array.isArray",
+          "lineNumber": 41
+        },
+        {
+          "caller": "normalizeRole",
+          "callee": "lower",
+          "lineNumber": 45
+        },
+        {
+          "caller": "authEmailFor",
+          "callee": "username\n    .trim()\n    .toLowerCase()\n    .replace(/[^a-z0-9._-]+/g, \"-\")\n    .replace(/^-+|-+$/g, \"\")\n    .slice",
+          "lineNumber": 57
+        },
+        {
+          "caller": "authEmailFor",
+          "callee": "username\n    .trim()\n    .toLowerCase()\n    .replace(/[^a-z0-9._-]+/g, \"-\")\n    .replace",
+          "lineNumber": 57
+        },
+        {
+          "caller": "authEmailFor",
+          "callee": "username\n    .trim()\n    .toLowerCase()\n    .replace",
+          "lineNumber": 57
+        },
+        {
+          "caller": "authEmailFor",
+          "callee": "username\n    .trim()\n    .toLowerCase",
+          "lineNumber": 57
+        },
+        {
+          "caller": "authEmailFor",
+          "callee": "username\n    .trim",
+          "lineNumber": 57
+        },
+        {
+          "caller": "matchesAccount",
+          "callee": "idOrUser.trim().toLowerCase",
+          "lineNumber": 67
+        },
+        {
+          "caller": "matchesAccount",
+          "callee": "idOrUser.trim",
+          "lineNumber": 67
+        },
+        {
+          "caller": "matchesAccount",
+          "callee": "lower",
+          "lineNumber": 69
+        },
+        {
+          "caller": "matchesAccount",
+          "callee": "lower",
+          "lineNumber": 69
+        },
+        {
+          "caller": "allAccounts",
+          "callee": "accountArray",
+          "lineNumber": 74
+        },
+        {
+          "caller": "allAccounts",
+          "callee": "accountArray",
+          "lineNumber": 75
+        },
+        {
+          "caller": "allAccounts",
+          "callee": "[\n    ...accountArray(payload.admins),\n    ...supervisors,\n    ...accountArray(payload.cajeros),\n  ].filter",
+          "lineNumber": 77
+        },
+        {
+          "caller": "allAccounts",
+          "callee": "accountArray",
+          "lineNumber": 78
+        },
+        {
+          "caller": "allAccounts",
+          "callee": "accountArray",
+          "lineNumber": 80
+        },
+        {
+          "caller": "allAccounts",
+          "callee": "all.findIndex",
+          "lineNumber": 82
+        },
+        {
+          "caller": "allAccounts",
+          "callee": "lower",
+          "lineNumber": 82
+        },
+        {
+          "caller": "allAccounts",
+          "callee": "lower",
+          "lineNumber": 82
+        },
+        {
+          "caller": "allAccounts",
+          "callee": "lower",
+          "lineNumber": 82
+        },
+        {
+          "caller": "allAccounts",
+          "callee": "lower",
+          "lineNumber": 82
+        },
+        {
+          "caller": "sha256Hex",
+          "callee": "crypto.subtle.digest",
+          "lineNumber": 100
+        },
+        {
+          "caller": "sha256Hex",
+          "callee": "new TextEncoder().encode",
+          "lineNumber": 100
+        },
+        {
+          "caller": "sha256Hex",
+          "callee": "Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, \"0\")).join",
+          "lineNumber": 101
+        },
+        {
+          "caller": "sha256Hex",
+          "callee": "Array.from",
+          "lineNumber": 101
+        },
+        {
+          "caller": "sha256Hex",
+          "callee": "byte.toString(16).padStart",
+          "lineNumber": 101
+        },
+        {
+          "caller": "sha256Hex",
+          "callee": "byte.toString",
+          "lineNumber": 101
+        },
+        {
+          "caller": "verifyLegacyPassword",
+          "callee": "clean",
+          "lineNumber": 105
+        },
+        {
+          "caller": "verifyLegacyPassword",
+          "callee": "clean",
+          "lineNumber": 106
+        },
+        {
+          "caller": "verifyLegacyPassword",
+          "callee": "lower",
+          "lineNumber": 107
+        },
+        {
+          "caller": "verifyLegacyPassword",
+          "callee": "sha256Hex",
+          "lineNumber": 109
+        },
+        {
+          "caller": "verifyLegacyPassword",
+          "callee": "password.trim",
+          "lineNumber": 109
+        },
+        {
+          "caller": "verifyLegacyPassword",
+          "callee": "hash.toLowerCase",
+          "lineNumber": 109
+        },
+        {
+          "caller": "findAuthUserByEmail",
+          "callee": "service.auth.admin.listUsers",
+          "lineNumber": 115
+        },
+        {
+          "caller": "findAuthUserByEmail",
+          "callee": "data.users.find",
+          "lineNumber": 117
+        },
+        {
+          "caller": "findAuthUserByEmail",
+          "callee": "lower",
+          "lineNumber": 117
+        },
+        {
+          "caller": "findAuthUserByEmail",
+          "callee": "email.toLowerCase",
+          "lineNumber": 117
+        },
+        {
+          "caller": "ensureAuthUser",
+          "callee": "authEmailFor",
+          "lineNumber": 128
+        },
+        {
+          "caller": "ensureAuthUser",
+          "callee": "clean",
+          "lineNumber": 128
+        },
+        {
+          "caller": "ensureAuthUser",
+          "callee": "clean",
+          "lineNumber": 131
+        },
+        {
+          "caller": "ensureAuthUser",
+          "callee": "clean",
+          "lineNumber": 132
+        },
+        {
+          "caller": "ensureAuthUser",
+          "callee": "normalizeRole",
+          "lineNumber": 133
+        },
+        {
+          "caller": "ensureAuthUser",
+          "callee": "clean",
+          "lineNumber": 134
+        },
+        {
+          "caller": "ensureAuthUser",
+          "callee": "clean",
+          "lineNumber": 135
+        },
+        {
+          "caller": "ensureAuthUser",
+          "callee": "clean",
+          "lineNumber": 136
+        },
+        {
+          "caller": "ensureAuthUser",
+          "callee": "clean",
+          "lineNumber": 139
+        },
+        {
+          "caller": "ensureAuthUser",
+          "callee": "clean",
+          "lineNumber": 140
+        },
+        {
+          "caller": "ensureAuthUser",
+          "callee": "findAuthUserByEmail",
+          "lineNumber": 143
+        },
+        {
+          "caller": "ensureAuthUser",
+          "callee": "service.auth.admin.updateUserById",
+          "lineNumber": 145
+        },
+        {
+          "caller": "ensureAuthUser",
+          "callee": "service.auth.admin.createUser",
+          "lineNumber": 154
+        },
+        {
+          "caller": "updateAuthUserPassword",
+          "callee": "clean",
+          "lineNumber": 169
+        },
+        {
+          "caller": "updateAuthUserPassword",
+          "callee": "clean",
+          "lineNumber": 170
+        },
+        {
+          "caller": "updateAuthUserPassword",
+          "callee": "normalizeRole",
+          "lineNumber": 171
+        },
+        {
+          "caller": "updateAuthUserPassword",
+          "callee": "clean",
+          "lineNumber": 172
+        },
+        {
+          "caller": "updateAuthUserPassword",
+          "callee": "clean",
+          "lineNumber": 173
+        },
+        {
+          "caller": "updateAuthUserPassword",
+          "callee": "clean",
+          "lineNumber": 174
+        },
+        {
+          "caller": "updateAuthUserPassword",
+          "callee": "clean",
+          "lineNumber": 177
+        },
+        {
+          "caller": "updateAuthUserPassword",
+          "callee": "clean",
+          "lineNumber": 178
+        },
+        {
+          "caller": "updateAuthUserPassword",
+          "callee": "service.auth.admin.updateUserById",
+          "lineNumber": 180
+        },
+        {
+          "caller": "signIn",
+          "callee": "publicAuth.auth.signInWithPassword",
+          "lineNumber": 190
+        },
+        {
+          "caller": "upsertProfile",
+          "callee": "normalizeRole",
+          "lineNumber": 197
+        },
+        {
+          "caller": "upsertProfile",
+          "callee": "service.from(\"profiles\").upsert",
+          "lineNumber": 198
+        },
+        {
+          "caller": "upsertProfile",
+          "callee": "service.from",
+          "lineNumber": 198
+        },
+        {
+          "caller": "upsertProfile",
+          "callee": "clean",
+          "lineNumber": 200
+        },
+        {
+          "caller": "upsertProfile",
+          "callee": "clean",
+          "lineNumber": 201
+        },
+        {
+          "caller": "upsertProfile",
+          "callee": "clean",
+          "lineNumber": 202
+        },
+        {
+          "caller": "upsertProfile",
+          "callee": "clean",
+          "lineNumber": 202
+        },
+        {
+          "caller": "upsertProfile",
+          "callee": "isAccountBlocked",
+          "lineNumber": 204
+        },
+        {
+          "caller": "upsertProfile",
+          "callee": "clean",
+          "lineNumber": 205
+        },
+        {
+          "caller": "upsertProfile",
+          "callee": "clean",
+          "lineNumber": 206
+        },
+        {
+          "caller": "upsertProfile",
+          "callee": "clean",
+          "lineNumber": 207
+        },
+        {
+          "caller": "upsertProfile",
+          "callee": "clean",
+          "lineNumber": 208
+        },
+        {
+          "caller": "upsertProfile",
+          "callee": "Number",
+          "lineNumber": 209
+        },
+        {
+          "caller": "upsertProfile",
+          "callee": "new Date().toISOString",
+          "lineNumber": 210
+        },
+        {
+          "caller": "replaceAccountWithAuth",
+          "callee": "accounts.map",
+          "lineNumber": 220
+        },
+        {
+          "caller": "replaceAccountWithAuth",
+          "callee": "matchesAccount",
+          "lineNumber": 221
+        },
+        {
+          "caller": "replaceAccountWithAuth",
+          "callee": "clean",
+          "lineNumber": 221
+        },
+        {
+          "caller": "replaceAccountWithAuth",
+          "callee": "matchesAccount",
+          "lineNumber": 221
+        },
+        {
+          "caller": "replaceAccountWithAuth",
+          "callee": "clean",
+          "lineNumber": 221
+        },
+        {
+          "caller": "replaceAccountWithAuth",
+          "callee": "authEmailFor",
+          "lineNumber": 222
+        },
+        {
+          "caller": "replaceAccountWithAuth",
+          "callee": "clean",
+          "lineNumber": 222
+        },
+        {
+          "caller": "replaceAccountWithAuth",
+          "callee": "Date.now",
+          "lineNumber": 222
+        },
+        {
+          "caller": "saveAuthLink",
+          "callee": "service\n    .from(\"lotterynet_users_state\")\n    .select(\"payload\")\n    .eq(\"scope\", \"global\")\n    .maybeSingle",
+          "lineNumber": 227
+        },
+        {
+          "caller": "saveAuthLink",
+          "callee": "service\n    .from(\"lotterynet_users_state\")\n    .select(\"payload\")\n    .eq",
+          "lineNumber": 227
+        },
+        {
+          "caller": "saveAuthLink",
+          "callee": "service\n    .from(\"lotterynet_users_state\")\n    .select",
+          "lineNumber": 227
+        },
+        {
+          "caller": "saveAuthLink",
+          "callee": "service\n    .from",
+          "lineNumber": 227
+        },
+        {
+          "caller": "saveAuthLink",
+          "callee": "accountArray",
+          "lineNumber": 234
+        },
+        {
+          "caller": "saveAuthLink",
+          "callee": "[\n    ...accountArray(payload.supervisores),\n    ...accountArray(payload.supervisors),\n  ].filter",
+          "lineNumber": 235
+        },
+        {
+          "caller": "saveAuthLink",
+          "callee": "accountArray",
+          "lineNumber": 236
+        },
+        {
+          "caller": "saveAuthLink",
+          "callee": "accountArray",
+          "lineNumber": 237
+        },
+        {
+          "caller": "saveAuthLink",
+          "callee": "all.findIndex",
+          "lineNumber": 239
+        },
+        {
+          "caller": "saveAuthLink",
+          "callee": "lower",
+          "lineNumber": 239
+        },
+        {
+          "caller": "saveAuthLink",
+          "callee": "lower",
+          "lineNumber": 239
+        },
+        {
+          "caller": "saveAuthLink",
+          "callee": "lower",
+          "lineNumber": 239
+        },
+        {
+          "caller": "saveAuthLink",
+          "callee": "lower",
+          "lineNumber": 239
+        },
+        {
+          "caller": "saveAuthLink",
+          "callee": "accountArray",
+          "lineNumber": 241
+        },
+        {
+          "caller": "saveAuthLink",
+          "callee": "replaceAccountWithAuth",
+          "lineNumber": 244
+        },
+        {
+          "caller": "saveAuthLink",
+          "callee": "replaceAccountWithAuth",
+          "lineNumber": 245
+        },
+        {
+          "caller": "saveAuthLink",
+          "callee": "replaceAccountWithAuth",
+          "lineNumber": 246
+        },
+        {
+          "caller": "saveAuthLink",
+          "callee": "service\n    .from(\"lotterynet_users_state\")\n    .upsert",
+          "lineNumber": 248
+        },
+        {
+          "caller": "saveAuthLink",
+          "callee": "service\n    .from",
+          "lineNumber": 248
+        },
+        {
+          "caller": "saveAuthLink",
+          "callee": "new Date().toISOString",
+          "lineNumber": 250
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 19,
+        "classCount": 0
+      }
+    },
+    {
+      "path": "supabase/functions/change-user-password/index.ts",
+      "language": "typescript",
+      "fileCategory": "code",
+      "totalLines": 170,
+      "nonEmptyLines": 151,
+      "functions": [
+        {
+          "name": "json",
+          "startLine": 16,
+          "endLine": 21,
+          "params": [
+            "body",
+            "status"
+          ]
+        },
+        {
+          "name": "clean",
+          "startLine": 23,
+          "endLine": 25,
+          "params": [
+            "value"
+          ]
+        },
+        {
+          "name": "lower",
+          "startLine": 27,
+          "endLine": 29,
+          "params": [
+            "value"
+          ]
+        },
+        {
+          "name": "accountArray",
+          "startLine": 31,
+          "endLine": 33,
+          "params": [
+            "value"
+          ]
+        },
+        {
+          "name": "matchesAccount",
+          "startLine": 35,
+          "endLine": 39,
+          "params": [
+            "account",
+            "idOrUser"
+          ]
+        },
+        {
+          "name": "roleOf",
+          "startLine": 41,
+          "endLine": 43,
+          "params": [
+            "account"
+          ]
+        },
+        {
+          "name": "sameNetwork",
+          "startLine": 45,
+          "endLine": 49,
+          "params": [
+            "actor",
+            "target"
+          ]
+        },
+        {
+          "name": "canChangePassword",
+          "startLine": 51,
+          "endLine": 63,
+          "params": [
+            "actor",
+            "actorRole",
+            "target"
+          ]
+        },
+        {
+          "name": "randomHex",
+          "startLine": 65,
+          "endLine": 69,
+          "params": [
+            "length"
+          ]
+        },
+        {
+          "name": "sha256Hex",
+          "startLine": 71,
+          "endLine": 74,
+          "params": [
+            "input"
+          ]
+        },
+        {
+          "name": "passwordSecret",
+          "startLine": 76,
+          "endLine": 85,
+          "params": [
+            "password"
+          ]
+        },
+        {
+          "name": "replaceAccount",
+          "startLine": 87,
+          "endLine": 96,
+          "params": [
+            "accounts",
+            "target",
+            "secret"
+          ]
+        },
+        {
+          "name": "updateAuthIfPossible",
+          "startLine": 98,
+          "endLine": 105,
+          "params": [
+            "target",
+            "password"
+          ]
+        }
+      ],
+      "callGraph": [
+        {
+          "caller": "json",
+          "callee": "JSON.stringify",
+          "lineNumber": 17
+        },
+        {
+          "caller": "clean",
+          "callee": "String(value ?? \"\").trim",
+          "lineNumber": 24
+        },
+        {
+          "caller": "clean",
+          "callee": "String",
+          "lineNumber": 24
+        },
+        {
+          "caller": "lower",
+          "callee": "clean(value).toLowerCase",
+          "lineNumber": 28
+        },
+        {
+          "caller": "lower",
+          "callee": "clean",
+          "lineNumber": 28
+        },
+        {
+          "caller": "accountArray",
+          "callee": "Array.isArray",
+          "lineNumber": 32
+        },
+        {
+          "caller": "matchesAccount",
+          "callee": "idOrUser.trim().toLowerCase",
+          "lineNumber": 36
+        },
+        {
+          "caller": "matchesAccount",
+          "callee": "idOrUser.trim",
+          "lineNumber": 36
+        },
+        {
+          "caller": "matchesAccount",
+          "callee": "lower",
+          "lineNumber": 38
+        },
+        {
+          "caller": "matchesAccount",
+          "callee": "lower",
+          "lineNumber": 38
+        },
+        {
+          "caller": "roleOf",
+          "callee": "lower",
+          "lineNumber": 42
+        },
+        {
+          "caller": "sameNetwork",
+          "callee": "clean",
+          "lineNumber": 46
+        },
+        {
+          "caller": "sameNetwork",
+          "callee": "lower",
+          "lineNumber": 46
+        },
+        {
+          "caller": "sameNetwork",
+          "callee": "lower",
+          "lineNumber": 46
+        },
+        {
+          "caller": "sameNetwork",
+          "callee": "clean",
+          "lineNumber": 47
+        },
+        {
+          "caller": "sameNetwork",
+          "callee": "lower",
+          "lineNumber": 47
+        },
+        {
+          "caller": "sameNetwork",
+          "callee": "lower",
+          "lineNumber": 47
+        },
+        {
+          "caller": "sameNetwork",
+          "callee": "clean",
+          "lineNumber": 48
+        },
+        {
+          "caller": "sameNetwork",
+          "callee": "lower",
+          "lineNumber": 48
+        },
+        {
+          "caller": "sameNetwork",
+          "callee": "lower",
+          "lineNumber": 48
+        },
+        {
+          "caller": "canChangePassword",
+          "callee": "roleOf",
+          "lineNumber": 58
+        },
+        {
+          "caller": "canChangePassword",
+          "callee": "roleOf",
+          "lineNumber": 59
+        },
+        {
+          "caller": "canChangePassword",
+          "callee": "roleOf",
+          "lineNumber": 60
+        },
+        {
+          "caller": "canChangePassword",
+          "callee": "sameNetwork",
+          "lineNumber": 62
+        },
+        {
+          "caller": "randomHex",
+          "callee": "Math.ceil",
+          "lineNumber": 66
+        },
+        {
+          "caller": "randomHex",
+          "callee": "Math.max",
+          "lineNumber": 66
+        },
+        {
+          "caller": "randomHex",
+          "callee": "crypto.getRandomValues",
+          "lineNumber": 67
+        },
+        {
+          "caller": "randomHex",
+          "callee": "Array.from(bytes, (byte) => byte.toString(16).padStart(2, \"0\")).join(\"\").slice",
+          "lineNumber": 68
+        },
+        {
+          "caller": "randomHex",
+          "callee": "Array.from(bytes, (byte) => byte.toString(16).padStart(2, \"0\")).join",
+          "lineNumber": 68
+        },
+        {
+          "caller": "randomHex",
+          "callee": "Array.from",
+          "lineNumber": 68
+        },
+        {
+          "caller": "randomHex",
+          "callee": "byte.toString(16).padStart",
+          "lineNumber": 68
+        },
+        {
+          "caller": "randomHex",
+          "callee": "byte.toString",
+          "lineNumber": 68
+        },
+        {
+          "caller": "sha256Hex",
+          "callee": "crypto.subtle.digest",
+          "lineNumber": 72
+        },
+        {
+          "caller": "sha256Hex",
+          "callee": "new TextEncoder().encode",
+          "lineNumber": 72
+        },
+        {
+          "caller": "sha256Hex",
+          "callee": "Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, \"0\")).join",
+          "lineNumber": 73
+        },
+        {
+          "caller": "sha256Hex",
+          "callee": "Array.from",
+          "lineNumber": 73
+        },
+        {
+          "caller": "sha256Hex",
+          "callee": "byte.toString(16).padStart",
+          "lineNumber": 73
+        },
+        {
+          "caller": "sha256Hex",
+          "callee": "byte.toString",
+          "lineNumber": 73
+        },
+        {
+          "caller": "passwordSecret",
+          "callee": "randomHex",
+          "lineNumber": 77
+        },
+        {
+          "caller": "passwordSecret",
+          "callee": "sha256Hex",
+          "lineNumber": 80
+        },
+        {
+          "caller": "passwordSecret",
+          "callee": "password.trim",
+          "lineNumber": 80
+        },
+        {
+          "caller": "passwordSecret",
+          "callee": "Date.now",
+          "lineNumber": 82
+        },
+        {
+          "caller": "passwordSecret",
+          "callee": "Date.now",
+          "lineNumber": 83
+        },
+        {
+          "caller": "replaceAccount",
+          "callee": "accounts.map",
+          "lineNumber": 92
+        },
+        {
+          "caller": "replaceAccount",
+          "callee": "matchesAccount",
+          "lineNumber": 93
+        },
+        {
+          "caller": "replaceAccount",
+          "callee": "clean",
+          "lineNumber": 93
+        },
+        {
+          "caller": "replaceAccount",
+          "callee": "matchesAccount",
+          "lineNumber": 93
+        },
+        {
+          "caller": "replaceAccount",
+          "callee": "clean",
+          "lineNumber": 93
+        },
+        {
+          "caller": "updateAuthIfPossible",
+          "callee": "clean",
+          "lineNumber": 99
+        },
+        {
+          "caller": "updateAuthIfPossible",
+          "callee": "uuidPattern.test",
+          "lineNumber": 101
+        },
+        {
+          "caller": "updateAuthIfPossible",
+          "callee": "supabase.auth.admin.updateUserById",
+          "lineNumber": 102
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 13,
+        "classCount": 0
+      }
+    },
+    {
+      "path": "supabase/functions/create-ticket-v2/index.ts",
+      "language": "typescript",
+      "fileCategory": "code",
+      "totalLines": 388,
+      "nonEmptyLines": 344,
+      "functions": [
+        {
+          "name": "json",
+          "startLine": 20,
+          "endLine": 25,
+          "params": [
+            "body",
+            "status"
+          ]
+        },
+        {
+          "name": "clean",
+          "startLine": 27,
+          "endLine": 29,
+          "params": [
+            "value"
+          ]
+        },
+        {
+          "name": "lower",
+          "startLine": 31,
+          "endLine": 33,
+          "params": [
+            "value"
+          ]
+        },
+        {
+          "name": "bearerToken",
+          "startLine": 35,
+          "endLine": 37,
+          "params": [
+            "req"
+          ]
+        },
+        {
+          "name": "isUuid",
+          "startLine": 39,
+          "endLine": 41,
+          "params": [
+            "value"
+          ]
+        },
+        {
+          "name": "accountArray",
+          "startLine": 43,
+          "endLine": 45,
+          "params": [
+            "value"
+          ]
+        },
+        {
+          "name": "allAccounts",
+          "startLine": 47,
+          "endLine": 56,
+          "params": [
+            "payload"
+          ]
+        },
+        {
+          "name": "accountMatches",
+          "startLine": 58,
+          "endLine": 70,
+          "params": [
+            "account",
+            "value"
+          ]
+        },
+        {
+          "name": "authenticatedActor",
+          "startLine": 72,
+          "endLine": 109,
+          "params": [
+            "req",
+            "actorKey"
+          ]
+        },
+        {
+          "name": "sanitizeCreateTicketBody",
+          "startLine": 111,
+          "endLine": 118,
+          "params": [
+            "body"
+          ]
+        },
+        {
+          "name": "validatePhoneClock",
+          "startLine": 120,
+          "endLine": 149,
+          "params": [
+            "body"
+          ]
+        },
+        {
+          "name": "validateTicketPlays",
+          "startLine": 151,
+          "endLine": 168,
+          "params": [
+            "body"
+          ]
+        },
+        {
+          "name": "fetchMasterPayload",
+          "startLine": 170,
+          "endLine": 179,
+          "params": [
+            "key"
+          ]
+        },
+        {
+          "name": "todaySantoDomingo",
+          "startLine": 181,
+          "endLine": 188,
+          "params": []
+        },
+        {
+          "name": "normalizedPlayType",
+          "startLine": 190,
+          "endLine": 227,
+          "params": [
+            "value"
+          ]
+        },
+        {
+          "name": "normalizedBlockedNumber",
+          "startLine": 229,
+          "endLine": 249,
+          "params": [
+            "playType",
+            "value"
+          ]
+        },
+        {
+          "name": "playLabel",
+          "startLine": 251,
+          "endLine": 263,
+          "params": [
+            "playType",
+            "number"
+          ]
+        },
+        {
+          "name": "blockedPlaySet",
+          "startLine": 265,
+          "endLine": 275,
+          "params": [
+            "systemConfig"
+          ]
+        },
+        {
+          "name": "disabledLotterySet",
+          "startLine": 277,
+          "endLine": 284,
+          "params": [
+            "config"
+          ]
+        },
+        {
+          "name": "booleanField",
+          "startLine": 286,
+          "endLine": 288,
+          "params": [
+            "config",
+            "field"
+          ]
+        },
+        {
+          "name": "validateAdministrativeControls",
+          "startLine": 290,
+          "endLine": 331,
+          "params": [
+            "body",
+            "systemConfig",
+            "disabledLotteryConfig"
+          ]
+        }
+      ],
+      "callGraph": [
+        {
+          "caller": "json",
+          "callee": "JSON.stringify",
+          "lineNumber": 21
+        },
+        {
+          "caller": "clean",
+          "callee": "String(value ?? \"\").trim",
+          "lineNumber": 28
+        },
+        {
+          "caller": "clean",
+          "callee": "String",
+          "lineNumber": 28
+        },
+        {
+          "caller": "lower",
+          "callee": "clean(value).toLowerCase",
+          "lineNumber": 32
+        },
+        {
+          "caller": "lower",
+          "callee": "clean",
+          "lineNumber": 32
+        },
+        {
+          "caller": "bearerToken",
+          "callee": "(req.headers.get(\"Authorization\") ?? \"\").replace(/^Bearer\\s+/i, \"\").trim",
+          "lineNumber": 36
+        },
+        {
+          "caller": "bearerToken",
+          "callee": "(req.headers.get(\"Authorization\") ?? \"\").replace",
+          "lineNumber": 36
+        },
+        {
+          "caller": "bearerToken",
+          "callee": "req.headers.get",
+          "lineNumber": 36
+        },
+        {
+          "caller": "isUuid",
+          "callee": "/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test",
+          "lineNumber": 40
+        },
+        {
+          "caller": "accountArray",
+          "callee": "Array.isArray",
+          "lineNumber": 44
+        },
+        {
+          "caller": "allAccounts",
+          "callee": "accountArray",
+          "lineNumber": 49
+        },
+        {
+          "caller": "allAccounts",
+          "callee": "accountArray",
+          "lineNumber": 50
+        },
+        {
+          "caller": "allAccounts",
+          "callee": "accountArray",
+          "lineNumber": 51
+        },
+        {
+          "caller": "allAccounts",
+          "callee": "accountArray",
+          "lineNumber": 52
+        },
+        {
+          "caller": "allAccounts",
+          "callee": "accountArray",
+          "lineNumber": 53
+        },
+        {
+          "caller": "allAccounts",
+          "callee": "accountArray",
+          "lineNumber": 54
+        },
+        {
+          "caller": "accountMatches",
+          "callee": "lower",
+          "lineNumber": 59
+        },
+        {
+          "caller": "accountMatches",
+          "callee": "[\n    account.id,\n    account.user,\n    account.username,\n    account.displayName,\n    account.userId,\n    account.authUserId,\n    account.auth_user_id,\n  ].some",
+          "lineNumber": 61
+        },
+        {
+          "caller": "accountMatches",
+          "callee": "lower",
+          "lineNumber": 69
+        },
+        {
+          "caller": "authenticatedActor",
+          "callee": "bearerToken",
+          "lineNumber": 73
+        },
+        {
+          "caller": "authenticatedActor",
+          "callee": "supabase.auth.getUser",
+          "lineNumber": 76
+        },
+        {
+          "caller": "authenticatedActor",
+          "callee": "[metadata.legacy_id, metadata.username, metadata.user, metadata.admin_id, metadata.admin_user]\n    .some",
+          "lineNumber": 80
+        },
+        {
+          "caller": "authenticatedActor",
+          "callee": "lower",
+          "lineNumber": 81
+        },
+        {
+          "caller": "authenticatedActor",
+          "callee": "lower",
+          "lineNumber": 81
+        },
+        {
+          "caller": "authenticatedActor",
+          "callee": "supabase\n    .from(\"lotterynet_users_state\")\n    .select(\"payload\")\n    .eq(\"scope\", \"global\")\n    .maybeSingle",
+          "lineNumber": 83
+        },
+        {
+          "caller": "authenticatedActor",
+          "callee": "supabase\n    .from(\"lotterynet_users_state\")\n    .select(\"payload\")\n    .eq",
+          "lineNumber": 83
+        },
+        {
+          "caller": "authenticatedActor",
+          "callee": "supabase\n    .from(\"lotterynet_users_state\")\n    .select",
+          "lineNumber": 83
+        },
+        {
+          "caller": "authenticatedActor",
+          "callee": "supabase\n    .from",
+          "lineNumber": 83
+        },
+        {
+          "caller": "authenticatedActor",
+          "callee": "allAccounts",
+          "lineNumber": 91
+        },
+        {
+          "caller": "authenticatedActor",
+          "callee": "accounts.find",
+          "lineNumber": 92
+        },
+        {
+          "caller": "authenticatedActor",
+          "callee": "accountMatches",
+          "lineNumber": 92
+        },
+        {
+          "caller": "authenticatedActor",
+          "callee": "accounts.find",
+          "lineNumber": 93
+        },
+        {
+          "caller": "authenticatedActor",
+          "callee": "[metadata.legacy_id, metadata.username, metadata.user, metadata.admin_id, metadata.admin_user]\n        .some",
+          "lineNumber": 94
+        },
+        {
+          "caller": "authenticatedActor",
+          "callee": "accountMatches",
+          "lineNumber": 95
+        },
+        {
+          "caller": "authenticatedActor",
+          "callee": "clean",
+          "lineNumber": 95
+        },
+        {
+          "caller": "authenticatedActor",
+          "callee": "clean",
+          "lineNumber": 104
+        },
+        {
+          "caller": "sanitizeCreateTicketBody",
+          "callee": "clean",
+          "lineNumber": 113
+        },
+        {
+          "caller": "sanitizeCreateTicketBody",
+          "callee": "isUuid",
+          "lineNumber": 114
+        },
+        {
+          "caller": "validatePhoneClock",
+          "callee": "clean",
+          "lineNumber": 121
+        },
+        {
+          "caller": "validatePhoneClock",
+          "callee": "Date.parse",
+          "lineNumber": 126
+        },
+        {
+          "caller": "validatePhoneClock",
+          "callee": "Number.isFinite",
+          "lineNumber": 127
+        },
+        {
+          "caller": "validatePhoneClock",
+          "callee": "Date.now",
+          "lineNumber": 131
+        },
+        {
+          "caller": "validatePhoneClock",
+          "callee": "Math.abs",
+          "lineNumber": 132
+        },
+        {
+          "caller": "validatePhoneClock",
+          "callee": "new Date(serverNowMs).toISOString",
+          "lineNumber": 137
+        },
+        {
+          "caller": "validatePhoneClock",
+          "callee": "new Date(phoneTimeMs).toISOString",
+          "lineNumber": 138
+        },
+        {
+          "caller": "validatePhoneClock",
+          "callee": "new Date(serverNowMs).toISOString",
+          "lineNumber": 145
+        },
+        {
+          "caller": "validatePhoneClock",
+          "callee": "new Date(phoneTimeMs).toISOString",
+          "lineNumber": 146
+        },
+        {
+          "caller": "validateTicketPlays",
+          "callee": "Array.isArray",
+          "lineNumber": 152
+        },
+        {
+          "caller": "validateTicketPlays",
+          "callee": "plays.find",
+          "lineNumber": 156
+        },
+        {
+          "caller": "validateTicketPlays",
+          "callee": "clean",
+          "lineNumber": 157
+        },
+        {
+          "caller": "validateTicketPlays",
+          "callee": "clean",
+          "lineNumber": 158
+        },
+        {
+          "caller": "validateTicketPlays",
+          "callee": "clean",
+          "lineNumber": 159
+        },
+        {
+          "caller": "validateTicketPlays",
+          "callee": "clean",
+          "lineNumber": 160
+        },
+        {
+          "caller": "validateTicketPlays",
+          "callee": "Number",
+          "lineNumber": 161
+        },
+        {
+          "caller": "validateTicketPlays",
+          "callee": "Number.isFinite",
+          "lineNumber": 162
+        },
+        {
+          "caller": "fetchMasterPayload",
+          "callee": "supabase\n    .from(\"lotterynet_master_state\")\n    .select(\"payload\")\n    .eq(\"config_key\", key)\n    .maybeSingle",
+          "lineNumber": 171
+        },
+        {
+          "caller": "fetchMasterPayload",
+          "callee": "supabase\n    .from(\"lotterynet_master_state\")\n    .select(\"payload\")\n    .eq",
+          "lineNumber": 171
+        },
+        {
+          "caller": "fetchMasterPayload",
+          "callee": "supabase\n    .from(\"lotterynet_master_state\")\n    .select",
+          "lineNumber": 171
+        },
+        {
+          "caller": "fetchMasterPayload",
+          "callee": "supabase\n    .from",
+          "lineNumber": 171
+        },
+        {
+          "caller": "fetchMasterPayload",
+          "callee": "Array.isArray",
+          "lineNumber": 178
+        },
+        {
+          "caller": "todaySantoDomingo",
+          "callee": "new Intl.DateTimeFormat(\"en-CA\", {\n    timeZone: \"America/Santo_Domingo\",\n    year: \"numeric\",\n    month: \"2-digit\",\n    day: \"2-digit\",\n  }).format",
+          "lineNumber": 182
+        },
+        {
+          "caller": "normalizedPlayType",
+          "callee": "clean(value).toUpperCase()\n    .normalize(\"NFD\")\n    .replace(/[\\u0300-\\u036f]/g, \"\")\n    .replace",
+          "lineNumber": 191
+        },
+        {
+          "caller": "normalizedPlayType",
+          "callee": "clean(value).toUpperCase()\n    .normalize(\"NFD\")\n    .replace",
+          "lineNumber": 191
+        },
+        {
+          "caller": "normalizedPlayType",
+          "callee": "clean(value).toUpperCase()\n    .normalize",
+          "lineNumber": 191
+        },
+        {
+          "caller": "normalizedPlayType",
+          "callee": "clean(value).toUpperCase",
+          "lineNumber": 191
+        },
+        {
+          "caller": "normalizedPlayType",
+          "callee": "clean",
+          "lineNumber": 191
+        },
+        {
+          "caller": "normalizedBlockedNumber",
+          "callee": "clean(value).replace",
+          "lineNumber": 230
+        },
+        {
+          "caller": "normalizedBlockedNumber",
+          "callee": "clean",
+          "lineNumber": 230
+        },
+        {
+          "caller": "normalizedBlockedNumber",
+          "callee": "digits.slice",
+          "lineNumber": 237
+        },
+        {
+          "caller": "normalizedBlockedNumber",
+          "callee": "digits.slice",
+          "lineNumber": 237
+        },
+        {
+          "caller": "playLabel",
+          "callee": "number.replace",
+          "lineNumber": 262
+        },
+        {
+          "caller": "blockedPlaySet",
+          "callee": "Array.isArray",
+          "lineNumber": 266
+        },
+        {
+          "caller": "blockedPlaySet",
+          "callee": "normalizedPlayType",
+          "lineNumber": 269
+        },
+        {
+          "caller": "blockedPlaySet",
+          "callee": "normalizedBlockedNumber",
+          "lineNumber": 271
+        },
+        {
+          "caller": "blockedPlaySet",
+          "callee": "set.add",
+          "lineNumber": 272
+        },
+        {
+          "caller": "disabledLotterySet",
+          "callee": "clean",
+          "lineNumber": 280
+        },
+        {
+          "caller": "disabledLotterySet",
+          "callee": "todaySantoDomingo",
+          "lineNumber": 281
+        },
+        {
+          "caller": "disabledLotterySet",
+          "callee": "Array.isArray",
+          "lineNumber": 282
+        },
+        {
+          "caller": "disabledLotterySet",
+          "callee": "ids.map((id) => clean(id)).filter",
+          "lineNumber": 283
+        },
+        {
+          "caller": "disabledLotterySet",
+          "callee": "ids.map",
+          "lineNumber": 283
+        },
+        {
+          "caller": "disabledLotterySet",
+          "callee": "clean",
+          "lineNumber": 283
+        },
+        {
+          "caller": "validateAdministrativeControls",
+          "callee": "Array.isArray",
+          "lineNumber": 295
+        },
+        {
+          "caller": "validateAdministrativeControls",
+          "callee": "disabledLotterySet",
+          "lineNumber": 296
+        },
+        {
+          "caller": "validateAdministrativeControls",
+          "callee": "blockedPlaySet",
+          "lineNumber": 297
+        },
+        {
+          "caller": "validateAdministrativeControls",
+          "callee": "lower",
+          "lineNumber": 298
+        },
+        {
+          "caller": "validateAdministrativeControls",
+          "callee": "booleanField",
+          "lineNumber": 301
+        },
+        {
+          "caller": "validateAdministrativeControls",
+          "callee": "booleanField",
+          "lineNumber": 303
+        },
+        {
+          "caller": "validateAdministrativeControls",
+          "callee": "booleanField",
+          "lineNumber": 304
+        },
+        {
+          "caller": "validateAdministrativeControls",
+          "callee": "booleanField",
+          "lineNumber": 306
+        },
+        {
+          "caller": "validateAdministrativeControls",
+          "callee": "booleanField",
+          "lineNumber": 307
+        },
+        {
+          "caller": "validateAdministrativeControls",
+          "callee": "clean",
+          "lineNumber": 310
+        },
+        {
+          "caller": "validateAdministrativeControls",
+          "callee": "clean",
+          "lineNumber": 311
+        },
+        {
+          "caller": "validateAdministrativeControls",
+          "callee": "disabledLotteries.has",
+          "lineNumber": 312
+        },
+        {
+          "caller": "validateAdministrativeControls",
+          "callee": "normalizedPlayType",
+          "lineNumber": 316
+        },
+        {
+          "caller": "validateAdministrativeControls",
+          "callee": "LOTTERY_TYPES.has",
+          "lineNumber": 318
+        },
+        {
+          "caller": "validateAdministrativeControls",
+          "callee": "PICK_TYPES.has",
+          "lineNumber": 321
+        },
+        {
+          "caller": "validateAdministrativeControls",
+          "callee": "normalizedBlockedNumber",
+          "lineNumber": 325
+        },
+        {
+          "caller": "validateAdministrativeControls",
+          "callee": "blockedPlays.has",
+          "lineNumber": 326
+        },
+        {
+          "caller": "validateAdministrativeControls",
+          "callee": "playLabel",
+          "lineNumber": 327
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 21,
+        "classCount": 0
+      }
+    },
+    {
+      "path": "supabase/functions/get-admin-report/index.ts",
+      "language": "typescript",
+      "fileCategory": "code",
+      "totalLines": 121,
+      "nonEmptyLines": 101,
+      "functions": [
+        {
+          "name": "json",
+          "startLine": 16,
+          "endLine": 21,
+          "params": [
+            "body",
+            "status"
+          ]
+        },
+        {
+          "name": "clean",
+          "startLine": 23,
+          "endLine": 25,
+          "params": [
+            "value"
+          ]
+        },
+        {
+          "name": "lower",
+          "startLine": 27,
+          "endLine": 29,
+          "params": [
+            "value"
+          ]
+        },
+        {
+          "name": "bearerToken",
+          "startLine": 31,
+          "endLine": 33,
+          "params": [
+            "req"
+          ]
+        },
+        {
+          "name": "accountArray",
+          "startLine": 35,
+          "endLine": 37,
+          "params": [
+            "value"
+          ]
+        },
+        {
+          "name": "allAccounts",
+          "startLine": 39,
+          "endLine": 48,
+          "params": [
+            "payload"
+          ]
+        },
+        {
+          "name": "accountMatches",
+          "startLine": 50,
+          "endLine": 62,
+          "params": [
+            "account",
+            "value"
+          ]
+        },
+        {
+          "name": "authenticatedActor",
+          "startLine": 64,
+          "endLine": 96,
+          "params": [
+            "req",
+            "actorKey"
+          ]
+        }
+      ],
+      "callGraph": [
+        {
+          "caller": "json",
+          "callee": "JSON.stringify",
+          "lineNumber": 17
+        },
+        {
+          "caller": "clean",
+          "callee": "String(value ?? \"\").trim",
+          "lineNumber": 24
+        },
+        {
+          "caller": "clean",
+          "callee": "String",
+          "lineNumber": 24
+        },
+        {
+          "caller": "lower",
+          "callee": "clean(value).toLowerCase",
+          "lineNumber": 28
+        },
+        {
+          "caller": "lower",
+          "callee": "clean",
+          "lineNumber": 28
+        },
+        {
+          "caller": "bearerToken",
+          "callee": "(req.headers.get(\"Authorization\") ?? \"\").replace(/^Bearer\\s+/i, \"\").trim",
+          "lineNumber": 32
+        },
+        {
+          "caller": "bearerToken",
+          "callee": "(req.headers.get(\"Authorization\") ?? \"\").replace",
+          "lineNumber": 32
+        },
+        {
+          "caller": "bearerToken",
+          "callee": "req.headers.get",
+          "lineNumber": 32
+        },
+        {
+          "caller": "accountArray",
+          "callee": "Array.isArray",
+          "lineNumber": 36
+        },
+        {
+          "caller": "allAccounts",
+          "callee": "accountArray",
+          "lineNumber": 41
+        },
+        {
+          "caller": "allAccounts",
+          "callee": "accountArray",
+          "lineNumber": 42
+        },
+        {
+          "caller": "allAccounts",
+          "callee": "accountArray",
+          "lineNumber": 43
+        },
+        {
+          "caller": "allAccounts",
+          "callee": "accountArray",
+          "lineNumber": 44
+        },
+        {
+          "caller": "allAccounts",
+          "callee": "accountArray",
+          "lineNumber": 45
+        },
+        {
+          "caller": "allAccounts",
+          "callee": "accountArray",
+          "lineNumber": 46
+        },
+        {
+          "caller": "accountMatches",
+          "callee": "lower",
+          "lineNumber": 51
+        },
+        {
+          "caller": "accountMatches",
+          "callee": "[\n    account.id,\n    account.user,\n    account.username,\n    account.displayName,\n    account.userId,\n    account.authUserId,\n    account.auth_user_id,\n  ].some",
+          "lineNumber": 53
+        },
+        {
+          "caller": "accountMatches",
+          "callee": "lower",
+          "lineNumber": 61
+        },
+        {
+          "caller": "authenticatedActor",
+          "callee": "bearerToken",
+          "lineNumber": 65
+        },
+        {
+          "caller": "authenticatedActor",
+          "callee": "supabase.auth.getUser",
+          "lineNumber": 68
+        },
+        {
+          "caller": "authenticatedActor",
+          "callee": "[metadata.legacy_id, metadata.username, metadata.user, metadata.admin_id, metadata.admin_user]\n    .some",
+          "lineNumber": 72
+        },
+        {
+          "caller": "authenticatedActor",
+          "callee": "lower",
+          "lineNumber": 73
+        },
+        {
+          "caller": "authenticatedActor",
+          "callee": "lower",
+          "lineNumber": 73
+        },
+        {
+          "caller": "authenticatedActor",
+          "callee": "supabase\n    .from(\"lotterynet_users_state\")\n    .select(\"payload\")\n    .eq(\"scope\", \"global\")\n    .maybeSingle",
+          "lineNumber": 77
+        },
+        {
+          "caller": "authenticatedActor",
+          "callee": "supabase\n    .from(\"lotterynet_users_state\")\n    .select(\"payload\")\n    .eq",
+          "lineNumber": 77
+        },
+        {
+          "caller": "authenticatedActor",
+          "callee": "supabase\n    .from(\"lotterynet_users_state\")\n    .select",
+          "lineNumber": 77
+        },
+        {
+          "caller": "authenticatedActor",
+          "callee": "supabase\n    .from",
+          "lineNumber": 77
+        },
+        {
+          "caller": "authenticatedActor",
+          "callee": "allAccounts(payload).find",
+          "lineNumber": 85
+        },
+        {
+          "caller": "authenticatedActor",
+          "callee": "allAccounts",
+          "lineNumber": 85
+        },
+        {
+          "caller": "authenticatedActor",
+          "callee": "accountMatches",
+          "lineNumber": 85
+        },
+        {
+          "caller": "authenticatedActor",
+          "callee": "clean",
+          "lineNumber": 91
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 8,
+        "classCount": 0
+      }
+    },
+    {
+      "path": "supabase/functions/get-cashier-report/index.ts",
+      "language": "typescript",
+      "fileCategory": "code",
+      "totalLines": 121,
+      "nonEmptyLines": 101,
+      "functions": [
+        {
+          "name": "json",
+          "startLine": 16,
+          "endLine": 21,
+          "params": [
+            "body",
+            "status"
+          ]
+        },
+        {
+          "name": "clean",
+          "startLine": 23,
+          "endLine": 25,
+          "params": [
+            "value"
+          ]
+        },
+        {
+          "name": "lower",
+          "startLine": 27,
+          "endLine": 29,
+          "params": [
+            "value"
+          ]
+        },
+        {
+          "name": "bearerToken",
+          "startLine": 31,
+          "endLine": 33,
+          "params": [
+            "req"
+          ]
+        },
+        {
+          "name": "accountArray",
+          "startLine": 35,
+          "endLine": 37,
+          "params": [
+            "value"
+          ]
+        },
+        {
+          "name": "allAccounts",
+          "startLine": 39,
+          "endLine": 48,
+          "params": [
+            "payload"
+          ]
+        },
+        {
+          "name": "accountMatches",
+          "startLine": 50,
+          "endLine": 62,
+          "params": [
+            "account",
+            "value"
+          ]
+        },
+        {
+          "name": "authenticatedActor",
+          "startLine": 64,
+          "endLine": 96,
+          "params": [
+            "req",
+            "actorKey"
+          ]
+        }
+      ],
+      "callGraph": [
+        {
+          "caller": "json",
+          "callee": "JSON.stringify",
+          "lineNumber": 17
+        },
+        {
+          "caller": "clean",
+          "callee": "String(value ?? \"\").trim",
+          "lineNumber": 24
+        },
+        {
+          "caller": "clean",
+          "callee": "String",
+          "lineNumber": 24
+        },
+        {
+          "caller": "lower",
+          "callee": "clean(value).toLowerCase",
+          "lineNumber": 28
+        },
+        {
+          "caller": "lower",
+          "callee": "clean",
+          "lineNumber": 28
+        },
+        {
+          "caller": "bearerToken",
+          "callee": "(req.headers.get(\"Authorization\") ?? \"\").replace(/^Bearer\\s+/i, \"\").trim",
+          "lineNumber": 32
+        },
+        {
+          "caller": "bearerToken",
+          "callee": "(req.headers.get(\"Authorization\") ?? \"\").replace",
+          "lineNumber": 32
+        },
+        {
+          "caller": "bearerToken",
+          "callee": "req.headers.get",
+          "lineNumber": 32
+        },
+        {
+          "caller": "accountArray",
+          "callee": "Array.isArray",
+          "lineNumber": 36
+        },
+        {
+          "caller": "allAccounts",
+          "callee": "accountArray",
+          "lineNumber": 41
+        },
+        {
+          "caller": "allAccounts",
+          "callee": "accountArray",
+          "lineNumber": 42
+        },
+        {
+          "caller": "allAccounts",
+          "callee": "accountArray",
+          "lineNumber": 43
+        },
+        {
+          "caller": "allAccounts",
+          "callee": "accountArray",
+          "lineNumber": 44
+        },
+        {
+          "caller": "allAccounts",
+          "callee": "accountArray",
+          "lineNumber": 45
+        },
+        {
+          "caller": "allAccounts",
+          "callee": "accountArray",
+          "lineNumber": 46
+        },
+        {
+          "caller": "accountMatches",
+          "callee": "lower",
+          "lineNumber": 51
+        },
+        {
+          "caller": "accountMatches",
+          "callee": "[\n    account.id,\n    account.user,\n    account.username,\n    account.displayName,\n    account.userId,\n    account.authUserId,\n    account.auth_user_id,\n  ].some",
+          "lineNumber": 53
+        },
+        {
+          "caller": "accountMatches",
+          "callee": "lower",
+          "lineNumber": 61
+        },
+        {
+          "caller": "authenticatedActor",
+          "callee": "bearerToken",
+          "lineNumber": 65
+        },
+        {
+          "caller": "authenticatedActor",
+          "callee": "supabase.auth.getUser",
+          "lineNumber": 68
+        },
+        {
+          "caller": "authenticatedActor",
+          "callee": "[metadata.legacy_id, metadata.username, metadata.user, metadata.admin_id, metadata.admin_user]\n    .some",
+          "lineNumber": 72
+        },
+        {
+          "caller": "authenticatedActor",
+          "callee": "lower",
+          "lineNumber": 73
+        },
+        {
+          "caller": "authenticatedActor",
+          "callee": "lower",
+          "lineNumber": 73
+        },
+        {
+          "caller": "authenticatedActor",
+          "callee": "supabase\n    .from(\"lotterynet_users_state\")\n    .select(\"payload\")\n    .eq(\"scope\", \"global\")\n    .maybeSingle",
+          "lineNumber": 77
+        },
+        {
+          "caller": "authenticatedActor",
+          "callee": "supabase\n    .from(\"lotterynet_users_state\")\n    .select(\"payload\")\n    .eq",
+          "lineNumber": 77
+        },
+        {
+          "caller": "authenticatedActor",
+          "callee": "supabase\n    .from(\"lotterynet_users_state\")\n    .select",
+          "lineNumber": 77
+        },
+        {
+          "caller": "authenticatedActor",
+          "callee": "supabase\n    .from",
+          "lineNumber": 77
+        },
+        {
+          "caller": "authenticatedActor",
+          "callee": "allAccounts(payload).find",
+          "lineNumber": 85
+        },
+        {
+          "caller": "authenticatedActor",
+          "callee": "allAccounts",
+          "lineNumber": 85
+        },
+        {
+          "caller": "authenticatedActor",
+          "callee": "accountMatches",
+          "lineNumber": 85
+        },
+        {
+          "caller": "authenticatedActor",
+          "callee": "clean",
+          "lineNumber": 91
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 8,
+        "classCount": 0
+      }
+    },
+    {
+      "path": "supabase/functions/get-supervisor-report/index.ts",
+      "language": "typescript",
+      "fileCategory": "code",
+      "totalLines": 121,
+      "nonEmptyLines": 101,
+      "functions": [
+        {
+          "name": "json",
+          "startLine": 16,
+          "endLine": 21,
+          "params": [
+            "body",
+            "status"
+          ]
+        },
+        {
+          "name": "clean",
+          "startLine": 23,
+          "endLine": 25,
+          "params": [
+            "value"
+          ]
+        },
+        {
+          "name": "lower",
+          "startLine": 27,
+          "endLine": 29,
+          "params": [
+            "value"
+          ]
+        },
+        {
+          "name": "bearerToken",
+          "startLine": 31,
+          "endLine": 33,
+          "params": [
+            "req"
+          ]
+        },
+        {
+          "name": "accountArray",
+          "startLine": 35,
+          "endLine": 37,
+          "params": [
+            "value"
+          ]
+        },
+        {
+          "name": "allAccounts",
+          "startLine": 39,
+          "endLine": 48,
+          "params": [
+            "payload"
+          ]
+        },
+        {
+          "name": "accountMatches",
+          "startLine": 50,
+          "endLine": 62,
+          "params": [
+            "account",
+            "value"
+          ]
+        },
+        {
+          "name": "authenticatedActor",
+          "startLine": 64,
+          "endLine": 96,
+          "params": [
+            "req",
+            "actorKey"
+          ]
+        }
+      ],
+      "callGraph": [
+        {
+          "caller": "json",
+          "callee": "JSON.stringify",
+          "lineNumber": 17
+        },
+        {
+          "caller": "clean",
+          "callee": "String(value ?? \"\").trim",
+          "lineNumber": 24
+        },
+        {
+          "caller": "clean",
+          "callee": "String",
+          "lineNumber": 24
+        },
+        {
+          "caller": "lower",
+          "callee": "clean(value).toLowerCase",
+          "lineNumber": 28
+        },
+        {
+          "caller": "lower",
+          "callee": "clean",
+          "lineNumber": 28
+        },
+        {
+          "caller": "bearerToken",
+          "callee": "(req.headers.get(\"Authorization\") ?? \"\").replace(/^Bearer\\s+/i, \"\").trim",
+          "lineNumber": 32
+        },
+        {
+          "caller": "bearerToken",
+          "callee": "(req.headers.get(\"Authorization\") ?? \"\").replace",
+          "lineNumber": 32
+        },
+        {
+          "caller": "bearerToken",
+          "callee": "req.headers.get",
+          "lineNumber": 32
+        },
+        {
+          "caller": "accountArray",
+          "callee": "Array.isArray",
+          "lineNumber": 36
+        },
+        {
+          "caller": "allAccounts",
+          "callee": "accountArray",
+          "lineNumber": 41
+        },
+        {
+          "caller": "allAccounts",
+          "callee": "accountArray",
+          "lineNumber": 42
+        },
+        {
+          "caller": "allAccounts",
+          "callee": "accountArray",
+          "lineNumber": 43
+        },
+        {
+          "caller": "allAccounts",
+          "callee": "accountArray",
+          "lineNumber": 44
+        },
+        {
+          "caller": "allAccounts",
+          "callee": "accountArray",
+          "lineNumber": 45
+        },
+        {
+          "caller": "allAccounts",
+          "callee": "accountArray",
+          "lineNumber": 46
+        },
+        {
+          "caller": "accountMatches",
+          "callee": "lower",
+          "lineNumber": 51
+        },
+        {
+          "caller": "accountMatches",
+          "callee": "[\n    account.id,\n    account.user,\n    account.username,\n    account.displayName,\n    account.userId,\n    account.authUserId,\n    account.auth_user_id,\n  ].some",
+          "lineNumber": 53
+        },
+        {
+          "caller": "accountMatches",
+          "callee": "lower",
+          "lineNumber": 61
+        },
+        {
+          "caller": "authenticatedActor",
+          "callee": "bearerToken",
+          "lineNumber": 65
+        },
+        {
+          "caller": "authenticatedActor",
+          "callee": "supabase.auth.getUser",
+          "lineNumber": 68
+        },
+        {
+          "caller": "authenticatedActor",
+          "callee": "[metadata.legacy_id, metadata.username, metadata.user, metadata.admin_id, metadata.admin_user]\n    .some",
+          "lineNumber": 72
+        },
+        {
+          "caller": "authenticatedActor",
+          "callee": "lower",
+          "lineNumber": 73
+        },
+        {
+          "caller": "authenticatedActor",
+          "callee": "lower",
+          "lineNumber": 73
+        },
+        {
+          "caller": "authenticatedActor",
+          "callee": "supabase\n    .from(\"lotterynet_users_state\")\n    .select(\"payload\")\n    .eq(\"scope\", \"global\")\n    .maybeSingle",
+          "lineNumber": 77
+        },
+        {
+          "caller": "authenticatedActor",
+          "callee": "supabase\n    .from(\"lotterynet_users_state\")\n    .select(\"payload\")\n    .eq",
+          "lineNumber": 77
+        },
+        {
+          "caller": "authenticatedActor",
+          "callee": "supabase\n    .from(\"lotterynet_users_state\")\n    .select",
+          "lineNumber": 77
+        },
+        {
+          "caller": "authenticatedActor",
+          "callee": "supabase\n    .from",
+          "lineNumber": 77
+        },
+        {
+          "caller": "authenticatedActor",
+          "callee": "allAccounts(payload).find",
+          "lineNumber": 85
+        },
+        {
+          "caller": "authenticatedActor",
+          "callee": "allAccounts",
+          "lineNumber": 85
+        },
+        {
+          "caller": "authenticatedActor",
+          "callee": "accountMatches",
+          "lineNumber": 85
+        },
+        {
+          "caller": "authenticatedActor",
+          "callee": "clean",
+          "lineNumber": 91
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 8,
+        "classCount": 0
+      }
+    },
+    {
+      "path": "supabase/functions/get-ticket-list/index.ts",
+      "language": "typescript",
+      "fileCategory": "code",
+      "totalLines": 361,
+      "nonEmptyLines": 325,
+      "functions": [
+        {
+          "name": "json",
+          "startLine": 11,
+          "endLine": 16,
+          "params": [
+            "status",
+            "body"
+          ]
+        },
+        {
+          "name": "clean",
+          "startLine": 18,
+          "endLine": 20,
+          "params": [
+            "value"
+          ]
+        },
+        {
+          "name": "number",
+          "startLine": 22,
+          "endLine": 25,
+          "params": [
+            "value"
+          ]
+        },
+        {
+          "name": "epoch",
+          "startLine": 27,
+          "endLine": 30,
+          "params": [
+            "value"
+          ]
+        },
+        {
+          "name": "statusForApp",
+          "startLine": 32,
+          "endLine": 41,
+          "params": [
+            "value"
+          ]
+        },
+        {
+          "name": "dayLabel",
+          "startLine": 43,
+          "endLine": 50,
+          "params": [
+            "ms"
+          ]
+        },
+        {
+          "name": "timeLabel",
+          "startLine": 52,
+          "endLine": 60,
+          "params": [
+            "ms"
+          ]
+        },
+        {
+          "name": "payloadObject",
+          "startLine": 62,
+          "endLine": 65,
+          "params": [
+            "payload"
+          ]
+        },
+        {
+          "name": "payloadTickets",
+          "startLine": 67,
+          "endLine": 69,
+          "params": [
+            "payload"
+          ]
+        },
+        {
+          "name": "payloadDeletedIds",
+          "startLine": 71,
+          "endLine": 78,
+          "params": [
+            "payload"
+          ]
+        },
+        {
+          "name": "ticketRow",
+          "startLine": 80,
+          "endLine": 82,
+          "params": [
+            "ticket"
+          ]
+        },
+        {
+          "name": "ticketKey",
+          "startLine": 84,
+          "endLine": 87,
+          "params": [
+            "ticket"
+          ]
+        },
+        {
+          "name": "hasDeletedStatus",
+          "startLine": 89,
+          "endLine": 93,
+          "params": [
+            "ticket"
+          ]
+        },
+        {
+          "name": "filterSnapshotTickets",
+          "startLine": 95,
+          "endLine": 100,
+          "params": [
+            "tickets",
+            "deletedIds"
+          ]
+        },
+        {
+          "name": "mergeTickets",
+          "startLine": 102,
+          "endLine": 116,
+          "params": [
+            "snapshotTickets",
+            "officialTickets",
+            "deletedIds"
+          ]
+        },
+        {
+          "name": "appTicketFromOfficial",
+          "startLine": 118,
+          "endLine": 181,
+          "params": [
+            "ticket",
+            "items"
+          ]
+        },
+        {
+          "name": "ownerLookupKeys",
+          "startLine": 183,
+          "endLine": 199,
+          "params": [
+            "admin",
+            "ownerKey"
+          ]
+        },
+        {
+          "name": "latestUpdatedAtForOwner",
+          "startLine": 201,
+          "endLine": 245,
+          "params": [
+            "admin",
+            "ownerKey",
+            "ownerKeys"
+          ]
+        },
+        {
+          "name": "chunk",
+          "startLine": 247,
+          "endLine": 253,
+          "params": [
+            "values",
+            "size"
+          ]
+        },
+        {
+          "name": "officialItemsByTicket",
+          "startLine": 255,
+          "endLine": 272,
+          "params": [
+            "admin",
+            "ids"
+          ]
+        },
+        {
+          "name": "officialTicketsForOwner",
+          "startLine": 274,
+          "endLine": 302,
+          "params": [
+            "admin",
+            "ownerKeys"
+          ]
+        }
+      ],
+      "callGraph": [
+        {
+          "caller": "json",
+          "callee": "JSON.stringify",
+          "lineNumber": 12
+        },
+        {
+          "caller": "clean",
+          "callee": "String(value ?? \"\").trim",
+          "lineNumber": 19
+        },
+        {
+          "caller": "clean",
+          "callee": "String",
+          "lineNumber": 19
+        },
+        {
+          "caller": "number",
+          "callee": "Number",
+          "lineNumber": 23
+        },
+        {
+          "caller": "number",
+          "callee": "Number.isFinite",
+          "lineNumber": 24
+        },
+        {
+          "caller": "epoch",
+          "callee": "Date.parse",
+          "lineNumber": 28
+        },
+        {
+          "caller": "epoch",
+          "callee": "clean",
+          "lineNumber": 28
+        },
+        {
+          "caller": "epoch",
+          "callee": "Number.isFinite",
+          "lineNumber": 29
+        },
+        {
+          "caller": "epoch",
+          "callee": "Date.now",
+          "lineNumber": 29
+        },
+        {
+          "caller": "statusForApp",
+          "callee": "clean(value).toUpperCase",
+          "lineNumber": 33
+        },
+        {
+          "caller": "statusForApp",
+          "callee": "clean",
+          "lineNumber": 33
+        },
+        {
+          "caller": "statusForApp",
+          "callee": "clean",
+          "lineNumber": 40
+        },
+        {
+          "caller": "dayLabel",
+          "callee": "new Intl.DateTimeFormat(\"en-GB\", {\n    timeZone: \"America/Santo_Domingo\",\n    day: \"2-digit\",\n    month: \"2-digit\",\n    year: \"numeric\",\n  }).format(new Date(ms)).replace",
+          "lineNumber": 44
+        },
+        {
+          "caller": "dayLabel",
+          "callee": "new Intl.DateTimeFormat(\"en-GB\", {\n    timeZone: \"America/Santo_Domingo\",\n    day: \"2-digit\",\n    month: \"2-digit\",\n    year: \"numeric\",\n  }).format",
+          "lineNumber": 44
+        },
+        {
+          "caller": "timeLabel",
+          "callee": "new Intl.DateTimeFormat(\"en-US\", {\n    timeZone: \"America/Santo_Domingo\",\n    hour: \"2-digit\",\n    minute: \"2-digit\",\n    second: \"2-digit\",\n    hour12: true,\n  }).format",
+          "lineNumber": 53
+        },
+        {
+          "caller": "payloadObject",
+          "callee": "Array.isArray",
+          "lineNumber": 63
+        },
+        {
+          "caller": "payloadTickets",
+          "callee": "Array.isArray",
+          "lineNumber": 68
+        },
+        {
+          "caller": "payloadDeletedIds",
+          "callee": "Array.isArray",
+          "lineNumber": 75
+        },
+        {
+          "caller": "payloadDeletedIds",
+          "callee": "value.map(clean).filter(Boolean).forEach",
+          "lineNumber": 75
+        },
+        {
+          "caller": "payloadDeletedIds",
+          "callee": "value.map(clean).filter",
+          "lineNumber": 75
+        },
+        {
+          "caller": "payloadDeletedIds",
+          "callee": "value.map",
+          "lineNumber": 75
+        },
+        {
+          "caller": "payloadDeletedIds",
+          "callee": "ids.add",
+          "lineNumber": 75
+        },
+        {
+          "caller": "payloadDeletedIds",
+          "callee": "Array.from",
+          "lineNumber": 77
+        },
+        {
+          "caller": "ticketRow",
+          "callee": "Array.isArray",
+          "lineNumber": 81
+        },
+        {
+          "caller": "ticketKey",
+          "callee": "ticketRow",
+          "lineNumber": 85
+        },
+        {
+          "caller": "ticketKey",
+          "callee": "clean",
+          "lineNumber": 86
+        },
+        {
+          "caller": "hasDeletedStatus",
+          "callee": "ticketRow",
+          "lineNumber": 90
+        },
+        {
+          "caller": "hasDeletedStatus",
+          "callee": "clean(row.status || row.st || row.estado).toLowerCase",
+          "lineNumber": 91
+        },
+        {
+          "caller": "hasDeletedStatus",
+          "callee": "clean",
+          "lineNumber": 91
+        },
+        {
+          "caller": "hasDeletedStatus",
+          "callee": "[\"deleted\", \"borrado\", \"removed\"].includes",
+          "lineNumber": 92
+        },
+        {
+          "caller": "filterSnapshotTickets",
+          "callee": "tickets.filter",
+          "lineNumber": 96
+        },
+        {
+          "caller": "filterSnapshotTickets",
+          "callee": "ticketKey",
+          "lineNumber": 97
+        },
+        {
+          "caller": "filterSnapshotTickets",
+          "callee": "deletedIds.has",
+          "lineNumber": 98
+        },
+        {
+          "caller": "filterSnapshotTickets",
+          "callee": "hasDeletedStatus",
+          "lineNumber": 98
+        },
+        {
+          "caller": "mergeTickets",
+          "callee": "filterSnapshotTickets",
+          "lineNumber": 104
+        },
+        {
+          "caller": "mergeTickets",
+          "callee": "map.set",
+          "lineNumber": 105
+        },
+        {
+          "caller": "mergeTickets",
+          "callee": "ticketKey",
+          "lineNumber": 105
+        },
+        {
+          "caller": "mergeTickets",
+          "callee": "ticketKey",
+          "lineNumber": 108
+        },
+        {
+          "caller": "mergeTickets",
+          "callee": "Array.isArray",
+          "lineNumber": 109
+        },
+        {
+          "caller": "mergeTickets",
+          "callee": "number",
+          "lineNumber": 110
+        },
+        {
+          "caller": "mergeTickets",
+          "callee": "deletedIds.has",
+          "lineNumber": 111
+        },
+        {
+          "caller": "mergeTickets",
+          "callee": "hasDeletedStatus",
+          "lineNumber": 111
+        },
+        {
+          "caller": "mergeTickets",
+          "callee": "map.has",
+          "lineNumber": 112
+        },
+        {
+          "caller": "mergeTickets",
+          "callee": "map.set",
+          "lineNumber": 113
+        },
+        {
+          "caller": "mergeTickets",
+          "callee": "Array.from(map.values()).sort",
+          "lineNumber": 115
+        },
+        {
+          "caller": "mergeTickets",
+          "callee": "Array.from",
+          "lineNumber": 115
+        },
+        {
+          "caller": "mergeTickets",
+          "callee": "map.values",
+          "lineNumber": 115
+        },
+        {
+          "caller": "mergeTickets",
+          "callee": "number",
+          "lineNumber": 115
+        },
+        {
+          "caller": "mergeTickets",
+          "callee": "number",
+          "lineNumber": 115
+        },
+        {
+          "caller": "appTicketFromOfficial",
+          "callee": "epoch",
+          "lineNumber": 119
+        },
+        {
+          "caller": "appTicketFromOfficial",
+          "callee": "clean",
+          "lineNumber": 120
+        },
+        {
+          "caller": "appTicketFromOfficial",
+          "callee": "clean",
+          "lineNumber": 120
+        },
+        {
+          "caller": "appTicketFromOfficial",
+          "callee": "clean",
+          "lineNumber": 121
+        },
+        {
+          "caller": "appTicketFromOfficial",
+          "callee": "clean",
+          "lineNumber": 122
+        },
+        {
+          "caller": "appTicketFromOfficial",
+          "callee": "clean",
+          "lineNumber": 126
+        },
+        {
+          "caller": "appTicketFromOfficial",
+          "callee": "clean",
+          "lineNumber": 127
+        },
+        {
+          "caller": "appTicketFromOfficial",
+          "callee": "clean",
+          "lineNumber": 128
+        },
+        {
+          "caller": "appTicketFromOfficial",
+          "callee": "items.map",
+          "lineNumber": 129
+        },
+        {
+          "caller": "appTicketFromOfficial",
+          "callee": "clean",
+          "lineNumber": 130
+        },
+        {
+          "caller": "appTicketFromOfficial",
+          "callee": "clean",
+          "lineNumber": 131
+        },
+        {
+          "caller": "appTicketFromOfficial",
+          "callee": "clean",
+          "lineNumber": 132
+        },
+        {
+          "caller": "appTicketFromOfficial",
+          "callee": "clean",
+          "lineNumber": 133
+        },
+        {
+          "caller": "appTicketFromOfficial",
+          "callee": "number",
+          "lineNumber": 134
+        },
+        {
+          "caller": "appTicketFromOfficial",
+          "callee": "number",
+          "lineNumber": 135
+        },
+        {
+          "caller": "appTicketFromOfficial",
+          "callee": "clean",
+          "lineNumber": 136
+        },
+        {
+          "caller": "appTicketFromOfficial",
+          "callee": "clean",
+          "lineNumber": 137
+        },
+        {
+          "caller": "appTicketFromOfficial",
+          "callee": "clean",
+          "lineNumber": 138
+        },
+        {
+          "caller": "appTicketFromOfficial",
+          "callee": "clean",
+          "lineNumber": 139
+        },
+        {
+          "caller": "appTicketFromOfficial",
+          "callee": "clean",
+          "lineNumber": 140
+        },
+        {
+          "caller": "appTicketFromOfficial",
+          "callee": "clean",
+          "lineNumber": 141
+        },
+        {
+          "caller": "appTicketFromOfficial",
+          "callee": "Boolean",
+          "lineNumber": 142
+        },
+        {
+          "caller": "appTicketFromOfficial",
+          "callee": "number",
+          "lineNumber": 143
+        },
+        {
+          "caller": "appTicketFromOfficial",
+          "callee": "clean",
+          "lineNumber": 144
+        },
+        {
+          "caller": "appTicketFromOfficial",
+          "callee": "clean",
+          "lineNumber": 145
+        },
+        {
+          "caller": "appTicketFromOfficial",
+          "callee": "items\n      .filter((item) => Boolean(item.is_winner) || number(item.payout_amount) > 0)\n      .map",
+          "lineNumber": 147
+        },
+        {
+          "caller": "appTicketFromOfficial",
+          "callee": "items\n      .filter",
+          "lineNumber": 147
+        },
+        {
+          "caller": "appTicketFromOfficial",
+          "callee": "Boolean",
+          "lineNumber": 148
+        },
+        {
+          "caller": "appTicketFromOfficial",
+          "callee": "number",
+          "lineNumber": 148
+        },
+        {
+          "caller": "appTicketFromOfficial",
+          "callee": "clean",
+          "lineNumber": 150
+        },
+        {
+          "caller": "appTicketFromOfficial",
+          "callee": "clean",
+          "lineNumber": 151
+        },
+        {
+          "caller": "appTicketFromOfficial",
+          "callee": "clean",
+          "lineNumber": 152
+        },
+        {
+          "caller": "appTicketFromOfficial",
+          "callee": "clean",
+          "lineNumber": 153
+        },
+        {
+          "caller": "appTicketFromOfficial",
+          "callee": "clean",
+          "lineNumber": 154
+        },
+        {
+          "caller": "appTicketFromOfficial",
+          "callee": "number",
+          "lineNumber": 155
+        },
+        {
+          "caller": "appTicketFromOfficial",
+          "callee": "number",
+          "lineNumber": 156
+        },
+        {
+          "caller": "appTicketFromOfficial",
+          "callee": "number",
+          "lineNumber": 158
+        },
+        {
+          "caller": "appTicketFromOfficial",
+          "callee": "number",
+          "lineNumber": 160
+        },
+        {
+          "caller": "appTicketFromOfficial",
+          "callee": "number",
+          "lineNumber": 161
+        },
+        {
+          "caller": "appTicketFromOfficial",
+          "callee": "number",
+          "lineNumber": 162
+        },
+        {
+          "caller": "appTicketFromOfficial",
+          "callee": "dayLabel",
+          "lineNumber": 174
+        },
+        {
+          "caller": "appTicketFromOfficial",
+          "callee": "timeLabel",
+          "lineNumber": 175
+        },
+        {
+          "caller": "appTicketFromOfficial",
+          "callee": "statusForApp",
+          "lineNumber": 178
+        },
+        {
+          "caller": "appTicketFromOfficial",
+          "callee": "statusForApp",
+          "lineNumber": 179
+        },
+        {
+          "caller": "ownerLookupKeys",
+          "callee": "[ownerKey].map(clean).filter",
+          "lineNumber": 184
+        },
+        {
+          "caller": "ownerLookupKeys",
+          "callee": "[ownerKey].map",
+          "lineNumber": 184
+        },
+        {
+          "caller": "ownerLookupKeys",
+          "callee": "admin\n    .from(\"profiles\")\n    .select(\"username,legacy_key,legacy_admin_id,legacy_admin_user\")\n    .or",
+          "lineNumber": 185
+        },
+        {
+          "caller": "ownerLookupKeys",
+          "callee": "admin\n    .from(\"profiles\")\n    .select",
+          "lineNumber": 185
+        },
+        {
+          "caller": "ownerLookupKeys",
+          "callee": "admin\n    .from",
+          "lineNumber": 185
+        },
+        {
+          "caller": "ownerLookupKeys",
+          "callee": "Array.from",
+          "lineNumber": 189
+        },
+        {
+          "caller": "ownerLookupKeys",
+          "callee": "Array.isArray",
+          "lineNumber": 190
+        },
+        {
+          "caller": "ownerLookupKeys",
+          "callee": "[profile.username, profile.legacy_key, profile.legacy_admin_id, profile.legacy_admin_user]\n        .map(clean)\n        .filter(Boolean)\n        .forEach",
+          "lineNumber": 192
+        },
+        {
+          "caller": "ownerLookupKeys",
+          "callee": "[profile.username, profile.legacy_key, profile.legacy_admin_id, profile.legacy_admin_user]\n        .map(clean)\n        .filter",
+          "lineNumber": 192
+        },
+        {
+          "caller": "ownerLookupKeys",
+          "callee": "[profile.username, profile.legacy_key, profile.legacy_admin_id, profile.legacy_admin_user]\n        .map",
+          "lineNumber": 192
+        },
+        {
+          "caller": "ownerLookupKeys",
+          "callee": "keys.add",
+          "lineNumber": 195
+        },
+        {
+          "caller": "ownerLookupKeys",
+          "callee": "Array.from",
+          "lineNumber": 198
+        },
+        {
+          "caller": "latestByColumn",
+          "callee": "admin\n      .from(\"tickets\")\n      .select(\"server_created_at,updated_at\")\n      .in(column, ownerKeys)\n      .order(orderColumn, { ascending: false })\n      .limit(1)\n      .maybeSingle",
+          "lineNumber": 204
+        },
+        {
+          "caller": "latestByColumn",
+          "callee": "admin\n      .from(\"tickets\")\n      .select(\"server_created_at,updated_at\")\n      .in(column, ownerKeys)\n      .order(orderColumn, { ascending: false })\n      .limit",
+          "lineNumber": 204
+        },
+        {
+          "caller": "latestByColumn",
+          "callee": "admin\n      .from(\"tickets\")\n      .select(\"server_created_at,updated_at\")\n      .in(column, ownerKeys)\n      .order",
+          "lineNumber": 204
+        },
+        {
+          "caller": "latestByColumn",
+          "callee": "admin\n      .from(\"tickets\")\n      .select(\"server_created_at,updated_at\")\n      .in",
+          "lineNumber": 204
+        },
+        {
+          "caller": "latestByColumn",
+          "callee": "admin\n      .from(\"tickets\")\n      .select",
+          "lineNumber": 204
+        },
+        {
+          "caller": "latestByColumn",
+          "callee": "admin\n      .from",
+          "lineNumber": 204
+        },
+        {
+          "caller": "latestUpdatedAtForOwner",
+          "callee": "latestByColumn",
+          "lineNumber": 216
+        },
+        {
+          "caller": "latestUpdatedAtForOwner",
+          "callee": "latestByColumn",
+          "lineNumber": 217
+        },
+        {
+          "caller": "latestUpdatedAtForOwner",
+          "callee": "clean",
+          "lineNumber": 219
+        },
+        {
+          "caller": "latestUpdatedAtForOwner",
+          "callee": "clean",
+          "lineNumber": 220
+        },
+        {
+          "caller": "latestUpdatedAtForOwner",
+          "callee": "stamps.push",
+          "lineNumber": 221
+        },
+        {
+          "caller": "latestUpdatedAtForOwner",
+          "callee": "stamps.push",
+          "lineNumber": 222
+        },
+        {
+          "caller": "latestUpdatedAtForOwner",
+          "callee": "latestByColumn",
+          "lineNumber": 226
+        },
+        {
+          "caller": "latestUpdatedAtForOwner",
+          "callee": "latestByColumn",
+          "lineNumber": 227
+        },
+        {
+          "caller": "latestUpdatedAtForOwner",
+          "callee": "clean",
+          "lineNumber": 229
+        },
+        {
+          "caller": "latestUpdatedAtForOwner",
+          "callee": "clean",
+          "lineNumber": 230
+        },
+        {
+          "caller": "latestUpdatedAtForOwner",
+          "callee": "stamps.push",
+          "lineNumber": 231
+        },
+        {
+          "caller": "latestUpdatedAtForOwner",
+          "callee": "stamps.push",
+          "lineNumber": 232
+        },
+        {
+          "caller": "latestUpdatedAtForOwner",
+          "callee": "admin\n    .from(\"lotterynet_tickets_by_owner\")\n    .select(\"updated_at\")\n    .eq(\"owner_key\", ownerKey)\n    .maybeSingle",
+          "lineNumber": 235
+        },
+        {
+          "caller": "latestUpdatedAtForOwner",
+          "callee": "admin\n    .from(\"lotterynet_tickets_by_owner\")\n    .select(\"updated_at\")\n    .eq",
+          "lineNumber": 235
+        },
+        {
+          "caller": "latestUpdatedAtForOwner",
+          "callee": "admin\n    .from(\"lotterynet_tickets_by_owner\")\n    .select",
+          "lineNumber": 235
+        },
+        {
+          "caller": "latestUpdatedAtForOwner",
+          "callee": "admin\n    .from",
+          "lineNumber": 235
+        },
+        {
+          "caller": "latestUpdatedAtForOwner",
+          "callee": "clean",
+          "lineNumber": 241
+        },
+        {
+          "caller": "latestUpdatedAtForOwner",
+          "callee": "stamps.push",
+          "lineNumber": 242
+        },
+        {
+          "caller": "latestUpdatedAtForOwner",
+          "callee": "stamps.sort().at",
+          "lineNumber": 244
+        },
+        {
+          "caller": "latestUpdatedAtForOwner",
+          "callee": "stamps.sort",
+          "lineNumber": 244
+        },
+        {
+          "caller": "chunk",
+          "callee": "chunks.push",
+          "lineNumber": 250
+        },
+        {
+          "caller": "chunk",
+          "callee": "values.slice",
+          "lineNumber": 250
+        },
+        {
+          "caller": "officialItemsByTicket",
+          "callee": "chunk",
+          "lineNumber": 257
+        },
+        {
+          "caller": "officialItemsByTicket",
+          "callee": "admin\n      .from(\"ticket_items\")\n      .select(\"ticket_id,play_type,play_numbers,amount,lottery_legacy_id,lottery_name,secondary_lottery_legacy_id,secondary_lottery_name,sorteo_id,is_winner,payout_amount,hit_position\")\n      .in(\"ticket_id\", idChunk)\n      .range",
+          "lineNumber": 258
+        },
+        {
+          "caller": "officialItemsByTicket",
+          "callee": "admin\n      .from(\"ticket_items\")\n      .select(\"ticket_id,play_type,play_numbers,amount,lottery_legacy_id,lottery_name,secondary_lottery_legacy_id,secondary_lottery_name,sorteo_id,is_winner,payout_amount,hit_position\")\n      .in",
+          "lineNumber": 258
+        },
+        {
+          "caller": "officialItemsByTicket",
+          "callee": "admin\n      .from(\"ticket_items\")\n      .select",
+          "lineNumber": 258
+        },
+        {
+          "caller": "officialItemsByTicket",
+          "callee": "admin\n      .from",
+          "lineNumber": 258
+        },
+        {
+          "caller": "officialItemsByTicket",
+          "callee": "Array.isArray",
+          "lineNumber": 264
+        },
+        {
+          "caller": "officialItemsByTicket",
+          "callee": "clean",
+          "lineNumber": 266
+        },
+        {
+          "caller": "officialItemsByTicket",
+          "callee": "itemsByTicket.has",
+          "lineNumber": 267
+        },
+        {
+          "caller": "officialItemsByTicket",
+          "callee": "itemsByTicket.set",
+          "lineNumber": 267
+        },
+        {
+          "caller": "officialItemsByTicket",
+          "callee": "itemsByTicket.get(key)!.push",
+          "lineNumber": 268
+        },
+        {
+          "caller": "officialItemsByTicket",
+          "callee": "itemsByTicket.get",
+          "lineNumber": 268
+        },
+        {
+          "caller": "officialTicketsForOwner",
+          "callee": "new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString",
+          "lineNumber": 275
+        },
+        {
+          "caller": "officialTicketsForOwner",
+          "callee": "Date.now",
+          "lineNumber": 275
+        },
+        {
+          "caller": "fetchByColumn",
+          "callee": "admin\n      .from(\"tickets\")\n      .select(selectColumns)\n      .in(column, ownerKeys)\n      .is(\"deleted_at\", null)\n      .gte(\"server_created_at\", since)\n      .order(\"server_created_at\", { ascending: false })\n      .limit",
+          "lineNumber": 278
+        },
+        {
+          "caller": "fetchByColumn",
+          "callee": "admin\n      .from(\"tickets\")\n      .select(selectColumns)\n      .in(column, ownerKeys)\n      .is(\"deleted_at\", null)\n      .gte(\"server_created_at\", since)\n      .order",
+          "lineNumber": 278
+        },
+        {
+          "caller": "fetchByColumn",
+          "callee": "admin\n      .from(\"tickets\")\n      .select(selectColumns)\n      .in(column, ownerKeys)\n      .is(\"deleted_at\", null)\n      .gte",
+          "lineNumber": 278
+        },
+        {
+          "caller": "fetchByColumn",
+          "callee": "admin\n      .from(\"tickets\")\n      .select(selectColumns)\n      .in(column, ownerKeys)\n      .is",
+          "lineNumber": 278
+        },
+        {
+          "caller": "fetchByColumn",
+          "callee": "admin\n      .from(\"tickets\")\n      .select(selectColumns)\n      .in",
+          "lineNumber": 278
+        },
+        {
+          "caller": "fetchByColumn",
+          "callee": "admin\n      .from(\"tickets\")\n      .select",
+          "lineNumber": 278
+        },
+        {
+          "caller": "fetchByColumn",
+          "callee": "admin\n      .from",
+          "lineNumber": 278
+        },
+        {
+          "caller": "fetchByColumn",
+          "callee": "Array.isArray",
+          "lineNumber": 287
+        },
+        {
+          "caller": "officialTicketsForOwner",
+          "callee": "fetchByColumn",
+          "lineNumber": 290
+        },
+        {
+          "caller": "officialTicketsForOwner",
+          "callee": "fetchByColumn",
+          "lineNumber": 290
+        },
+        {
+          "caller": "officialTicketsForOwner",
+          "callee": "clean",
+          "lineNumber": 291
+        },
+        {
+          "caller": "officialTicketsForOwner",
+          "callee": "byId.set",
+          "lineNumber": 292
+        },
+        {
+          "caller": "officialTicketsForOwner",
+          "callee": "Array.from(byId.values())\n    .sort((a, b) => clean(b.server_created_at ?? b.created_at).localeCompare(clean(a.server_created_at ?? a.created_at)))\n    .slice",
+          "lineNumber": 294
+        },
+        {
+          "caller": "officialTicketsForOwner",
+          "callee": "Array.from(byId.values())\n    .sort",
+          "lineNumber": 294
+        },
+        {
+          "caller": "officialTicketsForOwner",
+          "callee": "Array.from",
+          "lineNumber": 294
+        },
+        {
+          "caller": "officialTicketsForOwner",
+          "callee": "byId.values",
+          "lineNumber": 294
+        },
+        {
+          "caller": "officialTicketsForOwner",
+          "callee": "clean(b.server_created_at ?? b.created_at).localeCompare",
+          "lineNumber": 295
+        },
+        {
+          "caller": "officialTicketsForOwner",
+          "callee": "clean",
+          "lineNumber": 295
+        },
+        {
+          "caller": "officialTicketsForOwner",
+          "callee": "clean",
+          "lineNumber": 295
+        },
+        {
+          "caller": "officialTicketsForOwner",
+          "callee": "tickets.map((ticket: JsonMap) => clean(ticket.id)).filter",
+          "lineNumber": 299
+        },
+        {
+          "caller": "officialTicketsForOwner",
+          "callee": "tickets.map",
+          "lineNumber": 299
+        },
+        {
+          "caller": "officialTicketsForOwner",
+          "callee": "clean",
+          "lineNumber": 299
+        },
+        {
+          "caller": "officialTicketsForOwner",
+          "callee": "officialItemsByTicket",
+          "lineNumber": 300
+        },
+        {
+          "caller": "officialTicketsForOwner",
+          "callee": "tickets.map",
+          "lineNumber": 301
+        },
+        {
+          "caller": "officialTicketsForOwner",
+          "callee": "appTicketFromOfficial",
+          "lineNumber": 301
+        },
+        {
+          "caller": "officialTicketsForOwner",
+          "callee": "itemsByTicket.get",
+          "lineNumber": 301
+        },
+        {
+          "caller": "officialTicketsForOwner",
+          "callee": "clean",
+          "lineNumber": 301
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 21,
+        "classCount": 0
+      }
+    },
+    {
+      "path": "supabase/functions/ota-check-update/index.ts",
+      "language": "typescript",
+      "fileCategory": "code",
+      "totalLines": 156,
+      "nonEmptyLines": 134,
+      "functions": [
+        {
+          "name": "json",
+          "startLine": 23,
+          "endLine": 33,
+          "params": [
+            "body",
+            "status"
+          ]
+        },
+        {
+          "name": "clean",
+          "startLine": 35,
+          "endLine": 37,
+          "params": [
+            "value"
+          ]
+        },
+        {
+          "name": "intValue",
+          "startLine": 39,
+          "endLine": 42,
+          "params": [
+            "value"
+          ]
+        },
+        {
+          "name": "changelogLines",
+          "startLine": 44,
+          "endLine": 47,
+          "params": [
+            "value"
+          ]
+        },
+        {
+          "name": "clientRole",
+          "startLine": 49,
+          "endLine": 52,
+          "params": [
+            "value"
+          ]
+        },
+        {
+          "name": "validateRelease",
+          "startLine": 54,
+          "endLine": 67,
+          "params": [
+            "data"
+          ]
+        },
+        {
+          "name": "logEvent",
+          "startLine": 69,
+          "endLine": 84,
+          "params": [
+            "body",
+            "event",
+            "targetVersionCode",
+            "message"
+          ]
+        }
+      ],
+      "callGraph": [
+        {
+          "caller": "json",
+          "callee": "JSON.stringify",
+          "lineNumber": 24
+        },
+        {
+          "caller": "clean",
+          "callee": "String(value ?? \"\").trim",
+          "lineNumber": 36
+        },
+        {
+          "caller": "clean",
+          "callee": "String",
+          "lineNumber": 36
+        },
+        {
+          "caller": "intValue",
+          "callee": "Number.parseInt",
+          "lineNumber": 40
+        },
+        {
+          "caller": "intValue",
+          "callee": "clean",
+          "lineNumber": 40
+        },
+        {
+          "caller": "intValue",
+          "callee": "Number.isFinite",
+          "lineNumber": 41
+        },
+        {
+          "caller": "changelogLines",
+          "callee": "Array.isArray",
+          "lineNumber": 45
+        },
+        {
+          "caller": "changelogLines",
+          "callee": "value.map((item) => clean(item)).filter",
+          "lineNumber": 45
+        },
+        {
+          "caller": "changelogLines",
+          "callee": "value.map",
+          "lineNumber": 45
+        },
+        {
+          "caller": "changelogLines",
+          "callee": "clean",
+          "lineNumber": 45
+        },
+        {
+          "caller": "clientRole",
+          "callee": "clean(value).toLowerCase",
+          "lineNumber": 50
+        },
+        {
+          "caller": "clientRole",
+          "callee": "clean",
+          "lineNumber": 50
+        },
+        {
+          "caller": "clientRole",
+          "callee": "SAFE_ROLES.has",
+          "lineNumber": 51
+        },
+        {
+          "caller": "validateRelease",
+          "callee": "Number",
+          "lineNumber": 55
+        },
+        {
+          "caller": "validateRelease",
+          "callee": "Number",
+          "lineNumber": 56
+        },
+        {
+          "caller": "validateRelease",
+          "callee": "clean",
+          "lineNumber": 57
+        },
+        {
+          "caller": "validateRelease",
+          "callee": "clean",
+          "lineNumber": 58
+        },
+        {
+          "caller": "validateRelease",
+          "callee": "clean",
+          "lineNumber": 59
+        },
+        {
+          "caller": "validateRelease",
+          "callee": "Number.isInteger",
+          "lineNumber": 61
+        },
+        {
+          "caller": "validateRelease",
+          "callee": "Number.isInteger",
+          "lineNumber": 62
+        },
+        {
+          "caller": "validateRelease",
+          "callee": "path.toLowerCase().endsWith",
+          "lineNumber": 63
+        },
+        {
+          "caller": "validateRelease",
+          "callee": "path.toLowerCase",
+          "lineNumber": 63
+        },
+        {
+          "caller": "validateRelease",
+          "callee": "APK_HASH.test",
+          "lineNumber": 64
+        },
+        {
+          "caller": "logEvent",
+          "callee": "supabase.from(\"ota_update_logs\").insert",
+          "lineNumber": 70
+        },
+        {
+          "caller": "logEvent",
+          "callee": "supabase.from",
+          "lineNumber": 70
+        },
+        {
+          "caller": "logEvent",
+          "callee": "clean",
+          "lineNumber": 72
+        },
+        {
+          "caller": "logEvent",
+          "callee": "clean",
+          "lineNumber": 73
+        },
+        {
+          "caller": "logEvent",
+          "callee": "clientRole",
+          "lineNumber": 74
+        },
+        {
+          "caller": "logEvent",
+          "callee": "intValue",
+          "lineNumber": 77
+        },
+        {
+          "caller": "logEvent",
+          "callee": "clean",
+          "lineNumber": 78
+        },
+        {
+          "caller": "logEvent",
+          "callee": "console.warn",
+          "lineNumber": 83
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 7,
+        "classCount": 0
+      }
+    },
+    {
+      "path": "supabase/functions/ota-log-event/index.ts",
+      "language": "typescript",
+      "fileCategory": "code",
+      "totalLines": 78,
+      "nonEmptyLines": 69,
+      "functions": [
+        {
+          "name": "json",
+          "startLine": 29,
+          "endLine": 34,
+          "params": [
+            "body",
+            "status"
+          ]
+        },
+        {
+          "name": "clean",
+          "startLine": 36,
+          "endLine": 38,
+          "params": [
+            "value"
+          ]
+        },
+        {
+          "name": "intOrNull",
+          "startLine": 40,
+          "endLine": 43,
+          "params": [
+            "value"
+          ]
+        },
+        {
+          "name": "roleOrNull",
+          "startLine": 45,
+          "endLine": 48,
+          "params": [
+            "value"
+          ]
+        }
+      ],
+      "callGraph": [
+        {
+          "caller": "json",
+          "callee": "JSON.stringify",
+          "lineNumber": 30
+        },
+        {
+          "caller": "clean",
+          "callee": "String(value ?? \"\").trim",
+          "lineNumber": 37
+        },
+        {
+          "caller": "clean",
+          "callee": "String",
+          "lineNumber": 37
+        },
+        {
+          "caller": "intOrNull",
+          "callee": "Number.parseInt",
+          "lineNumber": 41
+        },
+        {
+          "caller": "intOrNull",
+          "callee": "clean",
+          "lineNumber": 41
+        },
+        {
+          "caller": "intOrNull",
+          "callee": "Number.isFinite",
+          "lineNumber": 42
+        },
+        {
+          "caller": "roleOrNull",
+          "callee": "clean(value).toLowerCase",
+          "lineNumber": 46
+        },
+        {
+          "caller": "roleOrNull",
+          "callee": "clean",
+          "lineNumber": 46
+        },
+        {
+          "caller": "roleOrNull",
+          "callee": "safeRoles.has",
+          "lineNumber": 47
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 4,
+        "classCount": 0
+      }
+    },
+    {
+      "path": "supabase/functions/pay-ticket/index.ts",
+      "language": "typescript",
+      "fileCategory": "code",
+      "totalLines": 267,
+      "nonEmptyLines": 237,
+      "functions": [
+        {
+          "name": "json",
+          "startLine": 16,
+          "endLine": 21,
+          "params": [
+            "body",
+            "status"
+          ]
+        },
+        {
+          "name": "clean",
+          "startLine": 23,
+          "endLine": 25,
+          "params": [
+            "value"
+          ]
+        },
+        {
+          "name": "lower",
+          "startLine": 27,
+          "endLine": 29,
+          "params": [
+            "value"
+          ]
+        },
+        {
+          "name": "bearerToken",
+          "startLine": 31,
+          "endLine": 34,
+          "params": [
+            "req"
+          ]
+        },
+        {
+          "name": "isUuid",
+          "startLine": 36,
+          "endLine": 38,
+          "params": [
+            "value"
+          ]
+        },
+        {
+          "name": "isUnconfirmedPrizeError",
+          "startLine": 40,
+          "endLine": 46,
+          "params": [
+            "message"
+          ]
+        },
+        {
+          "name": "errorMessage",
+          "startLine": 48,
+          "endLine": 55,
+          "params": [
+            "error"
+          ]
+        },
+        {
+          "name": "accountArray",
+          "startLine": 57,
+          "endLine": 59,
+          "params": [
+            "value"
+          ]
+        },
+        {
+          "name": "allAccounts",
+          "startLine": 61,
+          "endLine": 70,
+          "params": [
+            "payload"
+          ]
+        },
+        {
+          "name": "accountMatches",
+          "startLine": 72,
+          "endLine": 83,
+          "params": [
+            "account",
+            "value"
+          ]
+        },
+        {
+          "name": "normalizedSet",
+          "startLine": 85,
+          "endLine": 87,
+          "params": [
+            "values"
+          ]
+        },
+        {
+          "name": "accountAliases",
+          "startLine": 89,
+          "endLine": 103,
+          "params": [
+            "account",
+            "...extra"
+          ]
+        },
+        {
+          "name": "mergeSets",
+          "startLine": 105,
+          "endLine": 109,
+          "params": [
+            "...sets"
+          ]
+        },
+        {
+          "name": "findAccountByAny",
+          "startLine": 111,
+          "endLine": 113,
+          "params": [
+            "accounts",
+            "values"
+          ]
+        },
+        {
+          "name": "aliasesForValue",
+          "startLine": 115,
+          "endLine": 117,
+          "params": [
+            "accounts",
+            "value"
+          ]
+        },
+        {
+          "name": "intersects",
+          "startLine": 119,
+          "endLine": 122,
+          "params": [
+            "left",
+            "right"
+          ]
+        },
+        {
+          "name": "authenticatedActor",
+          "startLine": 131,
+          "endLine": 175,
+          "params": [
+            "req",
+            "actorKey"
+          ]
+        }
+      ],
+      "callGraph": [
+        {
+          "caller": "json",
+          "callee": "JSON.stringify",
+          "lineNumber": 17
+        },
+        {
+          "caller": "clean",
+          "callee": "String(value ?? \"\").trim",
+          "lineNumber": 24
+        },
+        {
+          "caller": "clean",
+          "callee": "String",
+          "lineNumber": 24
+        },
+        {
+          "caller": "lower",
+          "callee": "clean(value).toLowerCase",
+          "lineNumber": 28
+        },
+        {
+          "caller": "lower",
+          "callee": "clean",
+          "lineNumber": 28
+        },
+        {
+          "caller": "bearerToken",
+          "callee": "req.headers.get",
+          "lineNumber": 32
+        },
+        {
+          "caller": "bearerToken",
+          "callee": "header.replace(/^Bearer\\s+/i, \"\").trim",
+          "lineNumber": 33
+        },
+        {
+          "caller": "bearerToken",
+          "callee": "header.replace",
+          "lineNumber": 33
+        },
+        {
+          "caller": "isUuid",
+          "callee": "/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test",
+          "lineNumber": 37
+        },
+        {
+          "caller": "isUnconfirmedPrizeError",
+          "callee": "lower",
+          "lineNumber": 41
+        },
+        {
+          "caller": "isUnconfirmedPrizeError",
+          "callee": "normalized.includes",
+          "lineNumber": 42
+        },
+        {
+          "caller": "isUnconfirmedPrizeError",
+          "callee": "normalized.includes",
+          "lineNumber": 43
+        },
+        {
+          "caller": "isUnconfirmedPrizeError",
+          "callee": "normalized.includes",
+          "lineNumber": 44
+        },
+        {
+          "caller": "isUnconfirmedPrizeError",
+          "callee": "normalized.includes",
+          "lineNumber": 45
+        },
+        {
+          "caller": "isUnconfirmedPrizeError",
+          "callee": "normalized.includes",
+          "lineNumber": 45
+        },
+        {
+          "caller": "errorMessage",
+          "callee": "clean",
+          "lineNumber": 52
+        },
+        {
+          "caller": "errorMessage",
+          "callee": "JSON.stringify",
+          "lineNumber": 52
+        },
+        {
+          "caller": "errorMessage",
+          "callee": "clean",
+          "lineNumber": 54
+        },
+        {
+          "caller": "accountArray",
+          "callee": "Array.isArray",
+          "lineNumber": 58
+        },
+        {
+          "caller": "allAccounts",
+          "callee": "accountArray",
+          "lineNumber": 63
+        },
+        {
+          "caller": "allAccounts",
+          "callee": "accountArray",
+          "lineNumber": 64
+        },
+        {
+          "caller": "allAccounts",
+          "callee": "accountArray",
+          "lineNumber": 65
+        },
+        {
+          "caller": "allAccounts",
+          "callee": "accountArray",
+          "lineNumber": 66
+        },
+        {
+          "caller": "allAccounts",
+          "callee": "accountArray",
+          "lineNumber": 67
+        },
+        {
+          "caller": "allAccounts",
+          "callee": "accountArray",
+          "lineNumber": 68
+        },
+        {
+          "caller": "accountMatches",
+          "callee": "lower",
+          "lineNumber": 73
+        },
+        {
+          "caller": "accountMatches",
+          "callee": "[\n    account.id,\n    account.user,\n    account.username,\n    account.userId,\n    account.authUserId,\n    account.auth_user_id,\n  ].some",
+          "lineNumber": 75
+        },
+        {
+          "caller": "accountMatches",
+          "callee": "lower",
+          "lineNumber": 82
+        },
+        {
+          "caller": "normalizedSet",
+          "callee": "values.map(lower).filter",
+          "lineNumber": 86
+        },
+        {
+          "caller": "normalizedSet",
+          "callee": "values.map",
+          "lineNumber": 86
+        },
+        {
+          "caller": "accountAliases",
+          "callee": "normalizedSet",
+          "lineNumber": 90
+        },
+        {
+          "caller": "mergeSets",
+          "callee": "merged.add",
+          "lineNumber": 107
+        },
+        {
+          "caller": "findAccountByAny",
+          "callee": "accounts.find",
+          "lineNumber": 112
+        },
+        {
+          "caller": "findAccountByAny",
+          "callee": "values.some",
+          "lineNumber": 112
+        },
+        {
+          "caller": "findAccountByAny",
+          "callee": "accountMatches",
+          "lineNumber": 112
+        },
+        {
+          "caller": "findAccountByAny",
+          "callee": "clean",
+          "lineNumber": 112
+        },
+        {
+          "caller": "aliasesForValue",
+          "callee": "accountAliases",
+          "lineNumber": 116
+        },
+        {
+          "caller": "aliasesForValue",
+          "callee": "findAccountByAny",
+          "lineNumber": 116
+        },
+        {
+          "caller": "intersects",
+          "callee": "right.has",
+          "lineNumber": 120
+        },
+        {
+          "caller": "authenticatedActor",
+          "callee": "bearerToken",
+          "lineNumber": 132
+        },
+        {
+          "caller": "authenticatedActor",
+          "callee": "supabase.auth.getUser",
+          "lineNumber": 134
+        },
+        {
+          "caller": "authenticatedActor",
+          "callee": "metadataValues\n    .some",
+          "lineNumber": 140
+        },
+        {
+          "caller": "authenticatedActor",
+          "callee": "lower",
+          "lineNumber": 141
+        },
+        {
+          "caller": "authenticatedActor",
+          "callee": "lower",
+          "lineNumber": 141
+        },
+        {
+          "caller": "authenticatedActor",
+          "callee": "supabase\n    .from(\"lotterynet_users_state\")\n    .select(\"payload\")\n    .eq(\"scope\", \"global\")\n    .maybeSingle",
+          "lineNumber": 143
+        },
+        {
+          "caller": "authenticatedActor",
+          "callee": "supabase\n    .from(\"lotterynet_users_state\")\n    .select(\"payload\")\n    .eq",
+          "lineNumber": 143
+        },
+        {
+          "caller": "authenticatedActor",
+          "callee": "supabase\n    .from(\"lotterynet_users_state\")\n    .select",
+          "lineNumber": 143
+        },
+        {
+          "caller": "authenticatedActor",
+          "callee": "supabase\n    .from",
+          "lineNumber": 143
+        },
+        {
+          "caller": "authenticatedActor",
+          "callee": "allAccounts",
+          "lineNumber": 150
+        },
+        {
+          "caller": "authenticatedActor",
+          "callee": "accounts.filter",
+          "lineNumber": 151
+        },
+        {
+          "caller": "authenticatedActor",
+          "callee": "[account.authUserId, account.auth_user_id].some",
+          "lineNumber": 152
+        },
+        {
+          "caller": "authenticatedActor",
+          "callee": "clean",
+          "lineNumber": 152
+        },
+        {
+          "caller": "authenticatedActor",
+          "callee": "findAccountByAny",
+          "lineNumber": 154
+        },
+        {
+          "caller": "authenticatedActor",
+          "callee": "mergeSets",
+          "lineNumber": 158
+        },
+        {
+          "caller": "authenticatedActor",
+          "callee": "accountAliases",
+          "lineNumber": 158
+        },
+        {
+          "caller": "authenticatedActor",
+          "callee": "authAccounts.map",
+          "lineNumber": 158
+        },
+        {
+          "caller": "authenticatedActor",
+          "callee": "accountAliases",
+          "lineNumber": 158
+        },
+        {
+          "caller": "authenticatedActor",
+          "callee": "clean",
+          "lineNumber": 166
+        },
+        {
+          "caller": "authenticatedActor",
+          "callee": "mergeSets",
+          "lineNumber": 172
+        },
+        {
+          "caller": "authenticatedActor",
+          "callee": "accountAliases",
+          "lineNumber": 172
+        },
+        {
+          "caller": "authenticatedActor",
+          "callee": "authAccounts.map",
+          "lineNumber": 172
+        },
+        {
+          "caller": "authenticatedActor",
+          "callee": "accountAliases",
+          "lineNumber": 172
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 17,
+        "classCount": 0
+      }
+    },
+    {
+      "path": "supabase/functions/void-ticket/index.ts",
+      "language": "typescript",
+      "fileCategory": "code",
+      "totalLines": 126,
+      "nonEmptyLines": 106,
+      "functions": [
+        {
+          "name": "json",
+          "startLine": 16,
+          "endLine": 21,
+          "params": [
+            "body",
+            "status"
+          ]
+        },
+        {
+          "name": "clean",
+          "startLine": 23,
+          "endLine": 25,
+          "params": [
+            "value"
+          ]
+        },
+        {
+          "name": "lower",
+          "startLine": 27,
+          "endLine": 29,
+          "params": [
+            "value"
+          ]
+        },
+        {
+          "name": "bearerToken",
+          "startLine": 31,
+          "endLine": 33,
+          "params": [
+            "req"
+          ]
+        },
+        {
+          "name": "accountArray",
+          "startLine": 35,
+          "endLine": 37,
+          "params": [
+            "value"
+          ]
+        },
+        {
+          "name": "allAccounts",
+          "startLine": 39,
+          "endLine": 48,
+          "params": [
+            "payload"
+          ]
+        },
+        {
+          "name": "accountMatches",
+          "startLine": 50,
+          "endLine": 62,
+          "params": [
+            "account",
+            "value"
+          ]
+        },
+        {
+          "name": "authenticatedActor",
+          "startLine": 64,
+          "endLine": 101,
+          "params": [
+            "req",
+            "actorKey"
+          ]
+        }
+      ],
+      "callGraph": [
+        {
+          "caller": "json",
+          "callee": "JSON.stringify",
+          "lineNumber": 17
+        },
+        {
+          "caller": "clean",
+          "callee": "String(value ?? \"\").trim",
+          "lineNumber": 24
+        },
+        {
+          "caller": "clean",
+          "callee": "String",
+          "lineNumber": 24
+        },
+        {
+          "caller": "lower",
+          "callee": "clean(value).toLowerCase",
+          "lineNumber": 28
+        },
+        {
+          "caller": "lower",
+          "callee": "clean",
+          "lineNumber": 28
+        },
+        {
+          "caller": "bearerToken",
+          "callee": "(req.headers.get(\"Authorization\") ?? \"\").replace(/^Bearer\\s+/i, \"\").trim",
+          "lineNumber": 32
+        },
+        {
+          "caller": "bearerToken",
+          "callee": "(req.headers.get(\"Authorization\") ?? \"\").replace",
+          "lineNumber": 32
+        },
+        {
+          "caller": "bearerToken",
+          "callee": "req.headers.get",
+          "lineNumber": 32
+        },
+        {
+          "caller": "accountArray",
+          "callee": "Array.isArray",
+          "lineNumber": 36
+        },
+        {
+          "caller": "allAccounts",
+          "callee": "accountArray",
+          "lineNumber": 41
+        },
+        {
+          "caller": "allAccounts",
+          "callee": "accountArray",
+          "lineNumber": 42
+        },
+        {
+          "caller": "allAccounts",
+          "callee": "accountArray",
+          "lineNumber": 43
+        },
+        {
+          "caller": "allAccounts",
+          "callee": "accountArray",
+          "lineNumber": 44
+        },
+        {
+          "caller": "allAccounts",
+          "callee": "accountArray",
+          "lineNumber": 45
+        },
+        {
+          "caller": "allAccounts",
+          "callee": "accountArray",
+          "lineNumber": 46
+        },
+        {
+          "caller": "accountMatches",
+          "callee": "lower",
+          "lineNumber": 51
+        },
+        {
+          "caller": "accountMatches",
+          "callee": "[\n    account.id,\n    account.user,\n    account.username,\n    account.displayName,\n    account.userId,\n    account.authUserId,\n    account.auth_user_id,\n  ].some",
+          "lineNumber": 53
+        },
+        {
+          "caller": "accountMatches",
+          "callee": "lower",
+          "lineNumber": 61
+        },
+        {
+          "caller": "authenticatedActor",
+          "callee": "bearerToken",
+          "lineNumber": 65
+        },
+        {
+          "caller": "authenticatedActor",
+          "callee": "supabase.auth.getUser",
+          "lineNumber": 68
+        },
+        {
+          "caller": "authenticatedActor",
+          "callee": "[metadata.legacy_id, metadata.username, metadata.user, metadata.admin_id, metadata.admin_user]\n    .some",
+          "lineNumber": 72
+        },
+        {
+          "caller": "authenticatedActor",
+          "callee": "lower",
+          "lineNumber": 73
+        },
+        {
+          "caller": "authenticatedActor",
+          "callee": "lower",
+          "lineNumber": 73
+        },
+        {
+          "caller": "authenticatedActor",
+          "callee": "supabase\n    .from(\"lotterynet_users_state\")\n    .select(\"payload\")\n    .eq(\"scope\", \"global\")\n    .maybeSingle",
+          "lineNumber": 75
+        },
+        {
+          "caller": "authenticatedActor",
+          "callee": "supabase\n    .from(\"lotterynet_users_state\")\n    .select(\"payload\")\n    .eq",
+          "lineNumber": 75
+        },
+        {
+          "caller": "authenticatedActor",
+          "callee": "supabase\n    .from(\"lotterynet_users_state\")\n    .select",
+          "lineNumber": 75
+        },
+        {
+          "caller": "authenticatedActor",
+          "callee": "supabase\n    .from",
+          "lineNumber": 75
+        },
+        {
+          "caller": "authenticatedActor",
+          "callee": "allAccounts",
+          "lineNumber": 83
+        },
+        {
+          "caller": "authenticatedActor",
+          "callee": "accounts.find",
+          "lineNumber": 84
+        },
+        {
+          "caller": "authenticatedActor",
+          "callee": "accountMatches",
+          "lineNumber": 84
+        },
+        {
+          "caller": "authenticatedActor",
+          "callee": "accounts.find",
+          "lineNumber": 85
+        },
+        {
+          "caller": "authenticatedActor",
+          "callee": "[metadata.legacy_id, metadata.username, metadata.user, metadata.admin_id, metadata.admin_user]\n        .some",
+          "lineNumber": 86
+        },
+        {
+          "caller": "authenticatedActor",
+          "callee": "accountMatches",
+          "lineNumber": 87
+        },
+        {
+          "caller": "authenticatedActor",
+          "callee": "clean",
+          "lineNumber": 87
+        },
+        {
+          "caller": "authenticatedActor",
+          "callee": "clean",
+          "lineNumber": 96
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 8,
+        "classCount": 0
+      }
+    },
+    {
+      "path": "tools/check_supabase_lotterynet_tables.ps1",
+      "language": "powershell",
+      "fileCategory": "script",
+      "totalLines": 33,
+      "nonEmptyLines": 30,
+      "metrics": {}
+    },
+    {
+      "path": "tools/check-project.mjs",
+      "language": "javascript",
+      "fileCategory": "code",
+      "totalLines": 323,
+      "nonEmptyLines": 295,
+      "functions": [
+        {
+          "name": "rel",
+          "startLine": 10,
+          "endLine": 12,
+          "params": [
+            "filePath"
+          ]
+        },
+        {
+          "name": "logOk",
+          "startLine": 14,
+          "endLine": 16,
+          "params": [
+            "message"
+          ]
+        },
+        {
+          "name": "logWarn",
+          "startLine": 18,
+          "endLine": 21,
+          "params": [
+            "message"
+          ]
+        },
+        {
+          "name": "logFail",
+          "startLine": 23,
+          "endLine": 26,
+          "params": [
+            "message"
+          ]
+        },
+        {
+          "name": "readText",
+          "startLine": 28,
+          "endLine": 30,
+          "params": [
+            "filePath"
+          ]
+        },
+        {
+          "name": "checkJson",
+          "startLine": 32,
+          "endLine": 39,
+          "params": [
+            "filePath"
+          ]
+        },
+        {
+          "name": "compileJavaScript",
+          "startLine": 41,
+          "endLine": 50,
+          "params": [
+            "code",
+            "label"
+          ]
+        },
+        {
+          "name": "extractInlineScripts",
+          "startLine": 52,
+          "endLine": 60,
+          "params": [
+            "html"
+          ]
+        },
+        {
+          "name": "listFiles",
+          "startLine": 62,
+          "endLine": 68,
+          "params": [
+            "dirPath",
+            "predicate"
+          ]
+        },
+        {
+          "name": "expectContains",
+          "startLine": 70,
+          "endLine": 76,
+          "params": [
+            "source",
+            "snippet",
+            "okMessage",
+            "failMessage"
+          ]
+        },
+        {
+          "name": "expectNotContains",
+          "startLine": 78,
+          "endLine": 84,
+          "params": [
+            "source",
+            "snippet",
+            "okMessage",
+            "failMessage"
+          ]
+        },
+        {
+          "name": "between",
+          "startLine": 86,
+          "endLine": 92,
+          "params": [
+            "source",
+            "startNeedle",
+            "endNeedle"
+          ]
+        },
+        {
+          "name": "checkHtmlAsset",
+          "startLine": 94,
+          "endLine": 111,
+          "params": [
+            "filePath"
+          ]
+        },
+        {
+          "name": "checkStandaloneJs",
+          "startLine": 113,
+          "endLine": 116,
+          "params": [
+            "filePath"
+          ]
+        },
+        {
+          "name": "checkManifest",
+          "startLine": 118,
+          "endLine": 150,
+          "params": [
+            "filePath"
+          ]
+        },
+        {
+          "name": "checkBusinessRules",
+          "startLine": 152,
+          "endLine": 267,
+          "params": [
+            "indexHtml"
+          ]
+        },
+        {
+          "name": "run",
+          "startLine": 269,
+          "endLine": 321,
+          "params": []
+        }
+      ],
+      "callGraph": [
+        {
+          "caller": "rel",
+          "callee": "path.relative",
+          "lineNumber": 11
+        },
+        {
+          "caller": "rel",
+          "callee": "path.basename",
+          "lineNumber": 11
+        },
+        {
+          "caller": "logOk",
+          "callee": "console.log",
+          "lineNumber": 15
+        },
+        {
+          "caller": "logWarn",
+          "callee": "warnings.push",
+          "lineNumber": 19
+        },
+        {
+          "caller": "logWarn",
+          "callee": "console.warn",
+          "lineNumber": 20
+        },
+        {
+          "caller": "logFail",
+          "callee": "failures.push",
+          "lineNumber": 24
+        },
+        {
+          "caller": "logFail",
+          "callee": "console.error",
+          "lineNumber": 25
+        },
+        {
+          "caller": "readText",
+          "callee": "fs.readFileSync",
+          "lineNumber": 29
+        },
+        {
+          "caller": "checkJson",
+          "callee": "JSON.parse",
+          "lineNumber": 34
+        },
+        {
+          "caller": "checkJson",
+          "callee": "readText",
+          "lineNumber": 34
+        },
+        {
+          "caller": "checkJson",
+          "callee": "logOk",
+          "lineNumber": 35
+        },
+        {
+          "caller": "checkJson",
+          "callee": "rel",
+          "lineNumber": 35
+        },
+        {
+          "caller": "checkJson",
+          "callee": "logFail",
+          "lineNumber": 37
+        },
+        {
+          "caller": "checkJson",
+          "callee": "rel",
+          "lineNumber": 37
+        },
+        {
+          "caller": "compileJavaScript",
+          "callee": "logOk",
+          "lineNumber": 44
+        },
+        {
+          "caller": "compileJavaScript",
+          "callee": "logFail",
+          "lineNumber": 47
+        },
+        {
+          "caller": "extractInlineScripts",
+          "callee": "html.matchAll",
+          "lineNumber": 53
+        },
+        {
+          "caller": "extractInlineScripts",
+          "callee": "matches\n    .map((match, index) => ({\n      index: index + 1,\n      code: match[1] || \"\",\n    }))\n    .filter",
+          "lineNumber": 54
+        },
+        {
+          "caller": "extractInlineScripts",
+          "callee": "matches\n    .map",
+          "lineNumber": 54
+        },
+        {
+          "caller": "extractInlineScripts",
+          "callee": "entry.code.trim",
+          "lineNumber": 59
+        },
+        {
+          "caller": "listFiles",
+          "callee": "fs.existsSync",
+          "lineNumber": 63
+        },
+        {
+          "caller": "listFiles",
+          "callee": "fs\n    .readdirSync(dirPath, { withFileTypes: true })\n    .filter((entry) => entry.isFile() && predicate(entry.name))\n    .map",
+          "lineNumber": 64
+        },
+        {
+          "caller": "listFiles",
+          "callee": "fs\n    .readdirSync(dirPath, { withFileTypes: true })\n    .filter",
+          "lineNumber": 64
+        },
+        {
+          "caller": "listFiles",
+          "callee": "fs\n    .readdirSync",
+          "lineNumber": 64
+        },
+        {
+          "caller": "listFiles",
+          "callee": "entry.isFile",
+          "lineNumber": 66
+        },
+        {
+          "caller": "listFiles",
+          "callee": "predicate",
+          "lineNumber": 66
+        },
+        {
+          "caller": "listFiles",
+          "callee": "path.join",
+          "lineNumber": 67
+        },
+        {
+          "caller": "expectContains",
+          "callee": "source.includes",
+          "lineNumber": 71
+        },
+        {
+          "caller": "expectContains",
+          "callee": "logOk",
+          "lineNumber": 72
+        },
+        {
+          "caller": "expectContains",
+          "callee": "logFail",
+          "lineNumber": 74
+        },
+        {
+          "caller": "expectNotContains",
+          "callee": "source.includes",
+          "lineNumber": 79
+        },
+        {
+          "caller": "expectNotContains",
+          "callee": "logOk",
+          "lineNumber": 80
+        },
+        {
+          "caller": "expectNotContains",
+          "callee": "logFail",
+          "lineNumber": 82
+        },
+        {
+          "caller": "between",
+          "callee": "source.indexOf",
+          "lineNumber": 87
+        },
+        {
+          "caller": "between",
+          "callee": "source.indexOf",
+          "lineNumber": 89
+        },
+        {
+          "caller": "between",
+          "callee": "source.slice",
+          "lineNumber": 90
+        },
+        {
+          "caller": "between",
+          "callee": "source.slice",
+          "lineNumber": 91
+        },
+        {
+          "caller": "checkHtmlAsset",
+          "callee": "readText",
+          "lineNumber": 95
+        },
+        {
+          "caller": "checkHtmlAsset",
+          "callee": "extractInlineScripts",
+          "lineNumber": 96
+        },
+        {
+          "caller": "checkHtmlAsset",
+          "callee": "logWarn",
+          "lineNumber": 98
+        },
+        {
+          "caller": "checkHtmlAsset",
+          "callee": "rel",
+          "lineNumber": 98
+        },
+        {
+          "caller": "checkHtmlAsset",
+          "callee": "inlineScripts.forEach",
+          "lineNumber": 100
+        },
+        {
+          "caller": "checkHtmlAsset",
+          "callee": "compileJavaScript",
+          "lineNumber": 101
+        },
+        {
+          "caller": "checkHtmlAsset",
+          "callee": "rel",
+          "lineNumber": 101
+        },
+        {
+          "caller": "checkHtmlAsset",
+          "callee": "/<div id=\"app\">/i.test",
+          "lineNumber": 103
+        },
+        {
+          "caller": "checkHtmlAsset",
+          "callee": "logWarn",
+          "lineNumber": 104
+        },
+        {
+          "caller": "checkHtmlAsset",
+          "callee": "rel",
+          "lineNumber": 104
+        },
+        {
+          "caller": "checkHtmlAsset",
+          "callee": "/window\\._MAIN_SCRIPT_OK/i.test",
+          "lineNumber": 106
+        },
+        {
+          "caller": "checkHtmlAsset",
+          "callee": "logWarn",
+          "lineNumber": 107
+        },
+        {
+          "caller": "checkHtmlAsset",
+          "callee": "rel",
+          "lineNumber": 107
+        },
+        {
+          "caller": "checkHtmlAsset",
+          "callee": "logOk",
+          "lineNumber": 109
+        },
+        {
+          "caller": "checkHtmlAsset",
+          "callee": "rel",
+          "lineNumber": 109
+        },
+        {
+          "caller": "checkStandaloneJs",
+          "callee": "readText",
+          "lineNumber": 114
+        },
+        {
+          "caller": "checkStandaloneJs",
+          "callee": "compileJavaScript",
+          "lineNumber": 115
+        },
+        {
+          "caller": "checkStandaloneJs",
+          "callee": "rel",
+          "lineNumber": 115
+        },
+        {
+          "caller": "checkManifest",
+          "callee": "readText",
+          "lineNumber": 119
+        },
+        {
+          "caller": "checkManifest",
+          "callee": "expectContains",
+          "lineNumber": 120
+        },
+        {
+          "caller": "checkManifest",
+          "callee": "expectContains",
+          "lineNumber": 126
+        },
+        {
+          "caller": "checkManifest",
+          "callee": "expectContains",
+          "lineNumber": 132
+        },
+        {
+          "caller": "checkManifest",
+          "callee": "expectContains",
+          "lineNumber": 138
+        },
+        {
+          "caller": "checkManifest",
+          "callee": "expectContains",
+          "lineNumber": 144
+        },
+        {
+          "caller": "checkBusinessRules",
+          "callee": "between",
+          "lineNumber": 153
+        },
+        {
+          "caller": "checkBusinessRules",
+          "callee": "between",
+          "lineNumber": 154
+        },
+        {
+          "caller": "checkBusinessRules",
+          "callee": "between",
+          "lineNumber": 155
+        },
+        {
+          "caller": "checkBusinessRules",
+          "callee": "between",
+          "lineNumber": 156
+        },
+        {
+          "caller": "checkBusinessRules",
+          "callee": "between",
+          "lineNumber": 157
+        },
+        {
+          "caller": "checkBusinessRules",
+          "callee": "between",
+          "lineNumber": 158
+        },
+        {
+          "caller": "checkBusinessRules",
+          "callee": "between",
+          "lineNumber": 159
+        },
+        {
+          "caller": "checkBusinessRules",
+          "callee": "between",
+          "lineNumber": 160
+        },
+        {
+          "caller": "checkBusinessRules",
+          "callee": "between",
+          "lineNumber": 161
+        },
+        {
+          "caller": "checkBusinessRules",
+          "callee": "between",
+          "lineNumber": 162
+        },
+        {
+          "caller": "checkBusinessRules",
+          "callee": "between",
+          "lineNumber": 163
+        },
+        {
+          "caller": "checkBusinessRules",
+          "callee": "expectNotContains",
+          "lineNumber": 165
+        },
+        {
+          "caller": "checkBusinessRules",
+          "callee": "expectNotContains",
+          "lineNumber": 171
+        },
+        {
+          "caller": "checkBusinessRules",
+          "callee": "expectNotContains",
+          "lineNumber": 177
+        },
+        {
+          "caller": "checkBusinessRules",
+          "callee": "expectNotContains",
+          "lineNumber": 183
+        },
+        {
+          "caller": "checkBusinessRules",
+          "callee": "expectNotContains",
+          "lineNumber": 189
+        },
+        {
+          "caller": "checkBusinessRules",
+          "callee": "expectNotContains",
+          "lineNumber": 195
+        },
+        {
+          "caller": "checkBusinessRules",
+          "callee": "expectContains",
+          "lineNumber": 201
+        },
+        {
+          "caller": "checkBusinessRules",
+          "callee": "expectContains",
+          "lineNumber": 207
+        },
+        {
+          "caller": "checkBusinessRules",
+          "callee": "expectContains",
+          "lineNumber": 213
+        },
+        {
+          "caller": "checkBusinessRules",
+          "callee": "expectContains",
+          "lineNumber": 219
+        },
+        {
+          "caller": "checkBusinessRules",
+          "callee": "expectNotContains",
+          "lineNumber": 225
+        },
+        {
+          "caller": "checkBusinessRules",
+          "callee": "expectNotContains",
+          "lineNumber": 231
+        },
+        {
+          "caller": "checkBusinessRules",
+          "callee": "expectContains",
+          "lineNumber": 237
+        },
+        {
+          "caller": "checkBusinessRules",
+          "callee": "expectContains",
+          "lineNumber": 243
+        },
+        {
+          "caller": "checkBusinessRules",
+          "callee": "expectContains",
+          "lineNumber": 249
+        },
+        {
+          "caller": "checkBusinessRules",
+          "callee": "expectContains",
+          "lineNumber": 255
+        },
+        {
+          "caller": "checkBusinessRules",
+          "callee": "expectContains",
+          "lineNumber": 261
+        },
+        {
+          "caller": "run",
+          "callee": "path.join",
+          "lineNumber": 270
+        },
+        {
+          "caller": "run",
+          "callee": "path.join",
+          "lineNumber": 271
+        },
+        {
+          "caller": "run",
+          "callee": "path.join",
+          "lineNumber": 272
+        },
+        {
+          "caller": "run",
+          "callee": "path.join",
+          "lineNumber": 273
+        },
+        {
+          "caller": "run",
+          "callee": "fs.existsSync",
+          "lineNumber": 276
+        },
+        {
+          "caller": "run",
+          "callee": "checkHtmlAsset",
+          "lineNumber": 277
+        },
+        {
+          "caller": "run",
+          "callee": "logWarn",
+          "lineNumber": 279
+        },
+        {
+          "caller": "run",
+          "callee": "rel",
+          "lineNumber": 279
+        },
+        {
+          "caller": "run",
+          "callee": "fs.existsSync",
+          "lineNumber": 282
+        },
+        {
+          "caller": "run",
+          "callee": "checkJson",
+          "lineNumber": 283
+        },
+        {
+          "caller": "run",
+          "callee": "logWarn",
+          "lineNumber": 285
+        },
+        {
+          "caller": "run",
+          "callee": "rel",
+          "lineNumber": 285
+        },
+        {
+          "caller": "run",
+          "callee": "fs.existsSync",
+          "lineNumber": 288
+        },
+        {
+          "caller": "run",
+          "callee": "checkManifest",
+          "lineNumber": 289
+        },
+        {
+          "caller": "run",
+          "callee": "logWarn",
+          "lineNumber": 291
+        },
+        {
+          "caller": "run",
+          "callee": "rel",
+          "lineNumber": 291
+        },
+        {
+          "caller": "run",
+          "callee": "listFiles",
+          "lineNumber": 294
+        },
+        {
+          "caller": "run",
+          "callee": "name.endsWith",
+          "lineNumber": 294
+        },
+        {
+          "caller": "run",
+          "callee": "assetJsFiles.forEach",
+          "lineNumber": 295
+        },
+        {
+          "caller": "run",
+          "callee": "logWarn",
+          "lineNumber": 297
+        },
+        {
+          "caller": "run",
+          "callee": "listFiles",
+          "lineNumber": 300
+        },
+        {
+          "caller": "run",
+          "callee": "name.endsWith",
+          "lineNumber": 300
+        },
+        {
+          "caller": "run",
+          "callee": "rootJsonFiles\n    .filter((filePath) => !filePath.includes(`${path.sep}app${path.sep}build${path.sep}`))\n    .forEach",
+          "lineNumber": 301
+        },
+        {
+          "caller": "run",
+          "callee": "rootJsonFiles\n    .filter",
+          "lineNumber": 301
+        },
+        {
+          "caller": "run",
+          "callee": "filePath.includes",
+          "lineNumber": 302
+        },
+        {
+          "caller": "run",
+          "callee": "checkBusinessRules",
+          "lineNumber": 306
+        },
+        {
+          "caller": "run",
+          "callee": "listFiles",
+          "lineNumber": 310
+        },
+        {
+          "caller": "run",
+          "callee": "name.endsWith",
+          "lineNumber": 310
+        },
+        {
+          "caller": "run",
+          "callee": "name.endsWith",
+          "lineNumber": 310
+        },
+        {
+          "caller": "run",
+          "callee": "tempJs\n      .filter((filePath) => path.basename(filePath) !== \"check-project.mjs\")\n      .forEach",
+          "lineNumber": 311
+        },
+        {
+          "caller": "run",
+          "callee": "tempJs\n      .filter",
+          "lineNumber": 311
+        },
+        {
+          "caller": "run",
+          "callee": "path.basename",
+          "lineNumber": 312
+        },
+        {
+          "caller": "run",
+          "callee": "logWarn",
+          "lineNumber": 313
+        },
+        {
+          "caller": "run",
+          "callee": "rel",
+          "lineNumber": 313
+        },
+        {
+          "caller": "run",
+          "callee": "console.log",
+          "lineNumber": 316
+        },
+        {
+          "caller": "run",
+          "callee": "console.log",
+          "lineNumber": 317
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 17,
+        "classCount": 0
+      }
+    },
+    {
+      "path": "tools/generate-store-assets.py",
+      "language": "python",
+      "fileCategory": "code",
+      "totalLines": 248,
+      "nonEmptyLines": 208,
+      "functions": [
+        {
+          "name": "font",
+          "startLine": 11,
+          "endLine": 15,
+          "params": [
+            "name",
+            "size"
+          ]
+        },
+        {
+          "name": "draw_logo",
+          "startLine": 25,
+          "endLine": 67,
+          "params": [
+            "size",
+            "output"
+          ]
+        },
+        {
+          "name": "draw_feature_graphic",
+          "startLine": 70,
+          "endLine": 118,
+          "params": []
+        },
+        {
+          "name": "draw_store_screenshot",
+          "startLine": 121,
+          "endLine": 183,
+          "params": []
+        },
+        {
+          "name": "draw_store_screenshot_results",
+          "startLine": 186,
+          "endLine": 240,
+          "params": []
+        }
+      ],
+      "exports": [
+        {
+          "name": "font",
+          "line": 11,
+          "isDefault": false
+        },
+        {
+          "name": "draw_logo",
+          "line": 25,
+          "isDefault": false
+        },
+        {
+          "name": "draw_feature_graphic",
+          "line": 70,
+          "isDefault": false
+        },
+        {
+          "name": "draw_store_screenshot",
+          "line": 121,
+          "isDefault": false
+        },
+        {
+          "name": "draw_store_screenshot_results",
+          "line": 186,
+          "isDefault": false
+        }
+      ],
+      "callGraph": [
+        {
+          "caller": "font",
+          "callee": "path.exists",
+          "lineNumber": 13
+        },
+        {
+          "caller": "font",
+          "callee": "ImageFont.truetype",
+          "lineNumber": 14
+        },
+        {
+          "caller": "font",
+          "callee": "str",
+          "lineNumber": 14
+        },
+        {
+          "caller": "font",
+          "callee": "ImageFont.load_default",
+          "lineNumber": 15
+        },
+        {
+          "caller": "draw_logo",
+          "callee": "Image.new",
+          "lineNumber": 26
+        },
+        {
+          "caller": "draw_logo",
+          "callee": "ImageDraw.Draw",
+          "lineNumber": 27
+        },
+        {
+          "caller": "draw_logo",
+          "callee": "int",
+          "lineNumber": 28
+        },
+        {
+          "caller": "draw_logo",
+          "callee": "int",
+          "lineNumber": 29
+        },
+        {
+          "caller": "draw_logo",
+          "callee": "range",
+          "lineNumber": 31
+        },
+        {
+          "caller": "draw_logo",
+          "callee": "max",
+          "lineNumber": 32
+        },
+        {
+          "caller": "draw_logo",
+          "callee": "int",
+          "lineNumber": 33
+        },
+        {
+          "caller": "draw_logo",
+          "callee": "int",
+          "lineNumber": 34
+        },
+        {
+          "caller": "draw_logo",
+          "callee": "int",
+          "lineNumber": 35
+        },
+        {
+          "caller": "draw_logo",
+          "callee": "draw.line",
+          "lineNumber": 36
+        },
+        {
+          "caller": "draw_logo",
+          "callee": "Image.new",
+          "lineNumber": 38
+        },
+        {
+          "caller": "draw_logo",
+          "callee": "ImageDraw.Draw(mask).rounded_rectangle",
+          "lineNumber": 39
+        },
+        {
+          "caller": "draw_logo",
+          "callee": "ImageDraw.Draw",
+          "lineNumber": 39
+        },
+        {
+          "caller": "draw_logo",
+          "callee": "Image.new",
+          "lineNumber": 40
+        },
+        {
+          "caller": "draw_logo",
+          "callee": "bg.alpha_composite",
+          "lineNumber": 41
+        },
+        {
+          "caller": "draw_logo",
+          "callee": "Image.new",
+          "lineNumber": 42
+        },
+        {
+          "caller": "draw_logo",
+          "callee": "out.paste",
+          "lineNumber": 43
+        },
+        {
+          "caller": "draw_logo",
+          "callee": "ImageDraw.Draw",
+          "lineNumber": 44
+        },
+        {
+          "caller": "draw_logo",
+          "callee": "int",
+          "lineNumber": 46
+        },
+        {
+          "caller": "draw_logo",
+          "callee": "draw.rounded_rectangle",
+          "lineNumber": 47
+        },
+        {
+          "caller": "draw_logo",
+          "callee": "int",
+          "lineNumber": 49
+        },
+        {
+          "caller": "draw_logo",
+          "callee": "max",
+          "lineNumber": 51
+        },
+        {
+          "caller": "draw_logo",
+          "callee": "font",
+          "lineNumber": 54
+        },
+        {
+          "caller": "draw_logo",
+          "callee": "int",
+          "lineNumber": 54
+        },
+        {
+          "caller": "draw_logo",
+          "callee": "draw.textbbox",
+          "lineNumber": 55
+        },
+        {
+          "caller": "draw_logo",
+          "callee": "int",
+          "lineNumber": 57
+        },
+        {
+          "caller": "draw_logo",
+          "callee": "draw.text",
+          "lineNumber": 58
+        },
+        {
+          "caller": "draw_logo",
+          "callee": "draw.text",
+          "lineNumber": 59
+        },
+        {
+          "caller": "draw_logo",
+          "callee": "draw.textlength",
+          "lineNumber": 60
+        },
+        {
+          "caller": "draw_logo",
+          "callee": "draw.text",
+          "lineNumber": 61
+        },
+        {
+          "caller": "draw_logo",
+          "callee": "int",
+          "lineNumber": 61
+        },
+        {
+          "caller": "draw_logo",
+          "callee": "draw.rounded_rectangle",
+          "lineNumber": 62
+        },
+        {
+          "caller": "draw_logo",
+          "callee": "int",
+          "lineNumber": 63
+        },
+        {
+          "caller": "draw_logo",
+          "callee": "int",
+          "lineNumber": 63
+        },
+        {
+          "caller": "draw_logo",
+          "callee": "int",
+          "lineNumber": 63
+        },
+        {
+          "caller": "draw_logo",
+          "callee": "int",
+          "lineNumber": 63
+        },
+        {
+          "caller": "draw_logo",
+          "callee": "int",
+          "lineNumber": 64
+        },
+        {
+          "caller": "draw_logo",
+          "callee": "out.save",
+          "lineNumber": 67
+        },
+        {
+          "caller": "draw_feature_graphic",
+          "callee": "Image.new",
+          "lineNumber": 72
+        },
+        {
+          "caller": "draw_feature_graphic",
+          "callee": "ImageDraw.Draw",
+          "lineNumber": 73
+        },
+        {
+          "caller": "draw_feature_graphic",
+          "callee": "range",
+          "lineNumber": 75
+        },
+        {
+          "caller": "draw_feature_graphic",
+          "callee": "int",
+          "lineNumber": 80
+        },
+        {
+          "caller": "draw_feature_graphic",
+          "callee": "int",
+          "lineNumber": 81
+        },
+        {
+          "caller": "draw_feature_graphic",
+          "callee": "int",
+          "lineNumber": 82
+        },
+        {
+          "caller": "draw_feature_graphic",
+          "callee": "int",
+          "lineNumber": 87
+        },
+        {
+          "caller": "draw_feature_graphic",
+          "callee": "int",
+          "lineNumber": 88
+        },
+        {
+          "caller": "draw_feature_graphic",
+          "callee": "int",
+          "lineNumber": 89
+        },
+        {
+          "caller": "draw_feature_graphic",
+          "callee": "draw.line",
+          "lineNumber": 91
+        },
+        {
+          "caller": "draw_feature_graphic",
+          "callee": "draw.polygon",
+          "lineNumber": 93
+        },
+        {
+          "caller": "draw_feature_graphic",
+          "callee": "draw.rounded_rectangle",
+          "lineNumber": 95
+        },
+        {
+          "caller": "draw_feature_graphic",
+          "callee": "draw.text",
+          "lineNumber": 96
+        },
+        {
+          "caller": "draw_feature_graphic",
+          "callee": "draw.text",
+          "lineNumber": 98
+        },
+        {
+          "caller": "draw_feature_graphic",
+          "callee": "draw.text",
+          "lineNumber": 99
+        },
+        {
+          "caller": "draw_feature_graphic",
+          "callee": "draw.text",
+          "lineNumber": 100
+        },
+        {
+          "caller": "draw_feature_graphic",
+          "callee": "draw.rounded_rectangle",
+          "lineNumber": 102
+        },
+        {
+          "caller": "draw_feature_graphic",
+          "callee": "draw.rounded_rectangle",
+          "lineNumber": 103
+        },
+        {
+          "caller": "draw_feature_graphic",
+          "callee": "draw.rounded_rectangle",
+          "lineNumber": 104
+        },
+        {
+          "caller": "draw_feature_graphic",
+          "callee": "draw.rounded_rectangle",
+          "lineNumber": 105
+        },
+        {
+          "caller": "draw_feature_graphic",
+          "callee": "draw.rounded_rectangle",
+          "lineNumber": 106
+        },
+        {
+          "caller": "draw_feature_graphic",
+          "callee": "draw.rounded_rectangle",
+          "lineNumber": 108
+        },
+        {
+          "caller": "draw_feature_graphic",
+          "callee": "draw.rounded_rectangle",
+          "lineNumber": 109
+        },
+        {
+          "caller": "draw_feature_graphic",
+          "callee": "draw.rounded_rectangle",
+          "lineNumber": 110
+        },
+        {
+          "caller": "draw_feature_graphic",
+          "callee": "draw.rounded_rectangle",
+          "lineNumber": 111
+        },
+        {
+          "caller": "draw_feature_graphic",
+          "callee": "draw.rounded_rectangle",
+          "lineNumber": 113
+        },
+        {
+          "caller": "draw_feature_graphic",
+          "callee": "draw.rounded_rectangle",
+          "lineNumber": 115
+        },
+        {
+          "caller": "draw_feature_graphic",
+          "callee": "draw.ellipse",
+          "lineNumber": 116
+        },
+        {
+          "caller": "draw_feature_graphic",
+          "callee": "img.save",
+          "lineNumber": 118
+        },
+        {
+          "caller": "draw_store_screenshot",
+          "callee": "Image.new",
+          "lineNumber": 123
+        },
+        {
+          "caller": "draw_store_screenshot",
+          "callee": "ImageDraw.Draw",
+          "lineNumber": 124
+        },
+        {
+          "caller": "draw_store_screenshot",
+          "callee": "font",
+          "lineNumber": 125
+        },
+        {
+          "caller": "draw_store_screenshot",
+          "callee": "font",
+          "lineNumber": 126
+        },
+        {
+          "caller": "draw_store_screenshot",
+          "callee": "font",
+          "lineNumber": 127
+        },
+        {
+          "caller": "draw_store_screenshot",
+          "callee": "font",
+          "lineNumber": 128
+        },
+        {
+          "caller": "draw_store_screenshot",
+          "callee": "font",
+          "lineNumber": 129
+        },
+        {
+          "caller": "draw_store_screenshot",
+          "callee": "draw.rectangle",
+          "lineNumber": 131
+        },
+        {
+          "caller": "draw_store_screenshot",
+          "callee": "draw.text",
+          "lineNumber": 132
+        },
+        {
+          "caller": "draw_store_screenshot",
+          "callee": "draw.text",
+          "lineNumber": 133
+        },
+        {
+          "caller": "draw_store_screenshot",
+          "callee": "draw.rounded_rectangle",
+          "lineNumber": 135
+        },
+        {
+          "caller": "draw_store_screenshot",
+          "callee": "draw.text",
+          "lineNumber": 136
+        },
+        {
+          "caller": "draw_store_screenshot",
+          "callee": "draw.text",
+          "lineNumber": 137
+        },
+        {
+          "caller": "draw_store_screenshot",
+          "callee": "draw.rounded_rectangle",
+          "lineNumber": 138
+        },
+        {
+          "caller": "draw_store_screenshot",
+          "callee": "draw.text",
+          "lineNumber": 139
+        },
+        {
+          "caller": "draw_store_screenshot",
+          "callee": "draw.text",
+          "lineNumber": 147
+        },
+        {
+          "caller": "draw_store_screenshot",
+          "callee": "draw.rounded_rectangle",
+          "lineNumber": 151
+        },
+        {
+          "caller": "draw_store_screenshot",
+          "callee": "draw.text",
+          "lineNumber": 152
+        },
+        {
+          "caller": "draw_store_screenshot",
+          "callee": "draw.text",
+          "lineNumber": 156
+        },
+        {
+          "caller": "draw_store_screenshot",
+          "callee": "draw.rounded_rectangle",
+          "lineNumber": 158
+        },
+        {
+          "caller": "draw_store_screenshot",
+          "callee": "draw.text",
+          "lineNumber": 162
+        },
+        {
+          "caller": "draw_store_screenshot",
+          "callee": "draw.text",
+          "lineNumber": 163
+        },
+        {
+          "caller": "draw_store_screenshot",
+          "callee": "draw.text",
+          "lineNumber": 164
+        },
+        {
+          "caller": "draw_store_screenshot",
+          "callee": "draw.line",
+          "lineNumber": 165
+        },
+        {
+          "caller": "draw_store_screenshot",
+          "callee": "draw.text",
+          "lineNumber": 169
+        },
+        {
+          "caller": "draw_store_screenshot",
+          "callee": "enumerate",
+          "lineNumber": 171
+        },
+        {
+          "caller": "draw_store_screenshot",
+          "callee": "draw.rounded_rectangle",
+          "lineNumber": 174
+        },
+        {
+          "caller": "draw_store_screenshot",
+          "callee": "draw.text",
+          "lineNumber": 175
+        },
+        {
+          "caller": "draw_store_screenshot",
+          "callee": "draw.rectangle",
+          "lineNumber": 177
+        },
+        {
+          "caller": "draw_store_screenshot",
+          "callee": "enumerate",
+          "lineNumber": 178
+        },
+        {
+          "caller": "draw_store_screenshot",
+          "callee": "draw.text",
+          "lineNumber": 181
+        },
+        {
+          "caller": "draw_store_screenshot",
+          "callee": "img.save",
+          "lineNumber": 183
+        },
+        {
+          "caller": "draw_store_screenshot_results",
+          "callee": "Image.new",
+          "lineNumber": 188
+        },
+        {
+          "caller": "draw_store_screenshot_results",
+          "callee": "ImageDraw.Draw",
+          "lineNumber": 189
+        },
+        {
+          "caller": "draw_store_screenshot_results",
+          "callee": "font",
+          "lineNumber": 190
+        },
+        {
+          "caller": "draw_store_screenshot_results",
+          "callee": "font",
+          "lineNumber": 191
+        },
+        {
+          "caller": "draw_store_screenshot_results",
+          "callee": "font",
+          "lineNumber": 192
+        },
+        {
+          "caller": "draw_store_screenshot_results",
+          "callee": "font",
+          "lineNumber": 193
+        },
+        {
+          "caller": "draw_store_screenshot_results",
+          "callee": "font",
+          "lineNumber": 194
+        },
+        {
+          "caller": "draw_store_screenshot_results",
+          "callee": "draw.rectangle",
+          "lineNumber": 196
+        },
+        {
+          "caller": "draw_store_screenshot_results",
+          "callee": "draw.text",
+          "lineNumber": 197
+        },
+        {
+          "caller": "draw_store_screenshot_results",
+          "callee": "draw.text",
+          "lineNumber": 198
+        },
+        {
+          "caller": "draw_store_screenshot_results",
+          "callee": "draw.rounded_rectangle",
+          "lineNumber": 200
+        },
+        {
+          "caller": "draw_store_screenshot_results",
+          "callee": "draw.text",
+          "lineNumber": 201
+        },
+        {
+          "caller": "draw_store_screenshot_results",
+          "callee": "draw.text",
+          "lineNumber": 202
+        },
+        {
+          "caller": "draw_store_screenshot_results",
+          "callee": "draw.text",
+          "lineNumber": 203
+        },
+        {
+          "caller": "draw_store_screenshot_results",
+          "callee": "draw.rounded_rectangle",
+          "lineNumber": 214
+        },
+        {
+          "caller": "draw_store_screenshot_results",
+          "callee": "draw.text",
+          "lineNumber": 215
+        },
+        {
+          "caller": "draw_store_screenshot_results",
+          "callee": "draw.rounded_rectangle",
+          "lineNumber": 218
+        },
+        {
+          "caller": "draw_store_screenshot_results",
+          "callee": "draw.text",
+          "lineNumber": 219
+        },
+        {
+          "caller": "draw_store_screenshot_results",
+          "callee": "draw.text",
+          "lineNumber": 221
+        },
+        {
+          "caller": "draw_store_screenshot_results",
+          "callee": "draw.text",
+          "lineNumber": 224
+        },
+        {
+          "caller": "draw_store_screenshot_results",
+          "callee": "draw.rounded_rectangle",
+          "lineNumber": 226
+        },
+        {
+          "caller": "draw_store_screenshot_results",
+          "callee": "draw.text",
+          "lineNumber": 227
+        },
+        {
+          "caller": "draw_store_screenshot_results",
+          "callee": "draw.text",
+          "lineNumber": 228
+        },
+        {
+          "caller": "draw_store_screenshot_results",
+          "callee": "draw.rounded_rectangle",
+          "lineNumber": 229
+        },
+        {
+          "caller": "draw_store_screenshot_results",
+          "callee": "draw.text",
+          "lineNumber": 230
+        },
+        {
+          "caller": "draw_store_screenshot_results",
+          "callee": "draw.text",
+          "lineNumber": 231
+        },
+        {
+          "caller": "draw_store_screenshot_results",
+          "callee": "draw.text",
+          "lineNumber": 232
+        },
+        {
+          "caller": "draw_store_screenshot_results",
+          "callee": "draw.rectangle",
+          "lineNumber": 234
+        },
+        {
+          "caller": "draw_store_screenshot_results",
+          "callee": "enumerate",
+          "lineNumber": 235
+        },
+        {
+          "caller": "draw_store_screenshot_results",
+          "callee": "draw.text",
+          "lineNumber": 238
+        },
+        {
+          "caller": "draw_store_screenshot_results",
+          "callee": "img.save",
+          "lineNumber": 240
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 5,
+        "functionCount": 5,
+        "classCount": 0
+      }
+    }
+  ]
+}

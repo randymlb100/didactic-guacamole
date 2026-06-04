@@ -1,0 +1,182 @@
+{
+  "projectRoot": "C:\\Users\\Randy Cordero\\Desktop\\lotterynet_android",
+  "batchFiles": [
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/core/model/ResultsModels.kt",
+      "language": "kotlin",
+      "sizeLines": 18,
+      "fileCategory": "code"
+    },
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/core/model/SalesModels.kt",
+      "language": "kotlin",
+      "sizeLines": 160,
+      "fileCategory": "code"
+    },
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/core/model/SessionModels.kt",
+      "language": "kotlin",
+      "sizeLines": 30,
+      "fileCategory": "code"
+    },
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/core/model/SyncModels.kt",
+      "language": "kotlin",
+      "sizeLines": 16,
+      "fileCategory": "code"
+    },
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/core/model/UserDeletionModels.kt",
+      "language": "kotlin",
+      "sizeLines": 15,
+      "fileCategory": "code"
+    },
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/core/model/UserModels.kt",
+      "language": "kotlin",
+      "sizeLines": 36,
+      "fileCategory": "code"
+    },
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/core/operations/TicketActorLabels.kt",
+      "language": "kotlin",
+      "sizeLines": 51,
+      "fileCategory": "code"
+    },
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/core/perf/MainThreadWorkPolicy.kt",
+      "language": "kotlin",
+      "sizeLines": 17,
+      "fileCategory": "code"
+    },
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/core/realtime/LotterynetRealtimeEvent.kt",
+      "language": "kotlin",
+      "sizeLines": 14,
+      "fileCategory": "code"
+    },
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/core/realtime/LotterynetRealtimeOrchestrator.kt",
+      "language": "kotlin",
+      "sizeLines": 33,
+      "fileCategory": "code"
+    },
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/core/recharge/recargasrapidas/RecargasRapidasModels.kt",
+      "language": "kotlin",
+      "sizeLines": 365,
+      "fileCategory": "code"
+    },
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/core/render/RenderCacheKeys.kt",
+      "language": "kotlin",
+      "sizeLines": 63,
+      "fileCategory": "code"
+    },
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/core/repository/PresenceRepository.kt",
+      "language": "kotlin",
+      "sizeLines": 8,
+      "fileCategory": "code"
+    },
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/core/repository/SyncRepository.kt",
+      "language": "kotlin",
+      "sizeLines": 9,
+      "fileCategory": "code"
+    },
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/core/results/ResultDateMatcher.kt",
+      "language": "kotlin",
+      "sizeLines": 19,
+      "fileCategory": "code"
+    },
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/core/storage/AdminLimitStorageKeys.kt",
+      "language": "kotlin",
+      "sizeLines": 6,
+      "fileCategory": "code"
+    },
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/core/storage/AdminLotteryStorageKeys.kt",
+      "language": "kotlin",
+      "sizeLines": 17,
+      "fileCategory": "code"
+    },
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/core/storage/AlertStorageKeys.kt",
+      "language": "kotlin",
+      "sizeLines": 6,
+      "fileCategory": "code"
+    },
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/core/storage/AuditStorageKeys.kt",
+      "language": "kotlin",
+      "sizeLines": 6,
+      "fileCategory": "code"
+    },
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/core/storage/FinanceHistoryStorageKeys.kt",
+      "language": "kotlin",
+      "sizeLines": 6,
+      "fileCategory": "code"
+    },
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/core/storage/PresenceStorageKeys.kt",
+      "language": "kotlin",
+      "sizeLines": 6,
+      "fileCategory": "code"
+    },
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/core/storage/RechargeLimitStorageKeys.kt",
+      "language": "kotlin",
+      "sizeLines": 7,
+      "fileCategory": "code"
+    },
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/core/storage/RechargeStorageKeys.kt",
+      "language": "kotlin",
+      "sizeLines": 6,
+      "fileCategory": "code"
+    },
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/core/storage/ResultsStorageKeys.kt",
+      "language": "kotlin",
+      "sizeLines": 6,
+      "fileCategory": "code"
+    },
+    {
+      "path": "app/src/main/java/com/lotterynet/pro/core/storage/SessionStorageKeys.kt",
+      "language": "kotlin",
+      "sizeLines": 9,
+      "fileCategory": "code"
+    }
+  ],
+  "batchImportData": {
+    "app/src/main/java/com/lotterynet/pro/core/model/ResultsModels.kt": [],
+    "app/src/main/java/com/lotterynet/pro/core/model/SalesModels.kt": [],
+    "app/src/main/java/com/lotterynet/pro/core/model/SessionModels.kt": [],
+    "app/src/main/java/com/lotterynet/pro/core/model/SyncModels.kt": [],
+    "app/src/main/java/com/lotterynet/pro/core/model/UserDeletionModels.kt": [],
+    "app/src/main/java/com/lotterynet/pro/core/model/UserModels.kt": [],
+    "app/src/main/java/com/lotterynet/pro/core/operations/TicketActorLabels.kt": [],
+    "app/src/main/java/com/lotterynet/pro/core/perf/MainThreadWorkPolicy.kt": [],
+    "app/src/main/java/com/lotterynet/pro/core/realtime/LotterynetRealtimeEvent.kt": [],
+    "app/src/main/java/com/lotterynet/pro/core/realtime/LotterynetRealtimeOrchestrator.kt": [],
+    "app/src/main/java/com/lotterynet/pro/core/recharge/recargasrapidas/RecargasRapidasModels.kt": [],
+    "app/src/main/java/com/lotterynet/pro/core/render/RenderCacheKeys.kt": [],
+    "app/src/main/java/com/lotterynet/pro/core/repository/PresenceRepository.kt": [],
+    "app/src/main/java/com/lotterynet/pro/core/repository/SyncRepository.kt": [],
+    "app/src/main/java/com/lotterynet/pro/core/results/ResultDateMatcher.kt": [],
+    "app/src/main/java/com/lotterynet/pro/core/storage/AdminLimitStorageKeys.kt": [],
+    "app/src/main/java/com/lotterynet/pro/core/storage/AdminLotteryStorageKeys.kt": [],
+    "app/src/main/java/com/lotterynet/pro/core/storage/AlertStorageKeys.kt": [],
+    "app/src/main/java/com/lotterynet/pro/core/storage/AuditStorageKeys.kt": [],
+    "app/src/main/java/com/lotterynet/pro/core/storage/FinanceHistoryStorageKeys.kt": [],
+    "app/src/main/java/com/lotterynet/pro/core/storage/PresenceStorageKeys.kt": [],
+    "app/src/main/java/com/lotterynet/pro/core/storage/RechargeLimitStorageKeys.kt": [],
+    "app/src/main/java/com/lotterynet/pro/core/storage/RechargeStorageKeys.kt": [],
+    "app/src/main/java/com/lotterynet/pro/core/storage/ResultsStorageKeys.kt": [],
+    "app/src/main/java/com/lotterynet/pro/core/storage/SessionStorageKeys.kt": []
+  }
+}

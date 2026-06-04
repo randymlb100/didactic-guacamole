@@ -99,7 +99,7 @@ class AdminUiContractsTest {
     @Test
     fun `admin config separates lottery blocking from technical system section`() {
         assertEquals(
-            listOf("Ajustes rápidos", "Operación", "Caja", "Bloqueo de lotería", "Resultados manuales", "Sistema"),
+            listOf("Ajustes rápidos", "Operación", "Caja", "Bloqueo de lotería", "Control de venta", "Sistema"),
             adminConfigSectionTitles(),
         )
     }

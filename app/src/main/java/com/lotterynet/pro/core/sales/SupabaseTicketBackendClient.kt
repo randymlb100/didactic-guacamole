@@ -74,7 +74,7 @@ internal fun isSupabaseTicketBackendTimeout(message: String?): Boolean {
 internal fun presentSupabaseTicketBackendMessage(message: String?): String {
     val clean = message.orEmpty().trim()
     if (isSupabaseTicketBackendTimeout(clean)) {
-        return "El servidor tardo demasiado validando la venta. No se guardo el ticket. Intenta de nuevo."
+        return "El servidor tardo validando. Si intentas de nuevo, se reutiliza la misma venta para no duplicarla."
     }
     val normalized = clean.lowercase(Locale.US)
     if (normalized.contains("sorteo cerrado") || normalized.contains("lottery_closed_next_or_delete")) {
@@ -175,6 +175,16 @@ class SupabaseTicketBackendClient(
     }
 
     internal fun buildCreateTicketPayload(request: BackendTicketRequest): JSONObject {
+        require(request.plays.isNotEmpty()) { "No hay jugadas para guardar" }
+        require(request.plays.all {
+            it.number.isNotBlank() &&
+                it.playType.isNotBlank() &&
+                !it.lotteryId.isNullOrBlank() &&
+                !it.lotteryName.isNullOrBlank() &&
+                it.amount > 0.0
+        }) {
+            "Hay una jugada incompleta"
+        }
         return JSONObject().apply {
             put("clientRequestId", request.clientRequestId)
             request.localTicketId?.let { put("localTicketId", it) }

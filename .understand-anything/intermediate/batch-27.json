@@ -1,0 +1,1437 @@
+{
+  "nodes": [
+    {
+      "id": "file:app/src/main/java/com/lotterynet/pro/core/storage/ThermalPrinterStorageKeys.kt",
+      "type": "file",
+      "name": "ThermalPrinterStorageKeys.kt",
+      "summary": "Source file app/src/main/java/com/lotterynet/pro/core/storage/ThermalPrinterStorageKeys.kt containing 1 class(es).",
+      "tags": [
+        "code",
+        "printing"
+      ],
+      "complexity": "simple",
+      "filePath": "app/src/main/java/com/lotterynet/pro/core/storage/ThermalPrinterStorageKeys.kt",
+      "lineRange": [
+        1,
+        6
+      ]
+    },
+    {
+      "id": "file:app/src/main/java/com/lotterynet/pro/core/storage/TrustedClockStorageKeys.kt",
+      "type": "file",
+      "name": "TrustedClockStorageKeys.kt",
+      "summary": "Source file app/src/main/java/com/lotterynet/pro/core/storage/TrustedClockStorageKeys.kt containing 1 class(es).",
+      "tags": [
+        "code"
+      ],
+      "complexity": "simple",
+      "filePath": "app/src/main/java/com/lotterynet/pro/core/storage/TrustedClockStorageKeys.kt",
+      "lineRange": [
+        1,
+        9
+      ]
+    },
+    {
+      "id": "file:app/src/main/java/com/lotterynet/pro/core/storage/UsersPayloadCache.kt",
+      "type": "file",
+      "name": "UsersPayloadCache.kt",
+      "summary": "Source file app/src/main/java/com/lotterynet/pro/core/storage/UsersPayloadCache.kt containing 1 function(s).",
+      "tags": [
+        "code"
+      ],
+      "complexity": "simple",
+      "filePath": "app/src/main/java/com/lotterynet/pro/core/storage/UsersPayloadCache.kt",
+      "lineRange": [
+        1,
+        28
+      ]
+    },
+    {
+      "id": "file:app/src/main/java/com/lotterynet/pro/core/update/SupabaseUpdateService.kt",
+      "type": "file",
+      "name": "SupabaseUpdateService.kt",
+      "summary": "Supabase integration file used by the app/server for remote data, ticket, result, or configuration workflows.",
+      "tags": [
+        "code",
+        "supabase"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/core/update/SupabaseUpdateService.kt",
+      "lineRange": [
+        1,
+        74
+      ]
+    },
+    {
+      "id": "function:app/src/main/java/com/lotterynet/pro/core/update/SupabaseUpdateService.kt:checkUpdate",
+      "type": "function",
+      "name": "checkUpdate",
+      "summary": "Function checkUpdate in SupabaseUpdateService.kt.",
+      "tags": [
+        "function",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/core/update/SupabaseUpdateService.kt",
+      "lineRange": [
+        9,
+        28
+      ]
+    },
+    {
+      "id": "function:app/src/main/java/com/lotterynet/pro/core/update/SupabaseUpdateService.kt:parseUpdateResponse",
+      "type": "function",
+      "name": "parseUpdateResponse",
+      "summary": "Function parseUpdateResponse in SupabaseUpdateService.kt.",
+      "tags": [
+        "function",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/core/update/SupabaseUpdateService.kt",
+      "lineRange": [
+        51,
+        70
+      ]
+    },
+    {
+      "id": "class:app/src/main/java/com/lotterynet/pro/core/update/SupabaseUpdateService.kt:SupabaseUpdateService",
+      "type": "class",
+      "name": "SupabaseUpdateService",
+      "summary": "Class SupabaseUpdateService in SupabaseUpdateService.kt.",
+      "tags": [
+        "class",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/core/update/SupabaseUpdateService.kt",
+      "lineRange": [
+        6,
+        75
+      ]
+    },
+    {
+      "id": "file:app/src/main/java/com/lotterynet/pro/core/update/UpdateCacheRepository.kt",
+      "type": "file",
+      "name": "UpdateCacheRepository.kt",
+      "summary": "Source file app/src/main/java/com/lotterynet/pro/core/update/UpdateCacheRepository.kt containing 1 class(es) and 6 function(s).",
+      "tags": [
+        "code"
+      ],
+      "complexity": "simple",
+      "filePath": "app/src/main/java/com/lotterynet/pro/core/update/UpdateCacheRepository.kt",
+      "lineRange": [
+        1,
+        39
+      ]
+    },
+    {
+      "id": "function:app/src/main/java/com/lotterynet/pro/core/update/UpdateCacheRepository.kt:getCachedUpdate",
+      "type": "function",
+      "name": "getCachedUpdate",
+      "summary": "Function getCachedUpdate in UpdateCacheRepository.kt.",
+      "tags": [
+        "function",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/core/update/UpdateCacheRepository.kt",
+      "lineRange": [
+        10,
+        29
+      ]
+    },
+    {
+      "id": "function:app/src/main/java/com/lotterynet/pro/core/update/UpdateCacheRepository.kt:saveCachedUpdate",
+      "type": "function",
+      "name": "saveCachedUpdate",
+      "summary": "Function saveCachedUpdate in UpdateCacheRepository.kt.",
+      "tags": [
+        "function",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/core/update/UpdateCacheRepository.kt",
+      "lineRange": [
+        15,
+        34
+      ]
+    },
+    {
+      "id": "function:app/src/main/java/com/lotterynet/pro/core/update/UpdateCacheRepository.kt:clearCachedUpdate",
+      "type": "function",
+      "name": "clearCachedUpdate",
+      "summary": "Function clearCachedUpdate in UpdateCacheRepository.kt.",
+      "tags": [
+        "function",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/core/update/UpdateCacheRepository.kt",
+      "lineRange": [
+        19,
+        38
+      ]
+    },
+    {
+      "id": "function:app/src/main/java/com/lotterynet/pro/core/update/UpdateCacheRepository.kt:getLastCheckEpochMs",
+      "type": "function",
+      "name": "getLastCheckEpochMs",
+      "summary": "Function getLastCheckEpochMs in UpdateCacheRepository.kt.",
+      "tags": [
+        "function",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/core/update/UpdateCacheRepository.kt",
+      "lineRange": [
+        23,
+        40
+      ]
+    },
+    {
+      "id": "function:app/src/main/java/com/lotterynet/pro/core/update/UpdateCacheRepository.kt:markChecked",
+      "type": "function",
+      "name": "markChecked",
+      "summary": "Function markChecked in UpdateCacheRepository.kt.",
+      "tags": [
+        "function",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/core/update/UpdateCacheRepository.kt",
+      "lineRange": [
+        25,
+        40
+      ]
+    },
+    {
+      "id": "function:app/src/main/java/com/lotterynet/pro/core/update/UpdateCacheRepository.kt:shouldSkipNetworkCheck",
+      "type": "function",
+      "name": "shouldSkipNetworkCheck",
+      "summary": "Function shouldSkipNetworkCheck in UpdateCacheRepository.kt.",
+      "tags": [
+        "function",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/core/update/UpdateCacheRepository.kt",
+      "lineRange": [
+        29,
+        40
+      ]
+    },
+    {
+      "id": "class:app/src/main/java/com/lotterynet/pro/core/update/UpdateCacheRepository.kt:UpdateCacheRepository",
+      "type": "class",
+      "name": "UpdateCacheRepository",
+      "summary": "Class UpdateCacheRepository in UpdateCacheRepository.kt.",
+      "tags": [
+        "class",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/core/update/UpdateCacheRepository.kt",
+      "lineRange": [
+        7,
+        40
+      ]
+    },
+    {
+      "id": "file:app/src/main/java/com/lotterynet/pro/core/update/UpdateLogRepository.kt",
+      "type": "file",
+      "name": "UpdateLogRepository.kt",
+      "summary": "Source file app/src/main/java/com/lotterynet/pro/core/update/UpdateLogRepository.kt containing 1 class(es) and 2 function(s).",
+      "tags": [
+        "code"
+      ],
+      "complexity": "simple",
+      "filePath": "app/src/main/java/com/lotterynet/pro/core/update/UpdateLogRepository.kt",
+      "lineRange": [
+        1,
+        33
+      ]
+    },
+    {
+      "id": "function:app/src/main/java/com/lotterynet/pro/core/update/UpdateLogRepository.kt:append",
+      "type": "function",
+      "name": "append",
+      "summary": "Function append in UpdateLogRepository.kt.",
+      "tags": [
+        "function",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/core/update/UpdateLogRepository.kt",
+      "lineRange": [
+        11,
+        30
+      ]
+    },
+    {
+      "id": "class:app/src/main/java/com/lotterynet/pro/core/update/UpdateLogRepository.kt:UpdateLogRepository",
+      "type": "class",
+      "name": "UpdateLogRepository",
+      "summary": "Class UpdateLogRepository in UpdateLogRepository.kt.",
+      "tags": [
+        "class",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/core/update/UpdateLogRepository.kt",
+      "lineRange": [
+        8,
+        34
+      ]
+    },
+    {
+      "id": "file:app/src/main/java/com/lotterynet/pro/core/update/UpdateModels.kt",
+      "type": "file",
+      "name": "UpdateModels.kt",
+      "summary": "Source file app/src/main/java/com/lotterynet/pro/core/update/UpdateModels.kt containing 8 class(es) and 2 function(s).",
+      "tags": [
+        "code"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/core/update/UpdateModels.kt",
+      "lineRange": [
+        1,
+        97
+      ]
+    },
+    {
+      "id": "function:app/src/main/java/com/lotterynet/pro/core/update/UpdateModels.kt:toJson",
+      "type": "function",
+      "name": "toJson",
+      "summary": "Function toJson in UpdateModels.kt.",
+      "tags": [
+        "function",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/core/update/UpdateModels.kt",
+      "lineRange": [
+        27,
+        46
+      ]
+    },
+    {
+      "id": "function:app/src/main/java/com/lotterynet/pro/core/update/UpdateModels.kt:fromJson",
+      "type": "function",
+      "name": "fromJson",
+      "summary": "Function fromJson in UpdateModels.kt.",
+      "tags": [
+        "function",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/core/update/UpdateModels.kt",
+      "lineRange": [
+        43,
+        62
+      ]
+    },
+    {
+      "id": "class:app/src/main/java/com/lotterynet/pro/core/update/UpdateModels.kt:OtaUpdateInfo",
+      "type": "class",
+      "name": "OtaUpdateInfo",
+      "summary": "Class OtaUpdateInfo in UpdateModels.kt.",
+      "tags": [
+        "class",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/core/update/UpdateModels.kt",
+      "lineRange": [
+        7,
+        86
+      ]
+    },
+    {
+      "id": "class:app/src/main/java/com/lotterynet/pro/core/update/UpdateModels.kt:OtaCheckRequest",
+      "type": "class",
+      "name": "OtaCheckRequest",
+      "summary": "Class OtaCheckRequest in UpdateModels.kt.",
+      "tags": [
+        "class",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/core/update/UpdateModels.kt",
+      "lineRange": [
+        65,
+        98
+      ]
+    },
+    {
+      "id": "class:app/src/main/java/com/lotterynet/pro/core/update/UpdateModels.kt:OtaDownloadProgress",
+      "type": "class",
+      "name": "OtaDownloadProgress",
+      "summary": "Class OtaDownloadProgress in UpdateModels.kt.",
+      "tags": [
+        "class",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/core/update/UpdateModels.kt",
+      "lineRange": [
+        74,
+        98
+      ]
+    },
+    {
+      "id": "class:app/src/main/java/com/lotterynet/pro/core/update/UpdateModels.kt:OtaDownloadStatus",
+      "type": "class",
+      "name": "OtaDownloadStatus",
+      "summary": "Class OtaDownloadStatus in UpdateModels.kt.",
+      "tags": [
+        "class",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/core/update/UpdateModels.kt",
+      "lineRange": [
+        83,
+        98
+      ]
+    },
+    {
+      "id": "file:app/src/main/java/com/lotterynet/pro/ui/admin/AdminLimitsContracts.kt",
+      "type": "file",
+      "name": "AdminLimitsContracts.kt",
+      "summary": "Source file app/src/main/java/com/lotterynet/pro/ui/admin/AdminLimitsContracts.kt containing 3 function(s).",
+      "tags": [
+        "code",
+        "ui"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/ui/admin/AdminLimitsContracts.kt",
+      "lineRange": [
+        1,
+        96
+      ]
+    },
+    {
+      "id": "function:app/src/main/java/com/lotterynet/pro/ui/admin/AdminLimitsContracts.kt:adminLimitSections",
+      "type": "function",
+      "name": "adminLimitSections",
+      "summary": "Function adminLimitSections in AdminLimitsContracts.kt.",
+      "tags": [
+        "function",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/ui/admin/AdminLimitsContracts.kt",
+      "lineRange": [
+        35,
+        54
+      ]
+    },
+    {
+      "id": "function:app/src/main/java/com/lotterynet/pro/ui/admin/AdminLimitsContracts.kt:adminSalesLimitFieldLabels",
+      "type": "function",
+      "name": "adminSalesLimitFieldLabels",
+      "summary": "Function adminSalesLimitFieldLabels in AdminLimitsContracts.kt.",
+      "tags": [
+        "function",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/ui/admin/AdminLimitsContracts.kt",
+      "lineRange": [
+        43,
+        62
+      ]
+    },
+    {
+      "id": "function:app/src/main/java/com/lotterynet/pro/ui/admin/AdminLimitsContracts.kt:recommendedCashierSalesLimits",
+      "type": "function",
+      "name": "recommendedCashierSalesLimits",
+      "summary": "Function recommendedCashierSalesLimits in AdminLimitsContracts.kt.",
+      "tags": [
+        "function",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/ui/admin/AdminLimitsContracts.kt",
+      "lineRange": [
+        54,
+        73
+      ]
+    },
+    {
+      "id": "file:app/src/main/java/com/lotterynet/pro/ui/admin/redesign/components/FintechControls.kt",
+      "type": "file",
+      "name": "FintechControls.kt",
+      "summary": "Source file app/src/main/java/com/lotterynet/pro/ui/admin/redesign/components/FintechControls.kt in the LotteryNetPro project.",
+      "tags": [
+        "code",
+        "ui"
+      ],
+      "complexity": "complex",
+      "filePath": "app/src/main/java/com/lotterynet/pro/ui/admin/redesign/components/FintechControls.kt",
+      "lineRange": [
+        1,
+        311
+      ]
+    },
+    {
+      "id": "file:app/src/main/java/com/lotterynet/pro/ui/admin/redesign/components/MetricCard.kt",
+      "type": "file",
+      "name": "MetricCard.kt",
+      "summary": "Source file app/src/main/java/com/lotterynet/pro/ui/admin/redesign/components/MetricCard.kt in the LotteryNetPro project.",
+      "tags": [
+        "code",
+        "ui"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/ui/admin/redesign/components/MetricCard.kt",
+      "lineRange": [
+        1,
+        115
+      ]
+    },
+    {
+      "id": "file:app/src/main/java/com/lotterynet/pro/ui/admin/redesign/components/UserCard.kt",
+      "type": "file",
+      "name": "UserCard.kt",
+      "summary": "Source file app/src/main/java/com/lotterynet/pro/ui/admin/redesign/components/UserCard.kt in the LotteryNetPro project.",
+      "tags": [
+        "code",
+        "ui"
+      ],
+      "complexity": "complex",
+      "filePath": "app/src/main/java/com/lotterynet/pro/ui/admin/redesign/components/UserCard.kt",
+      "lineRange": [
+        1,
+        235
+      ]
+    },
+    {
+      "id": "file:app/src/main/java/com/lotterynet/pro/ui/admin/redesign/navigation/FintechNavigation.kt",
+      "type": "file",
+      "name": "FintechNavigation.kt",
+      "summary": "Source file app/src/main/java/com/lotterynet/pro/ui/admin/redesign/navigation/FintechNavigation.kt containing 1 class(es) and 1 function(s).",
+      "tags": [
+        "code",
+        "ui"
+      ],
+      "complexity": "simple",
+      "filePath": "app/src/main/java/com/lotterynet/pro/ui/admin/redesign/navigation/FintechNavigation.kt",
+      "lineRange": [
+        1,
+        15
+      ]
+    },
+    {
+      "id": "file:app/src/main/java/com/lotterynet/pro/ui/admin/redesign/theme/FintechColor.kt",
+      "type": "file",
+      "name": "FintechColor.kt",
+      "summary": "Source file app/src/main/java/com/lotterynet/pro/ui/admin/redesign/theme/FintechColor.kt in the LotteryNetPro project.",
+      "tags": [
+        "code",
+        "ui"
+      ],
+      "complexity": "simple",
+      "filePath": "app/src/main/java/com/lotterynet/pro/ui/admin/redesign/theme/FintechColor.kt",
+      "lineRange": [
+        1,
+        22
+      ]
+    },
+    {
+      "id": "file:app/src/main/java/com/lotterynet/pro/ui/admin/redesign/theme/FintechTheme.kt",
+      "type": "file",
+      "name": "FintechTheme.kt",
+      "summary": "Source file app/src/main/java/com/lotterynet/pro/ui/admin/redesign/theme/FintechTheme.kt in the LotteryNetPro project.",
+      "tags": [
+        "code",
+        "ui"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/ui/admin/redesign/theme/FintechTheme.kt",
+      "lineRange": [
+        1,
+        113
+      ]
+    },
+    {
+      "id": "file:app/src/main/java/com/lotterynet/pro/ui/sales/SalesUiContracts.kt",
+      "type": "file",
+      "name": "SalesUiContracts.kt",
+      "summary": "Source file app/src/main/java/com/lotterynet/pro/ui/sales/SalesUiContracts.kt containing 11 function(s).",
+      "tags": [
+        "code",
+        "ui",
+        "sales",
+        "large-module"
+      ],
+      "complexity": "complex",
+      "filePath": "app/src/main/java/com/lotterynet/pro/ui/sales/SalesUiContracts.kt",
+      "lineRange": [
+        1,
+        417
+      ]
+    },
+    {
+      "id": "function:app/src/main/java/com/lotterynet/pro/ui/sales/SalesUiContracts.kt:resolveSaleThermalPrintResult",
+      "type": "function",
+      "name": "resolveSaleThermalPrintResult",
+      "summary": "Function resolveSaleThermalPrintResult in SalesUiContracts.kt.",
+      "tags": [
+        "function",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/ui/sales/SalesUiContracts.kt",
+      "lineRange": [
+        71,
+        90
+      ]
+    },
+    {
+      "id": "function:app/src/main/java/com/lotterynet/pro/ui/sales/SalesUiContracts.kt:shouldRenderSaleDeliveryBitmapPreview",
+      "type": "function",
+      "name": "shouldRenderSaleDeliveryBitmapPreview",
+      "summary": "Function shouldRenderSaleDeliveryBitmapPreview in SalesUiContracts.kt.",
+      "tags": [
+        "function",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/ui/sales/SalesUiContracts.kt",
+      "lineRange": [
+        79,
+        98
+      ]
+    },
+    {
+      "id": "function:app/src/main/java/com/lotterynet/pro/ui/sales/SalesUiContracts.kt:resolveCashierStartupPlan",
+      "type": "function",
+      "name": "resolveCashierStartupPlan",
+      "summary": "Function resolveCashierStartupPlan in SalesUiContracts.kt.",
+      "tags": [
+        "function",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/ui/sales/SalesUiContracts.kt",
+      "lineRange": [
+        83,
+        102
+      ]
+    },
+    {
+      "id": "function:app/src/main/java/com/lotterynet/pro/ui/sales/SalesUiContracts.kt:resolveLigarAmountPromptState",
+      "type": "function",
+      "name": "resolveLigarAmountPromptState",
+      "summary": "Function resolveLigarAmountPromptState in SalesUiContracts.kt.",
+      "tags": [
+        "function",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/ui/sales/SalesUiContracts.kt",
+      "lineRange": [
+        128,
+        147
+      ]
+    },
+    {
+      "id": "function:app/src/main/java/com/lotterynet/pro/ui/sales/SalesUiContracts.kt:parseLigarAmountForConfirmation",
+      "type": "function",
+      "name": "parseLigarAmountForConfirmation",
+      "summary": "Function parseLigarAmountForConfirmation in SalesUiContracts.kt.",
+      "tags": [
+        "function",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/ui/sales/SalesUiContracts.kt",
+      "lineRange": [
+        132,
+        151
+      ]
+    },
+    {
+      "id": "function:app/src/main/java/com/lotterynet/pro/ui/sales/SalesUiContracts.kt:resolveVentaLotteryButtonVisualContract",
+      "type": "function",
+      "name": "resolveVentaLotteryButtonVisualContract",
+      "summary": "Function resolveVentaLotteryButtonVisualContract in SalesUiContracts.kt.",
+      "tags": [
+        "function",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/ui/sales/SalesUiContracts.kt",
+      "lineRange": [
+        144,
+        163
+      ]
+    },
+    {
+      "id": "function:app/src/main/java/com/lotterynet/pro/ui/sales/SalesUiContracts.kt:resolvePostTicketClassicMode",
+      "type": "function",
+      "name": "resolvePostTicketClassicMode",
+      "summary": "Function resolvePostTicketClassicMode in SalesUiContracts.kt.",
+      "tags": [
+        "function",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/ui/sales/SalesUiContracts.kt",
+      "lineRange": [
+        327,
+        346
+      ]
+    },
+    {
+      "id": "function:app/src/main/java/com/lotterynet/pro/ui/sales/SalesUiContracts.kt:presentLotteryDecisionPill",
+      "type": "function",
+      "name": "presentLotteryDecisionPill",
+      "summary": "Function presentLotteryDecisionPill in SalesUiContracts.kt.",
+      "tags": [
+        "function",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/ui/sales/SalesUiContracts.kt",
+      "lineRange": [
+        361,
+        380
+      ]
+    },
+    {
+      "id": "function:app/src/main/java/com/lotterynet/pro/ui/sales/SalesUiContracts.kt:presentLotteryDecisionSubtitle",
+      "type": "function",
+      "name": "presentLotteryDecisionSubtitle",
+      "summary": "Function presentLotteryDecisionSubtitle in SalesUiContracts.kt.",
+      "tags": [
+        "function",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/ui/sales/SalesUiContracts.kt",
+      "lineRange": [
+        372,
+        391
+      ]
+    },
+    {
+      "id": "function:app/src/main/java/com/lotterynet/pro/ui/sales/SalesUiContracts.kt:formatLotteryClock12",
+      "type": "function",
+      "name": "formatLotteryClock12",
+      "summary": "Function formatLotteryClock12 in SalesUiContracts.kt.",
+      "tags": [
+        "function",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/ui/sales/SalesUiContracts.kt",
+      "lineRange": [
+        389,
+        408
+      ]
+    },
+    {
+      "id": "function:app/src/main/java/com/lotterynet/pro/ui/sales/SalesUiContracts.kt:parsePickerMinutes",
+      "type": "function",
+      "name": "parsePickerMinutes",
+      "summary": "Function parsePickerMinutes in SalesUiContracts.kt.",
+      "tags": [
+        "function",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/ui/sales/SalesUiContracts.kt",
+      "lineRange": [
+        408,
+        418
+      ]
+    },
+    {
+      "id": "file:app/src/main/java/com/lotterynet/pro/ui/theme/Color.kt",
+      "type": "file",
+      "name": "Color.kt",
+      "summary": "Source file app/src/main/java/com/lotterynet/pro/ui/theme/Color.kt in the LotteryNetPro project.",
+      "tags": [
+        "code",
+        "ui"
+      ],
+      "complexity": "simple",
+      "filePath": "app/src/main/java/com/lotterynet/pro/ui/theme/Color.kt",
+      "lineRange": [
+        1,
+        32
+      ]
+    },
+    {
+      "id": "file:app/src/main/java/com/lotterynet/pro/ui/theme/Theme.kt",
+      "type": "file",
+      "name": "Theme.kt",
+      "summary": "Source file app/src/main/java/com/lotterynet/pro/ui/theme/Theme.kt in the LotteryNetPro project.",
+      "tags": [
+        "code",
+        "ui"
+      ],
+      "complexity": "simple",
+      "filePath": "app/src/main/java/com/lotterynet/pro/ui/theme/Theme.kt",
+      "lineRange": [
+        1,
+        41
+      ]
+    },
+    {
+      "id": "file:app/src/main/java/com/lotterynet/pro/ui/theme/Type.kt",
+      "type": "file",
+      "name": "Type.kt",
+      "summary": "Source file app/src/main/java/com/lotterynet/pro/ui/theme/Type.kt in the LotteryNetPro project.",
+      "tags": [
+        "code",
+        "ui"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/ui/theme/Type.kt",
+      "lineRange": [
+        1,
+        76
+      ]
+    },
+    {
+      "id": "file:app/src/main/java/com/lotterynet/pro/ui/tickets/QrCaptureActivity.kt",
+      "type": "file",
+      "name": "QrCaptureActivity.kt",
+      "summary": "Source file app/src/main/java/com/lotterynet/pro/ui/tickets/QrCaptureActivity.kt containing 1 class(es).",
+      "tags": [
+        "code",
+        "ui",
+        "ticket"
+      ],
+      "complexity": "simple",
+      "filePath": "app/src/main/java/com/lotterynet/pro/ui/tickets/QrCaptureActivity.kt",
+      "lineRange": [
+        1,
+        5
+      ]
+    },
+    {
+      "id": "file:app/src/main/java/com/lotterynet/pro/ui/tickets/TicketOutputIdentity.kt",
+      "type": "file",
+      "name": "TicketOutputIdentity.kt",
+      "summary": "Source file app/src/main/java/com/lotterynet/pro/ui/tickets/TicketOutputIdentity.kt in the LotteryNetPro project.",
+      "tags": [
+        "code",
+        "ui",
+        "ticket"
+      ],
+      "complexity": "simple",
+      "filePath": "app/src/main/java/com/lotterynet/pro/ui/tickets/TicketOutputIdentity.kt",
+      "lineRange": [
+        1,
+        21
+      ]
+    },
+    {
+      "id": "file:app/src/main/java/com/lotterynet/pro/ui/update/UpdateDialog.kt",
+      "type": "file",
+      "name": "UpdateDialog.kt",
+      "summary": "Source file app/src/main/java/com/lotterynet/pro/ui/update/UpdateDialog.kt containing 1 function(s).",
+      "tags": [
+        "code",
+        "ui"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/ui/update/UpdateDialog.kt",
+      "lineRange": [
+        1,
+        205
+      ]
+    },
+    {
+      "id": "function:app/src/main/java/com/lotterynet/pro/ui/update/UpdateDialog.kt:downloadStatusLabel",
+      "type": "function",
+      "name": "downloadStatusLabel",
+      "summary": "Function downloadStatusLabel in UpdateDialog.kt.",
+      "tags": [
+        "function",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/ui/update/UpdateDialog.kt",
+      "lineRange": [
+        197,
+        206
+      ]
+    },
+    {
+      "id": "file:app/src/main/java/com/lotterynet/pro/ui/update/UpdateUiContracts.kt",
+      "type": "file",
+      "name": "UpdateUiContracts.kt",
+      "summary": "Source file app/src/main/java/com/lotterynet/pro/ui/update/UpdateUiContracts.kt containing 6 class(es) and 4 function(s).",
+      "tags": [
+        "code",
+        "ui"
+      ],
+      "complexity": "simple",
+      "filePath": "app/src/main/java/com/lotterynet/pro/ui/update/UpdateUiContracts.kt",
+      "lineRange": [
+        1,
+        46
+      ]
+    },
+    {
+      "id": "function:app/src/main/java/com/lotterynet/pro/ui/update/UpdateUiContracts.kt:shouldShowLaterButton",
+      "type": "function",
+      "name": "shouldShowLaterButton",
+      "summary": "Function shouldShowLaterButton in UpdateUiContracts.kt.",
+      "tags": [
+        "function",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/ui/update/UpdateUiContracts.kt",
+      "lineRange": [
+        21,
+        40
+      ]
+    },
+    {
+      "id": "function:app/src/main/java/com/lotterynet/pro/ui/update/UpdateUiContracts.kt:formatApkSize",
+      "type": "function",
+      "name": "formatApkSize",
+      "summary": "Function formatApkSize in UpdateUiContracts.kt.",
+      "tags": [
+        "function",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/ui/update/UpdateUiContracts.kt",
+      "lineRange": [
+        23,
+        42
+      ]
+    },
+    {
+      "id": "function:app/src/main/java/com/lotterynet/pro/ui/update/UpdateUiContracts.kt:formatDownloadSpeed",
+      "type": "function",
+      "name": "formatDownloadSpeed",
+      "summary": "Function formatDownloadSpeed in UpdateUiContracts.kt.",
+      "tags": [
+        "function",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/ui/update/UpdateUiContracts.kt",
+      "lineRange": [
+        29,
+        47
+      ]
+    },
+    {
+      "id": "function:app/src/main/java/com/lotterynet/pro/ui/update/UpdateUiContracts.kt:resolveDownloadInfo",
+      "type": "function",
+      "name": "resolveDownloadInfo",
+      "summary": "Function resolveDownloadInfo in UpdateUiContracts.kt.",
+      "tags": [
+        "function",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/ui/update/UpdateUiContracts.kt",
+      "lineRange": [
+        39,
+        47
+      ]
+    },
+    {
+      "id": "class:app/src/main/java/com/lotterynet/pro/ui/update/UpdateUiContracts.kt:UpdateUiState",
+      "type": "class",
+      "name": "UpdateUiState",
+      "summary": "Class UpdateUiState in UpdateUiContracts.kt.",
+      "tags": [
+        "class",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/ui/update/UpdateUiContracts.kt",
+      "lineRange": [
+        7,
+        47
+      ]
+    },
+    {
+      "id": "class:app/src/main/java/com/lotterynet/pro/ui/update/UpdateUiContracts.kt:Available",
+      "type": "class",
+      "name": "Available",
+      "summary": "Class Available in UpdateUiContracts.kt.",
+      "tags": [
+        "class",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/ui/update/UpdateUiContracts.kt",
+      "lineRange": [
+        9,
+        47
+      ]
+    },
+    {
+      "id": "class:app/src/main/java/com/lotterynet/pro/ui/update/UpdateUiContracts.kt:Downloading",
+      "type": "class",
+      "name": "Downloading",
+      "summary": "Class Downloading in UpdateUiContracts.kt.",
+      "tags": [
+        "class",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/ui/update/UpdateUiContracts.kt",
+      "lineRange": [
+        10,
+        47
+      ]
+    },
+    {
+      "id": "class:app/src/main/java/com/lotterynet/pro/ui/update/UpdateUiContracts.kt:ReadyToInstall",
+      "type": "class",
+      "name": "ReadyToInstall",
+      "summary": "Class ReadyToInstall in UpdateUiContracts.kt.",
+      "tags": [
+        "class",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/ui/update/UpdateUiContracts.kt",
+      "lineRange": [
+        16,
+        47
+      ]
+    },
+    {
+      "id": "class:app/src/main/java/com/lotterynet/pro/ui/update/UpdateUiContracts.kt:Error",
+      "type": "class",
+      "name": "Error",
+      "summary": "Class Error in UpdateUiContracts.kt.",
+      "tags": [
+        "class",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/ui/update/UpdateUiContracts.kt",
+      "lineRange": [
+        17,
+        47
+      ]
+    },
+    {
+      "id": "class:app/src/main/java/com/lotterynet/pro/ui/update/UpdateUiContracts.kt:Offline",
+      "type": "class",
+      "name": "Offline",
+      "summary": "Class Offline in UpdateUiContracts.kt.",
+      "tags": [
+        "class",
+        "kotlin"
+      ],
+      "complexity": "moderate",
+      "filePath": "app/src/main/java/com/lotterynet/pro/ui/update/UpdateUiContracts.kt",
+      "lineRange": [
+        18,
+        47
+      ]
+    },
+    {
+      "id": "file:app/src/main/res/drawable-anydpi-v26/ic_launcher_round.xml",
+      "type": "config",
+      "name": "ic_launcher_round.xml",
+      "summary": "Configuration file for ic_launcher_round.xml.",
+      "tags": [
+        "config",
+        "configuration"
+      ],
+      "complexity": "simple",
+      "filePath": "app/src/main/res/drawable-anydpi-v26/ic_launcher_round.xml",
+      "lineRange": [
+        1,
+        6
+      ]
+    },
+    {
+      "id": "file:app/src/main/res/drawable-anydpi-v26/ic_launcher.xml",
+      "type": "config",
+      "name": "ic_launcher.xml",
+      "summary": "Configuration file for ic_launcher.xml.",
+      "tags": [
+        "config",
+        "configuration"
+      ],
+      "complexity": "simple",
+      "filePath": "app/src/main/res/drawable-anydpi-v26/ic_launcher.xml",
+      "lineRange": [
+        1,
+        6
+      ]
+    },
+    {
+      "id": "file:app/src/main/res/values-night/themes.xml",
+      "type": "config",
+      "name": "themes.xml",
+      "summary": "Configuration file for themes.xml.",
+      "tags": [
+        "config",
+        "configuration"
+      ],
+      "complexity": "simple",
+      "filePath": "app/src/main/res/values-night/themes.xml",
+      "lineRange": [
+        1,
+        25
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/core/update/SupabaseUpdateService.kt",
+      "target": "function:app/src/main/java/com/lotterynet/pro/core/update/SupabaseUpdateService.kt:checkUpdate",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "SupabaseUpdateService.kt contains checkUpdate"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/core/update/SupabaseUpdateService.kt",
+      "target": "function:app/src/main/java/com/lotterynet/pro/core/update/SupabaseUpdateService.kt:parseUpdateResponse",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "SupabaseUpdateService.kt contains parseUpdateResponse"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/core/update/SupabaseUpdateService.kt",
+      "target": "class:app/src/main/java/com/lotterynet/pro/core/update/SupabaseUpdateService.kt:SupabaseUpdateService",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "SupabaseUpdateService.kt contains SupabaseUpdateService"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/core/update/UpdateCacheRepository.kt",
+      "target": "function:app/src/main/java/com/lotterynet/pro/core/update/UpdateCacheRepository.kt:getCachedUpdate",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "UpdateCacheRepository.kt contains getCachedUpdate"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/core/update/UpdateCacheRepository.kt",
+      "target": "function:app/src/main/java/com/lotterynet/pro/core/update/UpdateCacheRepository.kt:saveCachedUpdate",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "UpdateCacheRepository.kt contains saveCachedUpdate"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/core/update/UpdateCacheRepository.kt",
+      "target": "function:app/src/main/java/com/lotterynet/pro/core/update/UpdateCacheRepository.kt:clearCachedUpdate",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "UpdateCacheRepository.kt contains clearCachedUpdate"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/core/update/UpdateCacheRepository.kt",
+      "target": "function:app/src/main/java/com/lotterynet/pro/core/update/UpdateCacheRepository.kt:getLastCheckEpochMs",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "UpdateCacheRepository.kt contains getLastCheckEpochMs"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/core/update/UpdateCacheRepository.kt",
+      "target": "function:app/src/main/java/com/lotterynet/pro/core/update/UpdateCacheRepository.kt:markChecked",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "UpdateCacheRepository.kt contains markChecked"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/core/update/UpdateCacheRepository.kt",
+      "target": "function:app/src/main/java/com/lotterynet/pro/core/update/UpdateCacheRepository.kt:shouldSkipNetworkCheck",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "UpdateCacheRepository.kt contains shouldSkipNetworkCheck"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/core/update/UpdateCacheRepository.kt",
+      "target": "class:app/src/main/java/com/lotterynet/pro/core/update/UpdateCacheRepository.kt:UpdateCacheRepository",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "UpdateCacheRepository.kt contains UpdateCacheRepository"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/core/update/UpdateLogRepository.kt",
+      "target": "function:app/src/main/java/com/lotterynet/pro/core/update/UpdateLogRepository.kt:append",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "UpdateLogRepository.kt contains append"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/core/update/UpdateLogRepository.kt",
+      "target": "class:app/src/main/java/com/lotterynet/pro/core/update/UpdateLogRepository.kt:UpdateLogRepository",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "UpdateLogRepository.kt contains UpdateLogRepository"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/core/update/UpdateModels.kt",
+      "target": "function:app/src/main/java/com/lotterynet/pro/core/update/UpdateModels.kt:toJson",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "UpdateModels.kt contains toJson"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/core/update/UpdateModels.kt",
+      "target": "function:app/src/main/java/com/lotterynet/pro/core/update/UpdateModels.kt:fromJson",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "UpdateModels.kt contains fromJson"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/core/update/UpdateModels.kt",
+      "target": "class:app/src/main/java/com/lotterynet/pro/core/update/UpdateModels.kt:OtaUpdateInfo",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "UpdateModels.kt contains OtaUpdateInfo"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/core/update/UpdateModels.kt",
+      "target": "class:app/src/main/java/com/lotterynet/pro/core/update/UpdateModels.kt:OtaCheckRequest",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "UpdateModels.kt contains OtaCheckRequest"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/core/update/UpdateModels.kt",
+      "target": "class:app/src/main/java/com/lotterynet/pro/core/update/UpdateModels.kt:OtaDownloadProgress",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "UpdateModels.kt contains OtaDownloadProgress"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/core/update/UpdateModels.kt",
+      "target": "class:app/src/main/java/com/lotterynet/pro/core/update/UpdateModels.kt:OtaDownloadStatus",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "UpdateModels.kt contains OtaDownloadStatus"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/ui/admin/AdminLimitsContracts.kt",
+      "target": "function:app/src/main/java/com/lotterynet/pro/ui/admin/AdminLimitsContracts.kt:adminLimitSections",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "AdminLimitsContracts.kt contains adminLimitSections"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/ui/admin/AdminLimitsContracts.kt",
+      "target": "function:app/src/main/java/com/lotterynet/pro/ui/admin/AdminLimitsContracts.kt:adminSalesLimitFieldLabels",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "AdminLimitsContracts.kt contains adminSalesLimitFieldLabels"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/ui/admin/AdminLimitsContracts.kt",
+      "target": "function:app/src/main/java/com/lotterynet/pro/ui/admin/AdminLimitsContracts.kt:recommendedCashierSalesLimits",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "AdminLimitsContracts.kt contains recommendedCashierSalesLimits"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/ui/sales/SalesUiContracts.kt",
+      "target": "function:app/src/main/java/com/lotterynet/pro/ui/sales/SalesUiContracts.kt:resolveSaleThermalPrintResult",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "SalesUiContracts.kt contains resolveSaleThermalPrintResult"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/ui/sales/SalesUiContracts.kt",
+      "target": "function:app/src/main/java/com/lotterynet/pro/ui/sales/SalesUiContracts.kt:shouldRenderSaleDeliveryBitmapPreview",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "SalesUiContracts.kt contains shouldRenderSaleDeliveryBitmapPreview"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/ui/sales/SalesUiContracts.kt",
+      "target": "function:app/src/main/java/com/lotterynet/pro/ui/sales/SalesUiContracts.kt:resolveCashierStartupPlan",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "SalesUiContracts.kt contains resolveCashierStartupPlan"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/ui/sales/SalesUiContracts.kt",
+      "target": "function:app/src/main/java/com/lotterynet/pro/ui/sales/SalesUiContracts.kt:resolveLigarAmountPromptState",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "SalesUiContracts.kt contains resolveLigarAmountPromptState"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/ui/sales/SalesUiContracts.kt",
+      "target": "function:app/src/main/java/com/lotterynet/pro/ui/sales/SalesUiContracts.kt:parseLigarAmountForConfirmation",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "SalesUiContracts.kt contains parseLigarAmountForConfirmation"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/ui/sales/SalesUiContracts.kt",
+      "target": "function:app/src/main/java/com/lotterynet/pro/ui/sales/SalesUiContracts.kt:resolveVentaLotteryButtonVisualContract",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "SalesUiContracts.kt contains resolveVentaLotteryButtonVisualContract"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/ui/sales/SalesUiContracts.kt",
+      "target": "function:app/src/main/java/com/lotterynet/pro/ui/sales/SalesUiContracts.kt:resolvePostTicketClassicMode",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "SalesUiContracts.kt contains resolvePostTicketClassicMode"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/ui/sales/SalesUiContracts.kt",
+      "target": "function:app/src/main/java/com/lotterynet/pro/ui/sales/SalesUiContracts.kt:presentLotteryDecisionPill",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "SalesUiContracts.kt contains presentLotteryDecisionPill"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/ui/sales/SalesUiContracts.kt",
+      "target": "function:app/src/main/java/com/lotterynet/pro/ui/sales/SalesUiContracts.kt:presentLotteryDecisionSubtitle",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "SalesUiContracts.kt contains presentLotteryDecisionSubtitle"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/ui/sales/SalesUiContracts.kt",
+      "target": "function:app/src/main/java/com/lotterynet/pro/ui/sales/SalesUiContracts.kt:formatLotteryClock12",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "SalesUiContracts.kt contains formatLotteryClock12"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/ui/sales/SalesUiContracts.kt",
+      "target": "function:app/src/main/java/com/lotterynet/pro/ui/sales/SalesUiContracts.kt:parsePickerMinutes",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "SalesUiContracts.kt contains parsePickerMinutes"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/ui/update/UpdateDialog.kt",
+      "target": "function:app/src/main/java/com/lotterynet/pro/ui/update/UpdateDialog.kt:downloadStatusLabel",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "UpdateDialog.kt contains downloadStatusLabel"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/ui/update/UpdateUiContracts.kt",
+      "target": "function:app/src/main/java/com/lotterynet/pro/ui/update/UpdateUiContracts.kt:shouldShowLaterButton",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "UpdateUiContracts.kt contains shouldShowLaterButton"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/ui/update/UpdateUiContracts.kt",
+      "target": "function:app/src/main/java/com/lotterynet/pro/ui/update/UpdateUiContracts.kt:formatApkSize",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "UpdateUiContracts.kt contains formatApkSize"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/ui/update/UpdateUiContracts.kt",
+      "target": "function:app/src/main/java/com/lotterynet/pro/ui/update/UpdateUiContracts.kt:formatDownloadSpeed",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "UpdateUiContracts.kt contains formatDownloadSpeed"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/ui/update/UpdateUiContracts.kt",
+      "target": "function:app/src/main/java/com/lotterynet/pro/ui/update/UpdateUiContracts.kt:resolveDownloadInfo",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "UpdateUiContracts.kt contains resolveDownloadInfo"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/ui/update/UpdateUiContracts.kt",
+      "target": "class:app/src/main/java/com/lotterynet/pro/ui/update/UpdateUiContracts.kt:UpdateUiState",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "UpdateUiContracts.kt contains UpdateUiState"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/ui/update/UpdateUiContracts.kt",
+      "target": "class:app/src/main/java/com/lotterynet/pro/ui/update/UpdateUiContracts.kt:Available",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "UpdateUiContracts.kt contains Available"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/ui/update/UpdateUiContracts.kt",
+      "target": "class:app/src/main/java/com/lotterynet/pro/ui/update/UpdateUiContracts.kt:Downloading",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "UpdateUiContracts.kt contains Downloading"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/ui/update/UpdateUiContracts.kt",
+      "target": "class:app/src/main/java/com/lotterynet/pro/ui/update/UpdateUiContracts.kt:ReadyToInstall",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "UpdateUiContracts.kt contains ReadyToInstall"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/ui/update/UpdateUiContracts.kt",
+      "target": "class:app/src/main/java/com/lotterynet/pro/ui/update/UpdateUiContracts.kt:Error",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "UpdateUiContracts.kt contains Error"
+    },
+    {
+      "source": "file:app/src/main/java/com/lotterynet/pro/ui/update/UpdateUiContracts.kt",
+      "target": "class:app/src/main/java/com/lotterynet/pro/ui/update/UpdateUiContracts.kt:Offline",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1,
+      "description": "UpdateUiContracts.kt contains Offline"
+    }
+  ]
+}

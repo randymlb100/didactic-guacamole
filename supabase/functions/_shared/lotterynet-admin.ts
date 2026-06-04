@@ -62,9 +62,10 @@ export async function requireAdminJwt(req: Request): Promise<Response | null> {
 }
 
 export function supabaseAdmin() {
+  const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? Deno.env.get("SUPABASE_SECRET_KEY") ?? "";
   return createClient(
     Deno.env.get("SUPABASE_URL") ?? "",
-    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
+    serviceKey,
     { auth: { persistSession: false } },
   );
 }

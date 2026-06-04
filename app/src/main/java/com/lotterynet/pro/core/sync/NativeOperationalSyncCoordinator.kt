@@ -60,24 +60,12 @@ class NativeOperationalSyncCoordinator(
         }
         val states = mutableListOf<NativeOperationalSyncState>()
         ownerKeys.forEach { ownerKey ->
-            val remoteStamp = runCatching { remoteStampStore.fetchUpdatedAt(ownerKey) }.getOrNull()
-            states += if (!shouldHydrateOperationalRemote(lastRemoteUpdatedAt, remoteStamp, force)) {
-                NativeOperationalSyncState(
-                    ok = true,
-                    status = NativeOperationalSyncStatus.UP_TO_DATE,
-                    ownerKey = ownerKey,
-                    message = "Datos al dia.",
-                    remoteUpdatedAt = remoteStamp ?: lastRemoteUpdatedAt,
-                    refreshedAtEpochMs = nowEpochMs(),
-                )
-            } else {
-                hydrateOwnerGuarded(
-                    ownerKey = ownerKey,
-                    banca = session.banca,
-                    remoteUpdatedAt = remoteStamp,
-                    force = force,
-                )
-            }
+            states += syncOwnerWithStampGate(
+                ownerKey = ownerKey,
+                banca = session.banca,
+                lastRemoteUpdatedAt = lastRemoteUpdatedAt,
+                force = force,
+            )
         }
         if (states.isNotEmpty()) {
             val primary = states.first()
@@ -148,49 +136,51 @@ class NativeOperationalSyncCoordinator(
                 refreshedAtEpochMs = nowEpochMs(),
             )
         }
-        val remoteStamp = runCatching { remoteStampStore.fetchUpdatedAt(normalizedOwner) }.getOrNull()
-        if (!shouldHydrateOperationalRemote(null, remoteStamp, force)) {
-            return NativeOperationalSyncState(
-                ok = true,
-                status = NativeOperationalSyncStatus.UP_TO_DATE,
-                ownerKey = normalizedOwner,
-                message = "Datos al dia.",
-                remoteUpdatedAt = remoteStamp,
-                refreshedAtEpochMs = nowEpochMs(),
-            )
-        }
-        return hydrateOwnerGuarded(
+        return syncOwnerWithStampGate(
             ownerKey = normalizedOwner,
             banca = banca,
-            remoteUpdatedAt = remoteStamp,
+            lastRemoteUpdatedAt = null,
             force = force,
         )
     }
 
-    private fun hydrateOwnerGuarded(
+    private fun syncOwnerWithStampGate(
         ownerKey: String,
         banca: String?,
-        remoteUpdatedAt: String?,
+        lastRemoteUpdatedAt: String?,
         force: Boolean,
     ): NativeOperationalSyncState {
-        val permit = syncGovernor.tryStartOwnerHydrate(ownerKey, force)
+        val normalizedOwner = ownerKey.trim()
+        val permit = syncGovernor.tryStartOwnerHydrate(normalizedOwner, force)
         if (permit == null) {
             return NativeOperationalSyncState(
                 ok = true,
                 status = NativeOperationalSyncStatus.UP_TO_DATE,
-                ownerKey = ownerKey,
+                ownerKey = normalizedOwner,
                 message = "Sync ya reciente.",
-                remoteUpdatedAt = remoteUpdatedAt,
+                remoteUpdatedAt = lastRemoteUpdatedAt,
                 refreshedAtEpochMs = nowEpochMs(),
             )
         }
         return try {
-            val result = ticketGateway.hydrateOwner(ownerKey, banca)
-            result.toOperationalState(
-                ownerKey = ownerKey,
-                remoteUpdatedAt = remoteUpdatedAt,
-                refreshedAtEpochMs = nowEpochMs(),
-            )
+            val remoteStamp = runCatching { remoteStampStore.fetchUpdatedAt(normalizedOwner) }.getOrNull()
+            if (!shouldHydrateOperationalRemote(lastRemoteUpdatedAt, remoteStamp, force)) {
+                NativeOperationalSyncState(
+                    ok = true,
+                    status = NativeOperationalSyncStatus.UP_TO_DATE,
+                    ownerKey = normalizedOwner,
+                    message = "Datos al dia.",
+                    remoteUpdatedAt = remoteStamp ?: lastRemoteUpdatedAt,
+                    refreshedAtEpochMs = nowEpochMs(),
+                )
+            } else {
+                val result = ticketGateway.hydrateOwner(normalizedOwner, banca)
+                result.toOperationalState(
+                    ownerKey = normalizedOwner,
+                    remoteUpdatedAt = remoteStamp,
+                    refreshedAtEpochMs = nowEpochMs(),
+                )
+            }
         } finally {
             syncGovernor.finishOwnerHydrate(permit, nowEpochMs())
         }

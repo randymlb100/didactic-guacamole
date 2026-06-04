@@ -9,6 +9,7 @@ const REQUEST_TIMEOUT_MS = Number(process.env.LOTTERYNET_DIAGNOSTIC_TIMEOUT_MS |
 const CONCURRENT_DELTA_READS = Number(process.env.LOTTERYNET_DIAGNOSTIC_DELTA_READS || 12);
 const stamp = new Date().toISOString().replace(/[:.]/g, "-");
 const runId = `diag${Date.now()}`;
+const keepQaTickets = process.env.LOTTERYNET_KEEP_QA_TICKETS === "1";
 const fakeDay = String(1 + (Date.now() % 20)).padStart(2, "0");
 const fakeIsoDate = `2026-03-${fakeDay}`;
 const fakeDayKey = `${fakeDay}-03-2026`;
@@ -454,12 +455,21 @@ try {
 } catch (error) {
   check(false, "diagnostico interrumpido", { message: error?.message, stack: error?.stack });
 } finally {
-  for (const ticket of createdTickets.values()) {
-    const deleted = await deleteTicket(ticket).catch((error) => ({ json: { ok: false, message: error?.message } }));
-    log(deleted.json?.ok === true ? "CLEANUP ticket eliminado" : "BUG cleanup ticket no eliminado", {
-      clientRequestId: ticket.clientRequestId,
-      message: redact(deleted.json?.message ?? deleted.text ?? ""),
+  if (keepQaTickets) {
+    log("KEEP_QA_TICKETS", {
+      tickets: [...createdTickets.values()].map((ticket) => ({
+        clientRequestId: ticket.clientRequestId,
+        ticketCode: ticket.result.json?.ticket?.ticket_code ?? ticket.result.json?.ticketCode,
+      })),
     });
+  } else {
+    for (const ticket of createdTickets.values()) {
+      const deleted = await deleteTicket(ticket).catch((error) => ({ json: { ok: false, message: error?.message } }));
+      log(deleted.json?.ok === true ? "CLEANUP ticket eliminado" : "BUG cleanup ticket no eliminado", {
+        clientRequestId: ticket.clientRequestId,
+        message: redact(deleted.json?.message ?? deleted.text ?? ""),
+      });
+    }
   }
   loopDelay.disable();
   const failed = checks.filter((item) => !item.ok);

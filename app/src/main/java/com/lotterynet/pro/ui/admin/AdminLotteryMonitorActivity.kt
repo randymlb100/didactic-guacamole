@@ -50,9 +50,14 @@ import com.lotterynet.pro.core.storage.LocalSessionRepository
 import com.lotterynet.pro.core.storage.LocalUsersRepository
 import com.lotterynet.pro.core.realtime.LotterynetRealtimeClient
 import com.lotterynet.pro.core.realtime.LotterynetRealtimeSubscription
+import com.lotterynet.pro.core.sync.ForegroundCatchUpInput
+import com.lotterynet.pro.core.sync.ForegroundCatchUpPolicy
 import com.lotterynet.pro.core.sync.NativeOperationalSyncCoordinator
 import com.lotterynet.pro.core.sync.NativeTicketCloudSyncCoordinator
+import com.lotterynet.pro.core.sync.NativeTicketRemoteStore
 import com.lotterynet.pro.core.sync.NativeTicketSyncQueueRepository
+import com.lotterynet.pro.core.sync.OperationalSyncThrottle
+import com.lotterynet.pro.core.sync.resolveOperationalOwnerKey
 import com.lotterynet.pro.core.sync.resolveOperationalOwnerKeys
 import com.lotterynet.pro.ui.common.CompactEmptyState
 import com.lotterynet.pro.ui.common.CompactSegmentedSelector
@@ -82,12 +87,17 @@ class AdminLotteryMonitorActivity : AppCompatActivity() {
     private val syncHandler = Handler(Looper.getMainLooper())
     private val realtimeClient = LotterynetRealtimeClient()
     private val realtimeSubscriptions = mutableListOf<LotterynetRealtimeClient.SubscriptionHandle>()
+    private val remoteStampStore = NativeTicketRemoteStore()
+    private val foregroundCatchUpPolicy = ForegroundCatchUpPolicy(
+        OperationalSyncThrottle(ADMIN_LOTTERY_MONITOR_FOREGROUND_CATCH_UP_THROTTLE_MS),
+    )
     private lateinit var session: ActiveSession
     private lateinit var salesRepository: LocalSalesRepository
     private lateinit var operationalSyncCoordinator: NativeOperationalSyncCoordinator
     private var ticketsState by mutableStateOf<List<TicketRecord>>(emptyList())
     private var lastRemoteUpdatedAt: String? = null
     private val lotteryMonitorSyncInFlight = AtomicBoolean(false)
+    private val resumeSyncRunnable = Runnable { runForegroundCatchUp(force = false) }
     private val syncPollRunnable = object : Runnable {
         override fun run() {
             syncLotteryMonitor(force = false)
@@ -131,13 +141,24 @@ class AdminLotteryMonitorActivity : AppCompatActivity() {
             }
         }
         syncLotteryMonitor(force = true)
-        subscribeRealtime()
+        subscribeRealtime(reset = false)
         syncHandler.postDelayed(syncPollRunnable, resolveAdminLotteryMonitorPollIntervalMs(realtimeClient.isConfigured()))
     }
 
+    override fun onResume() {
+        super.onResume()
+        if (::salesRepository.isInitialized) {
+            refreshLotteryMonitorData()
+            syncHandler.removeCallbacks(resumeSyncRunnable)
+            syncHandler.postDelayed(resumeSyncRunnable, ADMIN_LOTTERY_MONITOR_RESUME_SYNC_DELAY_MS)
+        }
+    }
+
     override fun onDestroy() {
+        syncHandler.removeCallbacks(resumeSyncRunnable)
         syncHandler.removeCallbacks(syncPollRunnable)
         realtimeSubscriptions.forEach { it.close() }
+        realtimeSubscriptions.clear()
         realtimeClient.shutdown()
         super.onDestroy()
     }
@@ -176,8 +197,46 @@ class AdminLotteryMonitorActivity : AppCompatActivity() {
         }
     }
 
-    private fun subscribeRealtime() {
+    private fun runForegroundCatchUp(force: Boolean) {
+        if (!::salesRepository.isInitialized) return
+        refreshLotteryMonitorData()
+        val ownerKey = resolveOperationalOwnerKey(session)
+        if (ownerKey.isBlank()) return
+        thread(name = "admin-lottery-monitor-foreground-catch-up") {
+            val remoteUpdatedAt = runCatching { remoteStampStore.fetchUpdatedAtFresh(ownerKey) }.getOrNull()
+            val decision = foregroundCatchUpPolicy.decide(
+                resolveAdminLotteryMonitorForegroundCatchUpInput(
+                    session = session,
+                    tickets = salesRepository.getTicketsForDay(dominicanMonitorDayKey()),
+                    dayKey = dominicanMonitorDayKey(),
+                    lastRemoteUpdatedAt = lastRemoteUpdatedAt,
+                    remoteUpdatedAt = remoteUpdatedAt,
+                    realtimeConfigured = realtimeClient.isConfigured(),
+                    hasRealtimeSubscription = realtimeSubscriptions.isNotEmpty(),
+                    nowEpochMs = System.currentTimeMillis(),
+                    force = force,
+                ),
+            )
+            if (!decision.shouldRun) return@thread
+            if (decision.reconnectRealtime) {
+                runOnUiThread { subscribeRealtime(reset = true) }
+            }
+            if (decision.refreshTickets) {
+                runOnUiThread { syncLotteryMonitor(force = force || decision.refreshTickets) }
+            } else if (remoteUpdatedAt != null) {
+                lastRemoteUpdatedAt = remoteUpdatedAt
+            }
+        }
+    }
+
+    private fun subscribeRealtime(reset: Boolean) {
         if (!realtimeClient.isConfigured()) return
+        if (reset) {
+            realtimeSubscriptions.forEach { it.close() }
+            realtimeSubscriptions.clear()
+        } else if (realtimeSubscriptions.isNotEmpty()) {
+            return
+        }
         resolveOperationalOwnerKeys(session).forEach { ownerKey ->
             realtimeSubscriptions += realtimeClient.subscribe(LotterynetRealtimeSubscription.ticketOwner(ownerKey)) {
                 syncLotteryMonitor(force = true)
@@ -211,9 +270,42 @@ private enum class LotteryMonitorPlayFocus(val id: String, val label: String) {
 
 private const val ADMIN_LOTTERY_MONITOR_POLL_MS = 60_000L
 private const val ADMIN_LOTTERY_MONITOR_REALTIME_FALLBACK_POLL_MS = 300_000L
+private const val ADMIN_LOTTERY_MONITOR_RESUME_SYNC_DELAY_MS = 100L
+private const val ADMIN_LOTTERY_MONITOR_FOREGROUND_CATCH_UP_THROTTLE_MS = 10_000L
 
 internal fun resolveAdminLotteryMonitorPollIntervalMs(realtimeEnabled: Boolean): Long {
     return if (realtimeEnabled) ADMIN_LOTTERY_MONITOR_REALTIME_FALLBACK_POLL_MS else ADMIN_LOTTERY_MONITOR_POLL_MS
+}
+
+internal fun resolveAdminLotteryMonitorForegroundCatchUpInput(
+    session: ActiveSession,
+    tickets: List<TicketRecord>,
+    dayKey: String,
+    lastRemoteUpdatedAt: String?,
+    remoteUpdatedAt: String?,
+    realtimeConfigured: Boolean,
+    hasRealtimeSubscription: Boolean,
+    nowEpochMs: Long,
+    force: Boolean = false,
+): ForegroundCatchUpInput {
+    return ForegroundCatchUpInput(
+        ownerKey = resolveOperationalOwnerKey(session),
+        dateKey = dayKey,
+        hasLocalTickets = tickets.any { ticket ->
+            ticket.drawDateKey.equals(dayKey, ignoreCase = true)
+        },
+        hasLocalResults = true,
+        ticketStampChanged = remoteUpdatedAt.isNullOrBlank() ||
+            !remoteUpdatedAt.equals(lastRemoteUpdatedAt.orEmpty(), ignoreCase = true),
+        resultsStampChanged = false,
+        realtimeConnected = !realtimeConfigured || hasRealtimeSubscription,
+        nowMs = nowEpochMs,
+        force = force,
+    )
+}
+
+private fun dominicanMonitorDayKey(): String {
+    return LocalDate.now(ZoneId.of("America/Santo_Domingo")).toString()
 }
 
 private data class LotteryMonitorRow(

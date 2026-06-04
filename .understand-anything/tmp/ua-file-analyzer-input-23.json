@@ -1,0 +1,63 @@
+{
+  "projectRoot": "C:\\Users\\Randy Cordero\\Desktop\\lotterynet_android",
+  "batchFiles": [
+    {
+      "path": "docs/superpowers/specs/2026-04-18-lotterynet-recovery-design.md",
+      "language": "markdown",
+      "sizeLines": 48,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "docs/superpowers/specs/2026-04-21-figma-library-phase0-discovery.md",
+      "language": "markdown",
+      "sizeLines": 478,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "docs/superpowers/specs/2026-04-21-figma-library-phase1-foundations.md",
+      "language": "markdown",
+      "sizeLines": 315,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "docs/superpowers/specs/2026-04-21-figma-library-phase2-component-spec.md",
+      "language": "markdown",
+      "sizeLines": 433,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "docs/superpowers/specs/2026-04-21-figma-redesign-handoff.md",
+      "language": "markdown",
+      "sizeLines": 393,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "docs/superpowers/specs/2026-04-21-figma-screen-spec-v1.md",
+      "language": "markdown",
+      "sizeLines": 147,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "docs/superpowers/specs/2026-05-04-recargas-rapidas-integration-design.md",
+      "language": "markdown",
+      "sizeLines": 50,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "docs/superpowers/specs/lotterynet-figma-tokens-v1.json",
+      "language": "json",
+      "sizeLines": 92,
+      "fileCategory": "config"
+    }
+  ],
+  "batchImportData": {
+    "docs/superpowers/specs/2026-04-18-lotterynet-recovery-design.md": [],
+    "docs/superpowers/specs/2026-04-21-figma-library-phase0-discovery.md": [],
+    "docs/superpowers/specs/2026-04-21-figma-library-phase1-foundations.md": [],
+    "docs/superpowers/specs/2026-04-21-figma-library-phase2-component-spec.md": [],
+    "docs/superpowers/specs/2026-04-21-figma-redesign-handoff.md": [],
+    "docs/superpowers/specs/2026-04-21-figma-screen-spec-v1.md": [],
+    "docs/superpowers/specs/2026-05-04-recargas-rapidas-integration-design.md": [],
+    "docs/superpowers/specs/lotterynet-figma-tokens-v1.json": []
+  }
+}

@@ -72,6 +72,16 @@ data class PlayItem(
     val boxDigits: String? = null,
 )
 
+data class WinningPlayDetail(
+    val lotteryName: String,
+    val playType: String,
+    val playedNumber: String,
+    val resultNumber: String,
+    val hitPosition: String,
+    val amount: Double,
+    val payoutAmount: Double,
+)
+
 data class TicketRecord(
     val id: String,
     val serial: String? = null,
@@ -88,6 +98,7 @@ data class TicketRecord(
     val discount: Double = 0.0,
     val total: Double = 0.0,
     val totalPrize: Double = 0.0,
+    val winningDetails: List<WinningPlayDetail> = emptyList(),
     val status: String = "active",
     val note: String? = null,
 )

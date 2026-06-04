@@ -1,0 +1,57 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="1180" viewBox="0 0 1080 1180">
+  <defs>
+    <linearGradient id="header" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0" stop-color="#164EAD"/>
+      <stop offset="1" stop-color="#14532D"/>
+    </linearGradient>
+    <filter id="soft" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="8" stdDeviation="10" flood-color="#0f172a" flood-opacity="0.14"/>
+    </filter>
+  </defs>
+  <rect width="1080" height="1180" fill="#F8FAFC"/>
+  <rect width="1080" height="260" fill="url(#header)"/>
+  <rect width="1080" height="14" fill="#F59E0B"/>
+  <rect y="250" width="1080" height="10" fill="#F59E0B"/>
+  <circle cx="97" cy="102" r="54" fill="#ffffff" opacity="0.16"/>
+  <text x="97" y="122" text-anchor="middle" font-family="Arial Black, Arial" font-size="58" fill="#fff">D</text>
+  <text x="184" y="82" font-family="Arial, sans-serif" font-size="26" font-weight="700" fill="#F8DF8C">APUESTA DEPORTIVA</text>
+  <text x="184" y="150" font-family="Arial Black, Arial" font-size="58" fill="#fff">Banca QA</text>
+  <rect x="796" y="58" width="220" height="64" rx="22" fill="#16A34A"/>
+  <text x="906" y="100" text-anchor="middle" font-family="Arial Black, Arial" font-size="28" fill="#fff">PAGADO</text>
+
+  <rect x="0" y="260" width="1080" height="132" fill="#fff"/>
+  <text x="38" y="306" font-family="Arial, sans-serif" font-size="22" font-weight="700" fill="#64748B">NUMERO DE TICKET</text>
+  <text x="38" y="365" font-family="Consolas, monospace" font-size="48" font-weight="800" fill="#164EAD">SN-88F91EB7</text>
+  <text x="1042" y="306" text-anchor="end" font-family="Arial, sans-serif" font-size="22" font-weight="700" fill="#64748B">VENDEDOR</text>
+  <text x="1042" y="362" text-anchor="end" font-family="Arial Black, Arial" font-size="30" fill="#071A44">bancae01</text>
+  <line x1="0" y1="392" x2="1080" y2="392" stroke="#E2E8F0" stroke-width="3"/>
+
+  <text x="38" y="454" font-family="Arial Black, Arial" font-size="36" fill="#071A44">Selecciones</text>
+  <text x="1042" y="454" text-anchor="end" font-family="Arial, sans-serif" font-size="24" font-weight="700" fill="#64748B">2 total</text>
+
+  <g filter="url(#soft)">
+    <rect x="38" y="486" width="1004" height="114" rx="18" fill="#fff" stroke="#E2E8F0" stroke-width="3"/>
+    <text x="64" y="532" font-family="Arial Black, Arial" font-size="31" fill="#071A44">QA Away A @ QA Home A</text>
+    <text x="64" y="576" font-family="Arial, sans-serif" font-size="25" font-weight="700" fill="#64748B">Moneyline · QA Home A</text>
+    <text x="1016" y="560" text-anchor="end" font-family="Consolas, monospace" font-size="36" font-weight="800" fill="#16A34A">1.80</text>
+  </g>
+
+  <g filter="url(#soft)">
+    <rect x="38" y="624" width="1004" height="114" rx="18" fill="#fff" stroke="#E2E8F0" stroke-width="3"/>
+    <text x="64" y="670" font-family="Arial Black, Arial" font-size="31" fill="#071A44">QA Away B @ QA Home B</text>
+    <text x="64" y="714" font-family="Arial, sans-serif" font-size="25" font-weight="700" fill="#64748B">Moneyline · QA Away B</text>
+    <text x="1016" y="698" text-anchor="end" font-family="Consolas, monospace" font-size="36" font-weight="800" fill="#16A34A">1.95</text>
+  </g>
+
+  <rect x="0" y="792" width="1080" height="176" fill="#0B2A4A"/>
+  <text x="42" y="850" font-family="Arial, sans-serif" font-size="25" font-weight="700" fill="#F8DF8C">MONTO APOSTADO</text>
+  <text x="42" y="913" font-family="Arial Black, Arial" font-size="44" fill="#fff">$ 25</text>
+  <text x="1042" y="850" text-anchor="end" font-family="Arial, sans-serif" font-size="25" font-weight="700" fill="#F8DF8C">PAGO POSIBLE</text>
+  <text x="1042" y="922" text-anchor="end" font-family="Consolas, monospace" font-size="62" font-weight="800" fill="#F59E0B">$ 87.75</text>
+  <text x="540" y="950" text-anchor="middle" font-family="Arial, sans-serif" font-size="24" font-weight="700" fill="#CBD5E1">Cuota total 3.51 · Parlay</text>
+
+  <rect x="0" y="968" width="1080" height="212" fill="#071A44"/>
+  <text x="540" y="1030" text-anchor="middle" font-family="Arial, sans-serif" font-size="27" font-weight="700" fill="#fff">Ticket deportivo separado de loteria</text>
+  <text x="540" y="1074" text-anchor="middle" font-family="Arial, sans-serif" font-size="25" font-weight="700" fill="#F8DF8C">Validar antes de pagar</text>
+  <text x="540" y="1122" text-anchor="middle" font-family="Arial, sans-serif" font-size="23" font-weight="700" fill="#CBD5E1">Estado final de prueba: PAGADO</text>
+</svg>

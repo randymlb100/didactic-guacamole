@@ -98,8 +98,8 @@ async function fetchUsersPayload() {
   return result.json?.[0]?.payload ?? {};
 }
 
-async function saveUsersPayload(payload) {
-  const result = await edge("lotterynet-users-state", { action: "upsert", payload });
+async function saveUsersPayload(payload, token) {
+  const result = await edge("lotterynet-users-state", { action: "upsert", payload }, token);
   if (!result.ok || result.json?.ok === false) throw new Error(`No se pudo guardar usuarios: ${result.text}`);
 }
 
@@ -186,6 +186,7 @@ test("monitoreo muestra jugadas y cajeros por Playwright", async ({ page }) => {
   test.setTimeout(90_000);
   let originalUsersPayload = null;
   let usersChanged = false;
+  let adminSession = null;
   const httpEvidence = [];
 
   try {
@@ -199,13 +200,13 @@ test("monitoreo muestra jugadas y cajeros por Playwright", async ({ page }) => {
     const cashierCred = credentials.find((row) => lower(row.username) === "bancae01");
     expect(admin && cashier1 && cashier2 && adminCred && cashierCred).toBeTruthy();
 
-    const adminSession = await login(adminCred.username, adminCred.password);
+    adminSession = await login(adminCred.username, adminCred.password);
     const cashierSession = await login(cashierCred.username, cashierCred.password);
     expect(adminSession.ok).toBeTruthy();
     expect(cashierSession.ok).toBeTruthy();
 
     const supervisorSetup = installSupervisor(originalUsersPayload, admin, [cashier1, cashier2]);
-    await saveUsersPayload(supervisorSetup.payload);
+    await saveUsersPayload(supervisorSetup.payload, adminSession.token);
     usersChanged = true;
     const supervisorSession = await login(supervisorSetup.supervisor.user, supervisorSetup.password);
     expect(supervisorSession.ok).toBeTruthy();
@@ -322,7 +323,7 @@ test("monitoreo muestra jugadas y cajeros por Playwright", async ({ page }) => {
     }, null, 2), "utf8");
   } finally {
     if (usersChanged && originalUsersPayload) {
-      await saveUsersPayload(originalUsersPayload);
+      await saveUsersPayload(originalUsersPayload, adminSession?.token);
     }
     await cleanupResults();
   }

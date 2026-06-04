@@ -67,7 +67,14 @@ function sectionCount(payload, section) {
 async function checkGithubWorkflow() {
   const workflowPath = `${SCRAPER_REPO}/.github/workflows/scrape.yml`;
   const workflow = await readFile(workflowPath, "utf8");
-  check(workflow.includes("cron: \"*/10 * * * *\""), "GitHub job corre cada 10 minutos, no cada request", { workflowPath });
+  const renderYaml = await readFile(new URL("../../render.yaml", import.meta.url), "utf8").catch(() => "");
+  const hasScheduledGithub = workflow.includes("cron:");
+  const hasRenderResultsCron = renderYaml.includes("type: cron") && renderYaml.includes("lotterynet-scraper-cron");
+  check(hasScheduledGithub || hasRenderResultsCron, "hay cron programado para resultados sin depender de requests de usuarios", {
+    workflowPath,
+    renderCron: hasRenderResultsCron,
+    githubCron: hasScheduledGithub,
+  });
   check(workflow.includes("Run scraper contract tests"), "GitHub job prueba scraper antes de guardar", { workflowPath });
   check(workflow.includes("Check Render results API health"), "GitHub job valida Render despues de guardar", { workflowPath });
   check(workflow.includes("SUPABASE_SERVICE_ROLE_KEY") || workflow.includes("SUPABASE_SERVICE_KEY"), "GitHub job prefiere service role para guardar resultados", { workflowPath });
@@ -92,20 +99,20 @@ async function checkRender() {
   }
 }
 
-async function checkSupabaseCache() {
-  const keyFilter = encodeURIComponent(`in.(lot_results_cache_by_day:${date},pick_results_cache_by_day:${date})`);
-  const url = `${SUPABASE_URL}/rest/v1/lotterynet_kv?key=${keyFilter}&select=key,upd`;
-  const result = await fetchJson("supabase results kv cache", url, {
+async function checkSupabaseResults() {
+  const url = `${SUPABASE_URL}/rest/v1/result_draws?result_day_key=eq.${encodeURIComponent(date)}&select=lottery_legacy_id,game,updated_at&limit=200`;
+  const result = await fetchJson("supabase result_draws", url, {
     headers: {
       apikey: API_KEY,
       Authorization: `Bearer ${API_KEY}`,
     },
   });
   const rows = Array.isArray(result.json) ? result.json : [];
-  check(result.ok, "Supabase cache responde por REST", { status: result.status, rows: rows.length, elapsedMs: result.elapsedMs });
-  check(rows.length > 0, "Supabase tiene cache de resultados para la fecha", {
+  check(result.ok, "Supabase result_draws responde por REST", { status: result.status, rows: rows.length, elapsedMs: result.elapsedMs });
+  check(rows.length > 0, "Supabase tiene resultados normalizados para la fecha", {
     date,
-    keys: rows.map((row) => row.key),
+    normal: rows.filter((row) => row.game === "normal").length,
+    picks: rows.filter((row) => row.game === "pick3" || row.game === "pick4").length,
   });
 }
 
@@ -113,9 +120,8 @@ async function findCachedDate() {
   if (process.env.RESULTS_MONITOR_DATE) return date;
   for (let offset = 0; offset < 7; offset += 1) {
     const candidate = toDrDate(new Date(Date.now() - offset * 24 * 60 * 60 * 1000));
-    const keyFilter = encodeURIComponent(`in.(lot_results_cache_by_day:${candidate},pick_results_cache_by_day:${candidate})`);
-    const url = `${SUPABASE_URL}/rest/v1/lotterynet_kv?key=${keyFilter}&select=key,upd`;
-    const result = await fetchJson(`supabase cache probe ${candidate}`, url, {
+    const url = `${SUPABASE_URL}/rest/v1/result_draws?result_day_key=eq.${encodeURIComponent(candidate)}&select=lottery_legacy_id&limit=1`;
+    const result = await fetchJson(`supabase result_draws probe ${candidate}`, url, {
       headers: {
         apikey: API_KEY,
         Authorization: `Bearer ${API_KEY}`,
@@ -124,14 +130,13 @@ async function findCachedDate() {
     const rows = Array.isArray(result.json) ? result.json : [];
     if (result.ok && rows.length > 0) {
       date = candidate;
-      check(true, "diagnostico usa fecha con cache disponible", {
+      check(true, "diagnostico usa fecha con resultado normalizado disponible", {
         date,
-        keys: rows.map((row) => row.key),
       });
       return date;
     }
   }
-  check(false, "no hay cache reciente de resultados en Supabase", { checkedDays: 7 });
+  check(false, "no hay result_draws reciente en Supabase", { checkedDays: 7 });
   return date;
 }
 
@@ -169,7 +174,7 @@ async function main() {
   await checkGithubWorkflow();
   await findCachedDate();
   await checkRender();
-  await checkSupabaseCache();
+  await checkSupabaseResults();
   await checkRpcNotPublic();
 }
 
