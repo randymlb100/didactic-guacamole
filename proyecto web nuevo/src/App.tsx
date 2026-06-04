@@ -1,8 +1,8 @@
 import React, { useState, Component } from 'react';
 import type { ErrorInfo, ReactNode } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
-import { Login } from './views/auth/Login';
-import { Dashboard } from './views/Dashboard';
+const Login = React.lazy(() => import('./views/auth/Login').then(m => ({ default: m.Login })));
+const Dashboard = React.lazy(() => import('./views/Dashboard').then(m => ({ default: m.Dashboard })));
 import { AppShell } from './components/AppShell';
 import { getSafeAdminTab } from './utils/navigationPermissions';
 import { clearAuthSession } from './utils/authSession';
@@ -92,7 +92,36 @@ const MainApp: React.FC = () => {
   }
 
   if (!isAuthenticated || !user) {
-    return <Login onSuccess={() => setActiveTab('dashboard')} />;
+    return (
+      <React.Suspense fallback={
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          minHeight: '100vh',
+          width: '100%',
+          backgroundColor: 'hsl(var(--background))',
+          color: 'hsl(var(--text-secondary))',
+          position: 'relative',
+          overflow: 'hidden'
+        }}>
+          <div className="atmospheric-glow-1" />
+          <div className="atmospheric-glow-2" />
+          <div className="glass-panel-premium" style={{ width: '420px', padding: '40px 36px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '24px' }}>
+            <div className="shimmer" style={{ width: '72px', height: '72px', borderRadius: '50%' }} />
+            <div className="shimmer" style={{ width: '180px', height: '24px' }} />
+            <div className="shimmer" style={{ width: '220px', height: '14px' }} />
+            <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '16px', marginTop: '12px' }}>
+              <div className="shimmer" style={{ width: '100%', height: '40px' }} />
+              <div className="shimmer" style={{ width: '100%', height: '40px' }} />
+              <div className="shimmer" style={{ width: '100%', height: '48px', marginTop: '12px' }} />
+            </div>
+          </div>
+        </div>
+      }>
+        <Login onSuccess={() => setActiveTab('dashboard')} />
+      </React.Suspense>
+    );
   }
 
   // Set default tabs based on role if the current tab is invalid
@@ -104,7 +133,48 @@ const MainApp: React.FC = () => {
 
   return (
     <AppShell activeTab={safeTab} setActiveTab={setActiveTab}>
-      <Dashboard activeTab={safeTab} setActiveTab={setActiveTab} />
+      <React.Suspense fallback={
+        <div style={{
+          padding: '24px',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '24px',
+          width: '100%',
+          height: '100%',
+          overflow: 'hidden'
+        }}>
+          {/* Header Skeleton */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div className="shimmer" style={{ width: '240px', height: '32px' }} />
+            <div className="shimmer" style={{ width: '120px', height: '40px' }} />
+          </div>
+          
+          {/* Bento Grid Metrics Skeleton */}
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+            gap: '24px'
+          }}>
+            <div className="glass-panel-premium shimmer" style={{ height: '120px' }} />
+            <div className="glass-panel-premium shimmer" style={{ height: '120px' }} />
+            <div className="glass-panel-premium shimmer" style={{ height: '120px' }} />
+            <div className="glass-panel-premium shimmer" style={{ height: '120px' }} />
+          </div>
+
+          {/* Body Skeleton */}
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: '2fr 1fr',
+            gap: '24px',
+            marginTop: '12px'
+          }}>
+            <div className="glass-panel-premium shimmer" style={{ height: '400px' }} />
+            <div className="glass-panel-premium shimmer" style={{ height: '400px' }} />
+          </div>
+        </div>
+      }>
+        <Dashboard activeTab={safeTab} setActiveTab={setActiveTab} />
+      </React.Suspense>
     </AppShell>
   );
 };
