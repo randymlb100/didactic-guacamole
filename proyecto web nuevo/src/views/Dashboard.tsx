@@ -34,13 +34,314 @@ import type { UserAccount, TicketRecord, LotteryCatalogItem, AuditLog, DrawResul
 import { 
   Users, Layers, TrendingUp, DollarSign, Activity, 
   Plus, Search, RefreshCw, CheckCircle, AlertTriangle, 
-  ArrowRightLeft, FileSpreadsheet, Lock, Unlock, Trash2, Key, Info, Settings, Edit2, Trophy
+  ArrowRightLeft, FileSpreadsheet, Lock, Unlock, Trash2, Key, Info, Settings, Edit2, Trophy, X
 } from 'lucide-react';
 
 interface DashboardProps {
   activeTab: string;
   setActiveTab?: (tab: string) => void;
 }
+
+function getTrendChartData(tickets: TicketRecord[], sportsTickets: SportsTicketRecord[]): { label: string; dateStr: string; amount: number }[] {
+  const data: { label: string; dateStr: string; amount: number }[] = [];
+  const daysOfWeek = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+  
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date();
+    d.setDate(d.getDate() - i);
+    const dayLabel = daysOfWeek[d.getDay()];
+    const dateStr = new Intl.DateTimeFormat('fr-CA', { timeZone: 'America/Santo_Domingo' }).format(d);
+    
+    const ticketSum = tickets
+      .filter(t => t.status !== 'cancelled' && t.status !== 'voided' && t.drawDateKey === dateStr)
+      .reduce((acc, t) => acc + t.total, 0);
+      
+    const sportsSum = sportsTickets
+      .filter(t => t.status !== 'void' && (t.soldAt && t.soldAt.startsWith(dateStr)))
+      .reduce((acc, t) => acc + t.stake, 0);
+      
+    data.push({
+      label: dayLabel,
+      dateStr,
+      amount: ticketSum + sportsSum
+    });
+  }
+  return data;
+}
+
+const FinancialTrendChart: React.FC<{ tickets: TicketRecord[], sportsTickets: SportsTicketRecord[] }> = ({ tickets, sportsTickets }) => {
+  const data = getTrendChartData(tickets, sportsTickets);
+  const maxVal = Math.max(...data.map(d => d.amount), 100) * 1.15;
+  
+  const width = 500;
+  const height = 140;
+  const paddingX = 40;
+  const paddingY = 20;
+  
+  const chartWidth = width - paddingX * 2;
+  const chartHeight = height - paddingY * 2;
+  
+  const points = data.map((d, index) => {
+    const x = paddingX + (index / (data.length - 1)) * chartWidth;
+    const y = height - paddingY - (d.amount / maxVal) * chartHeight;
+    return { x, y, amount: d.amount, label: d.label, dateStr: d.dateStr };
+  });
+  
+  let pathD = '';
+  let areaD = '';
+  
+  if (points.length > 0) {
+    pathD = `M ${points[0].x} ${points[0].y}`;
+    areaD = `M ${points[0].x} ${height - paddingY}`;
+    
+    points.forEach((p, index) => {
+      if (index > 0) {
+        pathD += ` L ${p.x} ${p.y}`;
+      }
+      areaD += ` L ${p.x} ${p.y}`;
+    });
+    
+    areaD += ` L ${points[points.length - 1].x} ${height - paddingY} Z`;
+  }
+  
+  const [hoveredPoint, setHoveredPoint] = useState<{ x: number; y: number; amount: number; label: string; dateStr: string } | null>(null);
+  
+  return (
+    <div style={{ position: 'relative', width: '100%', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+      <svg viewBox={`0 0 ${width} ${height}`} width="100%" height={height} style={{ overflow: 'visible' }}>
+        <defs>
+          <linearGradient id="chartGradient" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity="0.4" />
+            <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity="0" />
+          </linearGradient>
+          <linearGradient id="lineGradient" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0%" stopColor="hsl(var(--primary))" />
+            <stop offset="50%" stopColor="hsl(var(--success))" />
+            <stop offset="100%" stopColor="hsl(var(--primary))" />
+          </linearGradient>
+        </defs>
+        
+        {/* Grid lines */}
+        {[0.25, 0.5, 0.75, 1].map((ratio, index) => {
+          const y = height - paddingY - ratio * chartHeight;
+          const val = Math.round(ratio * maxVal);
+          return (
+            <g key={index}>
+              <line x1={paddingX} y1={y} x2={width - paddingX} y2={y} stroke="hsl(var(--border))" strokeDasharray="3,3" strokeOpacity="0.4" />
+              <text x={paddingX - 8} y={y + 3} fill="hsl(var(--text-muted))" fontSize="8px" textAnchor="end">${val}</text>
+            </g>
+          );
+        })}
+        
+        {areaD && <path d={areaD} fill="url(#chartGradient)" />}
+        {pathD && (
+          <path 
+            d={pathD} 
+            fill="none" 
+            stroke="url(#lineGradient)" 
+            strokeWidth="2.5" 
+            strokeLinecap="round" 
+            strokeLinejoin="round" 
+          />
+        )}
+        
+        {points.map((p, index) => (
+          <g key={index}>
+            {hoveredPoint?.label === p.label && (
+              <line x1={p.x} y1={paddingY} x2={p.x} y2={height - paddingY} stroke="hsl(var(--primary))" strokeDasharray="2,2" strokeOpacity="0.4" />
+            )}
+            
+            <circle 
+              cx={p.x} 
+              cy={p.y} 
+              r={hoveredPoint?.label === p.label ? "5.5" : "3.5"} 
+              fill="hsl(var(--surface))" 
+              stroke="hsl(var(--primary))" 
+              strokeWidth="2" 
+              style={{ transition: 'r 0.1s ease', cursor: 'pointer' }}
+              onMouseEnter={() => setHoveredPoint(p)}
+              onMouseLeave={() => setHoveredPoint(null)}
+            />
+            
+            <text x={p.x} y={height - 2} fill="hsl(var(--text-secondary))" fontSize="9px" textAnchor="middle" fontWeight="600">
+              {p.label}
+            </text>
+          </g>
+        ))}
+      </svg>
+      
+      {hoveredPoint && (
+        <div className="glass-panel-premium" style={{
+          position: 'absolute',
+          top: hoveredPoint.y - 45 > 0 ? hoveredPoint.y - 45 : 5,
+          left: hoveredPoint.x - 50,
+          width: '100px',
+          padding: '4px 6px',
+          textAlign: 'center',
+          pointerEvents: 'none',
+          zIndex: 10,
+          boxShadow: 'var(--shadow-md)',
+          fontSize: '0.8rem'
+        }}>
+          <span style={{ fontSize: '0.6rem', color: 'hsl(var(--text-secondary))', display: 'block' }}>{hoveredPoint.label} ({hoveredPoint.dateStr.substring(8, 10)})</span>
+          <strong style={{ fontSize: '0.75rem', color: 'hsl(var(--text-primary))', display: 'block', marginTop: '1px' }}>
+            ${hoveredPoint.amount.toLocaleString('en-US', { maximumFractionDigits: 0 })}
+          </strong>
+        </div>
+      )}
+    </div>
+  );
+};
+
+function getRechargeTrendChartData(audits: AuditLog[]): { label: string; dateStr: string; amount: number }[] {
+  const data: { label: string; dateStr: string; amount: number }[] = [];
+  const daysOfWeek = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+  
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date();
+    d.setDate(d.getDate() - i);
+    const dayLabel = daysOfWeek[d.getDay()];
+    const dateStr = new Intl.DateTimeFormat('fr-CA', { timeZone: 'America/Santo_Domingo' }).format(d);
+    
+    const rechargesSum = audits
+      .filter(a => a.action === 'PROCESS_RECHARGE' && new Intl.DateTimeFormat('fr-CA', { timeZone: 'America/Santo_Domingo' }).format(new Date(a.timestampMs)) === dateStr)
+      .reduce((acc, a) => {
+        const amountPart = a.details.split(' ')[1] || '0';
+        const amt = parseFloat(amountPart) || 0;
+        return acc + amt;
+      }, 0);
+      
+    data.push({
+      label: dayLabel,
+      dateStr,
+      amount: rechargesSum
+    });
+  }
+  return data;
+}
+
+const RechargeTrendChart: React.FC<{ audits: AuditLog[] }> = ({ audits }) => {
+  const data = getRechargeTrendChartData(audits);
+  const maxVal = Math.max(...data.map(d => d.amount), 100) * 1.15;
+  
+  const width = 500;
+  const height = 140;
+  const paddingX = 40;
+  const paddingY = 20;
+  
+  const chartWidth = width - paddingX * 2;
+  const chartHeight = height - paddingY * 2;
+  
+  const points = data.map((d, index) => {
+    const x = paddingX + (index / (data.length - 1)) * chartWidth;
+    const y = height - paddingY - (d.amount / maxVal) * chartHeight;
+    return { x, y, amount: d.amount, label: d.label, dateStr: d.dateStr };
+  });
+  
+  let pathD = '';
+  let areaD = '';
+  
+  if (points.length > 0) {
+    pathD = `M ${points[0].x} ${points[0].y}`;
+    areaD = `M ${points[0].x} ${height - paddingY}`;
+    
+    points.forEach((p, index) => {
+      if (index > 0) {
+        pathD += ` L ${p.x} ${p.y}`;
+      }
+      areaD += ` L ${p.x} ${p.y}`;
+    });
+    
+    areaD += ` L ${points[points.length - 1].x} ${height - paddingY} Z`;
+  }
+  
+  const [hoveredPoint, setHoveredPoint] = useState<{ x: number; y: number; amount: number; label: string; dateStr: string } | null>(null);
+  
+  return (
+    <div style={{ position: 'relative', width: '100%', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+      <svg viewBox={`0 0 ${width} ${height}`} width="100%" height={height} style={{ overflow: 'visible' }}>
+        <defs>
+          <linearGradient id="rechargeChartGradient" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="hsl(var(--success))" stopOpacity="0.4" />
+            <stop offset="100%" stopColor="hsl(var(--success))" stopOpacity="0" />
+          </linearGradient>
+          <linearGradient id="rechargeLineGradient" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0%" stopColor="hsl(var(--success))" />
+            <stop offset="50%" stopColor="hsl(var(--primary))" />
+            <stop offset="100%" stopColor="hsl(var(--success))" />
+          </linearGradient>
+        </defs>
+        
+        {[0.25, 0.5, 0.75, 1].map((ratio, index) => {
+          const y = height - paddingY - ratio * chartHeight;
+          const val = Math.round(ratio * maxVal);
+          return (
+            <g key={index}>
+              <line x1={paddingX} y1={y} x2={width - paddingX} y2={y} stroke="hsl(var(--border))" strokeDasharray="3,3" strokeOpacity="0.4" />
+              <text x={paddingX - 8} y={y + 3} fill="hsl(var(--text-muted))" fontSize="8px" textAnchor="end">${val}</text>
+            </g>
+          );
+        })}
+        
+        {areaD && <path d={areaD} fill="url(#rechargeChartGradient)" />}
+        {pathD && (
+          <path 
+            d={pathD} 
+            fill="none" 
+            stroke="url(#rechargeLineGradient)" 
+            strokeWidth="2.5" 
+            strokeLinecap="round" 
+            strokeLinejoin="round" 
+          />
+        )}
+        
+        {points.map((p, index) => (
+          <g key={index}>
+            {hoveredPoint?.label === p.label && (
+              <line x1={p.x} y1={paddingY} x2={p.x} y2={height - paddingY} stroke="hsl(var(--success))" strokeDasharray="2,2" strokeOpacity="0.4" />
+            )}
+            
+            <circle 
+              cx={p.x} 
+              cy={p.y} 
+              r={hoveredPoint?.label === p.label ? "5.5" : "3.5"} 
+              fill="hsl(var(--surface))" 
+              stroke="hsl(var(--success))" 
+              strokeWidth="2" 
+              style={{ transition: 'r 0.1s ease', cursor: 'pointer' }}
+              onMouseEnter={() => setHoveredPoint(p)}
+              onMouseLeave={() => setHoveredPoint(null)}
+            />
+            
+            <text x={p.x} y={height - 2} fill="hsl(var(--text-secondary))" fontSize="9px" textAnchor="middle" fontWeight="600">
+              {p.label}
+            </text>
+          </g>
+        ))}
+      </svg>
+      
+      {hoveredPoint && (
+        <div className="glass-panel-premium" style={{
+          position: 'absolute',
+          top: hoveredPoint.y - 45 > 0 ? hoveredPoint.y - 45 : 5,
+          left: hoveredPoint.x - 50,
+          width: '100px',
+          padding: '4px 6px',
+          textAlign: 'center',
+          pointerEvents: 'none',
+          zIndex: 10,
+          boxShadow: 'var(--shadow-md)',
+          fontSize: '0.8rem'
+        }}>
+          <span style={{ fontSize: '0.6rem', color: 'hsl(var(--text-secondary))', display: 'block' }}>{hoveredPoint.label} ({hoveredPoint.dateStr.substring(8, 10)})</span>
+          <strong style={{ fontSize: '0.75rem', color: 'hsl(var(--text-primary))', display: 'block', marginTop: '1px' }}>
+            ${hoveredPoint.amount.toLocaleString('en-US', { maximumFractionDigits: 0 })}
+          </strong>
+        </div>
+      )}
+    </div>
+  );
+};
 
 interface MonitorRow {
   displayNumber: string;
@@ -1947,6 +2248,21 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeTab }) => {
 
               </div>
 
+              {/* GRÁFICO FINANCIERO SEMANAL */}
+              {user.role !== 'MASTER' && (
+                <div className="glass-panel-premium" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                    <span style={{ fontSize: '1.1rem', fontWeight: 600, color: 'hsl(var(--text-primary))' }}>
+                      Tendencia Financiera Semanal
+                    </span>
+                    <span style={{ fontSize: '0.8rem', color: 'hsl(var(--text-muted))' }}>
+                      Ventas globales acumuladas de lotería y deportes de los últimos 7 días
+                    </span>
+                  </div>
+                  <FinancialTrendChart tickets={tickets} sportsTickets={sportsTickets} />
+                </div>
+              )}
+
               {/* TWO COLUMN SUMMARY CONTENT */}
               <div style={{ display: 'grid', gridTemplateColumns: user.role === 'MASTER' ? '1fr' : '2fr 1fr', gap: '24px' }} className="grid-responsive">
                 
@@ -2196,85 +2512,161 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeTab }) => {
                 </button>
               </div>
 
-              {/* LIST TABLE OF BANCAS */}
-              <div className="table-container">
-                <table className="table-el">
-                  <thead>
-                    <tr>
-                      <th>Banca / Nombre</th>
-                      <th>Administrador</th>
-                      <th>Prefijo Cajeros</th>
-                      <th>Teléfono</th>
-                      <th>Cupo Financiero</th>
-                      <th>Creado el</th>
-                      <th>Estado</th>
-                      <th>Acciones</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filteredUsers.filter(u => u.role === 'ADMIN').length === 0 ? (
-                      <tr>
-                        <td colSpan={8} style={{ textAlign: 'center', color: 'hsl(var(--text-secondary))', padding: '24px' }}>
-                          No se encontraron bancas registradas.
-                        </td>
-                      </tr>
-                    ) : (
-                      filteredUsers.filter(u => u.role === 'ADMIN').map((a) => (
-                        <tr key={a.id}>
-                          <td>
-                            <div style={{ display: 'flex', flexDirection: 'column' }}>
-                              <strong style={{ color: 'hsl(var(--text-primary))' }}>{a.banca}</strong>
-                              <span style={{ fontSize: '0.75rem', color: 'hsl(var(--text-secondary))' }}>
-                                ID: {a.id} | @{a.user}
-                              </span>
-                            </div>
-                          </td>
-                          <td style={{ fontWeight: 500 }}>{a.displayName}</td>
-                          <td>
-                            <span className="badge badge-primary">{a.cashierPrefix}</span>
-                          </td>
-                          <td>{a.phone || 'N/A'}</td>
-                          <td style={{ fontWeight: 600 }}>${a.rechargesBalance.toFixed(2)}</td>
-                          <td>{a.createdLabel}</td>
-                          <td>
-                            <span className={`badge ${a.active ? 'badge-success' : 'badge-danger'}`}>
-                              {a.active ? 'Activo' : 'Bloqueado'}
-                            </span>
-                          </td>
-                          <td>
-                            <div style={{ display: 'flex', gap: '8px' }}>
-                              <button 
-                                className="btn-icon" 
-                                style={{ color: a.active ? 'hsl(var(--danger))' : 'hsl(var(--success))', border: 'none' }}
-                                onClick={() => handleToggleAdmin(a.id)}
-                                title={a.active ? 'Bloquear Banca' : 'Desbloquear Banca'}
-                              >
-                                {a.active ? <Lock size={16} /> : <Key size={16} />}
-                              </button>
-                              
-                              <button 
-                                className="btn-icon" 
-                                onClick={() => handleRegenCreds(a)}
-                                title="Regenerar contraseña"
-                              >
-                                <RefreshCw size={16} />
-                              </button>
+              {/* FIGMA-STYLE BENTO GRID OF ADMIN/BANCA CARDS */}
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))',
+                gap: '20px',
+                marginTop: '10px'
+              }}>
+                {filteredUsers.filter(u => u.role === 'ADMIN').length === 0 ? (
+                  <div className="glass-panel-premium" style={{ gridColumn: '1 / -1', padding: '48px', textAlign: 'center', color: 'hsl(var(--text-secondary))' }}>
+                    No se encontraron bancas registradas.
+                  </div>
+                ) : (
+                  filteredUsers.filter(u => u.role === 'ADMIN').map((a) => (
+                    <div 
+                      key={a.id} 
+                      className="glass-panel-premium table-row-stagger" 
+                      style={{ 
+                        padding: '24px', 
+                        display: 'flex', 
+                        flexDirection: 'column', 
+                        gap: '16px',
+                        border: '1px solid ' + (a.active ? 'hsl(var(--border) / 0.6)' : 'hsl(var(--danger) / 0.3)'),
+                        boxShadow: a.active ? 'var(--shadow-md)' : '0 8px 32px 0 hsl(var(--danger) / 0.08)'
+                      }}
+                    >
+                      {/* Header Info */}
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                        <div>
+                          <span style={{ fontSize: '0.7rem', color: 'hsl(var(--text-muted))', fontWeight: 600, display: 'block', textTransform: 'uppercase' }}>ID: {a.id}</span>
+                          <strong style={{ fontSize: '1.15rem', display: 'block', color: 'hsl(var(--text-primary))', marginTop: '2px' }}>{a.banca}</strong>
+                          <span style={{ fontSize: '0.85rem', color: 'hsl(var(--text-secondary))', display: 'block', marginTop: '2px' }}>@{a.user}</span>
+                        </div>
+                        
+                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '6px' }}>
+                          <span className={`badge ${a.active ? 'badge-success badge-glow-success' : 'badge-danger badge-glow-danger'}`}>
+                            {a.active ? 'Activo' : 'Bloqueado'}
+                          </span>
+                          <span className="badge badge-primary" title="Prefijo Cajeros">{a.cashierPrefix}</span>
+                        </div>
+                      </div>
 
-                              <button 
-                                className="btn-icon" 
-                                style={{ color: 'hsl(var(--danger))' }}
-                                onClick={() => handleDeleteBanca(a.id)}
-                                title="Eliminar banca de raíz"
-                              >
-                                <Trash2 size={16} />
-                              </button>
+                      {/* Details & Barcode */}
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', margin: '4px 0' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column' }}>
+                          <span style={{ fontSize: '0.7rem', color: 'hsl(var(--text-muted))' }}>Administrador</span>
+                          <span style={{ fontSize: '0.875rem', fontWeight: 500, color: 'hsl(var(--text-primary))' }}>{a.displayName}</span>
+                        </div>
+                        {(() => {
+                          const code = a.id;
+                          const bars = [];
+                          for (let i = 0; i < code.length; i++) {
+                            const charCode = code.charCodeAt(i);
+                            const width = (charCode % 3) + 1;
+                            const margin = (charCode % 2) + 1;
+                            bars.push(
+                              <div 
+                                key={i} 
+                                style={{
+                                  width: `${width}px`,
+                                  marginRight: `${margin}px`,
+                                  height: '20px',
+                                  backgroundColor: 'hsl(var(--text-muted) / 0.5)'
+                                }} 
+                              />
+                            );
+                          }
+                          return (
+                            <div style={{ display: 'flex', alignItems: 'center', opacity: 0.6 }} title={`Código de Barras: ${code}`}>
+                              {bars}
+                              {bars}
                             </div>
-                          </td>
-                        </tr>
-                      ))
-                    )}
-                  </tbody>
-                </table>
+                          );
+                        })()}
+                      </div>
+
+                      {/* Financial info */}
+                      <div style={{ 
+                        display: 'grid', 
+                        gridTemplateColumns: '1fr 1fr', 
+                        gap: '12px', 
+                        backgroundColor: 'hsl(var(--background) / 0.6)', 
+                        padding: '12px', 
+                        borderRadius: 'var(--radius-md)', 
+                        border: '1px solid hsl(var(--border) / 0.5)' 
+                      }}>
+                        <div>
+                          <span style={{ fontSize: '0.7rem', color: 'hsl(var(--text-secondary))', display: 'block' }}>Cupo Financiero</span>
+                          <strong style={{ fontSize: '1.1rem', color: 'hsl(var(--text-primary))', display: 'block', marginTop: '2px' }}>
+                            ${a.rechargesBalance.toFixed(2)}
+                          </strong>
+                        </div>
+                        <div>
+                          <span style={{ fontSize: '0.7rem', color: 'hsl(var(--text-secondary))', display: 'block' }}>Teléfono</span>
+                          <strong style={{ fontSize: '0.9rem', color: 'hsl(var(--text-primary))', display: 'block', marginTop: '4px' }}>
+                            {a.phone || 'N/A'}
+                          </strong>
+                        </div>
+                      </div>
+
+                      {/* Footer Info */}
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.75rem', color: 'hsl(var(--text-muted))' }}>
+                        <span>Creado: {a.createdLabel}</span>
+                      </div>
+
+                      {/* Actions buttons */}
+                      <div style={{ 
+                        display: 'flex', 
+                        gap: '8px', 
+                        marginTop: 'auto', 
+                        paddingTop: '12px', 
+                        borderTop: '1px solid hsl(var(--border) / 0.5)' 
+                      }}>
+                        <button 
+                          className="btn btn-secondary" 
+                          style={{ 
+                            flex: 1.2, 
+                            fontSize: '0.8rem', 
+                            padding: '8px',
+                            color: a.active ? 'hsl(var(--danger))' : 'hsl(var(--success))',
+                            borderColor: a.active ? 'hsl(var(--danger) / 0.2)' : 'hsl(var(--success) / 0.2)',
+                            backgroundColor: a.active ? 'hsl(var(--danger) / 0.05)' : 'hsl(var(--success) / 0.05)',
+                          }}
+                          onClick={() => handleToggleAdmin(a.id)}
+                        >
+                          {a.active ? <Lock size={14} /> : <Unlock size={14} />}
+                          {a.active ? 'Bloquear' : 'Activar'}
+                        </button>
+
+                        <button 
+                          className="btn btn-secondary" 
+                          style={{ flex: 1, fontSize: '0.8rem', padding: '8px', gap: '4px' }}
+                          onClick={() => handleRegenCreds(a)}
+                          title="Regenerar credenciales de acceso"
+                        >
+                          <RefreshCw size={14} />
+                          Creds
+                        </button>
+
+                        <button 
+                          className="btn btn-secondary" 
+                          style={{ 
+                            padding: '8px', 
+                            color: 'hsl(var(--danger))', 
+                            borderColor: 'hsl(var(--danger) / 0.2)',
+                            backgroundColor: 'hsl(var(--danger) / 0.05)' 
+                          }}
+                          onClick={() => handleDeleteBanca(a.id)}
+                          title="Eliminar banca de raíz"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
+                    </div>
+                  ))
+                )}
               </div>
 
             </div>
@@ -2467,82 +2859,141 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeTab }) => {
                 </button>
               </div>
 
-              <div className="table-container">
-                <table className="table-el">
-                  <thead>
-                    <tr>
-                      <th>Nombre</th>
-                      <th>Usuario</th>
-                      <th>Teléfono</th>
-                      <th>Territorio</th>
-                      <th>Creado el</th>
-                      <th>Estado</th>
-                      <th>Acciones</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {users.filter(u => u.role === 'SUPERVISOR' && (user.role === 'MASTER' ? true : u.adminId === user.id)).length === 0 ? (
-                      <tr>
-                        <td colSpan={7} style={{ textAlign: 'center', color: 'hsl(var(--text-secondary))', padding: '24px' }}>
-                          No hay supervisores asociados a tu banca.
-                        </td>
-                      </tr>
-                    ) : (
-                      users.filter(u => u.role === 'SUPERVISOR' && (user.role === 'MASTER' ? true : u.adminId === user.id)).map((s) => (
-                        <tr key={s.id}>
-                          <td style={{ fontWeight: 600 }}>{s.displayName}</td>
-                          <td>@{s.user}</td>
-                          <td>{s.phone || 'N/A'}</td>
-                          <td>
-                            <span className="badge badge-primary">{s.territory}</span>
-                          </td>
-                          <td>{s.createdLabel}</td>
-                          <td>
-                            <span className={`badge ${s.active ? 'badge-success' : 'badge-danger'}`}>
+              {/* FIGMA-STYLE BENTO GRID OF SUPERVISOR CARDS */}
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))',
+                gap: '20px',
+                marginTop: '10px'
+              }}>
+                {users.filter(u => u.role === 'SUPERVISOR' && (user.role === 'MASTER' ? true : u.adminId === user.id)).length === 0 ? (
+                  <div className="glass-panel-premium" style={{ gridColumn: '1 / -1', padding: '48px', textAlign: 'center', color: 'hsl(var(--text-secondary))' }}>
+                    No hay supervisores asociados a tu banca.
+                  </div>
+                ) : (
+                  users.filter(u => u.role === 'SUPERVISOR' && (user.role === 'MASTER' ? true : u.adminId === user.id)).map((s) => {
+                    const assignedCashiersCount = users.filter(u => u.role === 'CASHIER' && u.supervisorIds?.includes(s.id)).length;
+                    return (
+                      <div 
+                        key={s.id} 
+                        className="glass-panel-premium table-row-stagger" 
+                        style={{ 
+                          padding: '24px', 
+                          display: 'flex', 
+                          flexDirection: 'column', 
+                          gap: '16px',
+                          border: '1px solid ' + (s.active ? 'hsl(var(--border) / 0.6)' : 'hsl(var(--danger) / 0.3)'),
+                          boxShadow: s.active ? 'var(--shadow-md)' : '0 8px 32px 0 hsl(var(--danger) / 0.08)'
+                        }}
+                      >
+                        {/* Header Info */}
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                          <div>
+                            <span style={{ fontSize: '0.7rem', color: 'hsl(var(--text-muted))', fontWeight: 600, display: 'block', textTransform: 'uppercase' }}>ID: {s.id}</span>
+                            <strong style={{ fontSize: '1.15rem', display: 'block', color: 'hsl(var(--text-primary))', marginTop: '2px' }}>{s.displayName}</strong>
+                            <span style={{ fontSize: '0.85rem', color: 'hsl(var(--text-secondary))', display: 'block', marginTop: '2px' }}>@{s.user}</span>
+                          </div>
+                          
+                          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '6px' }}>
+                            <span className={`badge ${s.active ? 'badge-success badge-glow-success' : 'badge-danger badge-glow-danger'}`}>
                               {s.active ? 'Activo' : 'Bloqueado'}
                             </span>
-                          </td>
-                          <td>
-                            <div style={{ display: 'flex', gap: '8px' }}>
-                              <button 
-                                className="btn-icon" 
-                                style={{ color: 'hsl(var(--primary))', border: 'none' }}
-                                onClick={() => handleOpenAssignModal(s)}
-                                title="Asignar Cajeros"
-                              >
-                                <Users size={16} />
-                              </button>
-                              <button 
-                                className="btn-icon" 
-                                style={{ color: 'hsl(var(--warning))', border: 'none' }}
-                                onClick={() => handleResetSupervisorPassword(s)}
-                                title="Restablecer Clave"
-                              >
-                                <Key size={16} />
-                              </button>
-                              <button 
-                                className="btn-icon" 
-                                style={{ color: s.active ? 'hsl(var(--danger))' : 'hsl(var(--success))', border: 'none' }}
-                                onClick={() => handleToggleSupervisor(s)}
-                                title={s.active ? 'Bloquear Supervisor' : 'Activar Supervisor'}
-                              >
-                                {s.active ? <Lock size={16} /> : <Key size={16} />}
-                              </button>
-                              <button 
-                                className="btn-icon" 
-                                style={{ color: 'hsl(var(--danger))', border: 'none' }}
-                                onClick={() => handleDeleteSupervisor(s)}
-                                title="Eliminar Supervisor"
-                              >
-                                <Trash2 size={16} />
-                              </button>
+                            <span className="badge badge-primary">{s.territory || 'N/A'}</span>
+                          </div>
+                        </div>
+
+                        {/* Contacts & Supervision Details */}
+                        <div style={{ 
+                          display: 'grid', 
+                          gridTemplateColumns: '1fr 1fr', 
+                          gap: '12px', 
+                          backgroundColor: 'hsl(var(--background) / 0.6)', 
+                          padding: '12px', 
+                          borderRadius: 'var(--radius-md)', 
+                          border: '1px solid hsl(var(--border) / 0.5)' 
+                        }}>
+                          <div>
+                            <span style={{ fontSize: '0.7rem', color: 'hsl(var(--text-secondary))', display: 'block' }}>Cajeros a Cargo</span>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '4px' }}>
+                              <Users size={16} style={{ color: 'hsl(var(--primary))' }} />
+                              <strong style={{ fontSize: '1.1rem', color: 'hsl(var(--text-primary))' }}>
+                                {assignedCashiersCount}
+                              </strong>
                             </div>
-                          </td>
-                        </tr>
-                      ))
-                    )}
-                  </tbody>
-                </table>
+                          </div>
+                          <div>
+                            <span style={{ fontSize: '0.7rem', color: 'hsl(var(--text-secondary))', display: 'block' }}>Teléfono</span>
+                            <strong style={{ fontSize: '0.9rem', color: 'hsl(var(--text-primary))', display: 'block', marginTop: '6px' }}>
+                              {s.phone || 'N/A'}
+                            </strong>
+                          </div>
+                        </div>
+
+                        {/* Footer Info */}
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.75rem', color: 'hsl(var(--text-muted))' }}>
+                          <span>Registrado: {s.createdLabel || 'N/A'}</span>
+                        </div>
+
+                        {/* Actions buttons */}
+                        <div style={{ 
+                          display: 'flex', 
+                          gap: '8px', 
+                          marginTop: 'auto', 
+                          paddingTop: '12px', 
+                          borderTop: '1px solid hsl(var(--border) / 0.5)' 
+                        }}>
+                          <button 
+                            className="btn btn-secondary" 
+                            style={{ flex: 1.2, fontSize: '0.8rem', padding: '8px', gap: '4px' }}
+                            onClick={() => handleOpenAssignModal(s)}
+                            title="Asignar y desasignar cajeros bajo la tutela del supervisor"
+                          >
+                            <Users size={14} />
+                            Asignar
+                          </button>
+
+                          <button 
+                            className="btn btn-secondary" 
+                            style={{ flex: 1, fontSize: '0.8rem', padding: '8px', gap: '4px' }}
+                            onClick={() => handleResetSupervisorPassword(s)}
+                            title="Restablecer contraseña de acceso"
+                          >
+                            <Key size={14} />
+                            Clave
+                          </button>
+
+                          <button 
+                            className="btn btn-secondary" 
+                            style={{ 
+                              padding: '8px', 
+                              color: s.active ? 'hsl(var(--danger))' : 'hsl(var(--success))',
+                              borderColor: s.active ? 'hsl(var(--danger) / 0.2)' : 'hsl(var(--success) / 0.2)',
+                              backgroundColor: s.active ? 'hsl(var(--danger) / 0.05)' : 'hsl(var(--success) / 0.05)' 
+                            }}
+                            onClick={() => handleToggleSupervisor(s)}
+                            title={s.active ? 'Bloquear Supervisor' : 'Activar Supervisor'}
+                          >
+                            {s.active ? <Lock size={14} /> : <Unlock size={14} />}
+                          </button>
+
+                          <button 
+                            className="btn btn-secondary" 
+                            style={{ 
+                              padding: '8px', 
+                              color: 'hsl(var(--danger))', 
+                              borderColor: 'hsl(var(--danger) / 0.2)',
+                              backgroundColor: 'hsl(var(--danger) / 0.05)' 
+                            }}
+                            onClick={() => handleDeleteSupervisor(s)}
+                            title="Eliminar Supervisor"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
               </div>
 
             </div>
@@ -3694,14 +4145,13 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeTab }) => {
                           return (
                             <div
                               key={res.id}
+                              className="glass-panel-premium table-row-stagger"
                               style={{
                                 padding: '20px',
-                                borderRadius: 'var(--radius-md)',
-                                backgroundColor: 'hsl(var(--background))',
-                                border: '1px solid hsl(var(--border))',
                                 display: 'flex',
                                 flexDirection: 'column',
-                                gap: '12px'
+                                gap: '12px',
+                                border: '1px solid hsl(var(--primary) / 0.2)'
                               }}
                             >
                               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -3742,7 +4192,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeTab }) => {
                                       fontWeight: 700,
                                       fontSize: '1rem',
                                       fontFamily: 'monospace',
-                                      boxShadow: 'var(--shadow-sm)'
+                                      boxShadow: idx === 0 ? '0 0 14px hsl(var(--primary) / 0.8), inset 0 2px 4px rgba(255,255,255,0.2)' : '0 0 8px hsl(var(--primary) / 0.25)'
                                     }}
                                   >
                                     {num}
@@ -3750,7 +4200,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeTab }) => {
                                 ))}
                               </div>
 
-                              <div style={{ textAlign: 'center', fontSize: '0.725rem', color: 'hsl(var(--text-secondary))', borderTop: '1px solid hsl(var(--border))', paddingTop: '8px' }}>
+                              <div style={{ textAlign: 'center', fontSize: '0.725rem', color: 'hsl(var(--text-secondary))', borderTop: '1px solid hsl(var(--border) / 0.5)', paddingTop: '8px' }}>
                                 Posiciones: 1ra · 2da · 3ra
                               </div>
                             </div>
@@ -3792,14 +4242,13 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeTab }) => {
                           return (
                             <div
                               key={res.id}
+                              className="glass-panel-premium table-row-stagger"
                               style={{
                                 padding: '20px',
-                                borderRadius: 'var(--radius-md)',
-                                backgroundColor: 'hsl(var(--background))',
-                                border: '1px solid hsl(var(--border))',
                                 display: 'flex',
                                 flexDirection: 'column',
-                                gap: '12px'
+                                gap: '12px',
+                                border: '1px solid hsl(var(--warning) / 0.2)'
                               }}
                             >
                               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -3840,7 +4289,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeTab }) => {
                                       fontWeight: 700,
                                       fontSize: '1rem',
                                       fontFamily: 'monospace',
-                                      boxShadow: 'var(--shadow-sm)'
+                                      boxShadow: '0 0 14px hsl(var(--warning) / 0.6), inset 0 2px 4px rgba(255,255,255,0.05)'
                                     }}
                                   >
                                     {num}
@@ -3848,7 +4297,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeTab }) => {
                                 ))}
                               </div>
 
-                              <div style={{ textAlign: 'center', fontSize: '0.725rem', color: 'hsl(var(--text-secondary))', borderTop: '1px solid hsl(var(--border))', paddingTop: '8px' }}>
+                              <div style={{ textAlign: 'center', fontSize: '0.725rem', color: 'hsl(var(--text-secondary))', borderTop: '1px solid hsl(var(--border) / 0.5)', paddingTop: '8px' }}>
                                 Números Ganadores Registrados
                               </div>
                             </div>
@@ -4885,34 +5334,34 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeTab }) => {
                         No tienes jugadas bloqueadas en esta banca.
                       </div>
                     ) : (
-                      <div style={{ maxHeight: '280px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '8px', paddingRight: '8px' }}>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', maxHeight: '280px', overflowY: 'auto', paddingRight: '8px' }}>
                         {blockedSalePlays.map((play, index) => {
                           const displayType = 
-                            play.playType === 'Q' ? 'Quiniela' :
+                            play.playType === 'Q' ? 'Quin' :
                             play.playType === 'P' ? 'Palé' :
-                            play.playType === 'SP' ? 'Super Palé' :
-                            play.playType === 'T' ? 'Tripleta' :
-                            play.playType === 'P3' ? 'Pick 3 Straight' :
-                            play.playType === 'P3BOX' ? 'Pick 3 Box' :
-                            play.playType === 'P4' ? 'Pick 4 Straight' : 'Pick 4 Box';
+                            play.playType === 'SP' ? 'S.Palé' :
+                            play.playType === 'T' ? 'Trip' :
+                            play.playType === 'P3' ? 'P3 Str' :
+                            play.playType === 'P3BOX' ? 'P3 Box' :
+                            play.playType === 'P4' ? 'P4 Str' : 'P4 Box';
                           
                           return (
-                            <div key={index} style={{
+                            <div key={index} className="glass-panel-premium table-row-stagger" style={{
                               display: 'flex',
                               alignItems: 'center',
-                              justifyContent: 'space-between',
-                              padding: '10px 14px',
-                              borderRadius: 'var(--radius-sm)',
-                              backgroundColor: 'hsl(var(--background))',
-                              border: '1px solid hsl(var(--border))',
-                              fontSize: '0.85rem'
+                              gap: '8px',
+                              padding: '6px 12px',
+                              borderRadius: '20px',
+                              border: '1px solid hsl(var(--danger) / 0.2)',
+                              fontSize: '0.8rem',
+                              backgroundColor: 'hsl(var(--danger) / 0.03)'
                             }}>
-                              <div>
-                                <span style={{ fontWeight: 600, color: 'hsl(var(--text-primary))', display: 'block' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                <span style={{ fontWeight: 700, color: 'hsl(var(--text-primary))', fontFamily: 'monospace' }}>
                                   {play.number}
                                 </span>
-                                <span style={{ fontSize: '0.725rem', color: 'hsl(var(--text-secondary))' }}>
-                                  Tipo: {displayType}
+                                <span style={{ fontSize: '0.65rem', color: 'hsl(var(--text-muted))', backgroundColor: 'hsl(var(--surface-hover))', padding: '2px 6px', borderRadius: '4px' }}>
+                                  {displayType}
                                 </span>
                               </div>
                               <button
@@ -4920,20 +5369,28 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeTab }) => {
                                 style={{
                                   border: 'none',
                                   background: 'transparent',
-                                  color: 'hsl(var(--danger))',
+                                  color: 'hsl(var(--text-muted))',
                                   cursor: 'pointer',
-                                  padding: '4px',
-                                  borderRadius: '4px',
+                                  padding: '2px',
+                                  borderRadius: '50%',
                                   display: 'flex',
                                   alignItems: 'center',
                                   justifyContent: 'center',
-                                  transition: 'all 0.2s'
+                                  transition: 'all 0.2s',
+                                  width: '18px',
+                                  height: '18px'
                                 }}
                                 title="Eliminar Bloqueo"
-                                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'hsl(var(--danger) / 0.1)'}
-                                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                                onMouseEnter={(e) => {
+                                  e.currentTarget.style.color = 'hsl(var(--danger))';
+                                  e.currentTarget.style.backgroundColor = 'hsl(var(--danger) / 0.1)';
+                                }}
+                                onMouseLeave={(e) => {
+                                  e.currentTarget.style.color = 'hsl(var(--text-muted))';
+                                  e.currentTarget.style.backgroundColor = 'transparent';
+                                }}
                               >
-                                <Trash2 size={16} />
+                                <X size={12} />
                               </button>
                             </div>
                           );
@@ -5024,6 +5481,19 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeTab }) => {
                     ${(user?.rechargesBalance || 0).toLocaleString()}
                   </span>
                 </div>
+              </div>
+
+              {/* Gráfico de Tendencia de Recargas */}
+              <div className="glass-panel-premium" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                  <span style={{ fontSize: '1.1rem', fontWeight: 600, color: 'hsl(var(--text-primary))' }}>
+                    Flujo y Distribución de Recargas
+                  </span>
+                  <span style={{ fontSize: '0.8rem', color: 'hsl(var(--text-muted))' }}>
+                    Monto total de recargas distribuidas a cajeros en los últimos 7 días
+                  </span>
+                </div>
+                <RechargeTrendChart audits={audits} />
               </div>
 
               {/* Transactions grid list */}
