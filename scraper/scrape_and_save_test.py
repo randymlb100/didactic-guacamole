@@ -414,14 +414,81 @@ class ScraperContractsTest(unittest.TestCase):
     def test_authoritative_nj_ids_cover_pick_and_new_jersey(self):
         self.assertEqual({"19", "20", "21", "22", "25", "26"}, scraper.AUTHORITATIVE_NJ_IDS)
 
-    def test_tracked_remote_ids_include_king_and_haiti_bolet(self):
+    def test_tracked_remote_ids_include_core_rd_king_and_haiti_bolet(self):
         self.assertEqual(
             {
+                "1", "2", "3", "4", "5", "6", "7", "8", "9", "10",
+                "11", "12", "13", "14", "15", "16", "17",
                 "18", "23", "24", "25", "26", "27", "28", "29", "30",
                 "31", "32", "33", "34", "35", "36", "37", "38", "39",
                 "40", "41", "42", "43", "44", "45", "46",
             },
             scraper.TRACKED_REMOTE_RESULT_IDS,
+        )
+
+    def test_parse_loterias_dominicanas_api_site_reads_core_midday_results(self):
+        payload = {
+            "siteCompanies": [
+                {
+                    "title": "La Primera",
+                    "siteGames": [
+                        {
+                            "title": "La Primera Día",
+                            "game": {
+                                "sessions": [
+                                    {
+                                        "date": "2026-06-12T04:00:00.000Z",
+                                        "score": [["64", "00", "68"]],
+                                    }
+                                ]
+                            },
+                        }
+                    ],
+                },
+                {
+                    "title": "La Suerte",
+                    "siteGames": [
+                        {
+                            "title": "La Suerte 12:30",
+                            "game": {
+                                "sessions": [
+                                    {
+                                        "date": "2026-06-12T04:00:00.000Z",
+                                        "score": [["29", "59", "49"]],
+                                    }
+                                ]
+                            },
+                        }
+                    ],
+                },
+                {
+                    "title": "LoteDom",
+                    "siteGames": [
+                        {
+                            "title": "Quiniela LoteDom",
+                            "game": {
+                                "sessions": [
+                                    {
+                                        "date": "2026-06-12T04:00:00.000Z",
+                                        "score": [["10", "99", "97"]],
+                                    }
+                                ]
+                            },
+                        }
+                    ],
+                },
+            ],
+        }
+
+        rows = scraper.parse_loterias_dominicanas_api_site(payload, "12-06-2026")
+
+        self.assertEqual(
+            [
+                {"id": "1", "name": "La Primera Día", "date": "12-06-2026", "number": "64-00-68"},
+                {"id": "3", "name": "La Suerte 12:30", "date": "12-06-2026", "number": "29-59-49"},
+                {"id": "7", "name": "Quiniela LoteDom", "date": "12-06-2026", "number": "10-99-97"},
+            ],
+            rows,
         )
 
     def test_miloteria_maps_new_jersey_pm(self):

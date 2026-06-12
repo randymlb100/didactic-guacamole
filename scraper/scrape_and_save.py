@@ -73,6 +73,8 @@ def supabase_write_headers(extra=None):
 SUPABASE_KEY = get_supabase_key_from_env()
 SUPABASE_SECRET_KEY = get_supabase_secret_key_from_env()
 TRACKED_REMOTE_RESULT_IDS = {
+    "1", "2", "3", "4", "5", "6", "7", "8", "9", "10",
+    "11", "12", "13", "14", "15", "16", "17",
     "18",  # New York Noche often completes after the first daily cache write.
     "23", "24",  # King Lottery
     "25", "26",  # New Jersey normal draws
@@ -2788,6 +2790,86 @@ def parse_loterias_dominicanas_blocks(blocks, date_str, wanted_ids=None):
     return results
 
 
+def loterias_dominicanas_api_date_iso(date_str):
+    try:
+        parsed = datetime.datetime.strptime(str(date_str), "%d-%m-%Y")
+    except ValueError:
+        return ""
+    dr_midnight = parsed.replace(tzinfo=ZoneInfo("America/Santo_Domingo"))
+    return dr_midnight.astimezone(datetime.timezone.utc).isoformat().replace("+00:00", "Z")
+
+
+def parse_loterias_dominicanas_api_site(payload, date_str, wanted_ids=None):
+    results = []
+    seen_ids = set()
+    wanted = {str(value) for value in (wanted_ids or [])}
+    expected_iso_prefix = ""
+    try:
+        expected_iso_prefix = datetime.datetime.strptime(str(date_str), "%d-%m-%Y").strftime("%Y-%m-%d")
+    except ValueError:
+        return results
+
+    for company in (payload or {}).get("siteCompanies") or []:
+        for site_game in company.get("siteGames") or []:
+            title = str(site_game.get("title") or "").strip().lower()
+            match = LOTTERY_MAP.get(title)
+            if not match or match["id"] in seen_ids:
+                continue
+            if wanted and match["id"] not in wanted:
+                continue
+
+            sessions = ((site_game.get("game") or {}).get("sessions") or [])
+            for session in sessions:
+                session_date = str(session.get("date") or "")
+                if not session_date.startswith(expected_iso_prefix):
+                    continue
+                numbers = []
+                for score_row in session.get("score") or []:
+                    for value in score_row or []:
+                        text = str(value or "").strip()
+                        if re.fullmatch(r"\d{1,2}", text):
+                            numbers.append(text.zfill(2))
+                    if len(numbers) >= 3:
+                        break
+                if len(numbers) < 3:
+                    continue
+
+                results.append({
+                    "id": match["id"],
+                    "name": match["name"],
+                    "date": date_str,
+                    "number": "-".join(numbers[:3]),
+                })
+                seen_ids.add(match["id"])
+                break
+    return results
+
+
+async def _async_fetch_loterias_dominicanas_api_results(date_str, wanted_ids=None, client=None):
+    api_date = loterias_dominicanas_api_date_iso(date_str)
+    if not api_date:
+        return []
+    c = client or get_http_client()
+    url = (
+        "https://api.loteriasdominicanas.com/dominicana/sites/env"
+        f"?date={urllib.parse.quote(api_date, safe='')}&limit=2"
+    )
+    try:
+        resp = await async_http_get(url, client=c, accept_json=True)
+    except Exception as e:
+        logger.warning("LoteriasDominicanas API error for %s: %s", date_str, e)
+        return []
+    try:
+        payload = resp.json()
+    except Exception as e:
+        logger.warning("LoteriasDominicanas API JSON parse error for %s: %s", date_str, e)
+        return []
+    rows = parse_loterias_dominicanas_api_site(payload, date_str, wanted_ids=wanted_ids)
+    for row in rows:
+        logger.info("LoteriasDominicanas API [%s] %s: %s", row["id"], row["name"], row["number"])
+    return rows
+
+
 async def _async_fetch_loterias_dominicanas_results(date_str, wanted_ids=None, client=None):
     c = client or get_http_client()
     base = "https://loteriasdominicanas.com"
@@ -2798,7 +2880,24 @@ async def _async_fetch_loterias_dominicanas_results(date_str, wanted_ids=None, c
     ]
     block_results = await asyncio.gather(*[_async_fetch_blocks(u, c) for u in urls])
     all_blocks = [b for blocks in block_results for b in blocks]
-    return parse_loterias_dominicanas_blocks(all_blocks, date_str, wanted_ids=wanted_ids)
+    results = parse_loterias_dominicanas_blocks(all_blocks, date_str, wanted_ids=wanted_ids)
+    seen_ids = {str(row.get("id")) for row in results}
+    api_wanted = None
+    if wanted_ids:
+        api_wanted = {str(value) for value in wanted_ids} - seen_ids
+        if not api_wanted:
+            return results
+    api_rows = await _async_fetch_loterias_dominicanas_api_results(
+        date_str,
+        wanted_ids=api_wanted,
+        client=c,
+    )
+    for row in api_rows:
+        if str(row.get("id")) not in seen_ids:
+            results.append(row)
+            seen_ids.add(str(row.get("id")))
+    return sorted(results, key=result_sort_key)
+
 
 
 async def _async_scrape_missing_rd_results(date_str, missing_ids, client=None):
