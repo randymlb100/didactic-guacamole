@@ -48,7 +48,7 @@ class NativeOperationalSyncCoordinator(
         lastRemoteUpdatedAt: String? = null,
         force: Boolean = false,
     ): NativeOperationalSyncState {
-        val ownerKeys = resolveOperationalOwnerKeys(session)
+        val ownerKeys = resolveOperationalHydrationOwnerKeys(session)
         if (ownerKeys.isEmpty()) {
             return NativeOperationalSyncState(
                 ok = false,
@@ -188,19 +188,17 @@ class NativeOperationalSyncCoordinator(
 }
 
 fun resolveOperationalOwnerKey(session: ActiveSession?): String {
-    return resolveOperationalOwnerKeys(session).firstOrNull().orEmpty()
+    return resolveCanonicalOwnerIdentity(session)?.canonicalOwnerKey.orEmpty()
+}
+
+internal fun resolveOperationalHydrationOwnerKeys(session: ActiveSession?): List<String> {
+    return resolveCanonicalOwnerIdentity(session)?.canonicalOwnerKey?.let(::listOf) ?: emptyList()
 }
 
 fun resolveOperationalOwnerKeys(session: ActiveSession?): List<String> {
-    if (session == null) return emptyList()
-    return listOf(
-        session.adminId,
-        session.userId,
-        session.adminUser,
-        session.username,
-    )
-        .mapNotNull { value -> value?.trim()?.takeIf { it.isNotBlank() } }
-        .distinctBy { it.lowercase() }
+    return resolveCanonicalOwnerIdentity(session)?.let { identity ->
+        listOf(identity.canonicalOwnerKey) + identity.aliases
+    } ?: emptyList()
 }
 
 fun shouldHydrateOperationalRemote(
