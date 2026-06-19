@@ -1,12 +1,15 @@
 package com.lotterynet.pro.core.sync
 
+import com.lotterynet.pro.core.model.ActiveSession
 import com.lotterynet.pro.core.model.PlayItem
 import com.lotterynet.pro.core.model.RechargeRecord
 import com.lotterynet.pro.core.model.TicketRecord
 import com.lotterynet.pro.core.model.UserRole
 import com.lotterynet.pro.core.model.WinningPlayDetail
 import com.lotterynet.pro.core.model.effectiveDrawDateKey
+import com.lotterynet.pro.core.model.isPaidStatus
 import com.lotterynet.pro.core.model.isPendingWinnerStatus
+import com.lotterynet.pro.core.storage.LocalSalesRepository
 import org.json.JSONArray
 import org.json.JSONObject
 import java.text.SimpleDateFormat
@@ -19,8 +22,82 @@ internal data class WebTicketRemotePayload(
     val deletedIds: Set<String>,
 )
 
+internal const val OPERATIONAL_DAY_TICKET_FETCH_LIMIT = 1000
+
+internal fun hydrateOperationalTicketDay(
+    session: ActiveSession,
+    dayKey: String,
+    remoteStore: NativeTicketRemoteStore,
+    salesRepository: LocalSalesRepository,
+): NativeOperationalSyncState {
+    val ownerKey = resolveOperationalOwnerKey(session)
+    if (ownerKey.isBlank() || dayKey.isBlank()) {
+        return NativeOperationalSyncState(
+            ok = false,
+            status = NativeOperationalSyncStatus.ERROR,
+            ownerKey = ownerKey,
+            message = "No hay administrador o fecha para cargar el desglose.",
+        )
+    }
+    return runCatching {
+        val snapshot = remoteStore.fetchSnapshot(
+            ownerKey = ownerKey,
+            fromDate = dayKey,
+            toDate = dayKey,
+            limit = OPERATIONAL_DAY_TICKET_FETCH_LIMIT,
+        )
+        val visibleTickets = reconcileMonotonicTickets(
+            existing = salesRepository.getAllTickets(),
+            remote = snapshot.tickets,
+            deletedIds = snapshot.deletedIds,
+            completeScope = false,
+        )
+        persistMonotonicTicketReconciliation(
+            salesRepository = salesRepository,
+            reconciled = visibleTickets,
+            deletedIds = snapshot.deletedIds,
+        )
+        NativeOperationalSyncState(
+            ok = true,
+            status = NativeOperationalSyncStatus.SYNCED,
+            ownerKey = ownerKey,
+            message = "Desglose actualizado desde el servidor.",
+            pulledCount = snapshot.tickets.size,
+            remoteUpdatedAt = runCatching { remoteStore.fetchUpdatedAt(ownerKey) }.getOrNull(),
+        )
+    }.getOrElse { error ->
+        NativeOperationalSyncState(
+            ok = false,
+            status = NativeOperationalSyncStatus.PENDING,
+            ownerKey = ownerKey,
+            message = error.message ?: "No se pudo actualizar el desglose.",
+        )
+    }
+}
+
 internal fun parseWebTicketsPayload(payloadJson: String?): List<TicketRecord> {
     return parseWebTicketRemotePayload(payloadJson).tickets
+}
+
+internal fun parseTicketDeltaPayload(payloadJson: String?, ownerKey: String? = null): List<TicketRecord> {
+    val raw = payloadJson?.trim()?.takeIf { it.isNotBlank() } ?: return emptyList()
+    val root = runCatching { JSONObject(raw) }.getOrNull() ?: return parseWebTicketsPayload(raw)
+    val ticketRows = root.optJSONArray("tickets") ?: return emptyList()
+    val itemRows = root.optJSONArray("items") ?: JSONArray()
+    val itemsByTicketId = mutableMapOf<String, JSONArray>()
+    for (index in 0 until itemRows.length()) {
+        val item = itemRows.optJSONObject(index) ?: continue
+        val ticketId = item.stringOrNull("ticket_id") ?: continue
+        val normalized = item.toDeltaPlayJson()
+        val target = itemsByTicketId.getOrPut(ticketId) { JSONArray() }
+        target.put(normalized)
+    }
+    val tickets = JSONArray()
+    for (index in 0 until ticketRows.length()) {
+        val row = ticketRows.optJSONObject(index) ?: continue
+        tickets.put(row.toDeltaTicketJson(itemsByTicketId[row.optString("id", "")] ?: JSONArray(), ownerKey))
+    }
+    return parseWebTicketArray(tickets)
 }
 
 internal fun parseWebTicketRemotePayload(payloadJson: String?): WebTicketRemotePayload {
@@ -219,6 +296,69 @@ internal fun mergeTicketsPreferImported(
     return byIdentity.values.sortedByDescending { it.createdAtEpochMs }
 }
 
+private fun JSONObject.toDeltaTicketJson(items: JSONArray, ownerKey: String? = null): JSONObject {
+    val createdAt = stringOrNull("server_created_at")
+        ?: stringOrNull("created_at")
+        ?: stringOrNull("updated_at")
+    val drawDate = stringOrNull("draw_date_real")
+        ?: stringOrNull("draw_date")
+    val status = stringOrNull("status")
+        ?: stringOrNull("estado")
+        ?: "active"
+    val adminKey = stringOrNull("admin_key").orEmpty()
+    val ownerAlias = ownerKey?.trim().orEmpty()
+    return JSONObject().apply {
+        put("id", stringOrNull("client_request_id") ?: stringOrNull("id").orEmpty())
+        put("serial", stringOrNull("ticket_code") ?: stringOrNull("id").orEmpty())
+        put("items", items)
+        put("total", numberValue("total_amount") ?: numberValue("monto") ?: 0.0)
+        put("tot", numberValue("total_amount") ?: numberValue("monto") ?: 0.0)
+        put("totalPrize", numberValue("payout_amount") ?: 0.0)
+        put("adminId", adminKey.ifBlank { ownerAlias })
+        put("adminUser", ownerAlias.ifBlank { adminKey })
+        put("cajeroId", stringOrNull("cashier_key").orEmpty())
+        put("vendedorId", stringOrNull("cashier_key").orEmpty())
+        put("vendedorRol", if (stringOrNull("cashier_key").isNullOrBlank()) "admin" else "cashier")
+        put("createdAtIso", createdAt.orEmpty())
+        put("drawDateKey", normalizeServerDayKey(drawDate))
+        put("drawDate", normalizeServerDayKey(drawDate))
+        put("status", status)
+        put("st", status)
+    }
+}
+
+private fun JSONObject.toDeltaPlayJson(): JSONObject {
+    return JSONObject().apply {
+        put("type", stringOrNull("play_type").orEmpty())
+        put("playType", stringOrNull("play_type").orEmpty())
+        put("nums", stringOrNull("play_numbers") ?: stringOrNull("normalized_number").orEmpty())
+        put("number", stringOrNull("play_numbers") ?: stringOrNull("normalized_number").orEmpty())
+        put("amt", numberValue("amount") ?: 0.0)
+        put("amount", numberValue("amount") ?: 0.0)
+        put("lotId", stringOrNull("lottery_legacy_id").orEmpty())
+        put("lotName", stringOrNull("lottery_name").orEmpty())
+        put("lotteryId", stringOrNull("lottery_legacy_id").orEmpty())
+        put("lotteryName", stringOrNull("lottery_name").orEmpty())
+        put("lotId2", stringOrNull("secondary_lottery_legacy_id"))
+        put("lotName2", stringOrNull("secondary_lottery_name"))
+        put("secondaryLotteryId", stringOrNull("secondary_lottery_legacy_id"))
+        put("secondaryLotteryName", stringOrNull("secondary_lottery_name"))
+        put("isWinner", optBoolean("is_winner", false))
+        put("payoutAmount", numberValue("payout_amount") ?: 0.0)
+        put("hitPosition", stringOrNull("hit_position").orEmpty())
+    }
+}
+
+private fun normalizeServerDayKey(raw: String?): String? {
+    val value = raw?.trim()?.takeIf { it.isNotBlank() } ?: return null
+    if (Regex("""\d{4}-\d{2}-\d{2}""").matches(value)) return value
+    if (Regex("""\d{2}-\d{2}-\d{4}""").matches(value)) {
+        val parts = value.split("-")
+        return "${parts[2]}-${parts[1]}-${parts[0]}"
+    }
+    return null
+}
+
 private fun TicketRecord.ticketMergeIdentityKey(): String? {
     return serial
         ?.trim()
@@ -302,7 +442,9 @@ internal fun filterDeletedTickets(
     deletedIds: Set<String>,
 ): List<TicketRecord> {
     if (deletedIds.isEmpty()) return tickets
-    return tickets.filterNot { ticket -> ticket.id in deletedIds }
+    return tickets.filterNot { ticket ->
+        ticket.id in deletedIds && !ticket.hasServerPrizeState()
+    }
 }
 
 internal fun filterServerVisibleTickets(
@@ -310,7 +452,7 @@ internal fun filterServerVisibleTickets(
     deletedIds: Set<String> = emptySet(),
 ): List<TicketRecord> {
     return tickets.filterNot { ticket ->
-        ticket.id in deletedIds || ticket.hasRemoteDeletedStatus()
+        (ticket.id in deletedIds && !ticket.hasServerPrizeState()) || ticket.hasRemoteDeletedStatus()
     }
 }
 
@@ -319,6 +461,13 @@ private fun TicketRecord.hasRemoteDeletedStatus(): Boolean {
         "deleted", "borrado", "removed" -> true
         else -> false
     }
+}
+
+private fun TicketRecord.hasServerPrizeState(): Boolean {
+    return totalPrize > 0.0 ||
+        winningDetails.isNotEmpty() ||
+        isPendingWinnerStatus() ||
+        isPaidStatus()
 }
 
 internal fun mergeRechargesPreferImported(
@@ -392,6 +541,10 @@ private fun String.isTerminalTicketStatus(): Boolean {
         "winner",
         "winning",
         "ganador",
+        "loser",
+        "lost",
+        "perdedor",
+        "perdido",
     )
 }
 
@@ -489,10 +642,18 @@ private fun JSONObject.resolveEpochMs(): Long {
         }
         ?.let { return it }
 
+    listOf("createdAtIso", "serverCreatedAt", "created_at", "server_created_at", "updated_at")
+        .firstNotNullOfOrNull { key -> stringOrNull(key)?.let(::parseIsoEpochMs) }
+        ?.let { return it }
+
     val dateValue = stringOrNull("date") ?: return System.currentTimeMillis()
     val timeValue = stringOrNull("time").orEmpty()
     val raw = listOf(dateValue, timeValue).filter { it.isNotBlank() }.joinToString(" ").trim()
     return parseDominicanDateTime(raw) ?: System.currentTimeMillis()
+}
+
+private fun parseIsoEpochMs(raw: String): Long? {
+    return runCatching { java.time.Instant.parse(raw).toEpochMilli() }.getOrNull()
 }
 
 private fun parseDominicanDateTime(raw: String): Long? {

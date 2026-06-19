@@ -6,6 +6,8 @@ import com.lotterynet.pro.core.storage.LocalSalesRepository
 import org.json.JSONArray
 import org.json.JSONObject
 
+private const val OWNER_SNAPSHOT_PUSH_LIMIT = 300
+
 data class NativeTicketCloudSyncResult(
     val ok: Boolean,
     val message: String,
@@ -29,12 +31,36 @@ class NativeTicketCloudSyncCoordinator(
             if (normalizedOwner.isBlank()) {
                 return NativeTicketCloudSyncResult(false, "No hay banca/admin para sincronizar tickets.")
             }
-            val pendingResult = flushOwner(normalizedOwner, banca)
+            val remoteSnapshot = remoteStore.fetchSnapshot(normalizedOwner)
+            val existingTickets = salesRepository.getAllTickets()
+                .filter { ticket -> matchesOwner(ticket, normalizedOwner) }
+            val visibleTickets = reconcileMonotonicTickets(
+                existing = existingTickets,
+                remote = remoteSnapshot.tickets,
+                deletedIds = remoteSnapshot.deletedIds,
+                completeScope = false,
+            )
+            if (remoteSnapshot.tickets.isEmpty() &&
+                remoteSnapshot.deletedIds.isEmpty() &&
+                existingTickets.isNotEmpty()
+            ) {
+                return NativeTicketCloudSyncResult(
+                    ok = true,
+                    message = "Servidor sin tickets nuevos; se mantiene cache local.",
+                    pushedCount = 0,
+                    pulledCount = 0,
+                )
+            }
+            persistMonotonicTicketReconciliation(
+                salesRepository = salesRepository,
+                reconciled = visibleTickets,
+                deletedIds = remoteSnapshot.deletedIds,
+            )
             NativeTicketCloudSyncResult(
-                ok = pendingResult.ok,
-                message = if (pendingResult.ok) "Tickets sincronizados con servidor." else pendingResult.message,
-                pushedCount = pendingResult.pushedCount,
-                pulledCount = pendingResult.pulledCount,
+                ok = true,
+                message = "Tickets cargados del servidor.",
+                pushedCount = 0,
+                pulledCount = visibleTickets.size,
             )
         }.getOrElse { error ->
             NativeTicketCloudSyncResult(false, error.message ?: "No se pudo cargar tickets del servidor.")
@@ -55,18 +81,37 @@ class NativeTicketCloudSyncCoordinator(
                 .filter { ref -> matchesDeletedOwner(ref, normalizedOwner) }
                 .map { ref -> ref.id }
                 .toSet()
+            val missingRemoteDeletedIds = deletedIdsMissingFromRemote(localDeletedIds, remoteSnapshot.deletedIds)
+            val shouldPushSnapshot = pendingTickets.isNotEmpty() || missingRemoteDeletedIds.isNotEmpty()
             val deletedIds = remoteSnapshot.deletedIds + localDeletedIds
-            val merged = reconcileAuthoritativeOwnerSnapshot(
+            val remoteAndPending = reconcileAuthoritativeOwnerSnapshot(
                 remoteTickets = remoteSnapshot.tickets,
                 pendingTickets = pendingTickets,
                 deletedIds = deletedIds,
             )
-            salesRepository.replaceScopedImportedTickets(normalizedOwner, merged)
-            remoteStore.upsertSnapshot(normalizedOwner, merged, deletedIds, banca)
+            val merged = reconcileMonotonicTickets(
+                existing = salesRepository.getAllTickets()
+                    .filter { ticket -> matchesOwner(ticket, normalizedOwner) },
+                remote = remoteAndPending,
+                deletedIds = deletedIds,
+                completeScope = false,
+            )
+            persistMonotonicTicketReconciliation(
+                salesRepository = salesRepository,
+                reconciled = merged,
+                deletedIds = deletedIds,
+            )
+            if (shouldPushSnapshot) {
+                remoteStore.upsertSnapshot(normalizedOwner, trimOwnerSnapshotForPush(merged), deletedIds, banca)
+            }
             queueRepository.removeByIds(pendingTickets.map { it.id } + deletedIds)
             NativeTicketCloudSyncResult(
                 ok = true,
-                message = "Tickets subidos y conciliados con servidor.",
+                message = if (shouldPushSnapshot) {
+                    "Tickets subidos y conciliados con servidor."
+                } else {
+                    "Tickets cargados del servidor."
+                },
                 pushedCount = pendingTickets.size,
                 pulledCount = remoteSnapshot.tickets.size,
             )
@@ -93,7 +138,7 @@ class NativeTicketCloudSyncCoordinator(
             val deletedIds = remoteSnapshot.deletedIds + globalDeletedIds + scopedDeletedIds
             val remoteTickets = filterServerVisibleTickets(localTickets, deletedIds)
             queueRepository.removeByIds(deletedIds)
-            remoteStore.upsertSnapshot(normalizedOwner, remoteTickets, deletedIds, banca)
+            remoteStore.upsertSnapshot(normalizedOwner, trimOwnerSnapshotForPush(remoteTickets), deletedIds, banca)
             NativeTicketCloudSyncResult(
                 ok = true,
                 message = "Tickets del servidor actualizados.",
@@ -123,6 +168,12 @@ class NativeTicketCloudSyncCoordinator(
 
 }
 
+private fun trimOwnerSnapshotForPush(tickets: List<TicketRecord>): List<TicketRecord> {
+    return tickets
+        .sortedByDescending { it.createdAtEpochMs }
+        .take(OWNER_SNAPSHOT_PUSH_LIMIT)
+}
+
 internal fun reconcileAuthoritativeOwnerSnapshot(
     remoteTickets: List<TicketRecord>,
     pendingTickets: List<TicketRecord>,
@@ -135,6 +186,16 @@ internal fun reconcileAuthoritativeOwnerSnapshot(
         ),
         deletedIds = deletedIds,
     )
+}
+
+internal fun deletedIdsMissingFromRemote(localDeletedIds: Set<String>, remoteDeletedIds: Set<String>): Set<String> {
+    val remote = remoteDeletedIds
+        .map { it.trim().lowercase() }
+        .filter { it.isNotBlank() }
+        .toSet()
+    return localDeletedIds
+        .filter { id -> id.trim().isNotBlank() && id.trim().lowercase() !in remote }
+        .toSet()
 }
 
 internal fun matchesNativeTicketSyncOwner(ticket: TicketRecord, ownerKey: String): Boolean {
