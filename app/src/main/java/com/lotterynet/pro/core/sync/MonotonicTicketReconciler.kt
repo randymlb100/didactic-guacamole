@@ -26,17 +26,31 @@ internal fun reconcileMonotonicTickets(
 internal fun persistMonotonicTicketReconciliation(
     salesRepository: LocalSalesRepository,
     reconciled: List<TicketRecord>,
+    remote: List<TicketRecord>,
     deletedIds: Set<String>,
 ) {
-    val normalizedDeletedIds = deletedIds
-        .mapNotNull(::normalizedTicketId)
-        .toSet()
+    val normalizedDeletedIds = authoritativeTicketTombstoneIds(
+        remote = remote,
+        deletedIds = deletedIds,
+    )
     if (normalizedDeletedIds.isNotEmpty()) {
         salesRepository.getAllTickets()
             .filter { ticket -> normalizedTicketId(ticket.id) in normalizedDeletedIds }
             .forEach(salesRepository::deleteTicket)
     }
     salesRepository.mergeImportedTickets(reconciled)
+}
+
+private fun authoritativeTicketTombstoneIds(
+    remote: List<TicketRecord>,
+    deletedIds: Set<String>,
+): Set<String> {
+    return buildSet {
+        deletedIds.mapNotNullTo(this, ::normalizedTicketId)
+        remote.asSequence()
+            .filter { ticket -> isExplicitRemoteTicketTombstone(ticket.status) }
+            .mapNotNullTo(this) { ticket -> normalizedTicketId(ticket.id) }
+    }
 }
 
 private fun normalizedTicketId(value: String?): String? {

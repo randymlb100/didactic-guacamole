@@ -35,6 +35,21 @@ class MonotonicTicketReconcilerTest {
     }
 
     @Test
+    fun `remote status tombstone removes older prize-bearing local ticket`() {
+        val localWinner = ticket(2).copy(totalPrize = 500.0)
+        val remoteTombstone = ticket(2).copy(status = "removed")
+
+        val result = reconcileMonotonicTickets(
+            existing = listOf(ticket(1), localWinner),
+            remote = listOf(remoteTombstone),
+            deletedIds = emptySet(),
+            completeScope = false,
+        )
+
+        assertEquals(listOf(ticket(1).id), result.map(TicketRecord::id))
+    }
+
+    @Test
     fun `complete scope may replace missing existing tickets`() {
         val existing = listOf(ticket(1), ticket(2))
         val remote = listOf(ticket(2))

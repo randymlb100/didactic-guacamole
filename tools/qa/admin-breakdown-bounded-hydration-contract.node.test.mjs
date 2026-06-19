@@ -60,3 +60,33 @@ test("partial remote hydration is monotonic and never replaces the local owner s
   assert.doesNotMatch(hydration, /replaceScopedImportedTickets/);
   assert.doesNotMatch(cloudSync, /replaceScopedImportedTickets/);
 });
+
+test("remote status tombstones are persisted as authoritative deletions", () => {
+  const reconciler = readFileSync(monotonicReconcilerPath, "utf8");
+
+  assert.match(
+    reconciler,
+    /authoritativeTicketTombstoneIds\(\s*remote\s*=\s*remote/,
+  );
+  assert.match(
+    reconciler,
+    /remote:\s*List<TicketRecord>/,
+  );
+  assert.match(
+    reconciler,
+    /salesRepository\.getAllTickets\(\)[\s\S]*forEach\(salesRepository::deleteTicket\)/,
+  );
+  assert.match(
+    reconciler,
+    /"deleted",\s*"borrado",\s*"removed"/,
+  );
+  assert.doesNotMatch(reconciler, /hasServerPrizeState/);
+  assert.match(
+    hydration,
+    /persistMonotonicTicketReconciliation\([\s\S]*remote = snapshot\.tickets/,
+  );
+  assert.match(
+    cloudSync,
+    /persistMonotonicTicketReconciliation\([\s\S]*remote = remoteAndPending/,
+  );
+});

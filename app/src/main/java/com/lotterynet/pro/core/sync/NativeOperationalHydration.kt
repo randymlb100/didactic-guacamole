@@ -7,7 +7,6 @@ import com.lotterynet.pro.core.model.TicketRecord
 import com.lotterynet.pro.core.model.UserRole
 import com.lotterynet.pro.core.model.WinningPlayDetail
 import com.lotterynet.pro.core.model.effectiveDrawDateKey
-import com.lotterynet.pro.core.model.isPaidStatus
 import com.lotterynet.pro.core.model.isPendingWinnerStatus
 import com.lotterynet.pro.core.storage.LocalSalesRepository
 import org.json.JSONArray
@@ -55,6 +54,7 @@ internal fun hydrateOperationalTicketDay(
         persistMonotonicTicketReconciliation(
             salesRepository = salesRepository,
             reconciled = visibleTickets,
+            remote = snapshot.tickets,
             deletedIds = snapshot.deletedIds,
         )
         NativeOperationalSyncState(
@@ -442,9 +442,7 @@ internal fun filterDeletedTickets(
     deletedIds: Set<String>,
 ): List<TicketRecord> {
     if (deletedIds.isEmpty()) return tickets
-    return tickets.filterNot { ticket ->
-        ticket.id in deletedIds && !ticket.hasServerPrizeState()
-    }
+    return tickets.filterNot { ticket -> ticket.id in deletedIds }
 }
 
 internal fun filterServerVisibleTickets(
@@ -452,7 +450,7 @@ internal fun filterServerVisibleTickets(
     deletedIds: Set<String> = emptySet(),
 ): List<TicketRecord> {
     return tickets.filterNot { ticket ->
-        (ticket.id in deletedIds && !ticket.hasServerPrizeState()) || ticket.hasRemoteDeletedStatus()
+        ticket.id in deletedIds || ticket.hasRemoteDeletedStatus()
     }
 }
 
@@ -461,13 +459,6 @@ private fun TicketRecord.hasRemoteDeletedStatus(): Boolean {
         "deleted", "borrado", "removed" -> true
         else -> false
     }
-}
-
-private fun TicketRecord.hasServerPrizeState(): Boolean {
-    return totalPrize > 0.0 ||
-        winningDetails.isNotEmpty() ||
-        isPendingWinnerStatus() ||
-        isPaidStatus()
 }
 
 internal fun mergeRechargesPreferImported(

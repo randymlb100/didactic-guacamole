@@ -54,6 +54,7 @@ class NativeTicketCloudSyncCoordinator(
             persistMonotonicTicketReconciliation(
                 salesRepository = salesRepository,
                 reconciled = visibleTickets,
+                remote = remoteSnapshot.tickets,
                 deletedIds = remoteSnapshot.deletedIds,
             )
             NativeTicketCloudSyncResult(
@@ -99,6 +100,7 @@ class NativeTicketCloudSyncCoordinator(
             persistMonotonicTicketReconciliation(
                 salesRepository = salesRepository,
                 reconciled = merged,
+                remote = remoteAndPending,
                 deletedIds = deletedIds,
             )
             if (shouldPushSnapshot) {
