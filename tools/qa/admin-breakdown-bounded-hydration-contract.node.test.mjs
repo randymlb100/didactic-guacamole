@@ -87,6 +87,6 @@ test("remote status tombstones are persisted as authoritative deletions", () => 
   );
   assert.match(
     cloudSync,
-    /persistMonotonicTicketReconciliation\([\s\S]*remote = remoteAndPending/,
+    /persistMonotonicTicketReconciliation\([\s\S]*remote = remoteSnapshot\.tickets/,
   );
 });

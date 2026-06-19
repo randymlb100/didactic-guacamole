@@ -99,6 +99,7 @@ import com.lotterynet.pro.core.render.ticketRenderCacheKey
 import com.lotterynet.pro.core.results.PrizeValidationEngine
 import com.lotterynet.pro.core.results.PrizeValidationOutcome
 import com.lotterynet.pro.core.results.TicketPrizeReconciler
+import com.lotterynet.pro.core.remote.SupabaseEdgeException
 import com.lotterynet.pro.core.sales.BackendTicketActionRequest
 import com.lotterynet.pro.core.sales.SupabaseTicketBackendClient
 import com.lotterynet.pro.core.sync.NativeOperationalSyncCoordinator
@@ -160,11 +161,6 @@ class TicketOfficialActivity : AppCompatActivity() {
         val mode = TicketOfficialMode.from(intent?.getStringExtra(EXTRA_ACTION_MODE))
         val snapshotTicket = decodeTicketRecordSnapshot(intent?.getStringExtra(EXTRA_TICKET_SNAPSHOT_JSON))
         val repo = LocalSalesRepository(this)
-        val ticketCloudSync = NativeTicketCloudSyncCoordinator(
-            salesRepository = repo,
-            queueRepository = NativeTicketSyncQueueRepository(this),
-        )
-        val operationalSync = NativeOperationalSyncCoordinator(ticketGateway = ticketCloudSync)
         val resultsRepository = LocalResultsRepository(this)
         val prizeRepository = LocalPrizeConfigRepository(this)
         val cashierPrizePayoutRepository = LocalCashierPrizePayoutRepository(this)
@@ -186,6 +182,20 @@ class TicketOfficialActivity : AppCompatActivity() {
             return
         }
         val activeSession = session ?: return
+        val sessionTokenProvider = SupabaseSessionTokenProvider(LocalSessionRepository(this))
+        val ticketRemoteStore = NativeTicketRemoteStore(
+            bearerTokenProvider = { sessionTokenProvider.freshAccessToken() },
+            bearerTokenRefresher = { sessionTokenProvider.forceFreshAccessToken() },
+        )
+        val ticketCloudSync = NativeTicketCloudSyncCoordinator(
+            salesRepository = repo,
+            queueRepository = NativeTicketSyncQueueRepository(this),
+            remoteStore = ticketRemoteStore,
+        )
+        val operationalSync = NativeOperationalSyncCoordinator(
+            ticketGateway = ticketCloudSync,
+            remoteStampStore = ticketRemoteStore,
+        )
         val usersRepository = LocalUsersRepository(this)
         usersRepository.touchSession(activeSession)
         val cashiers = usersRepository.getCashiers()
@@ -214,16 +224,17 @@ class TicketOfficialActivity : AppCompatActivity() {
                 allowAdminAfterCloseGrace = activeSession.role == UserRole.ADMIN,
                 nowUtcMs = trustedClockRepository.getTrustedUtcMs(),
             )
+            val decisionReason = decision.reason.orEmpty()
             DuplicateLotteryOption(
                 id = lottery.id,
                 name = lottery.name,
                 logoAssetPath = lottery.logoAssetPath,
                 drawTimeLabel = decision.drawTime ?: lottery.baseDrawTime,
                 isClosed = decision.isClosed,
-                statusLabel = decision.reason,
+                statusLabel = decisionReason,
                 adminGrace = activeSession.role == UserRole.ADMIN &&
                     !decision.isClosed &&
-                    decision.reason.contains("Admin extra", ignoreCase = true),
+                    decisionReason.contains("Admin extra", ignoreCase = true),
             )
         }
         val duplicateLotteriesById = duplicateModeLotteries.associateBy { it.id }
@@ -447,10 +458,18 @@ class TicketOfficialActivity : AppCompatActivity() {
                                 }.onFailure { error ->
                                     NativeCrashReporter(this).recordHandled("TicketOfficial.payTicketBackend", error)
                                     runOnUiThread {
-                                        val message = if (hasConfirmedPrizeAmount) {
-                                            "Pago guardado localmente. Servidor pendiente de sincronizar."
-                                        } else {
-                                            "No se marco pagado: el servidor no confirmo el premio."
+                                        val serverMessage = (error as? SupabaseEdgeException)?.userMessage
+                                            ?: error.message.orEmpty()
+                                        val message = serverMessage.takeIf { it.isNotBlank() }
+                                            ?: if (hasConfirmedPrizeAmount) {
+                                                "Pago guardado localmente. Servidor pendiente de sincronizar."
+                                            } else {
+                                                "No se marco pagado: el servidor no confirmo el premio."
+                                            }
+                                        if (error is SupabaseEdgeException) {
+                                            repo.replaceTicket(payableRecord)
+                                            operationalSync.flushTicket(payableRecord, bancaName)
+                                            ticketState = payableRecord
                                         }
                                         Toast.makeText(this, message, Toast.LENGTH_LONG).show()
                                     }
@@ -643,10 +662,20 @@ class TicketOfficialActivity : AppCompatActivity() {
                 } else {
                     listOf(resolveOperationalOwnerKey(activeSession))
                 }
-                val remoteStore = NativeTicketRemoteStore()
+                val ticketDay = catchUpTicket?.drawDateKey
+                    ?.takeIf { it.matches(Regex("""\d{4}-\d{2}-\d{2}""")) }
+                    ?: catchUpTicket?.createdAtEpochMs?.let(::buildDayKey)
+                    ?: buildDayKey(System.currentTimeMillis())
                 val remoteRefreshedTicket = ownerKeys.asSequence()
                     .mapNotNull { ownerKey ->
-                        ownerKey.takeIf { it.isNotBlank() }?.let { remoteStore.fetchSnapshot(it).tickets }
+                        ownerKey.takeIf { it.isNotBlank() }?.let {
+                            ticketRemoteStore.fetchSnapshot(
+                                ownerKey = it,
+                                fromDate = ticketDay,
+                                toDate = ticketDay,
+                                limit = 1000,
+                            ).tickets
+                        }
                     }
                     .mapNotNull { tickets -> findOfficialTicketCandidate(tickets, ticketId, snapshotTicket) }
                     .firstOrNull()
@@ -1119,12 +1148,16 @@ internal fun shouldRenderOfficialTicketBitmapDirectlyInComposition(): Boolean = 
 internal fun shouldShowOfficialTicketVisualPreview(): Boolean = false
 
 internal fun officialTicketSnapshotPlayTypeLabel(playType: String): String {
-    return when (playType.uppercase(Locale.US)) {
-        "P3" -> "P3STRAIGHT"
-        "P4" -> "P4STRAIGHT"
-        "P3BOX" -> "P3BOX"
-        "P4BOX" -> "P4BOX"
-        else -> playType.ifBlank { "-" }
+    return when (playType.uppercase(Locale.US).replace(" ", "_").replace("-", "_")) {
+        "Q", "QUINIELA" -> "Q"
+        "P", "PALE" -> "P"
+        "T", "TRIPLETA" -> "T"
+        "SP", "SUPER_PALE", "SUPERPALE" -> "SP"
+        "P3", "P3S", "PICK3", "PICK_3", "PICK3_STRAIGHT", "PICK_3_STRAIGHT" -> "P3"
+        "P4", "P4S", "PICK4", "PICK_4", "PICK4_STRAIGHT", "PICK_4_STRAIGHT" -> "P4"
+        "P3BOX", "P3_BOX", "PICK3_BOX", "PICK_3_BOX" -> "P3BOX"
+        "P4BOX", "P4_BOX", "PICK4_BOX", "PICK_4_BOX" -> "P4BOX"
+        else -> playType.uppercase(Locale.US).ifBlank { "-" }
     }
 }
 
@@ -1428,6 +1461,7 @@ private fun TicketOfficialRouteCompact(
                                 bancaName = bancaName,
                                 securityCode = security,
                                 bancaLogoUri = bancaLogoUri,
+                                forceCompactLayout = true,
                             ),
                         )
                     } else {
@@ -1462,7 +1496,7 @@ private fun TicketOfficialRouteCompact(
                 TicketSecurity.resolveSecurityCode(record, bancaName),
             )
             val renderKey = ticketRenderCacheKey(record, bancaName = bancaName, logoUri = bancaLogoUri).let {
-                if (TicketDeliveryPolicy.shouldRenderPreviewBitmap(record, estimatedHeight)) it else "$it|compact-thermal-share"
+                if (TicketDeliveryPolicy.shouldRenderPreviewBitmap(record, estimatedHeight)) "$it|official-compact-share" else "$it|compact-thermal-share"
             }
             val uris = withContext(Dispatchers.IO) {
                 renderCache.saveBitmaps(renderKey, bitmaps)
@@ -2174,7 +2208,7 @@ private fun SnapshotPlayGroupBlock(group: OfficialTicketLotteryGroup) {
                 )
             }
             Text(
-                text = "${group.playCount} jugadas · Monto lotería",
+                text = "${group.playCount} jugadas · subtotal",
                 style = MaterialTheme.typography.bodySmall,
                 color = visual.colors.muted,
                 maxLines = 1,
