@@ -1,0 +1,660 @@
+import React, { useState, useEffect } from 'react';
+import { useAuth } from '../context/AuthContext';
+import { playClickSound } from '../utils/audio';
+import {
+  LayoutDashboard, 
+  Users, 
+  Sliders, 
+  History, 
+  LogOut, 
+  Menu, 
+  X, 
+  Sun, 
+  Moon, 
+  User, 
+  Bell, 
+  Settings,
+  Layers,
+  Activity,
+  DollarSign,
+  Trophy
+} from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
+
+interface NavSubItem {
+  id: string;
+  label: string;
+}
+
+interface NavItem {
+  id: string;
+  label: string;
+  icon: LucideIcon;
+  roles?: string[];
+  defaultTab?: string;
+  subItems?: NavSubItem[];
+}
+
+interface AppShellProps {
+  children: React.ReactNode;
+  activeTab: string;
+  setActiveTab: (tab: string) => void;
+}
+
+type SectionTone = 'operations' | 'users' | 'sales' | 'finance' | 'monitoring' | 'config' | 'results';
+
+const getSectionTone = (tabId: string): SectionTone => {
+  if (['gestion_red', 'cajeros', 'supervisores', 'admins'].includes(tabId)) return 'users';
+  if (['control_ventas', 'deportiva', 'tickets', 'ganadores'].includes(tabId)) return 'sales';
+  if (['finanzas_grupo', 'finanzas', 'cuadre'].includes(tabId)) return 'finance';
+  if (['monitoreo', 'auditoria'].includes(tabId)) return 'monitoring';
+  if (['configuracion', 'limites'].includes(tabId)) return 'config';
+  if (['resultados'].includes(tabId)) return 'results';
+  return 'operations';
+};
+
+export const AppShell: React.FC<AppShellProps> = ({ children, activeTab, setActiveTab }) => {
+  const { user, logout } = useAuth();
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [theme, setTheme] = useState<'light' | 'dark'>(() => {
+    if (typeof window === 'undefined') return 'dark';
+    return (localStorage.getItem('lotterynet_theme') as 'light' | 'dark' | null) || 'dark';
+  });
+  const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
+
+  // Initialize theme
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+  }, [theme]);
+
+  const toggleTheme = () => {
+    playClickSound();
+    const nextTheme = theme === 'light' ? 'dark' : 'light';
+    setTheme(nextTheme);
+    document.documentElement.setAttribute('data-theme', nextTheme);
+    localStorage.setItem('lotterynet_theme', nextTheme);
+  };
+
+  if (!user) return null;
+
+  const role = (user.role || 'UNKNOWN').toUpperCase();
+
+  // Define navigation based on role
+  const getNavItems = (): NavItem[] => {
+    if (role === 'ADMIN') {
+      return [
+        { id: 'dashboard', label: 'Inicio', icon: LayoutDashboard },
+        { 
+          id: 'gestion_red', 
+          label: 'Usuarios', 
+          icon: Users, 
+          defaultTab: 'cajeros',
+          subItems: [
+            { id: 'cajeros', label: 'Cajeros' },
+            { id: 'supervisores', label: 'Supervisores' }
+          ] 
+        },
+        { id: 'monitoreo', label: 'Monitoreo', icon: Activity },
+        { 
+          id: 'control_ventas', 
+          label: 'Ventas y Tickets', 
+          icon: Trophy, 
+          defaultTab: 'tickets',
+          subItems: [
+            { id: 'deportiva', label: 'Deportes' },
+            { id: 'tickets', label: 'Tickets' },
+            { id: 'ganadores', label: 'Premios' }
+          ] 
+        },
+        { 
+          id: 'finanzas_grupo', 
+          label: 'Finanzas', 
+          icon: DollarSign, 
+          defaultTab: 'finanzas',
+          subItems: [
+            { id: 'finanzas', label: 'Balances y Recargas' },
+            { id: 'cuadre', label: 'Cuadre de Caja' }
+          ] 
+        },
+        { id: 'resultados', label: 'Resultados', icon: History },
+        { 
+          id: 'configuracion', 
+          label: 'Configuración', 
+          icon: Settings, 
+          defaultTab: 'limites',
+          subItems: [
+            { id: 'limites', label: 'Límites de Juego' }
+          ] 
+        }
+      ];
+    }
+
+    const items = [
+      { id: 'dashboard', label: 'Inicio', icon: LayoutDashboard, roles: ['MASTER', 'SUPERVISOR'] },
+      { id: 'admins', label: 'Bancas y Admins', icon: Layers, roles: ['MASTER'] },
+      { id: 'monitoreo', label: 'Monitoreo', icon: Activity, roles: ['SUPERVISOR'] },
+      { id: 'deportiva', label: 'Deportes', icon: Trophy, roles: ['MASTER', 'SUPERVISOR'] },
+      { id: 'tickets', label: 'Tickets', icon: History, roles: ['SUPERVISOR'] },
+      { id: 'resultados', label: 'Resultados', icon: Sliders, roles: ['MASTER', 'SUPERVISOR'] },
+      { id: 'finanzas', label: 'Balances y Recargas', icon: DollarSign, roles: ['MASTER', 'SUPERVISOR'] },
+      { id: 'cuadre', label: 'Cuadre de Caja', icon: DollarSign, roles: ['SUPERVISOR'] },
+      { id: 'auditoria', label: 'Auditoría', icon: History, roles: ['MASTER', 'SUPERVISOR'] },
+    ];
+    return items.filter(item => item.roles.map(r => r.toUpperCase()).includes(role));
+  };
+
+  const navItems = getNavItems();
+
+  const handleNavClick = (tabId: string) => {
+    playClickSound();
+    setActiveTab(tabId);
+    setSidebarOpen(false);
+  };
+
+  const activeItem = navItems.find(item => 
+    item.id === activeTab || (item.subItems && item.subItems.some(sub => sub.id === activeTab))
+  ) || navItems[0] || { id: 'dashboard', label: 'Inicio', icon: LayoutDashboard };
+  const sectionTone = getSectionTone(activeItem.id === activeTab ? activeTab : activeItem.id);
+
+  return (
+    <div className="app-shell-root" data-section-tone={sectionTone} style={{ display: 'flex', minHeight: '100vh', backgroundColor: 'hsl(var(--background))', position: 'relative', overflowX: 'hidden' }}>
+      
+      {/* SIDEBAR - DESKTOP & MOBILE */}
+      <aside className={`glass-panel ${sidebarOpen ? 'sidebar-open' : ''}`} style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        height: '100vh',
+        width: 'var(--sidebar-width)',
+        zIndex: 50,
+        borderRadius: 0,
+        borderRight: '1px solid hsl(var(--border))',
+        borderLeft: 'none',
+        borderTop: 'none',
+        borderBottom: 'none',
+        display: 'flex',
+        flexDirection: 'column',
+        padding: '20px 14px',
+        transform: sidebarOpen ? 'translateX(0)' : 'translateX(-100%)',
+        transition: 'transform 0.2s ease',
+        backgroundColor: 'hsl(var(--surface))'
+      }} id="app-sidebar">
+        
+        {/* Sidebar Header */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '32px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <div style={{
+              width: '42px',
+              height: '42px',
+              borderRadius: '50%',
+              backgroundColor: 'transparent',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              boxShadow: '0 4px 15px hsl(var(--primary) / 0.15)'
+            }}>
+              <svg width="42" height="42" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                {/* Circular Teal/Steel-Blue Background */}
+                <circle cx="50" cy="50" r="47" fill="#297286" stroke="#ffffff" strokeWidth="2"/>
+
+                {/* Character Group shifted slightly down for centering */}
+                <g transform="translate(0, 2)">
+                  {/* Back Curly Hair Contour (Deep Charcoal) */}
+                  <path d="M 28,50 C 24,44 25,36 30,32 C 32,26 39,24 44,26 C 48,22 54,22 58,26 C 63,24 70,26 72,32 C 77,36 78,44 74,50 C 76,56 74,62 70,64 L 32,64 C 28,62 26,56 28,50 Z" fill="#1A2124"/>
+
+                  {/* Left Ear */}
+                  <circle cx="28" cy="49" r="6.5" fill="#FFE1C4" stroke="#1A2124" strokeWidth="1.8"/>
+                  <path d="M 27,47 C 26,48 26,50 28,51" stroke="#1A2124" strokeWidth="1.2" strokeLinecap="round" fill="none"/>
+
+                  {/* Right Ear */}
+                  <circle cx="72" cy="49" r="6.5" fill="#FFE1C4" stroke="#1A2124" strokeWidth="1.8"/>
+                  <path d="M 73,47 C 74,48 74,50 72,51" stroke="#1A2124" strokeWidth="1.2" strokeLinecap="round" fill="none"/>
+
+                  {/* Main Face Shape (Soft Peach/Cream) */}
+                  <path d="M 31,42 C 31,32 69,32 69,42 C 69,54 68,64 50,65 C 32,64 31,54 31,42 Z" fill="#FFE1C4" stroke="#1A2124" strokeWidth="2"/>
+
+                  {/* Forehead Curls / Hairline Overlay (Deep Charcoal) */}
+                  <path d="M 31,38 Q 36,34 41,38 Q 45,30 50,34 Q 55,30 59,38 Q 64,34 69,38 L 69,32 C 69,32 31,32 31,32 Z" fill="#1A2124"/>
+
+                  {/* Nose */}
+                  <path d="M 48.5,50 Q 50,52.5 51.5,50" stroke="#1A2124" strokeWidth="1.8" strokeLinecap="round" fill="none"/>
+
+                  {/* Friendly Smile */}
+                  <path d="M 42,57 Q 50,63 58,57" stroke="#1A2124" strokeWidth="2.2" strokeLinecap="round" fill="none"/>
+
+                  {/* Round Opaque Glasses Frame */}
+                  {/* Left Frame */}
+                  <circle cx="41" cy="44" r="9" fill="#152630" stroke="#1A2124" strokeWidth="2.2"/>
+                  {/* Left Lens Reflection (Diagonal White Bar) */}
+                  <path d="M 36,47 L 44,39" stroke="#ffffff" strokeWidth="2.2" strokeLinecap="round" opacity="0.35"/>
+                  
+                  {/* Right Frame */}
+                  <circle cx="59" cy="44" r="9" fill="#152630" stroke="#1A2124" strokeWidth="2.2"/>
+                  {/* Right Lens Reflection */}
+                  <path d="M 54,47 L 62,39" stroke="#ffffff" strokeWidth="2.2" strokeLinecap="round" opacity="0.35"/>
+
+                  {/* Glasses Bridge Link */}
+                  <path d="M 49.5,44 H 50.5" stroke="#1A2124" strokeWidth="2.2" strokeLinecap="round"/>
+                  
+                  {/* Glasses Temples (Sides) */}
+                  <path d="M 32,44 H 29" stroke="#1A2124" strokeWidth="2.2" strokeLinecap="round"/>
+                  <path d="M 68,44 H 71" stroke="#1A2124" strokeWidth="2.2" strokeLinecap="round"/>
+                </g>
+              </svg>
+            </div>
+            <div>
+              <span style={{ 
+                fontSize: '1.25rem', 
+                fontWeight: 800, 
+                fontFamily: '"Satoshi", sans-serif', 
+                letterSpacing: 0, 
+                display: 'block', 
+                color: 'hsl(var(--text-primary))',
+                lineHeight: 1.1
+              }}>
+                LotteryNet
+              </span>
+              <span style={{ 
+                fontSize: '0.525rem', 
+                color: 'hsl(var(--text-secondary))', 
+                fontWeight: 800, 
+                letterSpacing: 0, 
+                display: 'block', 
+                lineHeight: '1.4',
+                marginTop: '4px',
+                opacity: 0.85
+              }}>
+                Panel operativo
+              </span>
+            </div>
+          </div>
+          <button className="btn-icon mobile-only" onClick={() => setSidebarOpen(false)} style={{ border: 'none', background: 'transparent' }}>
+            <X size={20} />
+          </button>
+        </div>
+
+        {/* Navigation list */}
+        <nav style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '6px' }}>
+          {navItems.map((item) => {
+            const Icon = item.icon;
+            const isActive = item.id === activeTab || 
+              (item.subItems && item.subItems.some(sub => sub.id === activeTab));
+            return (
+              <button
+                key={item.id}
+                onClick={() => handleNavClick(item.defaultTab || item.id)}
+                data-active={isActive}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '12px',
+                  width: '100%',
+                  padding: '12px 14px',
+                  borderRadius: 'var(--radius-md)',
+                  border: 'none',
+                  borderLeft: isActive ? '3px solid var(--section-accent)' : '3px solid transparent',
+                  background: isActive ? 'var(--section-accent-soft)' : 'transparent',
+                  color: isActive ? 'var(--section-accent)' : 'hsl(var(--text-secondary))',
+                  cursor: 'pointer',
+                  fontWeight: isActive ? 600 : 500,
+                  fontSize: '0.9rem',
+                  textAlign: 'left',
+                  transition: 'background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease'
+                }}
+                className="sidebar-nav-btn"
+              >
+                <Icon size={18} strokeWidth={isActive ? 2.2 : 1.8} />
+                {item.label}
+              </button>
+            );
+          })}
+        </nav>
+
+        {/* Sidebar Footer / User Profile Summary */}
+        <div style={{
+          borderTop: '1px solid hsl(var(--border))',
+          paddingTop: '16px',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '16px'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <div style={{
+              width: '40px',
+              height: '40px',
+              borderRadius: '50%',
+              backgroundColor: 'hsl(var(--primary) / 0.1)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: 'hsl(var(--primary))',
+              fontWeight: 600,
+            boxShadow: '0 0 0 1px hsl(var(--primary) / 0.20)'
+            }}>
+              {(user?.displayName || user?.user || 'A').charAt(0).toUpperCase()}
+            </div>
+            <div style={{ flex: 1, overflow: 'hidden' }}>
+              <span style={{ fontSize: '0.85rem', fontWeight: 600, display: 'block', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>
+                {user?.displayName || user?.user || 'Admin'}
+              </span>
+              <span className={`badge ${
+                role === 'MASTER' ? 'badge-primary' : role === 'ADMIN' ? 'badge-success' : 'badge-warning'
+              }`} style={{ fontSize: '0.625rem', marginTop: '2px' }}>
+                {role}
+              </span>
+            </div>
+          </div>
+
+          <button onClick={() => { playClickSound(); logout(); }} style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '10px',
+            width: '100%',
+            padding: '10px 12px',
+            borderRadius: 'var(--radius-md)',
+            border: '1px solid hsl(var(--border))',
+            backgroundColor: 'hsl(var(--surface-hover))',
+            color: 'hsl(var(--danger))',
+            cursor: 'pointer',
+            fontWeight: 500,
+            fontSize: '0.85rem',
+            justifyContent: 'center',
+            transition: 'var(--transition-fast)',
+            boxShadow: 'none'
+          }}>
+            <LogOut size={16} />
+            Cerrar Sesión
+          </button>
+        </div>
+      </aside>
+
+      {/* MOBILE SIDEBAR OVERLAY BACKGROUND */}
+      {sidebarOpen && (
+        <div 
+          onClick={() => setSidebarOpen(false)} 
+          style={{
+            position: 'fixed',
+            inset: 0,
+            backgroundColor: 'rgba(0,0,0,0.5)',
+            zIndex: 40,
+            backdropFilter: 'none'
+          }}
+          className="mobile-only"
+        />
+      )}
+
+      {/* MAIN CONTAINER */}
+      <div style={{
+        flex: 1,
+        marginLeft: 'var(--sidebar-width)',
+        display: 'flex',
+        flexDirection: 'column',
+        minHeight: '100vh',
+        width: '100%',
+        transition: 'margin 0.3s ease'
+      }} className="main-content-layout">
+        
+        {/* TOPBAR */}
+        <header className="glass-panel" style={{
+          position: 'sticky',
+          top: 0,
+          zIndex: 30,
+          borderRadius: 0,
+          borderTop: 'none',
+          borderLeft: 'none',
+          borderRight: 'none',
+          borderBottom: '1px solid hsl(var(--border))',
+          height: '70px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: '0 24px',
+          backgroundColor: 'hsl(var(--surface))',
+          backdropFilter: 'none'
+        }}>
+          {/* Topbar Left */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+            <button className="btn-icon mobile-only" onClick={() => setSidebarOpen(true)}>
+              <Menu size={20} />
+            </button>
+            
+            <div style={{ display: 'flex', flexDirection: 'column' }}>
+              <h1 style={{ fontSize: '1.25rem', color: 'hsl(var(--text-primary))', fontFamily: 'var(--font-display)', fontWeight: 600 }}>
+                {activeItem.label}
+              </h1>
+              {user.banca && (
+                <span style={{ fontSize: '0.75rem', color: 'hsl(var(--text-secondary))', fontWeight: 500 }}>
+                  Red: {user.banca}
+                </span>
+              )}
+            </div>
+          </div>
+
+          {/* Topbar Right Quick Actions */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            
+            {/* Perfil Switcher removed for production parity */}
+
+            {/* Theme Toggle */}
+            <button className="btn-icon" onClick={toggleTheme} title="Cambiar tema">
+              {theme === 'light' ? <Moon size={18} /> : <Sun size={18} />}
+            </button>
+
+            {/* Notifications */}
+            <button className="btn-icon" style={{ position: 'relative' }}>
+              <Bell size={18} />
+              <span style={{
+                position: 'absolute',
+                top: '4px',
+                right: '4px',
+                width: '7px',
+                height: '7px',
+                borderRadius: '50%',
+                backgroundColor: 'hsl(var(--danger))',
+                animation: 'pulse 2s infinite'
+              }} />
+            </button>
+
+            {/* Profile Dropdown Trigger */}
+            <div style={{ position: 'relative' }}>
+              <button 
+                onClick={() => setProfileDropdownOpen(!profileDropdownOpen)}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  padding: '4px 8px',
+                  borderRadius: 'var(--radius-md)',
+                  border: '1px solid hsl(var(--border))',
+                  backgroundColor: 'hsl(var(--surface))',
+                  cursor: 'pointer'
+                }}
+              >
+                <div style={{
+                  width: '26px',
+                  height: '26px',
+                  borderRadius: '50%',
+                  backgroundColor: 'hsl(var(--primary) / 0.1)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: 'hsl(var(--primary))',
+                  fontWeight: 600,
+                  fontSize: '0.8rem'
+                }}>
+                  {(user?.user || 'A').charAt(0).toUpperCase()}
+                </div>
+                <span className="desktop-only" style={{ fontSize: '0.85rem', fontWeight: 500, color: 'hsl(var(--text-primary))' }}>
+                  @{user?.user || 'admin'}
+                </span>
+              </button>
+
+              {/* Profile Dropdown Card */}
+              {profileDropdownOpen && (
+                <>
+                  <div 
+                    onClick={() => setProfileDropdownOpen(false)}
+                    style={{ position: 'fixed', inset: 0, zIndex: 10 }}
+                  />
+                  <div className="glass-panel-premium" style={{
+                    position: 'absolute',
+                    top: '110%',
+                    right: 0,
+                    width: '200px',
+                    padding: '8px',
+                    zIndex: 20,
+                    boxShadow: 'var(--shadow-lg)'
+                  }}>
+                    <button style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '10px',
+                      width: '100%',
+                      padding: '10px 12px',
+                      border: 'none',
+                      background: 'transparent',
+                      textAlign: 'left',
+                      fontSize: '0.875rem',
+                      color: 'hsl(var(--text-primary))',
+                      cursor: 'pointer',
+                      borderRadius: 'var(--radius-sm)'
+                    }} onClick={() => { setActiveTab('dashboard'); setProfileDropdownOpen(false); }}>
+                      <User size={16} />
+                      Mi Perfil
+                    </button>
+                    <button style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '10px',
+                      width: '100%',
+                      padding: '10px 12px',
+                      border: 'none',
+                      background: 'transparent',
+                      textAlign: 'left',
+                      fontSize: '0.875rem',
+                      color: 'hsl(var(--text-primary))',
+                      cursor: 'pointer',
+                      borderRadius: 'var(--radius-sm)'
+                    }} onClick={() => { setProfileDropdownOpen(false); }}>
+                      <Settings size={16} />
+                      Configuración
+                    </button>
+                    <hr style={{ border: 'none', borderTop: '1px solid hsl(var(--border))', margin: '4px 0' }} />
+                    <button style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '10px',
+                      width: '100%',
+                      padding: '10px 12px',
+                      border: 'none',
+                      background: 'transparent',
+                      textAlign: 'left',
+                      fontSize: '0.875rem',
+                      color: 'hsl(var(--danger))',
+                      cursor: 'pointer',
+                      borderRadius: 'var(--radius-sm)'
+                    }} onClick={() => { logout(); setProfileDropdownOpen(false); }}>
+                      <LogOut size={16} />
+                      Cerrar Sesión
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+
+          </div>
+        </header>
+
+        {/* SUB-TABS HEADER BAR FOR GROUPED SECTIONS (ADMIN ONLY) */}
+        {(() => {
+          const currentGroup = navItems.find(item => 
+            item.subItems && item.subItems.some(sub => sub.id === activeTab)
+          );
+          if (!currentGroup || !currentGroup.subItems) return null;
+          
+          return (
+            <div style={{
+              display: 'flex',
+              backgroundColor: 'hsl(var(--surface) / 0.5)',
+              borderBottom: '1px solid hsl(var(--border))',
+              padding: '8px 24px',
+              gap: '12px',
+              backdropFilter: 'blur(10px)',
+              zIndex: 20
+            }}>
+              {currentGroup.subItems.map((sub) => {
+                const isSubActive = sub.id === activeTab;
+                return (
+                  <button
+                    key={sub.id}
+                    onClick={() => setActiveTab(sub.id)}
+                    className="fintech-tab-button"
+                    data-active={isSubActive}
+                    style={{
+                      padding: '8px 16px',
+                      borderRadius: 'var(--radius-sm)',
+                      border: 'none',
+                      fontWeight: isSubActive ? 600 : 500,
+                      fontSize: '0.85rem',
+                      cursor: 'pointer',
+                      borderBottom: isSubActive ? '2.5px solid var(--section-accent)' : '2.5px solid transparent'
+                    }}
+                  >
+                    {sub.label}
+                  </button>
+                );
+              })}
+            </div>
+          );
+        })()}
+
+        {/* MAIN BODY SCROLLABLE */}
+        <main className="fade-in" style={{
+          flex: 1,
+          padding: '24px',
+          overflowY: 'auto',
+          maxWidth: '1600px',
+          width: '100%',
+          margin: '0 auto'
+        }}>
+          {children}
+        </main>
+      </div>
+
+      {/* Dynamic Responsive Styles Injection */}
+      <style>{`
+        @keyframes gradientShift {
+          0% { background-position: 0% 50%; }
+          50% { background-position: 100% 50%; }
+          100% { background-position: 0% 50%; }
+        }
+        @keyframes pulse {
+          0%, 100% { opacity: 1; transform: scale(1); }
+          50% { opacity: 0.6; transform: scale(1.15); }
+        }
+        @media (max-width: 1024px) {
+          .main-content-layout {
+            margin-left: 0 !important;
+          }
+          #app-sidebar:not(.sidebar-open) {
+            transform: translateX(-100%) !important;
+          }
+          #app-sidebar.sidebar-open {
+            transform: translateX(0) !important;
+          }
+          .desktop-only {
+            display: none !important;
+          }
+        }
+        @media (min-width: 1025px) {
+          .mobile-only {
+            display: none !important;
+          }
+          #app-sidebar {
+            transform: translateX(0) !important;
+          }
+        }
+      `}</style>
+    </div>
+  );
+};
