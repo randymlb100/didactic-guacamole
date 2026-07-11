@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { Eye, EyeOff, ShieldAlert, Lock, User, AlertCircle, HelpCircle } from 'lucide-react';
+import { playClickSound } from '../../utils/audio';
 
 interface LoginProps {
   onSuccess: () => void;
@@ -32,12 +33,13 @@ export const Login: React.FC<LoginProps> = ({ onSuccess }) => {
       if (ok) {
         onSuccess();
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("ERROR EN LOGIN.TSX handleSubmit:", err);
-      if (err.message === 'ACCESO_DENEGADO_CAJERO') {
+      const message = err instanceof Error ? err.message : 'Credenciales inválidas. Por favor, intente de nuevo.';
+      if (message === 'ACCESO_DENEGADO_CAJERO') {
         setErrorMsg('BLOQUE_CAJERO');
       } else {
-        setErrorMsg(err.message || 'Credenciales inválidas. Por favor, intente de nuevo.');
+        setErrorMsg(message);
       }
     } finally {
       setLoading(false);
@@ -64,6 +66,8 @@ export const Login: React.FC<LoginProps> = ({ onSuccess }) => {
         minHeight: '100vh',
         padding: '20px'
       }}>
+        <div className="stars"></div>
+        <div className="nebula"></div>
         <div className="atmospheric-glow-1"></div>
         <div className="atmospheric-glow-2"></div>
         <div className="glass-panel-premium fade-in" style={{
@@ -123,6 +127,8 @@ export const Login: React.FC<LoginProps> = ({ onSuccess }) => {
 
   return (
     <div className="login-stage">
+      <div className="stars"></div>
+      <div className="nebula"></div>
       <div className="atmospheric-glow-1"></div>
       <div className="atmospheric-glow-2"></div>
       <div className="login-card">
@@ -134,11 +140,30 @@ export const Login: React.FC<LoginProps> = ({ onSuccess }) => {
             className="login-brand-button"
             aria-label="Volver al inicio"
           >
-            <img
-              src="/rlr-login-avatar.png"
-              alt="RLR SYSTEM UP"
-              className="login-brand-avatar"
-            />
+            <div className="lobster-icon" aria-hidden="true">
+              <svg viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+                {/* Lobster Claw Silhouette */}
+                <path d="M60 10 C30 10 15 35 15 55 C15 75 30 95 45 100 L45 110 L55 110 L55 100 C55 100 60 102 65 100 L65 110 L75 110 L75 100 C90 95 105 75 105 55 C105 35 90 10 60 10Z" fill="url(#lobster-gradient)" className="claw-body"></path>
+                {/* Left Claw */}
+                <path d="M20 45 C5 40 0 50 5 60 C10 70 20 65 25 55 C28 48 25 45 20 45Z" fill="url(#lobster-gradient)" className="claw-left"></path>
+                {/* Right Claw */}
+                <path d="M100 45 C115 40 120 50 115 60 C110 70 100 65 95 55 C92 48 95 45 100 45Z" fill="url(#lobster-gradient)" className="claw-right"></path>
+                {/* Antenna */}
+                <path d="M45 15 Q35 5 30 8" stroke="var(--coral-bright)" strokeWidth="2" strokeLinecap="round" className="antenna"></path>
+                <path d="M75 15 Q85 5 90 8" stroke="var(--coral-bright)" strokeWidth="2" strokeLinecap="round" className="antenna"></path>
+                {/* Eyes */}
+                <circle cx="45" cy="35" r="6" fill="#050810" className="eye"></circle>
+                <circle cx="75" cy="35" r="6" fill="#050810" className="eye"></circle>
+                <circle cx="46" cy="34" r="2" fill="#00e5cc" className="eye-glow"></circle>
+                <circle cx="76" cy="34" r="2" fill="#00e5cc" className="eye-glow"></circle>
+                <defs>
+                  <linearGradient id="lobster-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stopColor="var(--logo-gradient-start)"></stop>
+                    <stop offset="100%" stopColor="var(--logo-gradient-end)"></stop>
+                  </linearGradient>
+                </defs>
+              </svg>
+            </div>
             <span className="login-brand-title">RLR SYSTEM UP</span>
             <span className="login-brand-tagline">
               La tecnología que organiza tu mundo,
@@ -203,7 +228,7 @@ export const Login: React.FC<LoginProps> = ({ onSuccess }) => {
           <div style={{
             height: '3px',
             borderRadius: '2px',
-            background: 'linear-gradient(90deg, hsl(var(--primary)), hsl(var(--accent)), hsl(var(--primary)))',
+            background: 'linear-gradient(90deg, hsl(var(--primary)), hsl(var(--op-cyan)), hsl(var(--primary)))',
             backgroundSize: '200% 100%',
             animation: 'gradient-sweep 3s ease infinite',
             marginBottom: '8px'
@@ -220,9 +245,11 @@ export const Login: React.FC<LoginProps> = ({ onSuccess }) => {
                   type="text"
                   placeholder="Introduce tu usuario (ej. bancareal)"
                   value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                  className="form-input"
-                  style={{ paddingLeft: '42px' }}
+                  onChange={(e) => {
+                    setUsername(e.target.value);
+                    playClickSound();
+                  }}
+                  className="form-input login-input login-input--icon-left"
                   required
                 />
               </div>
@@ -248,9 +275,11 @@ export const Login: React.FC<LoginProps> = ({ onSuccess }) => {
                   type={showPassword ? 'text' : 'password'}
                   placeholder="••••••••"
                   value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="form-input"
-                  style={{ paddingLeft: '42px', paddingRight: '42px' }}
+                  onChange={(e) => {
+                    setPassword(e.target.value);
+                    playClickSound();
+                  }}
+                  className="form-input login-input login-input--password"
                   required
                 />
                 <button
@@ -289,7 +318,10 @@ export const Login: React.FC<LoginProps> = ({ onSuccess }) => {
                 type="email"
                 placeholder="ejemplo@loteria.com"
                 value={recoveryEmail}
-                onChange={(e) => setRecoveryEmail(e.target.value)}
+                onChange={(e) => {
+                  setRecoveryEmail(e.target.value);
+                  playClickSound();
+                }}
                 className="form-input"
                 required
               />

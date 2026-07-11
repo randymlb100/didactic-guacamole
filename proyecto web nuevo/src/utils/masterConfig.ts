@@ -1,4 +1,5 @@
 import { supabase } from './supabaseClient';
+import { getValidAccessToken } from './authSession';
 import { emptyLotteryLimitStructure, type LotteryLimitStructure } from './lotteryLimitStructure';
 import {
   emptyRecargasRapidasCredentialConfig,
@@ -64,7 +65,14 @@ export function buildMasterConfigKey(prefix: MasterConfigPrefix, ownerId?: strin
 export async function getMasterConfig<T>(key: string, fallback: T): Promise<T> {
   if (!supabase) return fallback;
 
+  const accessToken = getValidAccessToken();
+  const headers: Record<string, string> = {};
+  if (accessToken) {
+    headers['Authorization'] = `Bearer ${accessToken}`;
+  }
+
   const { data, error } = await supabase.functions.invoke('get-master-config', {
+    headers,
     body: { key },
   });
 
@@ -85,7 +93,14 @@ export async function saveMasterConfig<T>(key: string, payload: T): Promise<void
     throw new Error(`No se pudo guardar ${key}: Supabase no esta configurado`);
   }
 
+  const accessToken = getValidAccessToken();
+  const headers: Record<string, string> = {};
+  if (accessToken) {
+    headers['Authorization'] = `Bearer ${accessToken}`;
+  }
+
   const { error } = await supabase.functions.invoke('update-master-config', {
+    headers,
     body: { key, payload },
   });
 

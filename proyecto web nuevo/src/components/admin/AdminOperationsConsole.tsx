@@ -1,6 +1,7 @@
 import React from 'react';
 import { Activity, AlertTriangle, Percent, ReceiptText, Settings, Sliders, Trophy, Users } from 'lucide-react';
 import type { TicketRecord, UserAccount } from '../../types';
+import { ActionButton, MetricCard, Panel, PanelHeader } from '../ui';
 
 interface Props {
   user: UserAccount;
@@ -28,27 +29,23 @@ export const AdminOperationsConsole: React.FC<Props> = ({ user, users, tickets, 
   ];
 
   return (
-    <div className="fintech-panel fintech-primary-panel" style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-      <div>
-        <h3 className="fintech-panel-title">Panel admin</h3>
-        <span style={{ color: 'hsl(var(--text-secondary))', fontSize: '0.8rem' }}>{user.banca || 'Banca'} · resumen operativo</span>
+    <Panel tone="primary" className="flex flex-col gap-4">
+      <PanelHeader title="Panel admin" subtitle={`${user.banca || 'Banca'} · resumen operativo`} />
+      <div className="grid grid-cols-[repeat(auto-fit,minmax(140px,1fr))] gap-3">
+        <MetricCard label="Cajeros" value={cashiers.length} />
+        <MetricCard label="Ventas" value={`$${sales.toFixed(2)}`} accent="success" />
+        <MetricCard label="Pendiente" value={`$${pendingPrizes.toFixed(2)}`} accent="warning" />
       </div>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 10 }}>
-        <div className="glass-panel" style={{ padding: 14 }}>Cajeros<br /><strong>{cashiers.length}</strong></div>
-        <div className="glass-panel" style={{ padding: 14 }}>Ventas<br /><strong>${sales.toFixed(2)}</strong></div>
-        <div className="glass-panel" style={{ padding: 14 }}>Pendiente<br /><strong>${pendingPrizes.toFixed(2)}</strong></div>
-      </div>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))', gap: 10 }}>
+      <div className="grid grid-cols-[repeat(auto-fit,minmax(190px,1fr))] gap-3">
         {shortcuts.map((shortcut) => {
           const Icon = shortcut.icon;
           return (
-            <button key={shortcut.label} type="button" className="btn btn-secondary" onClick={() => onOpen(shortcut.tab)} style={{ justifyContent: 'flex-start' }}>
-              <Icon size={16} />
+            <ActionButton key={shortcut.label} variant="info" onClick={() => onOpen(shortcut.tab)} className="justify-start" icon={<Icon size={16} />}>
               {shortcut.label}
-            </button>
+            </ActionButton>
           );
         })}
       </div>
-    </div>
+    </Panel>
   );
 };

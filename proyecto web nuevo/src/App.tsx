@@ -1,4 +1,4 @@
-import React, { useState, Component } from 'react';
+import React, { useState, Component, useEffect } from 'react';
 import type { ErrorInfo, ReactNode } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
 const Login = React.lazy(() => import('./views/auth/Login').then(m => ({ default: m.Login })));
@@ -6,6 +6,8 @@ const Dashboard = React.lazy(() => import('./views/Dashboard').then(m => ({ defa
 import { AppShell } from './components/AppShell';
 import { getSafeAdminTab } from './utils/navigationPermissions';
 import { clearAuthSession } from './utils/authSession';
+
+import { playTapSound, unlockUiAudio } from './utils/audio';
 
 interface Props {
   children: ReactNode;
@@ -72,6 +74,38 @@ class ErrorBoundary extends Component<Props, State> {
 const MainApp: React.FC = () => {
   const { isAuthenticated, user, loading } = useAuth();
   const [activeTab, setActiveTab] = useState<string>('dashboard');
+  const [isOffline, setIsOffline] = useState(!navigator.onLine);
+
+  useEffect(() => {
+    const handleOnline = () => setIsOffline(false);
+    const handleOffline = () => setIsOffline(true);
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    const handleGlobalClick = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      // Capture clicks on buttons, tabs, links, sidebars, ticket lists, etc.
+      const isInteractive = target.closest(
+        'button, a, [role="button"], input, select, textarea, .sidebar-nav-btn, .custom-toggle, .tab-btn, .clickable, .ticket-row, [onClick]'
+      );
+      if (isInteractive) {
+        playTapSound();
+      }
+    };
+
+    const handleFirstUserGesture = () => unlockUiAudio();
+
+    window.addEventListener('pointerdown', handleFirstUserGesture, { once: true, passive: true });
+    window.addEventListener('keydown', handleFirstUserGesture, { once: true, passive: true });
+    window.addEventListener('click', handleGlobalClick, { capture: true, passive: true });
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+      window.removeEventListener('pointerdown', handleFirstUserGesture);
+      window.removeEventListener('keydown', handleFirstUserGesture);
+      window.removeEventListener('click', handleGlobalClick, { capture: true });
+    };
+  }, []);
 
   if (loading) {
     return (
@@ -133,6 +167,43 @@ const MainApp: React.FC = () => {
 
   return (
     <AppShell activeTab={safeTab} setActiveTab={setActiveTab}>
+      {isOffline && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          height: '4px',
+          backgroundColor: 'hsl(var(--danger))',
+          boxShadow: '0 0 10px hsl(var(--danger))',
+          zIndex: 9999,
+          animation: 'pulse 1.5s infinite'
+        }} />
+      )}
+      {isOffline && (
+        <div className="glass-panel-premium fade-in" style={{
+          position: 'fixed',
+          top: '12px',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          padding: '8px 16px',
+          borderRadius: 'var(--radius-md)',
+          border: '1px solid hsl(var(--danger) / 0.3)',
+          backgroundColor: 'rgba(239, 68, 68, 0.15)',
+          color: '#ffffff',
+          fontWeight: 600,
+          fontSize: '0.8rem',
+          zIndex: 9998,
+          display: 'flex',
+          alignItems: 'center',
+          gap: '8px',
+          backdropFilter: 'blur(12px)',
+          boxShadow: '0 8px 32px rgba(239, 68, 68, 0.15)'
+        }}>
+          <span style={{ display: 'inline-block', width: '8px', height: '8px', borderRadius: '50%', backgroundColor: 'hsl(var(--danger))', animation: 'pulse 1.5s infinite' }} />
+          Sin conexión a Internet — Operando con datos locales
+        </div>
+      )}
       <React.Suspense fallback={
         <div style={{
           padding: '24px',

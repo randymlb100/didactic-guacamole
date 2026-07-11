@@ -20,7 +20,7 @@ const ROLE_PARITY: Record<string, RoleParityDefinition> = {
   MASTER: {
     role: 'MASTER',
     homeTab: 'dashboard',
-    visibleTabs: ['dashboard', 'admins', 'auditoria'],
+    visibleTabs: ['dashboard', 'admins', 'deportiva', 'resultados', 'finanzas', 'auditoria'],
     consoleSections: ['banks', 'credentials', 'server', 'recharges', 'audit'],
     androidSourceFiles: [
       '../app/src/main/java/com/lotterynet/pro/ui/master/MasterDashboardActivity.kt',
@@ -57,7 +57,7 @@ const ROLE_PARITY: Record<string, RoleParityDefinition> = {
   SUPERVISOR: {
     role: 'SUPERVISOR',
     homeTab: 'dashboard',
-    visibleTabs: ['dashboard', 'monitoreo', 'deportiva', 'tickets', 'resultados', 'finanzas', 'cuadre', 'reportes'],
+    visibleTabs: ['dashboard', 'monitoreo', 'deportiva', 'tickets', 'resultados', 'finanzas', 'cuadre', 'reportes', 'auditoria'],
     consoleSections: ['myCashiers', 'monitoring', 'finance', 'report', 'tickets', 'results'],
     androidSourceFiles: [
       '../app/src/main/java/com/lotterynet/pro/ui/shell/ShellActivity.kt',

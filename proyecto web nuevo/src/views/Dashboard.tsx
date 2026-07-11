@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo, Suspense, lazy } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { 
   fetchUsers, 
@@ -17,7 +17,6 @@ import {
   getAdminPayoutsPayload,
   saveAdminPayoutsPayload,
   fetchDrawResults,
-  createDrawResult,
   STATIC_LOTTERIES,
   supabase,
   getAdminSystemModeConfig,
@@ -31,376 +30,36 @@ import {
 } from '../utils/supabase';
 import type { UserAccount, TicketRecord, LotteryCatalogItem, AuditLog, DrawResult, BlockedSalePlay, SportsTicketRecord } from '../types';
 
-import { 
-  Users, Layers, TrendingUp, DollarSign, Activity, 
-  Plus, Search, RefreshCw, CheckCircle, AlertTriangle, 
-  ArrowRightLeft, FileSpreadsheet, Lock, Unlock, Trash2, Key, Info, Settings, Edit2, Trophy, X, Sliders
-} from 'lucide-react';
+
 
 interface DashboardProps {
   activeTab: string;
   setActiveTab?: (tab: string) => void;
 }
 
-function getTrendChartData(tickets: TicketRecord[], sportsTickets: SportsTicketRecord[]): { label: string; dateStr: string; amount: number }[] {
-  const data: { label: string; dateStr: string; amount: number }[] = [];
-  const daysOfWeek = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
-  
-  for (let i = 6; i >= 0; i--) {
-    const d = new Date();
-    d.setDate(d.getDate() - i);
-    const dayLabel = daysOfWeek[d.getDay()];
-    const dateStr = new Intl.DateTimeFormat('fr-CA', { timeZone: 'America/Santo_Domingo' }).format(d);
-    
-    const ticketSum = tickets
-      .filter(t => t.status !== 'cancelled' && t.status !== 'voided' && t.drawDateKey === dateStr)
-      .reduce((acc, t) => acc + t.total, 0);
-      
-    const sportsSum = sportsTickets
-      .filter(t => t.status !== 'void' && (t.soldAt && t.soldAt.startsWith(dateStr)))
-      .reduce((acc, t) => acc + t.stake, 0);
-      
-    data.push({
-      label: dayLabel,
-      dateStr,
-      amount: ticketSum + sportsSum
-    });
-  }
-  return data;
-}
+const DashboardHome = lazy(() => import('./tabs/DashboardHome').then(m => ({ default: m.DashboardHome })));
+const AdminsTab = lazy(() => import('./tabs/AdminsTab').then(m => ({ default: m.AdminsTab })));
+const CajerosTab = lazy(() => import('./tabs/CajerosTab').then(m => ({ default: m.CajerosTab })));
+const SupervisoresTab = lazy(() => import('./tabs/SupervisoresTab').then(m => ({ default: m.SupervisoresTab })));
+const MonitoreoTab = lazy(() => import('./tabs/MonitoreoTab').then(m => ({ default: m.MonitoreoTab })));
+const DeportivaTab = lazy(() => import('./tabs/DeportivaTab').then(m => ({ default: m.DeportivaTab })));
+const CuadreTab = lazy(() => import('./tabs/CuadreTab').then(m => ({ default: m.CuadreTab })));
+const FinanzasTab = lazy(() => import('./tabs/FinanzasTab').then(m => ({ default: m.FinanzasTab })));
+const ConfigTab = lazy(() => import('./tabs/ConfigTab').then(m => ({ default: m.ConfigTab })));
+const TicketsTab = lazy(() => import('./tabs/TicketsTab').then(m => ({ default: m.TicketsTab })));
+const GanadoresTab = lazy(() => import('./tabs/GanadoresTab').then(m => ({ default: m.GanadoresTab })));
+const ResultadosTab = lazy(() => import('./tabs/ResultadosTab').then(m => ({ default: m.ResultadosTab })));
+const ReportesTab = lazy(() => import('./tabs/ReportesTab').then(m => ({ default: m.ReportesTab })));
+const AuditoriaTab = lazy(() => import('./tabs/AuditoriaTab').then(m => ({ default: m.AuditoriaTab })));
 
-const FinancialTrendChart: React.FC<{ tickets: TicketRecord[], sportsTickets: SportsTicketRecord[] }> = ({ tickets, sportsTickets }) => {
-  const data = getTrendChartData(tickets, sportsTickets);
-  const maxVal = Math.max(...data.map(d => d.amount), 100) * 1.15;
-  
-  const width = 500;
-  const height = 140;
-  const paddingX = 40;
-  const paddingY = 20;
-  
-  const chartWidth = width - paddingX * 2;
-  const chartHeight = height - paddingY * 2;
-  
-  const points = data.map((d, index) => {
-    const x = paddingX + (index / (data.length - 1)) * chartWidth;
-    const y = height - paddingY - (d.amount / maxVal) * chartHeight;
-    return { x, y, amount: d.amount, label: d.label, dateStr: d.dateStr };
-  });
-  
-  let pathD = '';
-  let areaD = '';
-  
-  if (points.length > 0) {
-    pathD = `M ${points[0].x} ${points[0].y}`;
-    areaD = `M ${points[0].x} ${height - paddingY}`;
-    
-    points.forEach((p, index) => {
-      if (index > 0) {
-        pathD += ` L ${p.x} ${p.y}`;
-      }
-      areaD += ` L ${p.x} ${p.y}`;
-    });
-    
-    areaD += ` L ${points[points.length - 1].x} ${height - paddingY} Z`;
-  }
-  
-  const [hoveredPoint, setHoveredPoint] = useState<{ x: number; y: number; amount: number; label: string; dateStr: string } | null>(null);
-  
-  return (
-    <div style={{ position: 'relative', width: '100%', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-      <svg viewBox={`0 0 ${width} ${height}`} width="100%" height={height} style={{ overflow: 'visible' }}>
-        <defs>
-          <linearGradient id="chartGradient" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity="0.4" />
-            <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity="0" />
-          </linearGradient>
-          <linearGradient id="lineGradient" x1="0" y1="0" x2="1" y2="0">
-            <stop offset="0%" stopColor="hsl(var(--primary))" />
-            <stop offset="50%" stopColor="hsl(var(--success))" />
-            <stop offset="100%" stopColor="hsl(var(--primary))" />
-          </linearGradient>
-        </defs>
-        
-        {/* Grid lines */}
-        {[0.25, 0.5, 0.75, 1].map((ratio, index) => {
-          const y = height - paddingY - ratio * chartHeight;
-          const val = Math.round(ratio * maxVal);
-          return (
-            <g key={index}>
-              <line x1={paddingX} y1={y} x2={width - paddingX} y2={y} stroke="hsl(var(--border))" strokeDasharray="3,3" strokeOpacity="0.4" />
-              <text x={paddingX - 8} y={y + 3} fill="hsl(var(--text-muted))" fontSize="8px" textAnchor="end">${val}</text>
-            </g>
-          );
-        })}
-        
-        {areaD && <path d={areaD} fill="url(#chartGradient)" />}
-        {pathD && (
-          <path 
-            d={pathD} 
-            fill="none" 
-            stroke="url(#lineGradient)" 
-            strokeWidth="2.5" 
-            strokeLinecap="round" 
-            strokeLinejoin="round" 
-          />
-        )}
-        
-        {points.map((p, index) => (
-          <g key={index}>
-            {hoveredPoint?.label === p.label && (
-              <line x1={p.x} y1={paddingY} x2={p.x} y2={height - paddingY} stroke="hsl(var(--primary))" strokeDasharray="2,2" strokeOpacity="0.4" />
-            )}
-            
-            <circle 
-              cx={p.x} 
-              cy={p.y} 
-              r={hoveredPoint?.label === p.label ? "5.5" : "3.5"} 
-              fill="hsl(var(--surface))" 
-              stroke="hsl(var(--primary))" 
-              strokeWidth="2" 
-              style={{ transition: 'r 0.1s ease', cursor: 'pointer' }}
-              onMouseEnter={() => setHoveredPoint(p)}
-              onMouseLeave={() => setHoveredPoint(null)}
-            />
-            
-            <text x={p.x} y={height - 2} fill="hsl(var(--text-secondary))" fontSize="9px" textAnchor="middle" fontWeight="600">
-              {p.label}
-            </text>
-          </g>
-        ))}
-      </svg>
-      
-      {hoveredPoint && (
-        <div className="glass-panel-premium" style={{
-          position: 'absolute',
-          top: hoveredPoint.y - 45 > 0 ? hoveredPoint.y - 45 : 5,
-          left: hoveredPoint.x - 50,
-          width: '100px',
-          padding: '4px 6px',
-          textAlign: 'center',
-          pointerEvents: 'none',
-          zIndex: 10,
-          boxShadow: 'var(--shadow-md)',
-          fontSize: '0.8rem'
-        }}>
-          <span style={{ fontSize: '0.6rem', color: 'hsl(var(--text-secondary))', display: 'block' }}>{hoveredPoint.label} ({hoveredPoint.dateStr.substring(8, 10)})</span>
-          <strong style={{ fontSize: '0.75rem', color: 'hsl(var(--text-primary))', display: 'block', marginTop: '1px' }}>
-            ${hoveredPoint.amount.toLocaleString('en-US', { maximumFractionDigits: 0 })}
-          </strong>
-        </div>
-      )}
-    </div>
-  );
-};
+import { AdminFormModal, CajeroFormModal, SupervisorFormModal } from '../components/UserFormModal';
+import { RechargeModal } from '../components/RechargeModal';
+import { AssignCashiersModal } from '../components/AssignCashiersModal';
+import { CredsShareModal } from '../components/CredsShareModal';
+import { LimitsEditor } from '../components/LimitsEditor';
+import { AnnulTicketModal, DeleteTicketModal, TicketDetailModal, SportsTicketDetailModal } from '../components/TicketDetailModal';
+import { LimitsConfirmModal } from '../components/LimitsConfirmModal';
 
-function getRechargeTrendChartData(audits: AuditLog[]): { label: string; dateStr: string; amount: number }[] {
-  const data: { label: string; dateStr: string; amount: number }[] = [];
-  const daysOfWeek = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
-  
-  for (let i = 6; i >= 0; i--) {
-    const d = new Date();
-    d.setDate(d.getDate() - i);
-    const dayLabel = daysOfWeek[d.getDay()];
-    const dateStr = new Intl.DateTimeFormat('fr-CA', { timeZone: 'America/Santo_Domingo' }).format(d);
-    
-    const rechargesSum = audits
-      .filter(a => a.action === 'PROCESS_RECHARGE' && new Intl.DateTimeFormat('fr-CA', { timeZone: 'America/Santo_Domingo' }).format(new Date(a.timestampMs)) === dateStr)
-      .reduce((acc, a) => {
-        const amountPart = a.details.split(' ')[1] || '0';
-        const amt = parseFloat(amountPart) || 0;
-        return acc + amt;
-      }, 0);
-      
-    data.push({
-      label: dayLabel,
-      dateStr,
-      amount: rechargesSum
-    });
-  }
-  return data;
-}
-
-const RechargeTrendChart: React.FC<{ audits: AuditLog[] }> = ({ audits }) => {
-  const data = getRechargeTrendChartData(audits);
-  const maxVal = Math.max(...data.map(d => d.amount), 100) * 1.15;
-  
-  const width = 500;
-  const height = 140;
-  const paddingX = 40;
-  const paddingY = 20;
-  
-  const chartWidth = width - paddingX * 2;
-  const chartHeight = height - paddingY * 2;
-  
-  const points = data.map((d, index) => {
-    const x = paddingX + (index / (data.length - 1)) * chartWidth;
-    const y = height - paddingY - (d.amount / maxVal) * chartHeight;
-    return { x, y, amount: d.amount, label: d.label, dateStr: d.dateStr };
-  });
-  
-  let pathD = '';
-  let areaD = '';
-  
-  if (points.length > 0) {
-    pathD = `M ${points[0].x} ${points[0].y}`;
-    areaD = `M ${points[0].x} ${height - paddingY}`;
-    
-    points.forEach((p, index) => {
-      if (index > 0) {
-        pathD += ` L ${p.x} ${p.y}`;
-      }
-      areaD += ` L ${p.x} ${p.y}`;
-    });
-    
-    areaD += ` L ${points[points.length - 1].x} ${height - paddingY} Z`;
-  }
-  
-  const [hoveredPoint, setHoveredPoint] = useState<{ x: number; y: number; amount: number; label: string; dateStr: string } | null>(null);
-  
-  return (
-    <div style={{ position: 'relative', width: '100%', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-      <svg viewBox={`0 0 ${width} ${height}`} width="100%" height={height} style={{ overflow: 'visible' }}>
-        <defs>
-          <linearGradient id="rechargeChartGradient" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="hsl(var(--success))" stopOpacity="0.4" />
-            <stop offset="100%" stopColor="hsl(var(--success))" stopOpacity="0" />
-          </linearGradient>
-          <linearGradient id="rechargeLineGradient" x1="0" y1="0" x2="1" y2="0">
-            <stop offset="0%" stopColor="hsl(var(--success))" />
-            <stop offset="50%" stopColor="hsl(var(--primary))" />
-            <stop offset="100%" stopColor="hsl(var(--success))" />
-          </linearGradient>
-        </defs>
-        
-        {[0.25, 0.5, 0.75, 1].map((ratio, index) => {
-          const y = height - paddingY - ratio * chartHeight;
-          const val = Math.round(ratio * maxVal);
-          return (
-            <g key={index}>
-              <line x1={paddingX} y1={y} x2={width - paddingX} y2={y} stroke="hsl(var(--border))" strokeDasharray="3,3" strokeOpacity="0.4" />
-              <text x={paddingX - 8} y={y + 3} fill="hsl(var(--text-muted))" fontSize="8px" textAnchor="end">${val}</text>
-            </g>
-          );
-        })}
-        
-        {areaD && <path d={areaD} fill="url(#rechargeChartGradient)" />}
-        {pathD && (
-          <path 
-            d={pathD} 
-            fill="none" 
-            stroke="url(#rechargeLineGradient)" 
-            strokeWidth="2.5" 
-            strokeLinecap="round" 
-            strokeLinejoin="round" 
-          />
-        )}
-        
-        {points.map((p, index) => (
-          <g key={index}>
-            {hoveredPoint?.label === p.label && (
-              <line x1={p.x} y1={paddingY} x2={p.x} y2={height - paddingY} stroke="hsl(var(--success))" strokeDasharray="2,2" strokeOpacity="0.4" />
-            )}
-            
-            <circle 
-              cx={p.x} 
-              cy={p.y} 
-              r={hoveredPoint?.label === p.label ? "5.5" : "3.5"} 
-              fill="hsl(var(--surface))" 
-              stroke="hsl(var(--success))" 
-              strokeWidth="2" 
-              style={{ transition: 'r 0.1s ease', cursor: 'pointer' }}
-              onMouseEnter={() => setHoveredPoint(p)}
-              onMouseLeave={() => setHoveredPoint(null)}
-            />
-            
-            <text x={p.x} y={height - 2} fill="hsl(var(--text-secondary))" fontSize="9px" textAnchor="middle" fontWeight="600">
-              {p.label}
-            </text>
-          </g>
-        ))}
-      </svg>
-      
-      {hoveredPoint && (
-        <div className="glass-panel-premium" style={{
-          position: 'absolute',
-          top: hoveredPoint.y - 45 > 0 ? hoveredPoint.y - 45 : 5,
-          left: hoveredPoint.x - 50,
-          width: '100px',
-          padding: '4px 6px',
-          textAlign: 'center',
-          pointerEvents: 'none',
-          zIndex: 10,
-          boxShadow: 'var(--shadow-md)',
-          fontSize: '0.8rem'
-        }}>
-          <span style={{ fontSize: '0.6rem', color: 'hsl(var(--text-secondary))', display: 'block' }}>{hoveredPoint.label} ({hoveredPoint.dateStr.substring(8, 10)})</span>
-          <strong style={{ fontSize: '0.75rem', color: 'hsl(var(--text-primary))', display: 'block', marginTop: '1px' }}>
-            ${hoveredPoint.amount.toLocaleString('en-US', { maximumFractionDigits: 0 })}
-          </strong>
-        </div>
-      )}
-    </div>
-  );
-};
-
-interface MonitorRow {
-  displayNumber: string;
-  amount: number;
-  playsCount: number;
-  actors: string[];
-}
-
-function buildLotteryMonitorRows(tickets: TicketRecord[], playFocus: 'Q' | 'P' | 'T' | 'SP' | 'P3' | 'P4'): MonitorRow[] {
-  const exposureMap: Record<string, { amount: number; playsCount: number; actors: Set<string> }> = {};
-
-  tickets.forEach(ticket => {
-    ticket.plays.forEach(play => {
-      const type = play.playType.toUpperCase();
-      let isMatch = false;
-      if (playFocus === 'Q' && (type === 'Q' || type === 'QUINIELA')) isMatch = true;
-      else if (playFocus === 'P' && (type === 'P' || type === 'PALE')) isMatch = true;
-      else if (playFocus === 'T' && (type === 'T' || type === 'TRIPLETA')) isMatch = true;
-      else if (playFocus === 'SP' && (type === 'SP' || type === 'SUPER PALE' || type === 'SUPERPALE')) isMatch = true;
-      else if (playFocus === 'P3' && (type === 'P3' || type === 'PICK3' || type === 'PICK 3' || type === 'P3BOX')) isMatch = true;
-      else if (playFocus === 'P4' && (type === 'P4' || type === 'PICK4' || type === 'PICK 4' || type === 'P4BOX')) isMatch = true;
-
-      if (isMatch) {
-        let formattedNumber = play.number.trim();
-        
-        if (playFocus === 'P' || playFocus === 'SP') {
-          if (!formattedNumber.includes('-') && formattedNumber.length === 4) {
-            formattedNumber = `${formattedNumber.slice(0, 2)}-${formattedNumber.slice(2, 4)}`;
-          }
-        } else if (playFocus === 'T') {
-          if (!formattedNumber.includes('/') && !formattedNumber.includes('-') && formattedNumber.length === 6) {
-            formattedNumber = `${formattedNumber.slice(0, 2)}/${formattedNumber.slice(2, 4)}/${formattedNumber.slice(4, 6)}`;
-          } else {
-            formattedNumber = formattedNumber.replace(/-/g, '/');
-          }
-        }
-
-        if (!exposureMap[formattedNumber]) {
-          exposureMap[formattedNumber] = { amount: 0, playsCount: 0, actors: new Set<string>() };
-        }
-
-        exposureMap[formattedNumber].amount += play.amount;
-        exposureMap[formattedNumber].playsCount += 1;
-        if (ticket.sellerUser) {
-          exposureMap[formattedNumber].actors.add(ticket.sellerUser);
-        }
-      }
-    });
-  });
-
-  const list = Object.keys(exposureMap).map(num => ({
-    displayNumber: num,
-    amount: exposureMap[num].amount,
-    playsCount: exposureMap[num].playsCount,
-    actors: Array.from(exposureMap[num].actors)
-  }));
-
-  return list.sort((a, b) => b.amount - a.amount);
-}
 
 export const Dashboard: React.FC<DashboardProps> = ({ activeTab }) => {
   const { user } = useAuth();
@@ -409,6 +68,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeTab }) => {
   const [lotteries, setLotteries] = useState<LotteryCatalogItem[]>([]);
   const [audits, setAudits] = useState<AuditLog[]>([]);
   const [loading, setLoading] = useState(true);
+  const loadInFlightRef = useRef(false);
+  const lastTicketFetchAtRef = useRef(0);
 
   // Sportsbook states
   const [sportsTickets, setSportsTickets] = useState<SportsTicketRecord[]>([]);
@@ -437,7 +98,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeTab }) => {
     p3box: 500,
     p4: 500,
     p4box: 500,
-    systemModeOverride: ''
+    systemModeOverride: '',
+    commissionRate: 8.0
   });
   const [modalPayoutsForm, setModalPayoutsForm] = useState<any>({
     q1: 60, q2: 12, q3: 4,
@@ -557,7 +219,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeTab }) => {
   const [limitsSaving, setLimitsSaving] = useState(false);
 
   // Monitoreo states
-  const [monitoreoSubTab, setMonitoreoSubTab] = useState<'lotteries' | 'plays' | 'cajeros'>('lotteries');
+  const [monitoreoSubTab, setMonitoreoSubTab] = useState<'lotteries' | 'plays' | 'ranking' | 'cajeros'>('lotteries');
   const [monitoreoPlayFocus, setMonitoreoPlayFocus] = useState<'Q' | 'P' | 'T' | 'SP' | 'P3' | 'P4'>('Q');
   const [monitoreoHighestFirst, setMonitoreoHighestFirst] = useState(true);
   const [monitoreoShowEmptyLotteries, setMonitoreoShowEmptyLotteries] = useState(false);
@@ -578,8 +240,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeTab }) => {
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [isDeletingTicket, setIsDeletingTicket] = useState(false);
 
-  // Ganadores states
-  const [ganadoresFilter, setGanadoresFilter] = useState<'pending' | 'paid' | 'all'>('pending');
+  // Ganadores states (encapsulated in GanadoresTab)
 
   // Supervisor assignment & password states
   const [assignModalOpen, setAssignModalOpen] = useState(false);
@@ -596,13 +257,34 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeTab }) => {
   });
 
   // DR time helpers
+  const getLocalDateStringDR = (date?: Date | number): string => {
+    const d = date !== undefined ? new Date(date) : new Date();
+    return new Intl.DateTimeFormat('sv-SE', {
+      timeZone: 'America/Santo_Domingo',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit'
+    }).format(d);
+  };
+
   const isSameLocalDate = (epochMs: number, relativeDays: number) => {
     const target = new Date();
     target.setDate(target.getDate() - relativeDays);
-    const targetDateStr = target.toLocaleDateString('es-DO', { timeZone: 'America/Santo_Domingo' });
-    const ticketDateStr = new Date(epochMs).toLocaleDateString('es-DO', { timeZone: 'America/Santo_Domingo' });
-    return targetDateStr === ticketDateStr;
+    return getLocalDateStringDR(target) === getLocalDateStringDR(epochMs);
   };
+
+  const cashierSalesTotals = useMemo(() => {
+    const totals: Record<string, number> = {};
+    users.forEach(u => {
+      if (u.role === 'CASHIER') {
+        const cashierTickets = tickets.filter(t => t.sellerUser === u.user && t.status !== 'cancelled' && t.status !== 'voided');
+        totals[u.user] = cashierTickets
+          .filter(t => isSameLocalDate(t.createdAtEpochMs, 0))
+          .reduce((acc, t) => acc + t.total, 0);
+      }
+    });
+    return totals;
+  }, [tickets, users]);
 
   const parseTimeToMinutes = (timeStr: string): number => {
     if (!timeStr) return 0;
@@ -640,19 +322,12 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeTab }) => {
   };
 
   const [resultsList, setResultsList] = useState<DrawResult[]>([]);
-  const [resultForm, setResultForm] = useState({
-    lotteryId: 'LOT-RD-REAL',
-    r1: '',
-    r2: '',
-    r3: '',
-    dateKey: new Date().toISOString().split('T')[0]
-  });
 
   // Cuadre states
   const [cuadrePeriod, setCuadrePeriod] = useState<'today' | 'week' | 'month' | 'manual'>('today');
   const [cuadreCashierFilter, setCuadreCashierFilter] = useState('all');
-  const [cuadreDateFrom, setCuadreDateFrom] = useState(new Date().toISOString().split('T')[0]);
-  const [cuadreDateTo, setCuadreDateTo] = useState(new Date().toISOString().split('T')[0]);
+  const [cuadreDateFrom, setCuadreDateFrom] = useState(getLocalDateStringDR());
+  const [cuadreDateTo, setCuadreDateTo] = useState(getLocalDateStringDR());
 
   const sha256Hex = async (input: string): Promise<string> => {
     const msgBuffer = new TextEncoder().encode(input);
@@ -784,7 +459,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeTab }) => {
     try {
       const updatedUsers = [...users];
       updatedUsers.forEach((u, index) => {
-        if (u.role === 'CASHIER' && u.adminId === user.id) {
+        if (u.role === 'CASHIER' && (user.role === 'MASTER' ? true : u.adminId === user.id)) {
           const isAssigned = assignedCashiersSet.has(u.id);
           let supIds = u.supervisorIds || [];
           let supUsers = u.supervisorUsers || [];
@@ -859,6 +534,31 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeTab }) => {
     setCajeroModalOpen(true);
   };
 
+  const handleRenameCashier = async (c: UserAccount, displayName: string) => {
+    if (!user) return;
+    const cleanName = displayName.trim();
+    if (!cleanName) return;
+
+    try {
+      const updated = {
+        ...c,
+        displayName: cleanName,
+        updatedAtEpochMs: Date.now(),
+      };
+      await updateUserAccount(updated);
+      setUsers((current) => current.map((candidate) => candidate.id === c.id ? updated : candidate));
+      await addAuditLog(
+        { id: user.id, user: user.user, role: user.role },
+        'RENAME_CASHIER',
+        `Renombrado cajero @${c.user}: "${c.displayName || c.user}" -> "${cleanName}"`,
+        'success'
+      );
+    } catch (err: any) {
+      alert(err.message || 'Error al editar el nombre del cajero');
+      throw err;
+    }
+  };
+
   const handleOpenCashierLimitsModal = (caj: UserAccount) => {
     setEditingCashierLimits(caj);
     
@@ -875,7 +575,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeTab }) => {
       p3box: targetLimits.p3box ?? 0,
       p4: targetLimits.p4 ?? 0,
       p4box: targetLimits.p4box ?? 0,
-      systemModeOverride: caj.systemModeOverride || ''
+      systemModeOverride: caj.systemModeOverride || '',
+      commissionRate: caj.commissionRate !== undefined && caj.commissionRate !== null ? caj.commissionRate : 8.0
     });
 
     const targetPayouts = (payoutsPayload?.byUser && payoutsPayload.byUser[caj.user]) || payoutsPayload?.defaults || {
@@ -971,9 +672,22 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeTab }) => {
       setPayoutsPayload(updatedPayouts);
 
       const cashierAcc = users.find(u => u.id === editingCashierLimits.id);
-      if (cashierAcc && cashierAcc.systemModeOverride !== modalLimitsForm.systemModeOverride) {
-        cashierAcc.systemModeOverride = modalLimitsForm.systemModeOverride || null;
-        await updateUserAccount(cashierAcc);
+      if (cashierAcc) {
+        let hasChanges = false;
+        if (cashierAcc.systemModeOverride !== modalLimitsForm.systemModeOverride) {
+          cashierAcc.systemModeOverride = modalLimitsForm.systemModeOverride || null;
+          hasChanges = true;
+        }
+        const nextCommission = modalLimitsForm.commissionRate !== '' && modalLimitsForm.commissionRate !== null && modalLimitsForm.commissionRate !== undefined
+          ? Number(modalLimitsForm.commissionRate)
+          : null;
+        if (cashierAcc.commissionRate !== nextCommission) {
+          cashierAcc.commissionRate = nextCommission;
+          hasChanges = true;
+        }
+        if (hasChanges) {
+          await updateUserAccount(cashierAcc);
+        }
       }
 
       await addAuditLog(
@@ -1010,26 +724,20 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeTab }) => {
     }
 
     try {
-      // Perform database updates on tickets table
+      // Perform annulment via Edge Function
       if (isSupabaseConfigured && supabase) {
-        const { error: ticketErr } = await supabase
-          .from('tickets')
-          .update({ status: 'cancelled' })
-          .eq('id', ticket.id);
-        if (ticketErr) throw ticketErr;
-
-        // Sync to lotterynet_kv cache
-        const { data: kvData } = await supabase
-          .from('lotterynet_kv')
-          .select('payload')
-          .eq('key', `ticket:${ticket.id}`)
-          .maybeSingle();
-        
-        if (kvData && kvData.payload) {
-          const updatedPayload = { ...kvData.payload, status: 'cancelled' };
-          await supabase
-            .from('lotterynet_kv')
-            .upsert({ key: `ticket:${ticket.id}`, payload: updatedPayload });
+        const { data: functionData, error: functionErr } = await supabase.functions.invoke('void-ticket', {
+          body: {
+            ticketId: ticket.id,
+            actorKey: user.user,
+            adminKey: ticket.adminUser || user.adminUser || user.user,
+            cashierKey: ticket.sellerUser,
+            action: 'void'
+          }
+        });
+        if (functionErr) throw functionErr;
+        if (functionData && functionData.ok === false) {
+          throw new Error(functionData.message || 'Error al anular el ticket en el servidor.');
         }
       }
 
@@ -1078,9 +786,19 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeTab }) => {
     setIsDeletingTicket(true);
     try {
       if (isSupabaseConfigured && supabase) {
-        const { error: ticketErr } = await supabase.from('tickets').delete().eq('id', ticket.id);
-        if (ticketErr) throw ticketErr;
-        await supabase.from('lotterynet_kv').delete().eq('key', `ticket:${ticket.id}`);
+        const { data: functionData, error: functionErr } = await supabase.functions.invoke('void-ticket', {
+          body: {
+            ticketId: ticket.id,
+            actorKey: user.user,
+            adminKey: ticket.adminUser || user.adminUser || user.user,
+            cashierKey: ticket.sellerUser,
+            action: 'delete'
+          }
+        });
+        if (functionErr) throw functionErr;
+        if (functionData && functionData.ok === false) {
+          throw new Error(functionData.message || 'Error al eliminar físicamente el ticket en el servidor.');
+        }
       }
 
       if (localStorage.getItem('lotterynet_tickets')) {
@@ -1120,26 +838,19 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeTab }) => {
   const handlePayWinner = async (ticket: TicketRecord) => {
     if (!user) return;
     try {
-      // Perform database updates on tickets table
+      // Register payment via Edge Function
       if (isSupabaseConfigured && supabase) {
-        const { error: ticketErr } = await supabase
-          .from('tickets')
-          .update({ status: 'paid' })
-          .eq('id', ticket.id);
-        if (ticketErr) throw ticketErr;
-
-        // Sync to lotterynet_kv cache
-        const { data: kvData } = await supabase
-          .from('lotterynet_kv')
-          .select('payload')
-          .eq('key', `ticket:${ticket.id}`)
-          .maybeSingle();
-        
-        if (kvData && kvData.payload) {
-          const updatedPayload = { ...kvData.payload, status: 'paid' };
-          await supabase
-            .from('lotterynet_kv')
-            .upsert({ key: `ticket:${ticket.id}`, payload: updatedPayload });
+        const { data: functionData, error: functionErr } = await supabase.functions.invoke('pay-ticket', {
+          body: {
+            ticketId: ticket.id,
+            actorKey: user.user,
+            adminKey: ticket.adminUser || user.adminUser || user.user,
+            cashierKey: ticket.sellerUser
+          }
+        });
+        if (functionErr) throw functionErr;
+        if (functionData && functionData.ok === false) {
+          throw new Error(functionData.message || 'Error al registrar el pago del premio en el servidor.');
         }
       }
 
@@ -1170,42 +881,6 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeTab }) => {
     } catch (e) {
       console.error(e);
       alert('Error al registrar el pago del premio en el servidor.');
-    }
-  };
-
-  const handleCreateResult = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!user) return;
-    const targetLottery = lotteries.find(l => l.id === resultForm.lotteryId);
-    const newResult = {
-      id: `R-${Math.random().toString(36).substr(2, 6).toUpperCase()}`,
-      lotteryId: resultForm.lotteryId,
-      lotteryName: targetLottery?.name || 'Lotería',
-      dateKey: resultForm.dateKey,
-      numbers: `${resultForm.r1}-${resultForm.r2}-${resultForm.r3}`
-    };
-
-    try {
-      await createDrawResult(newResult);
-      setResultsList([newResult, ...resultsList]);
-      
-      await addAuditLog(
-        { id: user.id, user: user.user, role: user.role },
-        'CREATE_RESULT',
-        `Registrado número ganador manualmente para ${targetLottery?.name} (${resultForm.dateKey}): ${newResult.numbers}`,
-        'success'
-      );
-
-      setResultForm({
-        ...resultForm,
-        r1: '',
-        r2: '',
-        r3: ''
-      });
-      alert('Resultado de lotería registrado correctamente.');
-    } catch (e) {
-      console.error(e);
-      alert('Error registrando el resultado de lotería.');
     }
   };
 
@@ -1588,7 +1263,25 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeTab }) => {
   };
 
   const loadData = async () => {
-    setLoading(true);
+    if (loadInFlightRef.current) return;
+    loadInFlightRef.current = true;
+    const shouldFetchUsers = activeTab === 'dashboard' || activeTab === 'cajeros' || activeTab === 'supervisores' || activeTab === 'monitoreo' || activeTab === 'deportiva' || activeTab === 'tickets' || activeTab === 'ganadores' || activeTab === 'limites' || activeTab === 'cuadre' || activeTab === 'finanzas';
+    const shouldFetchSportsTickets = activeTab === 'dashboard' || activeTab === 'cajeros' || activeTab === 'deportiva' || activeTab === 'cuadre';
+    const shouldFetchLotteries = lotteries.length === 0 || activeTab === 'dashboard' || activeTab === 'monitoreo' || activeTab === 'resultados';
+    const shouldFetchAudits = activeTab === 'finanzas' || activeTab === 'auditoria' || activeTab === 'cuadre';
+    const shouldFetchResults = activeTab === 'dashboard' || activeTab === 'resultados';
+    const ticketTabNeedsData = activeTab === 'dashboard' || activeTab === 'cajeros' || activeTab === 'monitoreo' || activeTab === 'tickets' || activeTab === 'ganadores' || activeTab === 'cuadre';
+    const ticketFetchIsFresh = Date.now() - lastTicketFetchAtRef.current < 30_000;
+    const shouldFetchTicketList = ticketTabNeedsData && (tickets.length === 0 || !ticketFetchIsFresh);
+    const hasWarmData =
+      (!shouldFetchUsers || users.length > 0) &&
+      (!shouldFetchSportsTickets || sportsTickets.length > 0) &&
+      (!shouldFetchLotteries || lotteries.length > 0) &&
+      (!shouldFetchAudits || audits.length > 0) &&
+      (!shouldFetchResults || resultsList.length > 0) &&
+      (!shouldFetchTicketList || tickets.length > 0);
+
+    setLoading(!hasWarmData);
     try {
       const savedUser = localStorage.getItem('lotterynet_session_user');
       const parsedUser = savedUser ? JSON.parse(savedUser) : null;
@@ -1601,42 +1294,27 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeTab }) => {
         ? allowedId 
         : (allowedRole === 'SUPERVISOR' ? allowedAdminId : undefined);
 
-      // Smart Tab-based selective fetching to reduce database/network calls
-      const u = (activeTab === 'dashboard' || activeTab === 'cajeros' || activeTab === 'supervisores' || activeTab === 'monitoreo' || activeTab === 'deportiva' || activeTab === 'tickets' || activeTab === 'ganadores' || activeTab === 'limites' || activeTab === 'cuadre' || activeTab === 'finanzas')
-        ? await fetchUsers()
-        : users;
-
-      const t = (activeTab === 'dashboard' || activeTab === 'cajeros' || activeTab === 'monitoreo' || activeTab === 'tickets' || activeTab === 'ganadores' || activeTab === 'cuadre')
-        ? await fetchTickets(adminScopeId, u)
-        : tickets;
-
-      const st = (activeTab === 'dashboard' || activeTab === 'cajeros' || activeTab === 'deportiva' || activeTab === 'cuadre')
-        ? await fetchSportsTickets(adminScopeId)
-        : sportsTickets;
-
-      const l = (lotteries.length === 0 || activeTab === 'dashboard' || activeTab === 'monitoreo' || activeTab === 'resultados')
-        ? (lotteries.length > 0 ? lotteries : await fetchLotteries())
-        : lotteries;
-
-      const a = (activeTab === 'finanzas' || activeTab === 'auditoria')
-        ? await fetchAuditLogs()
-        : audits;
-
-      const r = (activeTab === 'dashboard' || activeTab === 'resultados')
-        ? await fetchDrawResults()
-        : resultsList;
+      // Smart Tab-based selective fetching with Promise.all to resolve database/network waterfall blocks
+      const [u, st, l, a, r, t] = await Promise.all([
+        shouldFetchUsers ? fetchUsers() : Promise.resolve(users),
+        shouldFetchSportsTickets ? fetchSportsTickets(adminScopeId) : Promise.resolve(sportsTickets),
+        shouldFetchLotteries ? (lotteries.length > 0 ? Promise.resolve(lotteries) : fetchLotteries()) : Promise.resolve(lotteries),
+        shouldFetchAudits ? fetchAuditLogs() : Promise.resolve(audits),
+        shouldFetchResults ? fetchDrawResults() : Promise.resolve(resultsList),
+        shouldFetchTicketList ? fetchTickets(adminScopeId, users.length > 0 ? users : undefined) : Promise.resolve(tickets),
+      ]);
 
       const targetAdminId = adminScopeId || allowedId;
       if (targetAdminId && (activeTab === 'dashboard' || activeTab === 'limites' || activeTab === 'monitoreo')) {
-        try {
-          const disabledCfg = await getManualDisabledLotteries(targetAdminId);
+        void Promise.all([
+          getManualDisabledLotteries(targetAdminId),
+          getAdminSystemModeConfig(targetAdminId),
+        ]).then(([disabledCfg, systemCfg]) => {
           setManualDisabledLotteryIds(disabledCfg.ids || []);
-
-          const systemCfg = await getAdminSystemModeConfig(targetAdminId);
           setBlockedSalePlays(systemCfg.blockedSalePlays || []);
-        } catch (err) {
+        }).catch((err) => {
           console.warn('Error loading blocks / modes from Supabase:', err);
-        }
+        });
       }
 
       // Chronological sorting by draw time (orden de salida)
@@ -1658,10 +1336,14 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeTab }) => {
       setLotteries(sortedL);
       setAudits(a);
       setResultsList(sortedR);
+      if (shouldFetchTicketList) {
+        lastTicketFetchAtRef.current = Date.now();
+      }
 
     } catch (e) {
       console.error(e);
     } finally {
+      loadInFlightRef.current = false;
       setLoading(false);
     }
   };
@@ -1699,53 +1381,6 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeTab }) => {
   useEffect(() => {
     loadDataRef.current = loadData;
   });
-
-  useEffect(() => {
-    if (!supabase) return;
-    const client = supabase;
-    let debounceTimer: any = null;
-
-    const debouncedLoadData = () => {
-      if (debounceTimer) clearTimeout(debounceTimer);
-      debounceTimer = setTimeout(() => {
-        loadDataRef.current();
-      }, 3000); // 3-second debounce to merge rapid cashier writes
-    };
-
-    // Listen to changes in lotterynet_kv and lotterynet_users_state in real time
-    const kvChannel = client
-      .channel('schema-db-changes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'lotterynet_kv'
-        },
-        (payload) => {
-          console.log('Realtime change in lotterynet_kv:', payload);
-          debouncedLoadData();
-        }
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'lotterynet_users_state'
-        },
-        (payload) => {
-          console.log('Realtime change in lotterynet_users_state:', payload);
-          debouncedLoadData();
-        }
-      )
-      .subscribe();
-
-    return () => {
-      if (debounceTimer) clearTimeout(debounceTimer);
-      client.removeChannel(kvChannel);
-    };
-  }, []);
 
   if (!user) return null;
 
@@ -2006,7 +1641,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeTab }) => {
     if (!rechargeForm.cashierId || isNaN(amountNum) || amountNum <= 0) return;
 
     try {
-      await processRecharge(user.id, rechargeForm.cashierId, amountNum, {
+      const selectedCashier = users.find((u) => u.id === rechargeForm.cashierId);
+      await processRecharge(selectedCashier?.adminId || user.id, rechargeForm.cashierId, amountNum, {
         id: user.id,
         user: user.user,
         role: user.role
@@ -2072,185 +1708,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeTab }) => {
 
   // --- STATS CALCULATIONS ---
 
-  const getDashboardStats = () => {
-    if (user.role === 'MASTER') {
-      const activeAdmins = users.filter(u => u.role === 'ADMIN' && u.active).length;
-      const totalAdmins = users.filter(u => u.role === 'ADMIN').length;
-      const activeCashiers = users.filter(u => u.role === 'CASHIER' && u.active).length;
-      
-      let salesTotalDaily = 0;
-      let prizesTotalDaily = 0;
-      let salesTotalGlobal = 0;
-      let prizesTotalGlobal = 0;
 
-      // Global sales (accumulated)
-      if (dashboardViewContext === 'lottery' || dashboardViewContext === 'combined') {
-        salesTotalGlobal += tickets.filter(t => t.status !== 'cancelled' && t.status !== 'voided').reduce((acc, t) => acc + t.total, 0);
-        prizesTotalGlobal += tickets.filter(t => t.status === 'paid' || t.status === 'winner').reduce((acc, t) => acc + t.totalPrize, 0);
-      }
-      
-      if (dashboardViewContext === 'sports' || dashboardViewContext === 'combined') {
-        salesTotalGlobal += sportsTickets.filter(t => t.status !== 'void').reduce((acc, t) => acc + t.stake, 0);
-        prizesTotalGlobal += sportsTickets.filter(t => t.status === 'paid' || t.status === 'won').reduce((acc, t) => acc + t.potentialPayout, 0);
-      }
-
-      // Daily filtered sales
-      const filterDays = dashboardDateFilter === 'today' ? 0 : dashboardDateFilter === 'yesterday' ? 1 : null;
-      if (dashboardViewContext === 'lottery' || dashboardViewContext === 'combined') {
-        const filteredTickets = filterDays !== null 
-          ? tickets.filter(t => isSameLocalDate(t.createdAtEpochMs, filterDays))
-          : tickets;
-        salesTotalDaily += filteredTickets.filter(t => t.status !== 'cancelled' && t.status !== 'voided').reduce((acc, t) => acc + t.total, 0);
-        prizesTotalDaily += filteredTickets.filter(t => t.status === 'paid' || t.status === 'winner').reduce((acc, t) => acc + t.totalPrize, 0);
-      }
-      
-      if (dashboardViewContext === 'sports' || dashboardViewContext === 'combined') {
-        const filteredSports = filterDays !== null
-          ? sportsTickets.filter(t => isSameLocalDate(new Date(t.soldAt).getTime(), filterDays))
-          : sportsTickets;
-        salesTotalDaily += filteredSports.filter(t => t.status !== 'void').reduce((acc, t) => acc + t.stake, 0);
-        prizesTotalDaily += filteredSports.filter(t => t.status === 'paid' || t.status === 'won').reduce((acc, t) => acc + t.potentialPayout, 0);
-      }
-      
-      const titleSuffix = dashboardDateFilter === 'today' ? ' (Hoy)' : dashboardDateFilter === 'yesterday' ? ' (Ayer)' : ' (Global)';
-      return {
-        card1: { title: 'Bancas Activas', value: `${activeAdmins}/${totalAdmins}`, icon: Layers, color: 'var(--primary)' },
-        card2: { title: 'Cajeros de Red', value: activeCashiers.toString(), icon: Users, color: 'var(--success)' },
-        card3: { title: `Ventas${titleSuffix}`, value: `$${salesTotalDaily.toLocaleString('en-US', { minimumFractionDigits: 2 })}`, icon: DollarSign, color: 'var(--info)' },
-        card4: { title: `Premios${titleSuffix}`, value: `$${prizesTotalDaily.toLocaleString('en-US', { minimumFractionDigits: 2 })}`, icon: AlertTriangle, color: 'var(--danger)' },
-        cardGlobal: { title: 'Negocio Global (Ventas)', value: `$${salesTotalGlobal.toLocaleString('en-US', { minimumFractionDigits: 2 })}`, icon: TrendingUp, color: 'var(--primary)' }
-      };
-    } else {
-      // ADMIN or SUPERVISOR red stats
-      const myCashiers = user.role === 'SUPERVISOR' 
-        ? users.filter(u => u.role === 'CASHIER' && u.supervisorIds.includes(user.id))
-        : users.filter(u => u.role === 'CASHIER' && u.adminId === user.id);
-      
-      const activeMyCashiers = myCashiers.filter(c => c.active).length;
-      
-      const cashierUsernames = myCashiers.map(c => c.user);
-      
-      let salesTotalDaily = 0;
-      let salesTotalGlobal = 0;
-
-      const filterDays = dashboardDateFilter === 'today' ? 0 : dashboardDateFilter === 'yesterday' ? 1 : null;
-
-      // Daily sales
-      if (dashboardViewContext === 'lottery' || dashboardViewContext === 'combined') {
-        const myTickets = tickets.filter(t => cashierUsernames.includes(t.sellerUser || ''));
-        const filteredTickets = filterDays !== null
-          ? myTickets.filter(t => isSameLocalDate(t.createdAtEpochMs, filterDays))
-          : myTickets;
-        salesTotalDaily += filteredTickets.filter(t => t.status !== 'cancelled' && t.status !== 'voided').reduce((acc, t) => acc + t.total, 0);
-      }
-      if (dashboardViewContext === 'sports' || dashboardViewContext === 'combined') {
-        const mySportsTickets = sportsTickets.filter(t => cashierUsernames.includes(t.sellerUsername || ''));
-        const filteredSports = filterDays !== null
-          ? mySportsTickets.filter(t => isSameLocalDate(new Date(t.soldAt).getTime(), filterDays))
-          : mySportsTickets;
-        salesTotalDaily += filteredSports.filter(t => t.status !== 'void').reduce((acc, t) => acc + t.stake, 0);
-      }
-
-      // Global sales
-      if (dashboardViewContext === 'lottery' || dashboardViewContext === 'combined') {
-        const myTickets = tickets.filter(t => cashierUsernames.includes(t.sellerUser || ''));
-        salesTotalGlobal += myTickets.filter(t => t.status !== 'cancelled' && t.status !== 'voided').reduce((acc, t) => acc + t.total, 0);
-      }
-      if (dashboardViewContext === 'sports' || dashboardViewContext === 'combined') {
-        const mySportsTickets = sportsTickets.filter(t => cashierUsernames.includes(t.sellerUsername || ''));
-        salesTotalGlobal += mySportsTickets.filter(t => t.status !== 'void').reduce((acc, t) => acc + t.stake, 0);
-      }
-      
-      let balance = user?.balance ?? 0;
-      let rechargesBalance = user?.rechargesBalance ?? 0;
-
-      // Dynamic fallbacks when static value is 0 or empty for ADMIN / SUPERVISOR
-      if (balance === 0 || user.role === 'SUPERVISOR') {
-        const calculatedBalance = myCashiers.reduce((sum, cashier) => {
-          let tkSales = 0;
-          let tkPremiosPagados = 0;
-          let tkPremiosPendientes = 0;
-          let tkComisiones = 0;
-
-          if (dashboardViewContext === 'lottery' || dashboardViewContext === 'combined') {
-            const cashierTks = tickets.filter(t => t.sellerUser === cashier.user && t.status !== 'cancelled' && t.status !== 'voided');
-            tkSales = cashierTks.reduce((acc, t) => acc + t.total, 0);
-            tkPremiosPagados = cashierTks.filter(t => t.status === 'paid').reduce((acc, t) => acc + t.totalPrize, 0);
-            tkPremiosPendientes = cashierTks.filter(t => t.status === 'winner').reduce((acc, t) => acc + t.totalPrize, 0);
-            tkComisiones = tkSales * normalizeRate(cashier.commissionRate);
-          }
-
-          let sportsSalesAmt = 0;
-          let sportsPaidAmt = 0;
-          let sportsWonAmt = 0;
-          let sportsComisiones = 0;
-
-          if (dashboardViewContext === 'sports' || dashboardViewContext === 'combined') {
-            const cashierSports = sportsTickets.filter(t => t.sellerUsername === cashier.user && t.status !== 'void');
-            sportsSalesAmt = cashierSports.reduce((acc, t) => acc + t.stake, 0);
-            sportsPaidAmt = cashierSports.filter(t => t.status === 'paid').reduce((acc, t) => acc + t.potentialPayout, 0);
-            sportsWonAmt = cashierSports.filter(t => t.status === 'won').reduce((acc, t) => acc + t.potentialPayout, 0);
-            sportsComisiones = sportsSalesAmt * normalizeRate(cashier.commissionRate);
-          }
-
-          const cashierRecharges = audits.filter(a => a.action === 'PROCESS_RECHARGE' && a.details.includes("asignado a " + cashier.user))
-            .filter(a => {
-              if (dashboardDateFilter === 'today') {
-                return isSameLocalDate(a.timestampMs, 0);
-              } else if (dashboardDateFilter === 'yesterday') {
-                return isSameLocalDate(a.timestampMs, 1);
-              }
-              return true; // all
-            });
-          const tkRecargas = cashierRecharges.reduce((sum, a) => {
-            const match = a.details.match(/\$([0-9.]+)/);
-            return sum + (match ? parseFloat(match[1]) : 0);
-          }, 0);
-          const tkCaja = (tkSales + sportsSalesAmt) + tkRecargas - (tkComisiones + sportsComisiones) - (tkPremiosPagados + sportsPaidAmt) - (tkPremiosPendientes + sportsWonAmt);
-          return sum + tkCaja;
-        }, 0);
-        
-        balance = calculatedBalance;
-      }
-
-      if (rechargesBalance === 0) {
-        const calculatedRecharges = myCashiers.reduce((sum, cashier) => {
-          return sum + (cashier.rechargesBalance || 0);
-        }, 0);
-        rechargesBalance = calculatedRecharges;
-      }
-
-      const titleSuffix = dashboardDateFilter === 'today' ? ' Hoy' : dashboardDateFilter === 'yesterday' ? ' Ayer' : ' Global';
-      return {
-        card1: { title: user.role === 'SUPERVISOR' ? 'Mis Cajeros Activos' : 'Cajeros Activos', value: `${activeMyCashiers}/${myCashiers.length}`, icon: Users, color: 'var(--primary)' },
-        card2: { title: user.role === 'SUPERVISOR' ? 'Mi Balance' : 'Balance de Bancas', value: `$${balance.toLocaleString('en-US', { minimumFractionDigits: 2 })}`, icon: DollarSign, color: 'var(--success)' },
-        card3: { title: user.role === 'SUPERVISOR' ? `Mis Ventas${titleSuffix}` : `Ventas${titleSuffix}`, value: `$${salesTotalDaily.toLocaleString('en-US', { minimumFractionDigits: 2 })}`, icon: TrendingUp, color: 'var(--info)' },
-        card4: { title: user.role === 'SUPERVISOR' ? 'Mi Cupo Recargas' : 'Cupo Recargas FF', value: `$${rechargesBalance.toLocaleString('en-US', { minimumFractionDigits: 2 })}`, icon: ArrowRightLeft, color: 'var(--warning)' },
-        cardGlobal: { title: 'Negocio Global (Ventas)', value: `$${salesTotalGlobal.toLocaleString('en-US', { minimumFractionDigits: 2 })}`, icon: TrendingUp, color: 'var(--primary)' }
-      };
-    }
-  };
-
-
-  const stats = getDashboardStats();
-
-  const myCashiersForDashboard = user.role === 'SUPERVISOR' 
-    ? users.filter(u => u.role === 'CASHIER' && u.supervisorIds.includes(user.id))
-    : (user.role === 'ADMIN' ? users.filter(u => (u.role === 'CASHIER' || u.role === 'ADMIN') && (u.adminId === user.id || u.id === user.id)) : []);
-
-  const cashierUsernamesForDashboard = myCashiersForDashboard.map(c => c.user);
-  const allDashboardTickets = user.role === 'MASTER'
-    ? tickets
-    : tickets.filter(t => cashierUsernamesForDashboard.includes(t.sellerUser || ''));
-
-  const dashboardTicketsToShow = allDashboardTickets.filter(t => {
-    if (dashboardDateFilter === 'today') {
-      return isSameLocalDate(t.createdAtEpochMs, 0);
-    } else if (dashboardDateFilter === 'yesterday') {
-      return isSameLocalDate(t.createdAtEpochMs, 1);
-    }
-    return true; // 'all'
-  });
 
   // Filter list of users based on search and selection
   const filteredUsers = users.filter((u) => {
@@ -2281,5040 +1739,383 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeTab }) => {
           <div className="glass-panel shimmer" style={{ height: '350px' }} />
         </div>
       ) : (
-        <>
+        <Suspense fallback={
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '20px' }}>
+              {[1, 2, 3, 4].map(i => (
+                <div key={i} className="glass-panel shimmer" style={{ height: '110px' }} />
+              ))}
+            </div>
+            <div className="glass-panel shimmer" style={{ height: '350px' }} />
+          </div>
+        }>
           {/* TAB 1: GENERAL DASHBOARD */}
           {activeTab === 'dashboard' && (
-            <div className="fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-              
-              {/* Filtro Temporal de Ventas */}
-              <div className="glass-panel" style={{
-                padding: '12px 20px',
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                backgroundColor: 'hsl(var(--surface) / 0.6)',
-                gap: '12px',
-                flexWrap: 'wrap'
-              }}>
-                <div style={{ display: 'flex', flexDirection: 'column' }}>
-                  <span style={{ fontSize: '0.9rem', fontWeight: 600, color: 'hsl(var(--text-primary))' }}>
-                    Filtro Temporal de Ventas
-                  </span>
-                  <span style={{ fontSize: '0.75rem', color: 'hsl(var(--text-muted))' }}>
-                    Visualizar transacciones y métricas por período
-                  </span>
-                </div>
-                <div style={{ display: 'flex', gap: '6px' }}>
-                  {(['today', 'yesterday', 'all'] as const).map((filter) => (
-                    <button
-                      key={filter}
-                      onClick={() => setDashboardDateFilter(filter)}
-                      style={{
-                        padding: '8px 14px',
-                        borderRadius: 'var(--radius-sm)',
-                        border: '1px solid hsl(var(--border))',
-                        backgroundColor: dashboardDateFilter === filter ? 'hsl(var(--primary))' : 'hsl(var(--surface-hover))',
-                        color: dashboardDateFilter === filter ? '#ffffff' : 'hsl(var(--text-secondary))',
-                        fontSize: '0.8rem',
-                        fontWeight: 600,
-                        cursor: 'pointer',
-                        transition: 'all 0.2s ease'
-                      }}
-                    >
-                      {filter === 'today' ? 'Hoy (Limpio)' : filter === 'yesterday' ? 'Ayer' : 'Todos los días'}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Context Selector (Lotería / Deportes / Combinado) */}
-              {user.role !== 'MASTER' && (
-                <div className="glass-panel" style={{
-                  padding: '12px 20px',
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  backgroundColor: 'hsl(var(--surface) / 0.6)',
-                  gap: '12px',
-                  flexWrap: 'wrap'
-                }}>
-                  <div style={{ display: 'flex', flexDirection: 'column' }}>
-                    <span style={{ fontSize: '0.9rem', fontWeight: 600, color: 'hsl(var(--text-primary))' }}>
-                      Contexto Operativo
-                    </span>
-                    <span style={{ fontSize: '0.75rem', color: 'hsl(var(--text-muted))' }}>
-                      Visualizar acumulados de ventas y comisiones
-                    </span>
-                  </div>
-                  <div style={{ display: 'flex', gap: '6px' }}>
-                    {(['combined', 'lottery', 'sports'] as const).map((ctx) => (
-                      <button
-                        key={ctx}
-                        onClick={() => setDashboardViewContext(ctx)}
-                        style={{
-                          padding: '8px 14px',
-                          borderRadius: 'var(--radius-sm)',
-                          border: '1px solid hsl(var(--border))',
-                          backgroundColor: dashboardViewContext === ctx ? 'hsl(var(--primary))' : 'hsl(var(--surface-hover))',
-                          color: dashboardViewContext === ctx ? '#ffffff' : 'hsl(var(--text-secondary))',
-                          fontSize: '0.8rem',
-                          fontWeight: 600,
-                          cursor: 'pointer',
-                          transition: 'all 0.2s ease'
-                        }}
-                      >
-                        {ctx === 'combined' ? 'Combinado' : ctx === 'lottery' ? 'Solo Lotería' : 'Solo Deportes'}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* METRIC CARDS GRID */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '20px' }}>
-
-                
-                {[stats.card1, stats.card2, stats.card3, stats.card4, stats.cardGlobal].filter(Boolean).map((c: any, i) => {
-                  const Icon = c.icon;
-                  return (
-                    <div key={i} className="glass-panel-premium" style={{
-                      padding: '24px',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      position: 'relative',
-                      overflow: 'hidden'
-                    }}>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                        <span style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'hsl(var(--text-secondary))', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                          {c.title}
-                        </span>
-                        <span style={{ fontSize: '1.75rem', fontWeight: 700, fontFamily: 'var(--font-display)', color: 'hsl(var(--text-primary))' }}>
-                          {c.value}
-                        </span>
-                      </div>
-                      <div style={{
-                        width: '46px',
-                        height: '46px',
-                        borderRadius: 'var(--radius-md)',
-                        backgroundColor: `${c.color}15`,
-                        color: c.color,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        boxShadow: `0 8px 16px ${c.color}10`
-                      }}>
-                        <Icon size={22} />
-                      </div>
-                    </div>
-                  );
-                })}
-
-              </div>
-
-              {/* GRÁFICO FINANCIERO SEMANAL */}
-              {user.role !== 'MASTER' && (
-                <div className="glass-panel-premium" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                    <span style={{ fontSize: '1.1rem', fontWeight: 600, color: 'hsl(var(--text-primary))' }}>
-                      Tendencia Financiera Semanal
-                    </span>
-                    <span style={{ fontSize: '0.8rem', color: 'hsl(var(--text-muted))' }}>
-                      Ventas globales acumuladas de lotería y deportes de los últimos 7 días
-                    </span>
-                  </div>
-                  <FinancialTrendChart tickets={tickets} sportsTickets={sportsTickets} />
-                </div>
-              )}
-
-              {/* TWO COLUMN SUMMARY CONTENT */}
-              <div style={{ display: 'grid', gridTemplateColumns: user.role === 'MASTER' ? '1fr' : '2fr 1fr', gap: '24px' }} className="grid-responsive">
-                
-                {/* Visual exposure monitoring / live transactions */}
-                {user.role !== 'MASTER' && (
-                  <div className="glass-panel-premium" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <h3 style={{ fontSize: '1.1rem', color: 'hsl(var(--text-primary))' }}>
-                        Tickets Emitidos Recientemente
-                      </h3>
-                      <button className="btn-icon" onClick={loadData}>
-                        <RefreshCw size={16} />
-                      </button>
-                    </div>
-
-                    <div className="table-container">
-                      <table className="table-el">
-                        <thead>
-                          <tr>
-                            <th>Serial</th>
-                            <th>Cajero</th>
-                            <th>Loterías</th>
-                            <th>Total</th>
-                            <th>Premios</th>
-                            <th>Estado</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {dashboardTicketsToShow.length === 0 ? (
-                            <tr>
-                              <td colSpan={6} style={{ textAlign: 'center', color: 'hsl(var(--text-secondary))' }}>
-                                No hay transacciones registradas hoy.
-                              </td>
-                            </tr>
-                          ) : (
-                            dashboardTicketsToShow.map((t) => (
-                              <tr key={t.id} onClick={() => setSelectedTicketForDetail(t)} style={{ cursor: 'pointer' }}>
-                                <td style={{ fontWeight: 600 }}>{t.serial || t.id.substring(0, 8).toUpperCase()}</td>
-                                <td>{t.sellerUser}</td>
-                                <td style={{ fontSize: '0.8rem' }}>
-                                  {(() => {
-                                    const uniqueLots = new Set();
-                                    t.plays.forEach(p => {
-                                      if (p.lotteryName) {
-                                        p.lotteryName.split(/[\/,]+/).forEach(part => {
-                                          const trimmed = part.trim();
-                                          if (trimmed) uniqueLots.add(trimmed);
-                                        });
-                                      }
-                                    });
-                                    return Array.from(uniqueLots).join(' / ');
-                                  })()}
-                                </td>
-                                <td style={{ fontWeight: 600 }}>${t.total.toFixed(2)}</td>
-                                <td style={{ color: t.totalPrize > 0 ? 'hsl(var(--success))' : 'inherit', fontWeight: 600 }}>
-                                  ${t.totalPrize.toFixed(2)}
-                                </td>
-                                <td>
-                                  <span className={`badge ${
-                                    t.status === 'paid' ? 'badge-success' : t.status === 'cancelled' ? 'badge-danger' : 'badge-primary'
-                                  }`}>
-                                    {t.status === 'paid' ? 'Cobrado' : t.status === 'cancelled' ? 'Anulado' : 'Activo'}
-                                  </span>
-                                </td>
-                              </tr>
-                            ))
-                          )}
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
-                )}
-
-                {/* Exposición y Loterías Abiertas / Master-specific Audit Logs Summary */}
-                {user.role === 'MASTER' ? (
-                  <div className="glass-panel" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                    <h3 style={{ fontSize: '1.1rem', color: 'hsl(var(--text-primary))' }}>
-                      Bitácora de Auditoría Reciente
-                    </h3>
-                    <div className="table-container">
-                      <table className="table-el">
-                        <thead>
-                          <tr>
-                            <th>Usuario</th>
-                            <th>Acción</th>
-                            <th>Detalles</th>
-                            <th>Fecha y Hora</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {audits.length === 0 ? (
-                            <tr>
-                              <td colSpan={4} style={{ textAlign: 'center', color: 'hsl(var(--text-secondary))' }}>
-                                No hay logs de auditoría registrados.
-                              </td>
-                            </tr>
-                          ) : (
-                            audits.slice(0, 10).map((a) => (
-                              <tr key={a.id}>
-                                <td>
-                                  <strong>@{a.actorUser}</strong>
-                                  <span style={{ fontSize: '0.7rem', color: 'hsl(var(--text-muted))', display: 'block' }}>{a.role}</span>
-                                </td>
-                                <td>
-                                  <span className={`badge ${a.status === 'success' ? 'badge-success' : a.status === 'failed' ? 'badge-danger' : 'badge-primary'}`}>
-                                    {a.action}
-                                  </span>
-                                </td>
-                                <td style={{ fontSize: '0.8rem', color: 'hsl(var(--text-secondary))' }}>{a.details}</td>
-                                <td>{new Date(a.timestampMs).toLocaleString()}</td>
-                              </tr>
-                            ))
-                          )}
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
-                ) : (
-                  /* Exposición y Loterías Abiertas (ADMIN / SUPERVISOR) */
-                  <div className="glass-panel" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                    <h3 style={{ fontSize: '1.1rem', color: 'hsl(var(--text-primary))' }}>
-                      Horarios y Control Loterías
-                    </h3>
-                    
-                    {/* Draws Card Sub-tabs */}
-                    <div style={{ display: 'flex', borderBottom: '1px solid hsl(var(--border))', gap: '8px', marginBottom: '8px' }}>
-                      <button 
-                        onClick={() => setDrawsSubTab('lottery')}
-                        style={{
-                          padding: '8px 12px',
-                          border: 'none',
-                          borderBottom: drawsSubTab === 'lottery' ? '2px solid hsl(var(--primary))' : '2px solid transparent',
-                          background: 'transparent',
-                          color: drawsSubTab === 'lottery' ? 'hsl(var(--primary))' : 'hsl(var(--text-secondary))',
-                          fontWeight: 600,
-                          cursor: 'pointer',
-                          fontSize: '0.8rem',
-                          transition: 'all 0.2s ease'
-                        }}
-                      >
-                        Lotería Tradicional
-                      </button>
-                      <button 
-                        onClick={() => setDrawsSubTab('pick_sports')}
-                        style={{
-                          padding: '8px 12px',
-                          border: 'none',
-                          borderBottom: drawsSubTab === 'pick_sports' ? '2px solid hsl(var(--primary))' : '2px solid transparent',
-                          background: 'transparent',
-                          color: drawsSubTab === 'pick_sports' ? 'hsl(var(--primary))' : 'hsl(var(--text-secondary))',
-                          fontWeight: 600,
-                          cursor: 'pointer',
-                          fontSize: '0.8rem',
-                          transition: 'all 0.2s ease'
-                        }}
-                      >
-                        Picks y Deportes
-                      </button>
-                    </div>
-
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                      {lotteries
-                        .filter((l) => {
-                          const isPick = l.type === 'Pick3' || l.type === 'Pick4' || l.name.startsWith('US-P') || l.id.startsWith('US-P');
-                          
-                          // Filter by drawsSubTab first
-                          if (drawsSubTab === 'lottery' && isPick) return false;
-                          if (drawsSubTab === 'pick_sports' && !isPick) return false;
-
-                          if (isPick) {
-                            return systemModeConfig.pickModeEnabled !== false;
-                          } else {
-                            return systemModeConfig.lotteryModeEnabled !== false;
-                          }
-                        })
-                        .map((l) => {
-                          const catalogEntry = STATIC_LOTTERIES.find(sl => sl.id === l.id);
-                          const logoUrl = catalogEntry?.logoAssetPath || l.logoAssetPath || '/favicon.svg';
-                          
-                          const currentMinutes = getCurrentDRMinutesSinceMidnight();
-                          const closeMinutes = parseTimeToMinutes(l.baseCloseTime);
-                          const isTimeClosed = currentMinutes >= closeMinutes;
-                          const isManuallyBlocked = manualDisabledLotteryIds.includes(l.id);
-                          const isClosed = isTimeClosed || isManuallyBlocked;
-
-                          return (
-                            <div key={l.id} style={{
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'space-between',
-                              padding: '12px',
-                              borderRadius: 'var(--radius-md)',
-                              backgroundColor: 'hsl(var(--background))',
-                              borderLeft: `4px solid ${l.colorHex}`
-                            }}>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                <img 
-                                  src={logoUrl} 
-                                  alt={l.name} 
-                                  style={{ width: '32px', height: '32px', borderRadius: '4px', objectFit: 'contain', backgroundColor: 'rgba(255,255,255,0.05)', padding: '2px' }}
-                                  onError={(e) => { (e.target as HTMLImageElement).src = '/favicon.svg'; }}
-                                />
-                                <div>
-                                  <strong style={{ fontSize: '0.875rem', display: 'block' }}>{l.name}</strong>
-                                  <span style={{ fontSize: '0.75rem', color: 'hsl(var(--text-secondary))' }}>
-                                    Cierre: {l.baseCloseTime} | Sorteo: {l.baseDrawTime}
-                                  </span>
-                                </div>
-                              </div>
-                              
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                {isClosed ? (
-                                  <span className="badge" style={{ fontSize: '0.625rem', backgroundColor: 'hsl(var(--danger) / 0.1)', color: 'hsl(var(--danger))', border: '1px solid hsl(var(--danger) / 0.2)' }}>
-                                    {isManuallyBlocked ? 'Bloqueado Admin' : 'Cerrado'}
-                                  </span>
-                                ) : (
-                                  <span className="badge badge-success" style={{ fontSize: '0.625rem' }}>
-                                    Abierto
-                                  </span>
-                                )}
-                                
-                                {(user.role === 'ADMIN' || user.role === 'SUPERVISOR') && (
-                                  <button
-                                    onClick={() => handleToggleManualDisabledLottery(l.id)}
-                                    className="btn"
-                                    style={{
-                                      padding: '4px 8px',
-                                      fontSize: '0.7rem',
-                                      borderRadius: 'var(--radius-sm)',
-                                      cursor: 'pointer',
-                                      backgroundColor: isManuallyBlocked ? 'hsl(var(--success) / 0.1)' : 'hsl(var(--danger) / 0.1)',
-                                      color: isManuallyBlocked ? 'hsl(var(--success))' : 'hsl(var(--danger))',
-                                      border: `1px solid ${isManuallyBlocked ? 'hsl(var(--success) / 0.2)' : 'hsl(var(--danger) / 0.2)'}`,
-                                      fontWeight: 600,
-                                      transition: 'all 0.2s ease'
-                                    }}
-                                    title={isManuallyBlocked ? 'Habilitar Lotería' : 'Bloquear Lotería'}
-                                  >
-                                    {isManuallyBlocked ? 'Habilitar' : 'Bloquear'}
-                                  </button>
-                                )}
-                              </div>
-                            </div>
-                          );
-                        })}
-
-                      {drawsSubTab === 'pick_sports' && (
-                        <div className="glass-panel-premium table-row-stagger" style={{ 
-                          padding: '16px', 
-                          marginTop: '4px', 
-                          display: 'flex', 
-                          flexDirection: 'column', 
-                          gap: '10px',
-                          border: '1px solid hsl(var(--primary) / 0.2)' 
-                        }}>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <div>
-                              <strong style={{ fontSize: '0.875rem', display: 'block', color: 'hsl(var(--text-primary))' }}>Banca Deportiva (Sportsbook)</strong>
-                              <span style={{ fontSize: '0.725rem', color: 'hsl(var(--text-secondary))' }}>Límites globales configurados en la red</span>
-                            </div>
-                            <span className={`badge ${
-                              systemModeConfig.sportsbookEnabled !== false ? 'badge-success badge-glow-success' : 'badge-danger badge-glow-danger'
-                            }`} style={{ fontSize: '0.65rem' }}>
-                              {systemModeConfig.sportsbookEnabled !== false ? 'Activo' : 'Desactivado'}
-                            </span>
-                          </div>
-                          
-                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', fontSize: '0.75rem', backgroundColor: 'hsl(var(--background) / 0.6)', padding: '10px', borderRadius: 'var(--radius-md)', border: '1px solid hsl(var(--border) / 0.5)' }}>
-                            <div>
-                              <span style={{ color: 'hsl(var(--text-secondary))', display: 'block', fontSize: '0.65rem' }}>Riesgo Máx por Apuesta</span>
-                              <strong>${sportsLimitsForm.max_ticket_stake.toLocaleString()}</strong>
-                            </div>
-                            <div>
-                              <span style={{ color: 'hsl(var(--text-secondary))', display: 'block', fontSize: '0.65rem' }}>Ganancia Máx Potencial</span>
-                              <strong>${sportsLimitsForm.max_potential_payout.toLocaleString()}</strong>
-                            </div>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
-
-              </div>
-
-            </div>
+            <DashboardHome
+              user={user}
+              users={users}
+              tickets={tickets}
+              sportsTickets={sportsTickets}
+              audits={audits}
+              lotteries={lotteries}
+              systemModeConfig={systemModeConfig}
+              sportsLimitsForm={sportsLimitsForm}
+              manualDisabledLotteryIds={manualDisabledLotteryIds}
+              dashboardDateFilter={dashboardDateFilter}
+              setDashboardDateFilter={setDashboardDateFilter}
+              dashboardViewContext={dashboardViewContext}
+              setDashboardViewContext={setDashboardViewContext}
+              drawsSubTab={drawsSubTab}
+              setDrawsSubTab={setDrawsSubTab}
+              isSameLocalDate={isSameLocalDate}
+              normalizeRate={normalizeRate}
+              handleToggleManualDisabledLottery={handleToggleManualDisabledLottery}
+              setSelectedTicketForDetail={setSelectedTicketForDetail}
+              loadData={loadData}
+              parseTimeToMinutes={parseTimeToMinutes}
+              getCurrentDRMinutesSinceMidnight={getCurrentDRMinutesSinceMidnight}
+            />
           )}
 
           {/* TAB 2: MASTER ONLY - MANAGE ADMINS / BANCAS */}
           {activeTab === 'admins' && user.role === 'MASTER' && (
-            <div className="fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-              
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div style={{ display: 'flex', gap: '12px' }}>
-                  <div style={{ position: 'relative', width: '280px' }}>
-                    <Search size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'hsl(var(--text-muted))' }} />
-                    <input
-                      type="text"
-                      placeholder="Buscar banca o administrador..."
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      className="form-input"
-                      style={{ paddingLeft: '36px' }}
-                    />
-                  </div>
-
-                  <select
-                    className="form-input"
-                    value={filterStatus}
-                    onChange={(e: any) => setFilterStatus(e.target.value)}
-                    style={{ width: '140px' }}
-                  >
-                    <option value="all">Todos</option>
-                    <option value="active">Activos</option>
-                    <option value="blocked">Bloqueados</option>
-                  </select>
-                </div>
-
-                <button className="btn btn-primary" onClick={() => setAdminModalOpen(true)}>
-                  <Plus size={16} />
-                  Crear Banca
-                </button>
-              </div>
-
-              {/* FIGMA-STYLE BENTO GRID OF ADMIN/BANCA CARDS */}
-              <div style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))',
-                gap: '20px',
-                marginTop: '10px'
-              }}>
-                {filteredUsers.filter(u => u.role === 'ADMIN').length === 0 ? (
-                  <div className="glass-panel-premium" style={{ gridColumn: '1 / -1', padding: '48px', textAlign: 'center', color: 'hsl(var(--text-secondary))' }}>
-                    No se encontraron bancas registradas.
-                  </div>
-                ) : (
-                  filteredUsers.filter(u => u.role === 'ADMIN').map((a) => (
-                    <div 
-                      key={a.id} 
-                      className="glass-panel-premium table-row-stagger" 
-                      style={{ 
-                        padding: '24px', 
-                        display: 'flex', 
-                        flexDirection: 'column', 
-                        gap: '16px',
-                        border: '1px solid ' + (a.active ? 'hsl(var(--border) / 0.6)' : 'hsl(var(--danger) / 0.3)'),
-                        boxShadow: a.active ? 'var(--shadow-md)' : '0 8px 32px 0 hsl(var(--danger) / 0.08)'
-                      }}
-                    >
-                      {/* Header Info */}
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                        <div>
-                          <span style={{ fontSize: '0.7rem', color: 'hsl(var(--text-muted))', fontWeight: 600, display: 'block', textTransform: 'uppercase' }}>ID: {a.id}</span>
-                          <strong style={{ fontSize: '1.15rem', display: 'block', color: 'hsl(var(--text-primary))', marginTop: '2px' }}>{a.banca}</strong>
-                          <span style={{ fontSize: '0.85rem', color: 'hsl(var(--text-secondary))', display: 'block', marginTop: '2px' }}>@{a.user}</span>
-                        </div>
-                        
-                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '6px' }}>
-                          <span className={`badge ${a.active ? 'badge-success badge-glow-success' : 'badge-danger badge-glow-danger'}`}>
-                            {a.active ? 'Activo' : 'Bloqueado'}
-                          </span>
-                          <span className="badge badge-primary" title="Prefijo Cajeros">{a.cashierPrefix}</span>
-                        </div>
-                      </div>
-
-                      {/* Details & Barcode */}
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', margin: '4px 0' }}>
-                        <div style={{ display: 'flex', flexDirection: 'column' }}>
-                          <span style={{ fontSize: '0.7rem', color: 'hsl(var(--text-muted))' }}>Administrador</span>
-                          <span style={{ fontSize: '0.875rem', fontWeight: 500, color: 'hsl(var(--text-primary))' }}>{a.displayName}</span>
-                        </div>
-                        {(() => {
-                          const code = a.id;
-                          const bars = [];
-                          for (let i = 0; i < code.length; i++) {
-                            const charCode = code.charCodeAt(i);
-                            const width = (charCode % 3) + 1;
-                            const margin = (charCode % 2) + 1;
-                            bars.push(
-                              <div 
-                                key={i} 
-                                style={{
-                                  width: `${width}px`,
-                                  marginRight: `${margin}px`,
-                                  height: '20px',
-                                  backgroundColor: 'hsl(var(--text-muted) / 0.5)'
-                                }} 
-                              />
-                            );
-                          }
-                          return (
-                            <div style={{ display: 'flex', alignItems: 'center', opacity: 0.6 }} title={`Código de Barras: ${code}`}>
-                              {bars}
-                              {bars}
-                            </div>
-                          );
-                        })()}
-                      </div>
-
-                      {/* Financial info */}
-                      <div style={{ 
-                        display: 'grid', 
-                        gridTemplateColumns: '1fr 1fr', 
-                        gap: '12px', 
-                        backgroundColor: 'hsl(var(--background) / 0.6)', 
-                        padding: '12px', 
-                        borderRadius: 'var(--radius-md)', 
-                        border: '1px solid hsl(var(--border) / 0.5)' 
-                      }}>
-                        <div>
-                          <span style={{ fontSize: '0.7rem', color: 'hsl(var(--text-secondary))', display: 'block' }}>Cupo Financiero</span>
-                          <strong style={{ fontSize: '1.1rem', color: 'hsl(var(--text-primary))', display: 'block', marginTop: '2px' }}>
-                            ${a.rechargesBalance.toFixed(2)}
-                          </strong>
-                        </div>
-                        <div>
-                          <span style={{ fontSize: '0.7rem', color: 'hsl(var(--text-secondary))', display: 'block' }}>Teléfono</span>
-                          <strong style={{ fontSize: '0.9rem', color: 'hsl(var(--text-primary))', display: 'block', marginTop: '4px' }}>
-                            {a.phone || 'N/A'}
-                          </strong>
-                        </div>
-                      </div>
-
-                      {/* Footer Info */}
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.75rem', color: 'hsl(var(--text-muted))' }}>
-                        <span>Creado: {a.createdLabel}</span>
-                      </div>
-
-                      {/* Actions buttons */}
-                      <div style={{ 
-                        display: 'flex', 
-                        gap: '8px', 
-                        marginTop: 'auto', 
-                        paddingTop: '12px', 
-                        borderTop: '1px solid hsl(var(--border) / 0.5)' 
-                      }}>
-                        <button 
-                          className="btn btn-secondary" 
-                          style={{ 
-                            flex: 1.2, 
-                            fontSize: '0.8rem', 
-                            padding: '8px',
-                            color: a.active ? 'hsl(var(--danger))' : 'hsl(var(--success))',
-                            borderColor: a.active ? 'hsl(var(--danger) / 0.2)' : 'hsl(var(--success) / 0.2)',
-                            backgroundColor: a.active ? 'hsl(var(--danger) / 0.05)' : 'hsl(var(--success) / 0.05)',
-                          }}
-                          onClick={() => handleToggleAdmin(a.id)}
-                        >
-                          {a.active ? <Lock size={14} /> : <Unlock size={14} />}
-                          {a.active ? 'Bloquear' : 'Activar'}
-                        </button>
-
-                        <button 
-                          className="btn btn-secondary" 
-                          style={{ flex: 1, fontSize: '0.8rem', padding: '8px', gap: '4px' }}
-                          onClick={() => handleRegenCreds(a)}
-                          title="Regenerar credenciales de acceso"
-                        >
-                          <RefreshCw size={14} />
-                          Creds
-                        </button>
-
-                        <button 
-                          className="btn btn-secondary" 
-                          style={{ 
-                            padding: '8px', 
-                            color: 'hsl(var(--danger))', 
-                            borderColor: 'hsl(var(--danger) / 0.2)',
-                            backgroundColor: 'hsl(var(--danger) / 0.05)' 
-                          }}
-                          onClick={() => handleDeleteBanca(a.id)}
-                          title="Eliminar banca de raíz"
-                        >
-                          <Trash2 size={14} />
-                        </button>
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
-
-            </div>
+            <AdminsTab
+              filteredUsers={filteredUsers}
+              searchQuery={searchQuery}
+              setSearchQuery={setSearchQuery}
+              filterStatus={filterStatus}
+              setFilterStatus={setFilterStatus}
+              setAdminModalOpen={setAdminModalOpen}
+              handleToggleAdmin={handleToggleAdmin}
+              handleRegenCreds={handleRegenCreds}
+              handleDeleteBanca={handleDeleteBanca}
+            />
           )}
 
           {/* TAB 3: ADMIN ONLY - MANAGE CAJEROS */}
           {activeTab === 'cajeros' && (user.role === 'ADMIN' || user.role === 'MASTER') && (
-            <div className="fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-              
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div style={{ display: 'flex', gap: '12px' }}>
-                  <div style={{ position: 'relative', width: '280px' }}>
-                    <Search size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'hsl(var(--text-muted))' }} />
-                    <input
-                      type="text"
-                      placeholder="Buscar cajero..."
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      className="form-input"
-                      style={{ paddingLeft: '36px' }}
-                    />
-                  </div>
-                </div>
-
-                <div style={{ display: 'flex', gap: '10px' }}>
-                  <button className="btn btn-secondary" onClick={() => setRechargeModalOpen(true)}>
-                    <ArrowRightLeft size={16} />
-                    Asignar Balance
-                  </button>
-
-                  <button className="btn btn-primary" onClick={() => setCajeroModalOpen(true)}>
-                    <Plus size={16} />
-                    Crear Cajero
-                  </button>
-                </div>
-              </div>
-
-              {/* FIGMA-STYLE BENTO GRID OF CASHIER CARDS */}
-              <div style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))',
-                gap: '20px',
-                marginTop: '10px'
-              }}>
-                {users.filter(u => u.role === 'CASHIER' && (user.role === 'MASTER' ? true : u.adminId === user.id)).length === 0 ? (
-                  <div className="glass-panel-premium" style={{ gridColumn: '1 / -1', padding: '48px', textAlign: 'center', color: 'hsl(var(--text-secondary))' }}>
-                    No hay cajeros asignados a tu banca todavía.
-                  </div>
-                ) : (
-                  users.filter(u => u.role === 'CASHIER' && (user.role === 'MASTER' ? true : u.adminId === user.id)).map((c) => {
-                    const cashierTickets = tickets.filter(t => t.sellerUser === c.user && t.status !== 'cancelled' && t.status !== 'voided');
-                    const salesTotalToday = cashierTickets.filter(t => {
-                      const todayStr = new Intl.DateTimeFormat('fr-CA', { timeZone: 'America/Santo_Domingo' }).format(new Date());
-                      return t.drawDateKey === todayStr || (Date.now() - t.createdAtEpochMs) <= 86400000;
-                    }).reduce((acc, t) => acc + t.total, 0);
-
-                    return (
-                      <div 
-                        key={c.id} 
-                        className="glass-panel-premium table-row-stagger" 
-                        style={{ 
-                          padding: '24px', 
-                          display: 'flex', 
-                          flexDirection: 'column', 
-                          gap: '16px',
-                          border: '1px solid ' + (c.active ? 'hsl(var(--border) / 0.6)' : 'hsl(var(--danger) / 0.3)'),
-                          boxShadow: c.active ? 'var(--shadow-md)' : '0 8px 32px 0 hsl(var(--danger) / 0.08)'
-                        }}
-                      >
-                        {/* Header Info */}
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                          <div>
-                            <span style={{ fontSize: '0.7rem', color: 'hsl(var(--text-muted))', fontWeight: 600, display: 'block', textTransform: 'uppercase' }}>ID: {c.id}</span>
-                            <strong style={{ fontSize: '1.15rem', display: 'block', color: 'hsl(var(--text-primary))', marginTop: '2px' }}>{c.displayName}</strong>
-                            <span style={{ fontSize: '0.85rem', color: 'hsl(var(--text-secondary))', display: 'block', marginTop: '2px' }}>@{c.user}</span>
-                          </div>
-                          
-                          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '6px' }}>
-                            <span className={`badge ${c.active ? 'badge-success badge-glow-success' : 'badge-danger badge-glow-danger'}`}>
-                              {c.active ? 'Activo' : 'Bloqueado'}
-                            </span>
-                            <span className="badge badge-primary">{c.territory}</span>
-                          </div>
-                        </div>
-
-                        {/* Financial Metrics */}
-                        <div style={{ 
-                          display: 'grid', 
-                          gridTemplateColumns: '1fr 1fr', 
-                          gap: '12px', 
-                          backgroundColor: 'hsl(var(--background) / 0.6)', 
-                          padding: '12px', 
-                          borderRadius: 'var(--radius-md)', 
-                          border: '1px solid hsl(var(--border) / 0.5)' 
-                        }}>
-                          <div>
-                            <span style={{ fontSize: '0.7rem', color: 'hsl(var(--text-secondary))', display: 'block' }}>Ventas del Día</span>
-                            <strong style={{ fontSize: '1.1rem', color: 'hsl(var(--text-primary))', display: 'block', marginTop: '2px' }}>
-                              ${salesTotalToday.toLocaleString('en-US', { minimumFractionDigits: 2 })}
-                            </strong>
-                          </div>
-                          <div>
-                            <span style={{ fontSize: '0.7rem', color: 'hsl(var(--text-secondary))', display: 'block' }}>Cupo Recargas (FF)</span>
-                            <strong style={{ fontSize: '1.1rem', color: 'hsl(var(--text-primary))', display: 'block', marginTop: '2px' }}>
-                              ${c.rechargesBalance.toFixed(2)}
-                            </strong>
-                            <span style={{ 
-                              fontSize: '0.65rem', 
-                              color: c.rechargesEnabled ? 'hsl(var(--success))' : 'hsl(var(--text-muted))',
-                              fontWeight: 600,
-                              display: 'block',
-                              marginTop: '2px'
-                            }}>
-                              {c.rechargesEnabled ? '● Habilitado' : '○ Deshabilitado'}
-                            </span>
-                          </div>
-                        </div>
-
-                        {/* Additional Info footer */}
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.75rem', color: 'hsl(var(--text-muted))' }}>
-                          <span>Registrado: {c.createdLabel || '14/05/2026'}</span>
-                        </div>
-
-                        {/* Actions buttons */}
-                        <div style={{ 
-                          display: 'flex', 
-                          gap: '6px', 
-                          marginTop: 'auto', 
-                          paddingTop: '12px', 
-                          borderTop: '1px solid hsl(var(--border) / 0.5)',
-                          flexWrap: 'wrap'
-                        }}>
-                          <button 
-                            className="btn btn-secondary" 
-                            style={{ 
-                              flex: '1 1 45%', 
-                              fontSize: '0.75rem', 
-                              padding: '6px 8px',
-                              color: c.active ? 'hsl(var(--danger))' : 'hsl(var(--success))',
-                              borderColor: c.active ? 'hsl(var(--danger) / 0.2)' : 'hsl(var(--success) / 0.2)',
-                              backgroundColor: c.active ? 'hsl(var(--danger) / 0.05)' : 'hsl(var(--success) / 0.05)',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              gap: '4px'
-                            }}
-                            onClick={() => handleToggleCashier(c.id)}
-                          >
-                            {c.active ? <Lock size={12} /> : <Unlock size={12} />}
-                            {c.active ? 'Suspender' : 'Activar'}
-                          </button>
-
-                          <button 
-                            className="btn btn-secondary" 
-                            style={{ 
-                              flex: '1 1 45%', 
-                              fontSize: '0.75rem', 
-                              padding: '6px 8px', 
-                              display: 'flex', 
-                              alignItems: 'center', 
-                              justifyContent: 'center', 
-                              gap: '4px' 
-                            }}
-                            onClick={() => handleOpenEditCajero(c)}
-                          >
-                            <Edit2 size={12} />
-                            Editar
-                          </button>
-
-                          <button 
-                            className="btn btn-secondary" 
-                            style={{ 
-                              flex: '1 1 70%', 
-                              fontSize: '0.75rem', 
-                              padding: '6px 8px', 
-                              display: 'flex', 
-                              alignItems: 'center', 
-                              justifyContent: 'center', 
-                              gap: '4px',
-                              color: 'hsl(var(--primary))',
-                              borderColor: 'hsl(var(--primary) / 0.2)'
-                            }}
-                            onClick={() => handleOpenCashierLimitsModal(c)}
-                          >
-                            <Sliders size={12} />
-                            Límites
-                          </button>
-
-                          <button 
-                            className="btn btn-secondary" 
-                            style={{ 
-                              flex: '1 1 20%',
-                              padding: '6px 8px', 
-                              color: 'hsl(var(--danger))', 
-                              borderColor: 'hsl(var(--danger) / 0.2)',
-                              backgroundColor: 'hsl(var(--danger) / 0.05)',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center'
-                            }}
-                            onClick={() => handleDeleteCashier(c.id)}
-                            title="Eliminar Cajero"
-                          >
-                            <Trash2 size={12} />
-                          </button>
-                        </div>
-                      </div>
-                    );
-                  })
-                )}
-              </div>
-
-            </div>
+            <CajerosTab
+              user={user}
+              users={users}
+              cashierSalesTotals={cashierSalesTotals}
+              setRechargeModalOpen={setRechargeModalOpen}
+              setCajeroModalOpen={setCajeroModalOpen}
+              handleToggleCashier={handleToggleCashier}
+              handleOpenEditCajero={handleOpenEditCajero}
+              handleRenameCashier={handleRenameCashier}
+              handleOpenCashierLimitsModal={handleOpenCashierLimitsModal}
+              handleDeleteCashier={handleDeleteCashier}
+            />
           )}
 
           {/* TAB 4: ADMIN ONLY - MANAGE SUPERVISORES */}
           {activeTab === 'supervisores' && (user.role === 'ADMIN' || user.role === 'MASTER') && (
-            <div className="fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-              
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <h3 style={{ fontSize: '1.1rem' }}>Lista de Supervisores Asignados</h3>
-                
-                <button className="btn btn-primary" onClick={() => setSupervisorModalOpen(true)}>
-                  <Plus size={16} />
-                  Crear Supervisor
-                </button>
-              </div>
-
-              {/* FIGMA-STYLE BENTO GRID OF SUPERVISOR CARDS */}
-              <div style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))',
-                gap: '20px',
-                marginTop: '10px'
-              }}>
-                {users.filter(u => u.role === 'SUPERVISOR' && (user.role === 'MASTER' ? true : u.adminId === user.id)).length === 0 ? (
-                  <div className="glass-panel-premium" style={{ gridColumn: '1 / -1', padding: '48px', textAlign: 'center', color: 'hsl(var(--text-secondary))' }}>
-                    No hay supervisores asociados a tu banca.
-                  </div>
-                ) : (
-                  users.filter(u => u.role === 'SUPERVISOR' && (user.role === 'MASTER' ? true : u.adminId === user.id)).map((s) => {
-                    const assignedCashiersCount = users.filter(u => u.role === 'CASHIER' && u.supervisorIds?.includes(s.id)).length;
-                    return (
-                      <div 
-                        key={s.id} 
-                        className="glass-panel-premium table-row-stagger" 
-                        style={{ 
-                          padding: '24px', 
-                          display: 'flex', 
-                          flexDirection: 'column', 
-                          gap: '16px',
-                          border: '1px solid ' + (s.active ? 'hsl(var(--border) / 0.6)' : 'hsl(var(--danger) / 0.3)'),
-                          boxShadow: s.active ? 'var(--shadow-md)' : '0 8px 32px 0 hsl(var(--danger) / 0.08)'
-                        }}
-                      >
-                        {/* Header Info */}
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                          <div>
-                            <span style={{ fontSize: '0.7rem', color: 'hsl(var(--text-muted))', fontWeight: 600, display: 'block', textTransform: 'uppercase' }}>ID: {s.id}</span>
-                            <strong style={{ fontSize: '1.15rem', display: 'block', color: 'hsl(var(--text-primary))', marginTop: '2px' }}>{s.displayName}</strong>
-                            <span style={{ fontSize: '0.85rem', color: 'hsl(var(--text-secondary))', display: 'block', marginTop: '2px' }}>@{s.user}</span>
-                          </div>
-                          
-                          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '6px' }}>
-                            <span className={`badge ${s.active ? 'badge-success badge-glow-success' : 'badge-danger badge-glow-danger'}`}>
-                              {s.active ? 'Activo' : 'Bloqueado'}
-                            </span>
-                            <span className="badge badge-primary">{s.territory || 'N/A'}</span>
-                          </div>
-                        </div>
-
-                        {/* Contacts & Supervision Details */}
-                        <div style={{ 
-                          display: 'grid', 
-                          gridTemplateColumns: '1fr 1fr', 
-                          gap: '12px', 
-                          backgroundColor: 'hsl(var(--background) / 0.6)', 
-                          padding: '12px', 
-                          borderRadius: 'var(--radius-md)', 
-                          border: '1px solid hsl(var(--border) / 0.5)' 
-                        }}>
-                          <div>
-                            <span style={{ fontSize: '0.7rem', color: 'hsl(var(--text-secondary))', display: 'block' }}>Cajeros a Cargo</span>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '4px' }}>
-                              <Users size={16} style={{ color: 'hsl(var(--primary))' }} />
-                              <strong style={{ fontSize: '1.1rem', color: 'hsl(var(--text-primary))' }}>
-                                {assignedCashiersCount}
-                              </strong>
-                            </div>
-                          </div>
-                          <div>
-                            <span style={{ fontSize: '0.7rem', color: 'hsl(var(--text-secondary))', display: 'block' }}>Teléfono</span>
-                            <strong style={{ fontSize: '0.9rem', color: 'hsl(var(--text-primary))', display: 'block', marginTop: '6px' }}>
-                              {s.phone || 'N/A'}
-                            </strong>
-                          </div>
-                        </div>
-
-                        {/* Footer Info */}
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.75rem', color: 'hsl(var(--text-muted))' }}>
-                          <span>Registrado: {s.createdLabel || 'N/A'}</span>
-                        </div>
-
-                        {/* Actions buttons */}
-                        <div style={{ 
-                          display: 'flex', 
-                          gap: '8px', 
-                          marginTop: 'auto', 
-                          paddingTop: '12px', 
-                          borderTop: '1px solid hsl(var(--border) / 0.5)' 
-                        }}>
-                          <button 
-                            className="btn btn-secondary" 
-                            style={{ flex: 1.2, fontSize: '0.8rem', padding: '8px', gap: '4px' }}
-                            onClick={() => handleOpenAssignModal(s)}
-                            title="Asignar y desasignar cajeros bajo la tutela del supervisor"
-                          >
-                            <Users size={14} />
-                            Asignar
-                          </button>
-
-                          <button 
-                            className="btn btn-secondary" 
-                            style={{ flex: 1, fontSize: '0.8rem', padding: '8px', gap: '4px' }}
-                            onClick={() => handleResetSupervisorPassword(s)}
-                            title="Restablecer contraseña de acceso"
-                          >
-                            <Key size={14} />
-                            Clave
-                          </button>
-
-                          <button 
-                            className="btn btn-secondary" 
-                            style={{ 
-                              padding: '8px', 
-                              color: s.active ? 'hsl(var(--danger))' : 'hsl(var(--success))',
-                              borderColor: s.active ? 'hsl(var(--danger) / 0.2)' : 'hsl(var(--success) / 0.2)',
-                              backgroundColor: s.active ? 'hsl(var(--danger) / 0.05)' : 'hsl(var(--success) / 0.05)' 
-                            }}
-                            onClick={() => handleToggleSupervisor(s)}
-                            title={s.active ? 'Bloquear Supervisor' : 'Activar Supervisor'}
-                          >
-                            {s.active ? <Lock size={14} /> : <Unlock size={14} />}
-                          </button>
-
-                          <button 
-                            className="btn btn-secondary" 
-                            style={{ 
-                              padding: '8px', 
-                              color: 'hsl(var(--danger))', 
-                              borderColor: 'hsl(var(--danger) / 0.2)',
-                              backgroundColor: 'hsl(var(--danger) / 0.05)' 
-                            }}
-                            onClick={() => handleDeleteSupervisor(s)}
-                            title="Eliminar Supervisor"
-                          >
-                            <Trash2 size={14} />
-                          </button>
-                        </div>
-                      </div>
-                    );
-                  })
-                )}
-              </div>
-
-            </div>
+            <SupervisoresTab
+              user={user}
+              users={users}
+              setSupervisorModalOpen={setSupervisorModalOpen}
+              handleOpenAssignModal={handleOpenAssignModal}
+              handleResetSupervisorPassword={handleResetSupervisorPassword}
+              handleToggleSupervisor={handleToggleSupervisor}
+              handleDeleteSupervisor={handleDeleteSupervisor}
+            />
           )}
 
           {/* TAB 5: COMPREHENSIVE NETWORK & PLAY MONITORING */}
           {activeTab === 'monitoreo' && (user.role === 'ADMIN' || user.role === 'SUPERVISOR' || user.role === 'MASTER') && (
-            <div className="fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-              
-              {/* Monitoreo Top Controls */}
-              <div className="glass-panel" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
-                  <div>
-                    <h3 style={{ fontSize: '1.2rem', fontWeight: 700 }}>Monitoreo de Red y Loterías</h3>
-                    <p style={{ fontSize: '0.825rem', color: 'hsl(var(--text-secondary))' }}>
-                      Audita las ventas de cajeros, loterías activas y la exposición acumulada de números en tiempo real.
-                    </p>
-                  </div>
-                  <span className="badge badge-success" style={{ padding: '6px 12px', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#fff', display: 'inline-block', animation: 'pulse 1.5s infinite' }} />
-                    Sincronizado
-                  </span>
-                </div>
-
-                <div style={{ display: 'flex', gap: '8px', borderBottom: '1px solid hsl(var(--border))', paddingBottom: '16px', flexWrap: 'wrap' }}>
-                  {[
-                    { id: 'lotteries', label: 'Ventas por Lotería' },
-                    { id: 'plays', label: 'Ranking de Números' },
-                    { id: 'cajeros', label: 'Presencia de Cajeros' },
-                  ].map((subTab) => (
-                    <button
-                      key={subTab.id}
-                      onClick={() => setMonitoreoSubTab(subTab.id as any)}
-                      style={{
-                        padding: '10px 18px',
-                        borderRadius: 'var(--radius-md)',
-                        border: '1px solid ' + (monitoreoSubTab === subTab.id ? 'hsl(var(--primary))' : 'hsl(var(--border))'),
-                        background: monitoreoSubTab === subTab.id ? 'hsl(var(--primary) / 0.08)' : 'transparent',
-                        color: monitoreoSubTab === subTab.id ? 'hsl(var(--primary))' : 'hsl(var(--text-secondary))',
-                        fontSize: '0.875rem',
-                        fontWeight: 600,
-                        cursor: 'pointer',
-                        transition: 'all 0.2s ease'
-                      }}
-                    >
-                      {subTab.label}
-                    </button>
-                  ))}
-                </div>
-
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
-                  <div style={{ display: 'flex', gap: '8px' }}>
-                    {['day', 'week', 'month'].map((r) => (
-                      <button
-                        key={r}
-                        onClick={() => setMonitoreoRange(r as any)}
-                        className={`badge ${monitoreoRange === r ? 'badge-primary' : 'badge-secondary'}`}
-                        style={{ border: 'none', cursor: 'pointer', textTransform: 'capitalize', fontSize: '0.75rem', padding: '6px 12px' }}
-                      >
-                        {r === 'day' ? 'Hoy' : r === 'week' ? 'Semana' : 'Mes'}
-                      </button>
-                    ))}
-                  </div>
-
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <span style={{ fontSize: '0.8rem', color: 'hsl(var(--text-secondary))' }}>Mostrar Loterías Vacías:</span>
-                    <input
-                      type="checkbox"
-                      checked={monitoreoShowEmptyLotteries}
-                      onChange={(e) => setMonitoreoShowEmptyLotteries(e.target.checked)}
-                      style={{ cursor: 'pointer', width: '16px', height: '16px' }}
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Sub-Tab 1: LOTTERIES BREAKDOWN */}
-              {monitoreoSubTab === 'lotteries' && (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                  {(() => {
-                    const scopedTickets = tickets.filter(t => {
-                      if (t.status === 'cancelled' || t.status === 'voided') return false;
-                      const dateLimit = monitoreoRange === 'day' ? 1 : monitoreoRange === 'week' ? 7 : 30;
-                      return (Date.now() - t.createdAtEpochMs) <= (dateLimit * 86400000);
-                    });
-
-                    // Build lottery wagers
-                    const lotteryWagers = lotteries.map(l => {
-                      let q = 0, p = 0, t = 0, sp = 0, pick = 0, total = 0;
-                      scopedTickets.forEach(tk => {
-                        tk.plays.forEach(play => {
-                          if (play.lotteryId === l.id || play.secondaryLotteryId === l.id) {
-                            const amt = play.amount;
-                            total += amt;
-                            const type = play.playType.toUpperCase();
-                            if (type === 'Q' || type === 'QUINIELE') q += amt;
-                            else if (type === 'P' || type === 'PALE') p += amt;
-                            else if (type === 'T' || type === 'TRIPLETA') t += amt;
-                            else if (type === 'SP' || type === 'SUPER PALE') sp += amt;
-                            else if (['P3', 'P3BOX', 'P4', 'P4BOX'].includes(type)) pick += amt;
-                          }
-                        });
-                      });
-                      return { lottery: l, q, p, t, sp, pick, total };
-                    }).filter((item: any) => monitoreoShowEmptyLotteries || item.total > 0)
-                      .sort((a: any, b: any) => b.total - a.total);
-
-                    const grandTotal = lotteryWagers.reduce((acc: number, item: any) => acc + item.total, 0);
-
-                    if (lotteryWagers.length === 0) {
-                      return (
-                        <div className="glass-panel" style={{ padding: '40px', textAlign: 'center', color: 'hsl(var(--text-secondary))' }}>
-                          No hay ventas registradas para este periodo de monitoreo.
-                        </div>
-                      );
-                    }
-
-                    return (
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                        {lotteryWagers.map((item: any) => {
-                          const percent = grandTotal > 0 ? (item.total / grandTotal) * 100 : 0;
-                           const catalogEntry = STATIC_LOTTERIES.find(sl => sl.id === item.lottery.id);
-                           const logoUrl = catalogEntry?.logoAssetPath || item.lottery.logoAssetPath || '/favicon.svg';
-
-                          return (
-                            <div key={item.lottery.id} className="glass-panel" style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                  <img 
-                                    src={logoUrl} 
-                                    alt={item.lottery.name} 
-                                    style={{ width: '36px', height: '36px', borderRadius: '4px', objectFit: 'contain', backgroundColor: 'rgba(255,255,255,0.05)', padding: '2px' }}
-                                    onError={(e) => { (e.target as HTMLImageElement).src = '/favicon.svg'; }}
-                                  />
-                                  <div>
-                                    <strong style={{ fontSize: '1rem', display: 'block' }}>{item.lottery.name}</strong>
-                                    <span style={{ fontSize: '0.75rem', color: 'hsl(var(--text-muted))' }}>({item.lottery.territory})</span>
-                                  </div>
-                                </div>
-                                <div style={{ textAlign: 'right' }}>
-                                  <strong style={{ fontSize: '1.05rem', color: 'hsl(var(--primary))' }}>${item.total.toFixed(2)}</strong>
-                                  <span style={{ fontSize: '0.75rem', color: 'hsl(var(--text-muted))', display: 'block' }}>{percent.toFixed(1)}% del total</span>
-                                </div>
-                              </div>
-
-                              {/* Progress bar */}
-                              <div style={{ width: '100%', height: '6px', borderRadius: '3px', backgroundColor: 'hsl(var(--border))', overflow: 'hidden' }}>
-                                <div style={{ height: '100%', width: `${percent}%`, backgroundColor: item.lottery.colorHex, borderRadius: '3px' }} />
-                              </div>
-
-                              {/* Breakdown */}
-                              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(100px, 1fr))', gap: '12px', fontSize: '0.8rem', marginTop: '4px' }}>
-                                <div style={{ backgroundColor: 'hsl(var(--background))', padding: '6px 10px', borderRadius: 'var(--radius-sm)' }}>
-                                  <span style={{ color: 'hsl(var(--text-secondary))', display: 'block', fontSize: '0.7rem' }}>Quiniela</span>
-                                  <strong>${item.q.toFixed(2)}</strong>
-                                </div>
-                                <div style={{ backgroundColor: 'hsl(var(--background))', padding: '6px 10px', borderRadius: 'var(--radius-sm)' }}>
-                                  <span style={{ color: 'hsl(var(--text-secondary))', display: 'block', fontSize: '0.7rem' }}>Palé</span>
-                                  <strong>${item.p.toFixed(2)}</strong>
-                                </div>
-                                <div style={{ backgroundColor: 'hsl(var(--background))', padding: '6px 10px', borderRadius: 'var(--radius-sm)' }}>
-                                  <span style={{ color: 'hsl(var(--text-secondary))', display: 'block', fontSize: '0.7rem' }}>Super Palé</span>
-                                  <strong>${item.sp.toFixed(2)}</strong>
-                                </div>
-                                <div style={{ backgroundColor: 'hsl(var(--background))', padding: '6px 10px', borderRadius: 'var(--radius-sm)' }}>
-                                  <span style={{ color: 'hsl(var(--text-secondary))', display: 'block', fontSize: '0.7rem' }}>Tripleta</span>
-                                  <strong>${item.t.toFixed(2)}</strong>
-                                </div>
-                                <div style={{ backgroundColor: 'hsl(var(--background))', padding: '6px 10px', borderRadius: 'var(--radius-sm)' }}>
-                                  <span style={{ color: 'hsl(var(--text-secondary))', display: 'block', fontSize: '0.7rem' }}>Pick 3/4</span>
-                                  <strong>${item.pick.toFixed(2)}</strong>
-                                </div>
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    );
-                  })()}
-                </div>
-              )}
-
-              {/* Sub-Tab 2: PLAY NUMBERS EXPOSURE RANKING */}
-              {monitoreoSubTab === 'plays' && (
-                <div className="glass-panel" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
-                    <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                      {[
-                        { id: 'Q', label: 'Quiniela' },
-                        { id: 'P', label: 'Pale' },
-                        { id: 'SP', label: 'Super Pale' },
-                        { id: 'T', label: 'Tripleta' },
-                        { id: 'P3', label: 'Pick 3' },
-                        { id: 'P4', label: 'Pick 4' },
-                      ].map((view) => (
-                        <button
-                          key={view.id}
-                          onClick={() => setMonitoreoPlayFocus(view.id as any)}
-                          style={{
-                            padding: '6px 12px',
-                            borderRadius: 'var(--radius-sm)',
-                            border: '1px solid ' + (monitoreoPlayFocus === view.id ? 'hsl(var(--primary))' : 'hsl(var(--border))'),
-                            background: monitoreoPlayFocus === view.id ? 'hsl(var(--primary) / 0.06)' : 'transparent',
-                            color: monitoreoPlayFocus === view.id ? 'hsl(var(--primary))' : 'hsl(var(--text-secondary))',
-                            fontSize: '0.75rem',
-                            fontWeight: 600,
-                            cursor: 'pointer'
-                          }}
-                        >
-                          {view.label}
-                        </button>
-                      ))}
-                    </div>
-
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <span style={{ fontSize: '0.8rem', color: 'hsl(var(--text-secondary))' }}>Mayor Apuesta Primero:</span>
-                      <input
-                        type="checkbox"
-                        checked={monitoreoHighestFirst}
-                        onChange={(e) => setMonitoreoHighestFirst(e.target.checked)}
-                        style={{ cursor: 'pointer', width: '16px', height: '16px' }}
-                      />
-                    </div>
-                  </div>
-
-                  {/* Build wagers ranking */}
-                  {(() => {
-                    const scopedTickets = tickets.filter(t => {
-                      if (t.status === 'cancelled' || t.status === 'voided') return false;
-                      const dateLimit = monitoreoRange === 'day' ? 1 : monitoreoRange === 'week' ? 7 : 30;
-                      return (Date.now() - t.createdAtEpochMs) <= (dateLimit * 86400000);
-                    });
-
-                    let ranking = buildLotteryMonitorRows(scopedTickets, monitoreoPlayFocus);
-                    if (!monitoreoHighestFirst) {
-                      ranking = ranking.sort((a: any, b: any) => a.amount - b.amount);
-                    }
-
-                    if (ranking.length === 0) {
-                      return (
-                        <div style={{ padding: '30px', textAlign: 'center', color: 'hsl(var(--text-muted))' }}>
-                          No hay números apostados para esta combinación en el periodo seleccionado.
-                        </div>
-                      );
-                    }
-
-                    return (
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                        {ranking.map((row: any) => (
-                          <div
-                            key={row.displayNumber}
-                            style={{
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'space-between',
-                              padding: '12px 16px',
-                              borderRadius: 'var(--radius-sm)',
-                              backgroundColor: 'hsl(var(--background))',
-                              border: '1px solid hsl(var(--border))'
-                            }}
-                          >
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-                              <span style={{
-                                padding: '8px 14px',
-                                borderRadius: 'var(--radius-sm)',
-                                backgroundColor: 'hsl(var(--primary) / 0.1)',
-                                color: 'hsl(var(--primary))',
-                                fontWeight: 700,
-                                fontSize: '1rem',
-                                fontFamily: 'monospace'
-                              }}>
-                                {row.displayNumber}
-                              </span>
-                              <div>
-                                <strong style={{ fontSize: '0.9rem', display: 'block' }}>Apostado: ${row.amount.toFixed(2)}</strong>
-                                <span style={{ fontSize: '0.75rem', color: 'hsl(var(--text-muted))' }}>
-                                  {row.playsCount} jugadas · Cajeros: {row.actors.join(', ') || 'sin cajero'}
-                                </span>
-                              </div>
-                            </div>
-                            <span className="badge badge-success" style={{ fontSize: '0.75rem' }}>
-                              {row.playsCount} veces
-                            </span>
-                          </div>
-                        ))}
-                      </div>
-                    );
-                  })()}
-                </div>
-              )}
-
-              {/* Sub-Tab 3: CASHIER PRESENCE & ONLINE STATUS */}
-              {monitoreoSubTab === 'cajeros' && (
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '20px' }}>
-                  {users.filter(u => {
-                    if (user.role === 'MASTER') return u.role === 'CASHIER';
-                    if (user.role === 'ADMIN') return (u.role === 'CASHIER' || u.role === 'ADMIN') && (u.adminId === user.id || u.id === user.id);
-                    return u.role === 'CASHIER' && u.supervisorIds.includes(user.id);
-                  }).map((c) => {
-                    const cashierTickets = tickets.filter(t => t.sellerUser === c.user && t.status !== 'cancelled' && t.status !== 'voided');
-                    const hasVendidoToday = cashierTickets.some(t => (Date.now() - t.createdAtEpochMs) <= 86400000);
-                    const presence = !c.active ? 'Bloqueado' : hasVendidoToday ? 'Activo' : 'Sin movimiento';
-
-                    return (
-                      <div key={c.id} className="glass-panel" style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                          <div>
-                            <strong style={{ fontSize: '1rem', display: 'block' }}>{c.displayName || c.user}</strong>
-                            <span style={{ fontSize: '0.75rem', color: 'hsl(var(--text-secondary))' }}>@{c.user}</span>
-                          </div>
-                          <span className={`badge ${
-                            presence === 'Activo' ? 'badge-success' : presence === 'Bloqueado' ? 'badge-danger' : 'badge-secondary'
-                          }`}>
-                            {presence}
-                          </span>
-                        </div>
-
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', fontSize: '0.825rem' }}>
-                          <div style={{ backgroundColor: 'hsl(var(--background))', padding: '10px', borderRadius: 'var(--radius-sm)' }}>
-                            <span style={{ color: 'hsl(var(--text-secondary))', display: 'block', fontSize: '0.7rem' }}>Balance Caja</span>
-                            <strong>${c.balance.toFixed(2)}</strong>
-                          </div>
-                          <div style={{ backgroundColor: 'hsl(var(--background))', padding: '10px', borderRadius: 'var(--radius-sm)' }}>
-                            <span style={{ color: 'hsl(var(--text-secondary))', display: 'block', fontSize: '0.7rem' }}>Balance Recargas</span>
-                            <strong>${c.rechargesBalance.toFixed(2)}</strong>
-                          </div>
-                        </div>
-
-                        <div style={{ borderTop: '1px solid hsl(var(--border))', paddingTop: '10px', fontSize: '0.75rem', color: 'hsl(var(--text-muted))', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                          <span>POS Compact Mode:</span>
-                          <strong style={{ color: c.systemModeOverride === 'compact' ? 'hsl(var(--primary))' : 'inherit' }}>
-                            {c.systemModeOverride === 'compact' ? 'Habilitado' : 'Estándar'}
-                          </strong>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-
-            </div>
+            <MonitoreoTab
+              user={user}
+              tickets={tickets}
+              users={users}
+              lotteries={lotteries}
+              monitoreoSubTab={monitoreoSubTab}
+              setMonitoreoSubTab={setMonitoreoSubTab}
+              monitoreoPlayFocus={monitoreoPlayFocus}
+              setMonitoreoPlayFocus={setMonitoreoPlayFocus}
+              monitoreoHighestFirst={monitoreoHighestFirst}
+              setMonitoreoHighestFirst={setMonitoreoHighestFirst}
+              monitoreoShowEmptyLotteries={monitoreoShowEmptyLotteries}
+              setMonitoreoShowEmptyLotteries={setMonitoreoShowEmptyLotteries}
+              monitoreoRange={monitoreoRange}
+              setMonitoreoRange={setMonitoreoRange}
+              isSameLocalDate={isSameLocalDate}
+              cashierSalesTotals={cashierSalesTotals}
+            />
           )}
 
           {/* TAB 10: TICKETS SEARCH & VOID SYSTEM */}
           {activeTab === 'tickets' && (user.role === 'ADMIN' || user.role === 'SUPERVISOR' || user.role === 'MASTER') && (
-            <div className="fade-in glass-panel" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
-                <div>
-                  <h3 style={{ fontSize: '1.15rem' }}>Consulta y Control de Tickets</h3>
-                  <p style={{ fontSize: '0.8rem', color: 'hsl(var(--text-secondary))' }}>
-                    Visualiza las transacciones de ventas y realiza anulaciones dentro del plazo permitido para restablecer balances de caja.
-                  </p>
-                </div>
-              </div>
-
-              {/* Filters topbar */}
-              <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', alignItems: 'center' }}>
-                <div style={{ position: 'relative', width: '260px' }}>
-                  <Search size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'hsl(var(--text-muted))' }} />
-                  <input
-                    type="text"
-                    placeholder="Buscar por serie o ID..."
-                    value={ticketSearchSerial}
-                    onChange={(e) => setTicketSearchSerial(e.target.value)}
-                    className="form-input"
-                    style={{ paddingLeft: '36px' }}
-                  />
-                </div>
-
-                <select
-                  className="form-input"
-                  value={ticketDateFilter}
-                  onChange={(e) => setTicketDateFilter(e.target.value as any)}
-                  style={{ width: '160px' }}
-                >
-                  <option value="today">Hoy (Limpio)</option>
-                  <option value="yesterday">Ayer</option>
-                  <option value="all">Todos los días</option>
-                </select>
-
-                <select
-                  className="form-input"
-                  value={ticketFilterStatus}
-                  onChange={(e) => setTicketFilterStatus(e.target.value)}
-                  style={{ width: '140px' }}
-                >
-                  <option value="all">Todos los Estados</option>
-                  <option value="active">Activos</option>
-                  <option value="paid">Cobrados</option>
-                  <option value="cancelled">Anulados / Voided</option>
-                  <option value="winner">Premiados</option>
-                </select>
-
-                <select
-                  className="form-input"
-                  value={ticketFilterCashier}
-                  onChange={(e) => setTicketFilterCashier(e.target.value)}
-                  style={{ width: '180px' }}
-                >
-                  <option value="all">Todos los Puntos</option>
-                  {users.filter(u => {
-                    if (user.role === 'MASTER') return u.role === 'CASHIER' || u.role === 'ADMIN';
-                    if (user.role === 'ADMIN') return (u.role === 'CASHIER' || u.role === 'ADMIN') && (u.adminId === user.id || u.id === user.id);
-                    return u.role === 'CASHIER' && u.supervisorIds.includes(user.id);
-                  }).map(c => (
-                    <option key={c.id} value={c.user}>@{c.user} {c.role === 'ADMIN' ? '(Banca/Admin)' : ''}</option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Table of tickets */}
-              {(() => {
-                const isSupervisor = user.role === 'SUPERVISOR';
-                const isMaster = user.role === 'MASTER';
-                const allowedAdminId = isSupervisor ? user.adminId : user.id;
-                const supervisedCashierUsers = isSupervisor 
-                  ? users.filter(u => u.role === 'CASHIER' && u.supervisorIds.includes(user.id)).map(u => u.user)
-                  : [];
-
-                const filtered = tickets.filter(t => isMaster ? true : t.adminId === allowedAdminId)
-                  .filter(t => {
-                    if (isSupervisor && (!t.sellerUser || !supervisedCashierUsers.includes(t.sellerUser))) return false;
-                    if (ticketSearchSerial && !t.id.toLowerCase().includes(ticketSearchSerial.toLowerCase()) && !t.serial?.toLowerCase().includes(ticketSearchSerial.toLowerCase())) return false;
-                    
-                    // Date Filter
-                    if (ticketDateFilter === 'today') {
-                      if (!isSameLocalDate(t.createdAtEpochMs, 0)) return false;
-                    } else if (ticketDateFilter === 'yesterday') {
-                      if (!isSameLocalDate(t.createdAtEpochMs, 1)) return false;
-                    }
-
-                    // Exclude cancelled/voided tickets by default from 'all' view
-                    if (ticketFilterStatus === 'all') {
-                      if (t.status === 'cancelled' || t.status === 'voided') return false;
-                    } else if (t.status !== ticketFilterStatus) {
-                      return false;
-                    }
-
-                    if (ticketFilterCashier !== 'all' && t.sellerUser !== ticketFilterCashier) return false;
-                    return true;
-                  });
-
-                if (filtered.length === 0) {
-                  return (
-                    <div style={{ padding: '30px', textAlign: 'center', color: 'hsl(var(--text-muted))' }}>
-                      No se encontraron tickets con los filtros aplicados.
-                    </div>
-                  );
-                }
-
-                return (
-                  <div className="table-container">
-                    <table className="table-el">
-                      <thead>
-                        <tr>
-                          <th>Serie / Ticket ID</th>
-                          <th>Cajero</th>
-                          <th>Fecha y Hora</th>
-                          <th>Jugadas Realizadas</th>
-                          <th>Monto</th>
-                          <th>Premio</th>
-                          <th>Estado</th>
-                          <th>Acciones</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {filtered.map((t) => (
-                          <tr key={t.id} onClick={() => setSelectedTicketForDetail(t)} style={{ cursor: 'pointer' }}>
-                            <td>
-                              <div style={{ display: 'flex', flexDirection: 'column' }}>
-                                <strong style={{ color: 'hsl(var(--text-primary))' }}>{t.serial || t.id}</strong>
-                                <span style={{ fontSize: '0.75rem', color: 'hsl(var(--text-muted))' }}>ID: {t.id}</span>
-                              </div>
-                            </td>
-                            <td>@{t.sellerUser}</td>
-                            <td>{new Date(t.createdAtEpochMs).toLocaleString()}</td>
-                            <td>
-                              <div style={{ 
-                                fontSize: '0.75rem', 
-                                color: 'hsl(var(--text-secondary))',
-                                maxHeight: '60px',
-                                overflowY: 'auto',
-                                wordBreak: 'break-word',
-                                maxWidth: '280px',
-                                padding: '4px 8px',
-                                backgroundColor: 'rgba(255, 255, 255, 0.02)',
-                                borderRadius: '4px',
-                                border: '1px solid hsl(var(--border) / 0.3)'
-                              }}>
-                                {t.plays.map(p => `${p.playType.toUpperCase()} ${p.number} ($${p.amount})`).join(' · ')}
-                              </div>
-                            </td>
-                            <td style={{ fontWeight: 600 }}>${t.total.toFixed(2)}</td>
-                            <td style={{ fontWeight: 600, color: t.totalPrize > 0 ? 'hsl(var(--danger))' : 'inherit' }}>
-                              ${t.totalPrize.toFixed(2)}
-                            </td>
-                            <td>
-                              <span className={`badge ${
-                                t.status === 'paid' ? 'badge-success' : t.status === 'cancelled' ? 'badge-secondary' : t.status === 'winner' ? 'badge-danger' : 'badge-primary'
-                              }`}>
-                                {t.status === 'paid' ? 'Cobrado' : t.status === 'cancelled' ? 'Anulado' : t.status === 'winner' ? 'Premiado' : 'Activo'}
-                              </span>
-                            </td>
-                            <td>
-                              <div style={{ display: 'flex', gap: '8px' }}>
-                                <button
-                                  className="btn btn-secondary"
-                                  style={{ padding: '4px 8px', fontSize: '0.75rem', color: 'hsl(var(--primary))', border: '1px solid hsl(var(--primary) / 0.2)' }}
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    setSelectedTicketForDetail(t);
-                                  }}
-                                >
-                                  Ver
-                                </button>
-                                {t.status === 'active' && (
-                                  <button
-                                    className="btn btn-secondary"
-                                    style={{ padding: '4px 8px', fontSize: '0.75rem', color: 'hsl(var(--danger))', border: '1px solid hsl(var(--danger) / 0.2)' }}
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      setSelectedTicketForAnnul(t);
-                                      setAnnulModalOpen(true);
-                                    }}
-                                  >
-                                    Anular
-                                  </button>
-                                )}
-                                {t.status === 'winner' && (
-                                  <button
-                                    className="btn btn-primary"
-                                    style={{ padding: '4px 8px', fontSize: '0.75rem' }}
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      handlePayWinner(t);
-                                    }}
-                                  >
-                                    Pagar
-                                  </button>
-                                )}
-                                {(user.role === 'ADMIN' || user.role === 'MASTER') && (
-                                  <button
-                                    className="btn btn-secondary"
-                                    style={{ padding: '4px 8px', fontSize: '0.75rem', color: 'hsl(var(--danger))', backgroundColor: 'hsl(var(--danger) / 0.1)', border: '1px solid hsl(var(--danger) / 0.3)' }}
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      setSelectedTicketForDelete(t);
-                                      setDeleteModalOpen(true);
-                                    }}
-                                  >
-                                    Eliminar
-                                  </button>
-                                )}
-                              </div>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                );
-              })()}
-            </div>
+            <TicketsTab
+              user={user}
+              users={users}
+              tickets={tickets}
+              ticketSearchSerial={ticketSearchSerial}
+              setTicketSearchSerial={setTicketSearchSerial}
+              ticketFilterStatus={ticketFilterStatus}
+              setFilterStatus={setTicketFilterStatus}
+              ticketFilterCashier={ticketFilterCashier}
+              setTicketFilterCashier={setTicketFilterCashier}
+              ticketDateFilter={ticketDateFilter}
+              setTicketDateFilter={setTicketDateFilter}
+              isSameLocalDate={isSameLocalDate}
+              setSelectedTicketForDetail={setSelectedTicketForDetail}
+              setSelectedTicketForAnnul={setSelectedTicketForAnnul}
+              setAnnulModalOpen={setAnnulModalOpen}
+              setSelectedTicketForDelete={setSelectedTicketForDelete}
+              setDeleteModalOpen={setDeleteModalOpen}
+              handlePayWinner={handlePayWinner}
+            />
           )}
 
           {/* TAB 10.5: SPORTSBOOK APUESTAS DEPORTIVAS */}
           {activeTab === 'deportiva' && (
-            <div className="fade-in glass-panel" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
-                <div>
-                  <h3 style={{ fontSize: '1.2rem', fontWeight: 700, color: 'hsl(var(--text-primary))' }}>
-                    Monitoreo de Apuestas Deportivas
-                  </h3>
-                  <p style={{ fontSize: '0.8rem', color: 'hsl(var(--text-muted))', marginTop: '2px' }}>
-                    Administre, anule y procese el cobro de tickets de banca deportiva
-                  </p>
-                </div>
-                <button className="btn btn-secondary" onClick={loadData} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <RefreshCw size={16} />
-                  Actualizar Datos
-                </button>
-              </div>
-
-              {/* Filters Bar */}
-              <div style={{
-                display: 'flex',
-                gap: '12px',
-                flexWrap: 'wrap',
-                padding: '16px',
-                borderRadius: 'var(--radius-md)',
-                backgroundColor: 'hsl(var(--surface-hover))',
-                border: '1px solid hsl(var(--border))'
-              }}>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', minWidth: '150px' }}>
-                  <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'hsl(var(--text-secondary))' }}>
-                    Cajero Emisor
-                  </span>
-                  <select
-                    value={ticketFilterCashier}
-                    onChange={(e) => setTicketFilterCashier(e.target.value)}
-                    style={{
-                      padding: '8px 12px',
-                      borderRadius: 'var(--radius-sm)',
-                      backgroundColor: 'hsl(var(--surface))',
-                      border: '1px solid hsl(var(--border))',
-                      color: 'hsl(var(--text-primary))',
-                      fontSize: '0.85rem',
-                      outline: 'none'
-                    }}
-                  >
-                    <option value="all">Todos los cajeros</option>
-                    {users.filter(u => u.role === 'CASHIER').map(c => (
-                      <option key={c.id} value={c.user}>@{c.user} - {c.displayName}</option>
-                    ))}
-                  </select>
-                </div>
-
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', minWidth: '150px' }}>
-                  <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'hsl(var(--text-secondary))' }}>
-                    Fecha
-                  </span>
-                  <select
-                    value={ticketDateFilter}
-                    onChange={(e) => setTicketDateFilter(e.target.value as any)}
-                    style={{
-                      padding: '8px 12px',
-                      borderRadius: 'var(--radius-sm)',
-                      backgroundColor: 'hsl(var(--surface))',
-                      border: '1px solid hsl(var(--border))',
-                      color: 'hsl(var(--text-primary))',
-                      fontSize: '0.85rem',
-                      outline: 'none'
-                    }}
-                  >
-                    <option value="today">Hoy (Limpio)</option>
-                    <option value="yesterday">Ayer</option>
-                    <option value="all">Todos los días</option>
-                  </select>
-                </div>
-
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', minWidth: '150px' }}>
-                  <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'hsl(var(--text-secondary))' }}>
-                    Estado
-                  </span>
-                  <select
-                    value={ticketFilterStatus}
-                    onChange={(e) => setTicketFilterStatus(e.target.value)}
-                    style={{
-                      padding: '8px 12px',
-                      borderRadius: 'var(--radius-sm)',
-                      backgroundColor: 'hsl(var(--surface))',
-                      border: '1px solid hsl(var(--border))',
-                      color: 'hsl(var(--text-primary))',
-                      fontSize: '0.85rem',
-                      outline: 'none'
-                    }}
-                  >
-                    <option value="all">Todos los estados</option>
-                    <option value="pending">Pendientes</option>
-                    <option value="won">Ganadores (Sin Cobrar)</option>
-                    <option value="paid">Cobrados (Pagados)</option>
-                    <option value="lost">Perdedores</option>
-                    <option value="void">Anulados (Void)</option>
-                  </select>
-                </div>
-
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', flex: 1, minWidth: '200px' }}>
-                  <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'hsl(var(--text-secondary))' }}>
-                    Buscar por Código
-                  </span>
-                  <div style={{ position: 'relative' }}>
-                    <Search size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'hsl(var(--text-muted))' }} />
-                    <input
-                      type="text"
-                      placeholder="Buscar por código de ticket..."
-                      value={ticketSearchSerial}
-                      onChange={(e) => setTicketSearchSerial(e.target.value)}
-                      style={{
-                        width: '100%',
-                        padding: '8px 12px 8px 36px',
-                        borderRadius: 'var(--radius-sm)',
-                        backgroundColor: 'hsl(var(--surface))',
-                        border: '1px solid hsl(var(--border))',
-                        color: 'hsl(var(--text-primary))',
-                        fontSize: '0.85rem',
-                        outline: 'none'
-                      }}
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Tickets Table */}
-              {(() => {
-                let filtered = [...sportsTickets];
-
-                // Scoping rules: MASTER sees all, ADMIN sees only their network's wagers
-                if (user.role === 'ADMIN') {
-                  const cashierUsernames = users.filter(u => u.adminId === user.id).map(u => u.user);
-                  filtered = filtered.filter(t => cashierUsernames.includes(t.sellerUsername || ''));
-                } else if (user.role === 'SUPERVISOR') {
-                  const cashierUsernames = users.filter(u => u.supervisorIds.includes(user.id)).map(u => u.user);
-                  filtered = filtered.filter(t => cashierUsernames.includes(t.sellerUsername || ''));
-                }
-
-                // Date Filter
-                filtered = filtered.filter(t => {
-                  const epoch = Date.parse(t.soldAt) || Date.now();
-                  if (ticketDateFilter === 'today') {
-                    return isSameLocalDate(epoch, 0);
-                  } else if (ticketDateFilter === 'yesterday') {
-                    return isSameLocalDate(epoch, 1);
-                  }
-                  return true;
-                });
-
-                if (ticketFilterCashier !== 'all') {
-                  filtered = filtered.filter(t => t.sellerUsername === ticketFilterCashier);
-                }
-
-                // Exclude void by default on 'all' status
-                if (ticketFilterStatus === 'all') {
-                  filtered = filtered.filter(t => t.status !== 'void');
-                } else {
-                  filtered = filtered.filter(t => t.status === ticketFilterStatus);
-                }
-
-                if (ticketSearchSerial.trim()) {
-                  const query = ticketSearchSerial.trim().toLowerCase();
-                  filtered = filtered.filter(t => t.ticketCode.toLowerCase().includes(query));
-                }
-
-                if (filtered.length === 0) {
-                  return (
-                    <div style={{ padding: '40px', textAlign: 'center', color: 'hsl(var(--text-muted))' }}>
-                      <AlertTriangle size={32} style={{ marginBottom: '12px', color: 'hsl(var(--warning))' }} />
-                      <p>No se encontraron apuestas deportivas con los filtros especificados.</p>
-                    </div>
-                  );
-                }
-
-                return (
-                  <div className="table-container">
-                    <table className="table-el">
-                      <thead>
-                        <tr>
-                          <th>Código</th>
-                          <th>Cajero</th>
-                          <th>Banca</th>
-                          <th>Tipo</th>
-                          <th>Jugadas (Parlay Legs)</th>
-                          <th>Monto</th>
-                          <th>Cuota</th>
-                          <th>Posible Premio</th>
-                          <th>Fecha</th>
-                          <th>Estado</th>
-                          <th style={{ textAlign: 'right' }}>Acciones</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {filtered.map((t) => {
-                          const formattedDate = new Date(t.soldAt).toLocaleString('es-DO', {
-                            day: '2-digit',
-                            month: '2-digit',
-                            hour: '2-digit',
-                            minute: '2-digit',
-                            hour12: true
-                          });
-
-                          return (
-                            <tr
-                              key={t.id}
-                              onClick={() => setSelectedSportsTicketForDetail(t)}
-                              style={{ cursor: 'pointer', transition: 'all 0.2s ease' }}
-                              className="table-row-hover"
-                            >
-                              <td style={{ fontWeight: 700, fontFamily: 'monospace' }}>
-                                {t.ticketCode}
-                              </td>
-                              <td style={{ fontWeight: 600 }}>@{t.sellerUsername}</td>
-                              <td style={{ color: 'hsl(var(--text-secondary))', fontSize: '0.85rem' }}>{t.bancaName || 'N/A'}</td>
-                              <td>
-                                <span className={`badge ${t.ticketType === 'parlay' ? 'badge-primary' : 'badge-success'}`}>
-                                  {t.ticketType === 'parlay' ? 'Parlay' : 'Directa'}
-                                </span>
-                              </td>
-                              <td style={{ fontSize: '0.8rem', maxWidth: '240px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                                {(t.legs || []).map(l => l.eventLabel).join(' | ') || 'Sin piernas'}
-                              </td>
-                              <td style={{ fontWeight: 600 }}>
-                                ${t.stake.toLocaleString('en-US', { minimumFractionDigits: 2 })}
-                              </td>
-                              <td style={{ fontFamily: 'monospace', fontWeight: 600 }}>
-                                x{Number(t.decimalOdds).toFixed(2)}
-                              </td>
-                              <td style={{ color: 'hsl(var(--success))', fontWeight: 700 }}>
-                                ${t.potentialPayout.toLocaleString('en-US', { minimumFractionDigits: 2 })}
-                              </td>
-                              <td style={{ fontSize: '0.8rem', color: 'hsl(var(--text-secondary))' }}>
-                                {formattedDate}
-                              </td>
-                              <td>
-                                <span className={`badge ${
-                                  t.status === 'pending' ? 'badge-warning' :
-                                  t.status === 'won' ? 'badge-primary' :
-                                  t.status === 'paid' ? 'badge-success' :
-                                  t.status === 'lost' ? 'badge-danger' : 'badge-secondary'
-                                }`}>
-                                  {t.status === 'pending' ? 'Pendiente' :
-                                   t.status === 'won' ? 'Ganado' :
-                                   t.status === 'paid' ? 'Cobrado' :
-                                   t.status === 'lost' ? 'Perdido' : 'Anulado'}
-                                </span>
-                              </td>
-                              <td style={{ textAlign: 'right' }} onClick={(e) => e.stopPropagation()}>
-                                <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
-                                  <button
-                                    className="btn btn-secondary"
-                                    style={{ padding: '4px 8px', fontSize: '0.75rem' }}
-                                    onClick={() => setSelectedSportsTicketForDetail(t)}
-                                  >
-                                    Ver
-                                  </button>
-                                  {t.status === 'pending' && (
-                                    <button
-                                      className="btn btn-secondary"
-                                      style={{ padding: '4px 8px', fontSize: '0.75rem', color: 'hsl(var(--warning))', backgroundColor: 'hsl(var(--warning) / 0.1)', border: '1px solid hsl(var(--warning) / 0.3)' }}
-                                      onClick={async () => {
-                                        if (!window.confirm(`¿Está seguro de ANULAR administrativamente la apuesta ${t.ticketCode}? Se devolverá el balance de fianza al cajero.`)) return;
-                                        try {
-                                          if (isSupabaseConfigured && supabase) {
-                                            const { error } = await supabase.functions.invoke('void-sports-ticket', {
-                                              body: { ticketId: t.id, actorKey: user.user }
-                                            });
-                                            if (error) throw error;
-                                          } else {
-                                            // Mock voiding in local storage
-                                            const updated = sportsTickets.map(st => st.id === t.id ? { ...st, status: 'void' as const } : st);
-                                            setSportsTickets(updated);
-                                            localStorage.setItem('lotterynet_sports_tickets', JSON.stringify(updated));
-
-                                            // Return balance to cashier in local storage mock
-                                            const uList = [...users];
-                                            const cashierIdx = uList.findIndex(u => u.user === t.sellerUsername);
-                                            if (cashierIdx !== -1) {
-                                              uList[cashierIdx].balance = Math.max(0, uList[cashierIdx].balance - t.stake);
-                                              await saveAllUsers(uList);
-                                            }
-                                          }
-                                          await addAuditLog(
-                                            { id: user.id, user: user.user, role: user.role },
-                                            'VOID_SPORTS_TICKET',
-                                            `Apuesta deportiva anulada: ${t.ticketCode}. Se retornó $${t.stake} al cajero @${t.sellerUsername}`,
-                                            'warning'
-                                          );
-                                          loadData();
-                                          alert('Apuesta deportiva anulada correctamente.');
-                                        } catch (e: any) {
-                                          alert(e.message || 'Error al anular apuesta deportiva');
-                                        }
-                                      }}
-                                    >
-                                      Anular
-                                    </button>
-                                  )}
-                                  {t.status === 'won' && (
-                                    <button
-                                      className="btn btn-success"
-                                      style={{ padding: '4px 8px', fontSize: '0.75rem' }}
-                                      onClick={async () => {
-                                        if (!window.confirm(`¿Está seguro de PAGAR el premio de $${t.potentialPayout} para la apuesta ${t.ticketCode}?`)) return;
-                                        try {
-                                          if (isSupabaseConfigured && supabase) {
-                                            const { error } = await supabase.functions.invoke('pay-sports-ticket', {
-                                              body: { ticketId: t.id, actorKey: user.user }
-                                            });
-                                            if (error) throw error;
-                                          } else {
-                                            // Mock paying in local storage
-                                            const updated = sportsTickets.map(st => st.id === t.id ? { ...st, status: 'paid' as const } : st);
-                                            setSportsTickets(updated);
-                                            localStorage.setItem('lotterynet_sports_tickets', JSON.stringify(updated));
-                                          }
-                                          await addAuditLog(
-                                            { id: user.id, user: user.user, role: user.role },
-                                            'PAY_SPORTS_TICKET',
-                                            `Premio deportivo pagado: $${t.potentialPayout} para la apuesta ${t.ticketCode}`,
-                                            'success'
-                                          );
-                                          loadData();
-                                          alert('Premio deportivo pagado y cobrado correctamente.');
-                                        } catch (e: any) {
-                                          alert(e.message || 'Error al pagar premio deportivo');
-                                        }
-                                      }}
-                                    >
-                                      Pagar
-                                    </button>
-                                  )}
-                                </div>
-                              </td>
-                            </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
-                  </div>
-                );
-              })()}
-            </div>
+            <DeportivaTab
+              user={user}
+              sportsTickets={sportsTickets}
+              setSportsTickets={setSportsTickets}
+              users={users}
+              ticketFilterCashier={ticketFilterCashier}
+              setTicketFilterCashier={setTicketFilterCashier}
+              ticketDateFilter={ticketDateFilter}
+              setTicketDateFilter={setTicketDateFilter}
+              ticketFilterStatus={ticketFilterStatus}
+              setTicketFilterStatus={setTicketFilterStatus}
+              ticketSearchSerial={ticketSearchSerial}
+              setTicketSearchSerial={setTicketSearchSerial}
+              setSelectedSportsTicketForDetail={setSelectedSportsTicketForDetail}
+              loadData={loadData}
+              isSameLocalDate={isSameLocalDate}
+              saveAllUsers={saveAllUsers}
+              addAuditLog={addAuditLog}
+            />
           )}
 
           {/* TAB 11: WINNERS PRIZE PAYOUT MODULE */}
           {activeTab === 'ganadores' && (user.role === 'ADMIN' || user.role === 'MASTER') && (
-            <div className="fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-              
-              {/* Summary Cards */}
-              {(() => {
-                const adminTickets = tickets.filter(t => (user.role === 'MASTER' ? true : t.adminId === user.id) && (t.status === 'winner' || t.status === 'paid' || t.totalPrize > 0));
-                const pendingWinners = adminTickets.filter(t => t.status === 'winner' || (t.status !== 'paid' && t.totalPrize > 0));
-                const paidWinners = adminTickets.filter(t => t.status === 'paid');
-
-                const pendingPrizeSum = pendingWinners.reduce((acc, t) => acc + t.totalPrize, 0);
-                const paidPrizeSum = paidWinners.reduce((acc, t) => acc + t.totalPrize, 0);
-
-                return (
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '20px' }}>
-                    <div className="glass-panel" style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                      <span style={{ color: 'hsl(var(--text-secondary))', fontSize: '0.8rem' }}>Premios Pendientes</span>
-                      <span style={{ fontSize: '1.6rem', fontWeight: 700, color: 'hsl(var(--warning))' }}>${pendingPrizeSum.toFixed(2)}</span>
-                      <span style={{ fontSize: '0.75rem', color: 'hsl(var(--text-muted))' }}>{pendingWinners.length} ticket(s) pendiente(s)</span>
-                    </div>
-                    <div className="glass-panel" style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                      <span style={{ color: 'hsl(var(--text-secondary))', fontSize: '0.8rem' }}>Premios Pagados</span>
-                      <span style={{ fontSize: '1.6rem', fontWeight: 700, color: 'hsl(var(--success))' }}>${paidPrizeSum.toFixed(2)}</span>
-                      <span style={{ fontSize: '0.75rem', color: 'hsl(var(--text-muted))' }}>{paidWinners.length} ticket(s) pagado(s)</span>
-                    </div>
-                    <div className="glass-panel" style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                      <span style={{ color: 'hsl(var(--text-secondary))', fontSize: '0.8rem' }}>Total Premiados Hoy</span>
-                      <span style={{ fontSize: '1.6rem', fontWeight: 700 }}>${(pendingPrizeSum + paidPrizeSum).toFixed(2)}</span>
-                      <span style={{ fontSize: '0.75rem', color: 'hsl(var(--text-muted))' }}>{adminTickets.length} ticket(s) de banca</span>
-                    </div>
-                  </div>
-                );
-              })()}
-
-              <div className="glass-panel" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
-                  <h3 style={{ fontSize: '1.1rem' }}>Cobro de Premios Ganadores</h3>
-                  
-                  <div style={{ display: 'flex', gap: '8px' }}>
-                    {['pending', 'paid', 'all'].map((filter) => (
-                      <button
-                        key={filter}
-                        onClick={() => setGanadoresFilter(filter as any)}
-                        style={{
-                          padding: '8px 16px',
-                          borderRadius: 'var(--radius-md)',
-                          border: '1px solid ' + (ganadoresFilter === filter ? 'hsl(var(--primary))' : 'hsl(var(--border))'),
-                          background: ganadoresFilter === filter ? 'hsl(var(--primary) / 0.08)' : 'transparent',
-                          color: ganadoresFilter === filter ? 'hsl(var(--primary))' : 'hsl(var(--text-secondary))',
-                          fontSize: '0.8rem',
-                          fontWeight: 600,
-                          cursor: 'pointer'
-                        }}
-                      >
-                        {filter === 'pending' ? 'Pendientes de Pago' : filter === 'paid' ? 'Pagados' : 'Todos'}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* List of winners */}
-                {(() => {
-                  const adminTickets = tickets.filter(t => t.adminId === user.id && (t.status === 'winner' || t.status === 'paid' || t.totalPrize > 0));
-                  const filtered = adminTickets.filter(t => {
-                    if (ganadoresFilter === 'pending') return t.status === 'winner' || (t.status !== 'paid' && t.totalPrize > 0);
-                    if (ganadoresFilter === 'paid') return t.status === 'paid';
-                    return true;
-                  });
-
-                  if (filtered.length === 0) {
-                    return (
-                      <div style={{ padding: '24px', textAlign: 'center', color: 'hsl(var(--text-muted))' }}>
-                        No hay ganadores registrados en esta categoría de filtro.
-                      </div>
-                    );
-                  }
-
-                  return (
-                    <div className="table-container">
-                      <table className="table-el">
-                        <thead>
-                          <tr>
-                            <th>Serie / Ticket ID</th>
-                            <th>Cajero</th>
-                            <th>Emisión</th>
-                            <th>Combinaciones</th>
-                            <th>Total Premio</th>
-                            <th>Estado</th>
-                            <th>Operación</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {filtered.map((t) => (
-                            <tr key={t.id}>
-                              <td style={{ fontWeight: 600 }}>{t.serial || t.id}</td>
-                              <td>@{t.sellerUser}</td>
-                              <td>{new Date(t.createdAtEpochMs).toLocaleTimeString()}</td>
-                               <td>
-                                 <div style={{ 
-                                   fontSize: '0.75rem', 
-                                   color: 'hsl(var(--text-secondary))',
-                                   maxHeight: '60px',
-                                   overflowY: 'auto',
-                                   wordBreak: 'break-word',
-                                   maxWidth: '280px',
-                                   padding: '4px 8px',
-                                   backgroundColor: 'rgba(255, 255, 255, 0.02)',
-                                   borderRadius: '4px',
-                                   border: '1px solid hsl(var(--border) / 0.3)'
-                                 }}>
-                                   {t.plays.map(p => `${p.playType.toUpperCase()} ${p.number}`).join(' · ')}
-                                 </div>
-                               </td>
-                              <td style={{ fontWeight: 700, color: 'hsl(var(--danger))', fontSize: '1.05rem' }}>
-                                ${t.totalPrize.toFixed(2)}
-                              </td>
-                              <td>
-                                <span className={`badge ${t.status === 'paid' ? 'badge-success' : 'badge-warning'}`}>
-                                  {t.status === 'paid' ? 'Cobrado' : 'Pendiente'}
-                                </span>
-                              </td>
-                              <td>
-                                {t.status !== 'paid' && (
-                                  <button
-                                    className="btn btn-primary"
-                                    style={{ padding: '6px 12px', fontSize: '0.75rem' }}
-                                    onClick={() => handlePayWinner(t)}
-                                  >
-                                    Registrar Pago
-                                  </button>
-                                )}
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  );
-                })()}
-              </div>
-
-            </div>
+            <GanadoresTab
+              user={user}
+              tickets={tickets}
+              handlePayWinner={handlePayWinner}
+            />
           )}
 
           {/* TAB 12: RESULTS SCRAPER & REGISTRATION */}
           {activeTab === 'resultados' && (
-            <div className="fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-              
-              {/* Form Manual for Master */}
-              {user.role === 'MASTER' && (
-                <form onSubmit={handleCreateResult} className="glass-panel" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                  <h3 style={{ fontSize: '1.1rem', fontWeight: 700 }}>Registrar Números Ganadores Manualmente</h3>
-                  
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '16px' }}>
-                    <div className="form-group">
-                      <label className="form-label">Lotería Sorteada</label>
-                      <select
-                        className="form-input"
-                        value={resultForm.lotteryId}
-                        onChange={(e) => setResultForm({ ...resultForm, lotteryId: e.target.value })}
-                      >
-                        {lotteries.map(l => (
-                          <option key={l.id} value={l.id}>{l.name} ({l.territory})</option>
-                        ))}
-                      </select>
-                    </div>
-
-                    <div className="form-group">
-                      <label className="form-label">1era (Primera)</label>
-                      <input
-                        type="text"
-                        placeholder="ej. 14"
-                        value={resultForm.r1}
-                        onChange={(e) => setResultForm({ ...resultForm, r1: e.target.value.replace(/\D/g, '').slice(0, 2) })}
-                        className="form-input"
-                        required
-                        maxLength={2}
-                      />
-                    </div>
-
-                    <div className="form-group">
-                      <label className="form-label">2da (Segunda)</label>
-                      <input
-                        type="text"
-                        placeholder="ej. 22"
-                        value={resultForm.r2}
-                        onChange={(e) => setResultForm({ ...resultForm, r2: e.target.value.replace(/\D/g, '').slice(0, 2) })}
-                        className="form-input"
-                        required
-                        maxLength={2}
-                      />
-                    </div>
-
-                    <div className="form-group">
-                      <label className="form-label">3era (Tercera)</label>
-                      <input
-                        type="text"
-                        placeholder="ej. 05"
-                        value={resultForm.r3}
-                        onChange={(e) => setResultForm({ ...resultForm, r3: e.target.value.replace(/\D/g, '').slice(0, 2) })}
-                        className="form-input"
-                        required
-                        maxLength={2}
-                      />
-                    </div>
-
-                    <div className="form-group">
-                      <label className="form-label">Fecha del Sorteo</label>
-                      <input
-                        type="date"
-                        value={resultForm.dateKey}
-                        onChange={(e) => setResultForm({ ...resultForm, dateKey: e.target.value })}
-                        className="form-input"
-                        required
-                      />
-                    </div>
-                  </div>
-
-                  <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '4px' }}>
-                    <button type="submit" className="btn btn-primary" style={{ padding: '10px 24px' }}>
-                      Registrar Resultado
-                    </button>
-                  </div>
-                </form>
-              )}
-
-              {/* List of Draw Results */}
-              <div className="glass-panel" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '32px' }}>
-                
-                {/* Section 1: Traditional Lotteries */}
-                <div>
-                  <h3 style={{ fontSize: '1.1rem', fontWeight: 700, marginBottom: '16px', color: 'hsl(var(--primary))', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: 'hsl(var(--primary))' }} />
-                    Loterías Tradicionales (Quiniela / Palé / Tripleta)
-                  </h3>
-                  
-                  {(() => {
-                    const normalResults = resultsList.filter(r => {
-                      const lot = STATIC_LOTTERIES.find(l => l.id === r.lotteryId) || lotteries.find(l => l.id === r.lotteryId);
-                      // If not found in catalog, treat as traditional (could be a legacy/unknown lottery)
-                      if (!lot) return !r.lotteryId.startsWith('US-P');
-                      return lot.type !== 'Pick3' && lot.type !== 'Pick4';
-                    });
-
-                    if (normalResults.length === 0) {
-                      return (
-                        <div style={{ padding: '20px', textAlign: 'center', color: 'hsl(var(--text-muted))', backgroundColor: 'hsl(var(--background))', borderRadius: 'var(--radius-md)' }}>
-                          No hay resultados tradicionales registrados.
-                        </div>
-                      );
-                    }
-
-                    return (
-                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '20px' }}>
-                        {normalResults.map((res) => {
-                          const catalogEntry = STATIC_LOTTERIES.find(l => l.id === res.lotteryId) || lotteries.find(l => l.id === res.lotteryId);
-                          const logoUrl = catalogEntry?.logoAssetPath || '/favicon.svg';
-
-                          return (
-                            <div
-                              key={res.id}
-                              className="glass-panel-premium table-row-stagger"
-                              style={{
-                                padding: '20px',
-                                display: 'flex',
-                                flexDirection: 'column',
-                                gap: '12px',
-                                border: '1px solid hsl(var(--primary) / 0.2)'
-                              }}
-                            >
-                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                  <img 
-                                    src={logoUrl} 
-                                    alt={res.lotteryName} 
-                                    style={{ width: '28px', height: '28px', borderRadius: '4px', objectFit: 'contain', backgroundColor: 'rgba(255,255,255,0.05)', padding: '2px' }}
-                                    onError={(e) => { (e.target as HTMLImageElement).src = '/favicon.svg'; }}
-                                  />
-                                  <div>
-                                    <strong style={{ fontSize: '0.95rem', color: 'hsl(var(--text-primary))', display: 'block' }}>{res.lotteryName}</strong>
-                                    {catalogEntry?.baseDrawTime && (
-                                      <span style={{ fontSize: '0.725rem', color: 'hsl(var(--text-secondary))', display: 'block', marginTop: '2px' }}>
-                                        Sorteo: {catalogEntry.baseDrawTime}
-                                      </span>
-                                    )}
-                                  </div>
-                                </div>
-                                <span style={{ fontSize: '0.75rem', color: 'hsl(var(--text-muted))' }}>{res.dateKey}</span>
-                              </div>
-
-                              {/* Domino style numbered balls */}
-                              <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', margin: '6px 0' }}>
-                                {res.numbers.split('-').map((num: string, idx: number) => (
-                                  <div
-                                    key={idx}
-                                    style={{
-                                      width: '42px',
-                                      height: '42px',
-                                      borderRadius: '50%',
-                                      backgroundColor: idx === 0 ? 'hsl(var(--primary))' : 'hsl(var(--surface))',
-                                      color: idx === 0 ? '#fff' : 'hsl(var(--text-primary))',
-                                      border: '2px solid hsl(var(--primary))',
-                                      display: 'flex',
-                                      alignItems: 'center',
-                                      justifyContent: 'center',
-                                      fontWeight: 700,
-                                      fontSize: '1rem',
-                                      fontFamily: 'monospace',
-                                      boxShadow: idx === 0 ? '0 0 14px hsl(var(--primary) / 0.8), inset 0 2px 4px rgba(255,255,255,0.2)' : '0 0 8px hsl(var(--primary) / 0.25)'
-                                    }}
-                                  >
-                                    {num}
-                                  </div>
-                                ))}
-                              </div>
-
-                              <div style={{ textAlign: 'center', fontSize: '0.725rem', color: 'hsl(var(--text-secondary))', borderTop: '1px solid hsl(var(--border) / 0.5)', paddingTop: '8px' }}>
-                                Posiciones: 1ra · 2da · 3ra
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    );
-                  })()}
-                </div>
-
-                {/* Section 2: USA Pick Lotteries */}
-                <div>
-                  <h3 style={{ fontSize: '1.1rem', fontWeight: 700, marginBottom: '16px', color: 'hsl(var(--warning))', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: 'hsl(var(--warning))' }} />
-                    Loterías Americanas (Pick 3 / Pick 4 USA)
-                  </h3>
-                  
-                  {(() => {
-                    const pickResults = resultsList.filter(r => {
-                      const lot = STATIC_LOTTERIES.find(l => l.id === r.lotteryId) || lotteries.find(l => l.id === r.lotteryId);
-                      if (!lot) return r.lotteryId.startsWith('US-P');
-                      return lot.type === 'Pick3' || lot.type === 'Pick4';
-                    });
-
-                    if (pickResults.length === 0) {
-                      return (
-                        <div style={{ padding: '20px', textAlign: 'center', color: 'hsl(var(--text-muted))', backgroundColor: 'hsl(var(--background))', borderRadius: 'var(--radius-md)' }}>
-                          No hay resultados de sorteos Pick registrados.
-                        </div>
-                      );
-                    }
-
-                    return (
-                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '20px' }}>
-                        {pickResults.map((res) => {
-                          const catalogEntry = STATIC_LOTTERIES.find(l => l.id === res.lotteryId) || lotteries.find(l => l.id === res.lotteryId);
-                          const logoUrl = catalogEntry?.logoAssetPath || '/favicon.svg';
-
-                          return (
-                            <div
-                              key={res.id}
-                              className="glass-panel-premium table-row-stagger"
-                              style={{
-                                padding: '20px',
-                                display: 'flex',
-                                flexDirection: 'column',
-                                gap: '12px',
-                                border: '1px solid hsl(var(--warning) / 0.2)'
-                              }}
-                            >
-                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                  <img 
-                                    src={logoUrl} 
-                                    alt={res.lotteryName} 
-                                    style={{ width: '28px', height: '28px', borderRadius: '4px', objectFit: 'contain', backgroundColor: 'rgba(255,255,255,0.05)', padding: '2px' }}
-                                    onError={(e) => { (e.target as HTMLImageElement).src = '/favicon.svg'; }}
-                                  />
-                                  <div>
-                                    <strong style={{ fontSize: '0.95rem', color: 'hsl(var(--text-primary))', display: 'block' }}>{res.lotteryName}</strong>
-                                    {catalogEntry?.baseDrawTime && (
-                                      <span style={{ fontSize: '0.725rem', color: 'hsl(var(--text-secondary))', display: 'block', marginTop: '2px' }}>
-                                        Sorteo: {catalogEntry.baseDrawTime}
-                                      </span>
-                                    )}
-                                  </div>
-                                </div>
-                                <span style={{ fontSize: '0.75rem', color: 'hsl(var(--text-muted))' }}>{res.dateKey}</span>
-                              </div>
-
-                              {/* Domino style numbered balls */}
-                              <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', margin: '6px 0' }}>
-                                {res.numbers.split('-').map((num: string, idx: number) => (
-                                  <div
-                                    key={idx}
-                                    style={{
-                                      width: '42px',
-                                      height: '42px',
-                                      borderRadius: '50%',
-                                      backgroundColor: 'hsl(var(--surface-hover))',
-                                      color: 'hsl(var(--warning))',
-                                      border: '2px solid hsl(var(--warning))',
-                                      display: 'flex',
-                                      alignItems: 'center',
-                                      justifyContent: 'center',
-                                      fontWeight: 700,
-                                      fontSize: '1rem',
-                                      fontFamily: 'monospace',
-                                      boxShadow: '0 0 14px hsl(var(--warning) / 0.6), inset 0 2px 4px rgba(255,255,255,0.05)'
-                                    }}
-                                  >
-                                    {num}
-                                  </div>
-                                ))}
-                              </div>
-
-                              <div style={{ textAlign: 'center', fontSize: '0.725rem', color: 'hsl(var(--text-secondary))', borderTop: '1px solid hsl(var(--border) / 0.5)', paddingTop: '8px' }}>
-                                Números Ganadores Registrados
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    );
-                  })()}
-                </div>
-
-              </div>
-
-            </div>
+            <ResultadosTab
+              user={user}
+              lotteries={lotteries}
+              resultsList={resultsList}
+              setResultsList={setResultsList}
+            />
           )}
 
           {/* TAB 13: CUADRE DE CAJA AND DETAILED OPERATIONAL REPORTS */}
           {activeTab === 'cuadre' && (user.role === 'ADMIN' || user.role === 'SUPERVISOR' || user.role === 'MASTER') && (
-            <div className="fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-              
-              {/* Cuadre controls */}
-              <div className="glass-panel" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                <h3 style={{ fontSize: '1.2rem', fontWeight: 700 }}>Cuadre de Caja y Conciliación Operativa</h3>
-                
-                <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', alignItems: 'center' }}>
-                  <div style={{ display: 'flex', gap: '6px' }}>
-                    {[
-                      { id: 'today', label: 'Hoy' },
-                      { id: 'week', label: 'Semana' },
-                      { id: 'month', label: 'Mes' },
-                      { id: 'manual', label: 'Periodo' }
-                    ].map((p) => (
-                      <button
-                        key={p.id}
-                        onClick={() => setCuadrePeriod(p.id as any)}
-                        style={{
-                          padding: '8px 14px',
-                          borderRadius: 'var(--radius-sm)',
-                          border: '1px solid ' + (cuadrePeriod === p.id ? 'hsl(var(--primary))' : 'hsl(var(--border))'),
-                          background: cuadrePeriod === p.id ? 'hsl(var(--primary) / 0.08)' : 'transparent',
-                          color: cuadrePeriod === p.id ? 'hsl(var(--primary))' : 'hsl(var(--text-secondary))',
-                          fontSize: '0.8rem',
-                          fontWeight: 600,
-                          cursor: 'pointer'
-                        }}
-                      >
-                        {p.label}
-                      </button>
-                    ))}
-                  </div>
-
-                  <select
-                    className="form-input"
-                    value={cuadreCashierFilter}
-                    onChange={(e) => setCuadreCashierFilter(e.target.value)}
-                    style={{ width: '200px' }}
-                  >
-                    <option value="all">Todos los Puntos</option>
-                    {users.filter(u => {
-                      if (user.role === 'MASTER') return u.role === 'CASHIER' || u.role === 'ADMIN';
-                      if (user.role === 'ADMIN') return (u.role === 'CASHIER' || u.role === 'ADMIN') && (u.adminId === user.id || u.id === user.id);
-                      return u.role === 'CASHIER' && u.supervisorIds.includes(user.id);
-                    }).map(c => (
-                      <option key={c.id} value={c.user}>@{c.user} {c.role === 'ADMIN' ? '(Banca/Admin)' : ''}</option>
-                    ))}
-                  </select>
-
-                  {cuadrePeriod === 'manual' && (
-                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                      <input
-                        type="date"
-                        value={cuadreDateFrom}
-                        onChange={(e) => setCuadreDateFrom(e.target.value)}
-                        className="form-input"
-                        style={{ width: '140px' }}
-                      />
-                      <span style={{ fontSize: '0.8rem' }}>a</span>
-                      <input
-                        type="date"
-                        value={cuadreDateTo}
-                        onChange={(e) => setCuadreDateTo(e.target.value)}
-                        className="form-input"
-                        style={{ width: '140px' }}
-                      />
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Computes and metrics desing */}
-              {(() => {
-                const isSupervisor = user.role === 'SUPERVISOR';
-                const isMaster = user.role === 'MASTER';
-                const allowedAdminId = isSupervisor ? user.adminId : user.id;
-                const supervisedCashierUsers = isSupervisor 
-                  ? users.filter(u => u.role === 'CASHIER' && u.supervisorIds.includes(user.id)).map(u => u.user)
-                  : [];
-
-                const scopedTickets = tickets.filter(t => t.status !== 'cancelled' && t.status !== 'voided')
-                  .filter(t => {
-                    if (isMaster) return true;
-                    if (isSupervisor && (!t.sellerUser || !supervisedCashierUsers.includes(t.sellerUser))) return false;
-                    if (!isSupervisor && t.adminId !== allowedAdminId) return false;
-                    return true;
-                  })
-                  .filter(t => {
-                    if (isSupervisor && (!t.sellerUser || !supervisedCashierUsers.includes(t.sellerUser))) return false;
-                    if (cuadreCashierFilter !== 'all' && t.sellerUser !== cuadreCashierFilter) return false;
-                    
-                    const dateLimit = cuadrePeriod === 'today' ? 1 : cuadrePeriod === 'week' ? 7 : cuadrePeriod === 'month' ? 30 : 0;
-                    if (dateLimit > 0) {
-                      return (Date.now() - t.createdAtEpochMs) <= (dateLimit * 86400000);
-                    } else if (cuadrePeriod === 'manual') {
-                      const from = new Date(cuadreDateFrom).getTime();
-                      const to = new Date(cuadreDateTo).getTime() + 86400000;
-                      return t.createdAtEpochMs >= from && t.createdAtEpochMs <= to;
-                    }
-                    return true;
-                  });
-
-                const scopedSportsTickets = sportsTickets.filter(t => t.status !== 'void')
-                  .filter(t => {
-                    if (isMaster) return true;
-                    if (isSupervisor && (!t.sellerUsername || !supervisedCashierUsers.includes(t.sellerUsername))) return false;
-                    if (!isSupervisor && t.adminKey !== allowedAdminId && t.ownerKey !== allowedAdminId) return false;
-                    return true;
-                  })
-                  .filter(t => {
-                    if (cuadreCashierFilter !== 'all' && t.sellerUsername !== cuadreCashierFilter) return false;
-                    
-                    const dateLimit = cuadrePeriod === 'today' ? 1 : cuadrePeriod === 'week' ? 7 : cuadrePeriod === 'month' ? 30 : 0;
-                    const soldAtTime = new Date(t.soldAt).getTime();
-                    if (dateLimit > 0) {
-                      return (Date.now() - soldAtTime) <= (dateLimit * 86400000);
-                    } else if (cuadrePeriod === 'manual') {
-                      const from = new Date(cuadreDateFrom).getTime();
-                      const to = new Date(cuadreDateTo).getTime() + 86400000;
-                      return soldAtTime >= from && soldAtTime <= to;
-                    }
-                    return true;
-                  });
-
-                const loteriaVentas = scopedTickets.reduce((acc, t) => acc + t.total, 0);
-                const loteriaPremiosPagados = scopedTickets.filter(t => t.status === 'paid').reduce((acc, t) => acc + t.totalPrize, 0);
-                const loteriaPremiosPendientes = scopedTickets.filter(t => t.status === 'winner').reduce((acc, t) => acc + t.totalPrize, 0);
-                let loteriaComisiones = 0;
-                scopedTickets.forEach(t => {
-                  const cashier = users.find(u => u.user === t.sellerUser);
-                  loteriaComisiones += t.total * normalizeRate(cashier?.commissionRate);
-                });
-
-                const deportesVentas = scopedSportsTickets.reduce((acc, t) => acc + t.stake, 0);
-                const deportesPremiosPagados = scopedSportsTickets.filter(t => t.status === 'paid').reduce((acc, t) => acc + t.potentialPayout, 0);
-                const deportesPremiosPendientes = scopedSportsTickets.filter(t => t.status === 'won').reduce((acc, t) => acc + t.potentialPayout, 0);
-                let deportesComisiones = 0;
-                scopedSportsTickets.forEach(t => {
-                  const cashier = users.find(u => u.user === t.sellerUsername);
-                  deportesComisiones += t.stake * normalizeRate(cashier?.commissionRate);
-                });
-
-                const ventasBrutas = loteriaVentas + deportesVentas;
-                const comisiones = loteriaComisiones + deportesComisiones;
-                const premiosPagados = loteriaPremiosPagados + deportesPremiosPagados;
-                const premiosPendientes = loteriaPremiosPendientes + deportesPremiosPendientes;
-
-                const scopedRecharges = audits.filter(a => a.action === 'PROCESS_RECHARGE')
-                  .filter(a => {
-                    const timestamp = Number(a.timestampMs || 0);
-                    if (!timestamp) return false;
-                    
-                    const dateLimit = cuadrePeriod === 'today' ? 1 : cuadrePeriod === 'week' ? 7 : cuadrePeriod === 'month' ? 30 : 0;
-                    if (dateLimit > 0) {
-                      return (Date.now() - timestamp) <= (dateLimit * 86400000);
-                    } else if (cuadrePeriod === 'manual') {
-                      const from = new Date(cuadreDateFrom).getTime();
-                      const to = new Date(cuadreDateTo).getTime() + 86400000;
-                      return timestamp >= from && timestamp <= to;
-                    }
-                    return true;
-                  })
-                  .filter(a => {
-                    const cashierScope = user.role === 'MASTER'
-                      ? users.filter(u => u.role === 'CASHIER')
-                      : users.filter(u => u.role === 'CASHIER' && (user.role === 'ADMIN' ? u.adminId === user.id : u.supervisorIds.includes(user.id)));
-                    if (cuadreCashierFilter === 'all') {
-                      return cashierScope.some(c => a.details.includes("asignado a " + c.user));
-                    } else {
-                      return a.details.includes("asignado a " + cuadreCashierFilter);
-                    }
-                  });
-
-                const recargas = scopedRecharges.reduce((sum, a) => {
-                  const match = a.details.match(/\$([0-9.]+)/);
-                  const val = match ? parseFloat(match[1]) : 0;
-                  return sum + val;
-                }, 0);
-
-                const cajaDisponible = ventasBrutas + recargas - comisiones - premiosPagados - premiosPendientes;
-                const beneficioNeto = ventasBrutas + recargas - comisiones - premiosPagados - premiosPendientes;
-
-                return (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-                    
-                    {/* Operational report metric specs rows */}
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '20px' }}>
-                      <div className="glass-panel" style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                        <span style={{ color: 'hsl(var(--text-secondary))', fontSize: '0.8rem' }}>Venta Bruta</span>
-                        <strong style={{ fontSize: '1.5rem' }}>${ventasBrutas.toFixed(2)}</strong>
-                        <span style={{ fontSize: '0.7rem', color: 'hsl(var(--text-muted))' }}>Lot: ${loteriaVentas.toFixed(2)} | Dep: ${deportesVentas.toFixed(2)}</span>
-                      </div>
-                      <div className="glass-panel" style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                        <span style={{ color: 'hsl(var(--text-secondary))', fontSize: '0.8rem' }}>Comisión Retenida</span>
-                        <strong style={{ fontSize: '1.5rem', color: 'hsl(var(--danger))' }}>${comisiones.toFixed(2)}</strong>
-                        <span style={{ fontSize: '0.7rem', color: 'hsl(var(--text-muted))' }}>Lot: ${loteriaComisiones.toFixed(2)} | Dep: ${deportesComisiones.toFixed(2)}</span>
-                      </div>
-                      <div className="glass-panel" style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                        <span style={{ color: 'hsl(var(--text-secondary))', fontSize: '0.8rem' }}>Premios Pagados</span>
-                        <strong style={{ fontSize: '1.5rem', color: 'hsl(var(--warning))' }}>${premiosPagados.toFixed(2)}</strong>
-                        <span style={{ fontSize: '0.7rem', color: 'hsl(var(--text-muted))' }}>Lot: ${loteriaPremiosPagados.toFixed(2)} | Dep: ${deportesPremiosPagados.toFixed(2)}</span>
-                      </div>
-                      <div className="glass-panel" style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                        <span style={{ color: 'hsl(var(--text-secondary))', fontSize: '0.8rem' }}>Recarga Distribuida</span>
-                        <strong style={{ fontSize: '1.5rem' }}>${recargas.toFixed(2)}</strong>
-                        <span style={{ fontSize: '0.7rem', color: 'hsl(var(--text-muted))' }}>Cupos de venta FF</span>
-                      </div>
-                    </div>
-
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '24px' }}>
-                      <div className="glass-panel" style={{ padding: '24px', borderLeft: '4px solid hsl(var(--primary))' }}>
-                        <span style={{ color: 'hsl(var(--text-secondary))', fontSize: '0.85rem' }}>Caja Disponible</span>
-                        <h4 style={{ fontSize: '1.8rem', fontWeight: 700, color: 'hsl(var(--text-primary))' }}>${cajaDisponible.toFixed(2)}</h4>
-                        <span style={{ fontSize: '0.75rem', color: 'hsl(var(--text-muted))' }}>Efectivo físico disponible en terminales</span>
-                      </div>
-
-                      <div className="glass-panel" style={{ padding: '24px', borderLeft: '4px solid hsl(var(--success))', background: 'hsl(var(--success) / 0.03)' }}>
-                        <span style={{ color: 'hsl(var(--success))', fontSize: '0.85rem', fontWeight: 600 }}>Beneficio Neto</span>
-                        <h4 style={{ fontSize: '1.8rem', fontWeight: 700, color: 'hsl(var(--success))' }}>${beneficioNeto.toFixed(2)}</h4>
-                        <span style={{ fontSize: '0.75rem', color: 'hsl(var(--text-muted))' }}>Ganancia neta consolidada de la banca</span>
-                      </div>
-                    </div>
-
-                    {/* Cashiers performance breakdown table */}
-                    <div className="glass-panel" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                      <h3 style={{ fontSize: '1.1rem', fontWeight: 700 }}>Desglose de Conciliación por Cajero</h3>
-                      
-                      <div className="table-container">
-                        <table className="table-el">
-                          <thead>
-                            <tr>
-                              <th>Cajero</th>
-                              <th>Ventas</th>
-                              <th>Comisiones</th>
-                              <th>Premios</th>
-                              <th>Recargas</th>
-                              <th>Caja Neto</th>
-                              <th>Estado</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {users.filter(u => u.role === 'CASHIER' && (user.role === 'MASTER' ? true : (user.role === 'ADMIN' ? u.adminId === user.id : u.supervisorIds.includes(user.id)))).map(cashier => {
-                              const cashierTks = tickets.filter(t => t.sellerUser === cashier.user && t.status !== 'cancelled' && t.status !== 'voided')
-                                .filter(t => {
-                                  const dateLimit = cuadrePeriod === 'today' ? 1 : cuadrePeriod === 'week' ? 7 : cuadrePeriod === 'month' ? 30 : 0;
-                                  if (dateLimit > 0) return (Date.now() - t.createdAtEpochMs) <= (dateLimit * 86400000);
-                                  return true;
-                                });
-
-                              const tkSales = cashierTks.reduce((acc, t) => acc + t.total, 0);
-                              const tkPremiosPagados = cashierTks.filter(t => t.status === 'paid').reduce((acc, t) => acc + t.totalPrize, 0);
-                              const tkPremiosPendientes = cashierTks.filter(t => t.status === 'winner').reduce((acc, t) => acc + t.totalPrize, 0);
-                              const tkComisiones = tkSales * normalizeRate(cashier.commissionRate);
-
-                              const cashierSports = sportsTickets.filter(t => t.sellerUsername === cashier.user && t.status !== 'void')
-                                .filter(t => {
-                                  const dateLimit = cuadrePeriod === 'today' ? 1 : cuadrePeriod === 'week' ? 7 : cuadrePeriod === 'month' ? 30 : 0;
-                                  if (dateLimit > 0) return (Date.now() - new Date(t.soldAt).getTime()) <= (dateLimit * 86400000);
-                                  return true;
-                                });
-
-                              const spSales = cashierSports.reduce((acc, t) => acc + t.stake, 0);
-                              const spPremiosPagados = cashierSports.filter(t => t.status === 'paid').reduce((acc, t) => acc + t.potentialPayout, 0);
-                              const spPremiosPendientes = cashierSports.filter(t => t.status === 'won').reduce((acc, t) => acc + t.potentialPayout, 0);
-                              const spComisiones = spSales * normalizeRate(cashier.commissionRate);
-
-                              const totalSales = tkSales + spSales;
-                              const totalComisiones = tkComisiones + spComisiones;
-                              const totalPremios = tkPremiosPagados + spPremiosPagados;
-                              const cashierRecharges = audits.filter(a => a.action === 'PROCESS_RECHARGE' && a.details.includes("asignado a " + cashier.user))
-                                .filter(a => {
-                                  const timestamp = Number(a.timestampMs || 0);
-                                  if (!timestamp) return false;
-                                  
-                                  const dateLimit = cuadrePeriod === 'today' ? 1 : cuadrePeriod === 'week' ? 7 : cuadrePeriod === 'month' ? 30 : 0;
-                                  if (dateLimit > 0) {
-                                    return (Date.now() - timestamp) <= (dateLimit * 86400000);
-                                  }
-                                  return true;
-                                });
-                              const tkRecargas = cashierRecharges.reduce((sum, a) => {
-                                const match = a.details.match(/\$([0-9.]+)/);
-                                return sum + (match ? parseFloat(match[1]) : 0);
-                              }, 0);
-                              const tkCaja = totalSales + tkRecargas - totalComisiones - totalPremios - (tkPremiosPendientes + spPremiosPendientes);
-
-                              return (
-                                <tr key={cashier.id}>
-                                  <td style={{ fontWeight: 600 }}>{cashier.displayName || cashier.user}</td>
-                                  <td style={{ fontWeight: 600 }}>${totalSales.toFixed(2)}</td>
-                                  <td style={{ color: 'hsl(var(--danger))' }}>${totalComisiones.toFixed(2)}</td>
-                                  <td style={{ color: 'hsl(var(--warning))' }}>${totalPremios.toFixed(2)}</td>
-                                  <td>${tkRecargas.toFixed(2)}</td>
-                                  <td style={{ fontWeight: 700, color: tkCaja >= 0 ? 'hsl(var(--success))' : 'hsl(var(--danger))' }}>
-                                    ${tkCaja.toFixed(2)}
-                                  </td>
-                                  <td>
-                                    <span className={`badge ${cashier.active ? 'badge-success' : 'badge-danger'}`}>
-                                      {cashier.active ? 'Activo' : 'Suspendido'}
-                                    </span>
-                                  </td>
-                                </tr>
-                              );
-                            })}
-                          </tbody>
-                        </table>
-                      </div>
-                    </div>
-
-                  </div>
-                );
-              })()}
-
-            </div>
+            <CuadreTab
+              user={user}
+              users={users}
+              tickets={tickets}
+              sportsTickets={sportsTickets}
+              audits={audits}
+              cuadrePeriod={cuadrePeriod}
+              setCuadrePeriod={setCuadrePeriod}
+              cuadreCashierFilter={cuadreCashierFilter}
+              setCuadreCashierFilter={setCuadreCashierFilter}
+              cuadreDateFrom={cuadreDateFrom}
+              setCuadreDateFrom={setCuadreDateFrom}
+              cuadreDateTo={cuadreDateTo}
+              setCuadreDateTo={setCuadreDateTo}
+              isSameLocalDate={isSameLocalDate}
+              getLocalDateStringDR={getLocalDateStringDR}
+              normalizeRate={normalizeRate}
+            />
           )}
 
 
           {/* TAB 6: LIMITS AND PERMISSIONS */}
           {activeTab === 'limites' && (user.role === 'ADMIN' || user.role === 'MASTER') && (
-            <div className="fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-              
-              {/* TOP BAR / SCOPE SEGMENT CONTROLS */}
-              <div className="glass-panel" style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
-                  <div>
-                    <h3 style={{ fontSize: '1.2rem', fontWeight: 700, color: 'hsl(var(--text-primary))' }}>
-                      Configuración de Límites Administrativos
-                    </h3>
-                    <p style={{ fontSize: '0.825rem', color: 'hsl(var(--text-secondary))' }}>
-                      Define los montos máximos permitidos para ventas diarias, pagos y jugadas individuales.
-                    </p>
-                  </div>
-
-                  {saveSuccessNotification && (
-                    <div className="fade-in" style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '8px',
-                      padding: '8px 16px',
-                      borderRadius: 'var(--radius-md)',
-                      backgroundColor: 'hsl(var(--success) / 0.1)',
-                      color: 'hsl(var(--success))',
-                      fontSize: '0.875rem',
-                      fontWeight: 500,
-                      border: '1px solid hsl(var(--success) / 0.2)'
-                    }}>
-                      <CheckCircle size={16} />
-                      ¡Límites guardados correctamente!
-                    </div>
-                  )}
-                </div>
-
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', borderBottom: '1px solid hsl(var(--border))', paddingBottom: '16px' }}>
-                  <label style={{ fontSize: '0.85rem', fontWeight: 600, color: 'hsl(var(--text-secondary))' }}>
-                    Ámbito de Configuración (Alcance)
-                  </label>
-                  <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', alignItems: 'center' }}>
-                    <select
-                      className="form-input"
-                      value={selectedScope}
-                      onChange={(e) => setSelectedScope(e.target.value as any)}
-                      style={{ maxWidth: '360px', padding: '12px 16px', fontSize: '0.9rem', fontWeight: 600, cursor: 'pointer' }}
-                    >
-                      <option value="ADMIN_SELF">⚙️ Mi Cuenta (Límites de Banca y Propios)</option>
-                      <option value="CASHIER_DEFAULTS">👥 Todos los Cajeros (Valores Estándar)</option>
-                      <option value="CASHIER_SPECIFIC">👤 Por Cajero (Configuración Personalizada)</option>
-                    </select>
-                    
-                    {selectedScope === 'CASHIER_SPECIFIC' && (
-                      <div className="fade-in" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <select
-                          className="form-input"
-                          value={selectedCashierUsername}
-                          onChange={(e) => setSelectedCashierUsername(e.target.value)}
-                          style={{ minWidth: '220px', padding: '12px 16px', fontSize: '0.9rem', cursor: 'pointer' }}
-                        >
-                          {users.filter(u => u.role === 'CASHIER' && (user.role === 'MASTER' ? true : u.adminId === user.id)).length === 0 ? (
-                            <option value="">No tienes cajeros registrados</option>
-                          ) : (
-                            users.filter(u => u.role === 'CASHIER' && (user.role === 'MASTER' ? true : u.adminId === user.id)).map(c => (
-                              <option key={c.id} value={c.user}>
-                                👤 {c.displayName || c.user} (@{c.user})
-                              </option>
-                            ))
-                          )}
-                        </select>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              {/* LIMIT SECTIONS CARDS GRID */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))', gap: '24px' }}>
-                
-                {/* CARD 1: DAILY LIMIT & PAYOUT */}
-                <div className="glass-panel" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                  <div>
-                    <h4 style={{ fontSize: '1.05rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <DollarSign size={18} color="var(--primary)" />
-                      {selectedScope === 'ADMIN_SELF' ? 'Límites de Venta y Cobro Propios' : 'Límites Diarios del Cajero'}
-                    </h4>
-                    <p style={{ fontSize: '0.75rem', color: 'hsl(var(--text-secondary))', marginTop: '4px' }}>
-                      {selectedScope === 'ADMIN_SELF' 
-                        ? 'Establece el dinero máximo diario y cobros permitidos para tu propia cuenta.' 
-                        : 'Define el cupo total diario de ventas y el tope de pago de premios.'}
-                    </p>
-                  </div>
-
-                  <div className="form-group">
-                    <label className="form-label" style={{ fontWeight: 600 }}>
-                      {selectedScope === 'ADMIN_SELF' ? 'Mi Venta Diaria Máxima' : 'Dinero Máximo de Venta por Día'}
-                    </label>
-                    <div style={{ position: 'relative' }}>
-                      <span style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', fontSize: '0.875rem', color: 'hsl(var(--text-muted))', fontWeight: 500 }}>$</span>
-                      <input
-                        type="number"
-                        className="form-input"
-                        style={{ paddingLeft: '28px' }}
-                        value={currentLimitsForm.daySale}
-                        onChange={(e) => setCurrentLimitsForm({ ...currentLimitsForm, daySale: Number(e.target.value) })}
-                        min={0}
-                      />
-                    </div>
-                    <span style={{ fontSize: '0.7rem', color: 'hsl(var(--text-muted))', marginTop: '4px', display: 'block' }}>
-                      {selectedScope === 'ADMIN_SELF' 
-                        ? 'Deja en 0 para vender sin límites propios.' 
-                        : '0 deja al cajero sin límites de venta diarios.'}
-                    </span>
-                  </div>
-
-                  <div className="form-group">
-                    <label className="form-label" style={{ fontWeight: 600 }}>
-                      Límite Máximo de Pago de Premio (Pagos)
-                    </label>
-                    <div style={{ position: 'relative' }}>
-                      <span style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', fontSize: '0.875rem', color: 'hsl(var(--text-muted))', fontWeight: 500 }}>$</span>
-                      <input
-                        type="number"
-                        className="form-input"
-                        style={{ paddingLeft: '28px' }}
-                        value={currentLimitsForm.payout}
-                        onChange={(e) => setCurrentLimitsForm({ ...currentLimitsForm, payout: Number(e.target.value) })}
-                        min={0}
-                      />
-                    </div>
-                    <span style={{ fontSize: '0.7rem', color: 'hsl(var(--text-muted))', marginTop: '4px', display: 'block' }}>
-                      Controla el monto máximo que un cajero puede pagar directamente por ticket.
-                    </span>
-                  </div>
-                </div>
-
-                {/* CARD 2: TRADITIONAL PLAY LIMITS */}
-                <div className="glass-panel" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                  <div>
-                    <h4 style={{ fontSize: '1.05rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <Layers size={18} color="var(--primary)" />
-                      Loterías Tradicionales (Tope por Jugada)
-                    </h4>
-                    <p style={{ fontSize: '0.75rem', color: 'hsl(var(--text-secondary))', marginTop: '4px' }}>
-                      Control de riesgo por combinaciones tradicionales de la lotería dominicana.
-                    </p>
-                  </div>
-
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-                    <div className="form-group">
-                      <label className="form-label">Quiniela</label>
-                      <input
-                        type="number"
-                        className="form-input"
-                        value={currentLimitsForm.q}
-                        onChange={(e) => setCurrentLimitsForm({ ...currentLimitsForm, q: Number(e.target.value) })}
-                        min={0}
-                      />
-                    </div>
-
-                    <div className="form-group">
-                      <label className="form-label">Palé</label>
-                      <input
-                        type="number"
-                        className="form-input"
-                        value={currentLimitsForm.pale}
-                        onChange={(e) => setCurrentLimitsForm({ ...currentLimitsForm, pale: Number(e.target.value) })}
-                        min={0}
-                      />
-                    </div>
-
-                    <div className="form-group">
-                      <label className="form-label">Super Palé</label>
-                      <input
-                        type="number"
-                        className="form-input"
-                        value={currentLimitsForm.sp}
-                        onChange={(e) => setCurrentLimitsForm({ ...currentLimitsForm, sp: Number(e.target.value) })}
-                        min={0}
-                      />
-                    </div>
-
-                    <div className="form-group">
-                      <label className="form-label">Tripleta</label>
-                      <input
-                        type="number"
-                        className="form-input"
-                        value={currentLimitsForm.t}
-                        onChange={(e) => setCurrentLimitsForm({ ...currentLimitsForm, t: Number(e.target.value) })}
-                        min={0}
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                {/* CARD 3: PICK 3 / PICK 4 PLAY LIMITS */}
-                <div className="glass-panel" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                  <div>
-                    <h4 style={{ fontSize: '1.05rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <Activity size={18} color="var(--primary)" />
-                      Loterías Americanas (Pick 3 / Pick 4)
-                    </h4>
-                    <p style={{ fontSize: '0.75rem', color: 'hsl(var(--text-secondary))', marginTop: '4px' }}>
-                      Topes por tipo de jugada para sorteos en el territorio USA.
-                    </p>
-                  </div>
-
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-                    <div className="form-group">
-                      <label className="form-label">Pick 3 Straight</label>
-                      <input
-                        type="number"
-                        className="form-input"
-                        value={currentLimitsForm.p3}
-                        onChange={(e) => setCurrentLimitsForm({ ...currentLimitsForm, p3: Number(e.target.value) })}
-                        min={0}
-                      />
-                    </div>
-
-                    <div className="form-group">
-                      <label className="form-label">Pick 3 Box</label>
-                      <input
-                        type="number"
-                        className="form-input"
-                        value={currentLimitsForm.p3box}
-                        onChange={(e) => setCurrentLimitsForm({ ...currentLimitsForm, p3box: Number(e.target.value) })}
-                        min={0}
-                      />
-                    </div>
-
-                    <div className="form-group">
-                      <label className="form-label">Pick 4 Straight</label>
-                      <input
-                        type="number"
-                        className="form-input"
-                        value={currentLimitsForm.p4}
-                        onChange={(e) => setCurrentLimitsForm({ ...currentLimitsForm, p4: Number(e.target.value) })}
-                        min={0}
-                      />
-                    </div>
-
-                    <div className="form-group">
-                      <label className="form-label">Pick 4 Box</label>
-                      <input
-                        type="number"
-                        className="form-input"
-                        value={currentLimitsForm.p4box}
-                        onChange={(e) => setCurrentLimitsForm({ ...currentLimitsForm, p4box: Number(e.target.value) })}
-                        min={0}
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                {/* CARD 4: SYSTEM CONFIGURATION (POS MODE OVERRIDE) */}
-                {(selectedScope === 'ADMIN_SELF' || selectedScope === 'CASHIER_SPECIFIC') && (
-                  <div className="glass-panel fade-in" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                    <div>
-                      <h4 style={{ fontSize: '1.05rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <Settings size={18} color="var(--primary)" />
-                        Configuración del Sistema
-                      </h4>
-                      <p style={{ fontSize: '0.75rem', color: 'hsl(var(--text-secondary))', marginTop: '4px' }}>
-                        Ajusta el comportamiento de visualización en la terminal POS.
-                      </p>
-                    </div>
-
-                    <div className="form-group">
-                      <label className="form-label" style={{ fontWeight: 600 }}>
-                        {selectedScope === 'ADMIN_SELF' ? 'Mi Modo de Visualización' : 'Modo de Visualización del Cajero'}
-                      </label>
-                      <select
-                        className="form-input"
-                        value={currentLimitsForm.systemModeOverride}
-                        onChange={(e) => setCurrentLimitsForm({ ...currentLimitsForm, systemModeOverride: e.target.value })}
-                      >
-                        <option value="">Deshabilitado (Estándar)</option>
-                        <option value="compact">Habilitado (Compacto POS)</option>
-                      </select>
-                      <span style={{ fontSize: '0.7rem', color: 'hsl(var(--text-muted))', marginTop: '6px', display: 'block' }}>
-                        Activa una interfaz compacta optimizada para terminales con pantallas reducidas o impresoras térmicas pequeñas.
-                      </span>
-                    </div>
-
-                    <div style={{ borderTop: '1px solid hsl(var(--border))', paddingTop: '16px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
-                      <h5 style={{ fontSize: '0.85rem', fontWeight: 600, color: 'hsl(var(--text-primary))' }}>
-                        {selectedScope === 'ADMIN_SELF' ? 'Modos de Juego Habilitados para la Banca' : 'Permisos de Juego para el Cajero'}
-                      </h5>
-                      
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', borderRadius: 'var(--radius-sm)', backgroundColor: 'rgba(255,255,255,0.02)', border: '1px solid hsl(var(--border))' }}>
-                        <div>
-                          <span style={{ fontSize: '0.85rem', fontWeight: 600, display: 'block' }}>Lotería Tradicional</span>
-                          <span style={{ fontSize: '0.7rem', color: 'hsl(var(--text-secondary))' }}>Quiniela, Palé, Super Palé, Tripleta</span>
-                        </div>
-                        <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}>
-                          <input
-                            type="checkbox"
-                            checked={selectedScope === 'ADMIN_SELF' ? (systemModeConfig.lotteryModeEnabled !== false) : (systemModeConfig.cashierLotteryModeEnabled !== false)}
-                            onChange={(e) => {
-                              if (selectedScope === 'ADMIN_SELF') {
-                                setSystemModeConfig({ ...systemModeConfig, lotteryModeEnabled: e.target.checked });
-                              } else {
-                                setSystemModeConfig({ ...systemModeConfig, cashierLotteryModeEnabled: e.target.checked });
-                              }
-                            }}
-                            style={{ width: '18px', height: '18px', cursor: 'pointer', accentColor: 'var(--primary)' }}
-                          />
-                        </label>
-                      </div>
-
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', borderRadius: 'var(--radius-sm)', backgroundColor: 'rgba(255,255,255,0.02)', border: '1px solid hsl(var(--border))' }}>
-                        <div>
-                          <span style={{ fontSize: '0.85rem', fontWeight: 600, display: 'block' }}>USA Pick</span>
-                          <span style={{ fontSize: '0.7rem', color: 'hsl(var(--text-secondary))' }}>Pick 3 y Pick 4 (Straight, Box, Pair)</span>
-                        </div>
-                        <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}>
-                          <input
-                            type="checkbox"
-                            checked={selectedScope === 'ADMIN_SELF' ? (systemModeConfig.pickModeEnabled !== false) : (systemModeConfig.cashierPickModeEnabled !== false)}
-                            onChange={(e) => {
-                              if (selectedScope === 'ADMIN_SELF') {
-                                setSystemModeConfig({ ...systemModeConfig, pickModeEnabled: e.target.checked });
-                              } else {
-                                setSystemModeConfig({ ...systemModeConfig, cashierPickModeEnabled: e.target.checked });
-                              }
-                            }}
-                            style={{ width: '18px', height: '18px', cursor: 'pointer', accentColor: 'var(--primary)' }}
-                          />
-                        </label>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-              </div>
-
-              {/* CARD: PAGA DE PREMIOS (MULTIPLICADORES DE PAYOUT) */}
-              <div className="glass-panel fade-in" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px', marginTop: '24px' }}>
-                <div>
-                  <h4 style={{ fontSize: '1.05rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <TrendingUp size={18} color="var(--primary)" />
-                    Paga de Premios (Multiplicadores de Payout)
-                  </h4>
-                  <p style={{ fontSize: '0.75rem', color: 'hsl(var(--text-secondary))', marginTop: '4px' }}>
-                    {selectedScope === 'ADMIN_SELF' || selectedScope === 'CASHIER_DEFAULTS' 
-                      ? 'Configura la escala de premios estándar para tu red de cajeros (multiplicador x cada $1 apostado).' 
-                      : `Personaliza la paga de premios exclusiva para el cajero @${selectedCashierUsername}.`}
-                  </p>
-                </div>
-
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '24px' }}>
-                  {/* Traditional Payouts */}
-                  {systemModeConfig.lotteryModeEnabled !== false && (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                      <h5 style={{ fontSize: '0.9rem', fontWeight: 600, borderBottom: '1px solid hsl(var(--border))', paddingBottom: '8px', color: 'var(--primary)' }}>
-                        Loterías Tradicionales (Escala RD)
-                      </h5>
-                      
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                        <div className="form-group">
-                          <label className="form-label">Quiniela 1ra (x1)</label>
-                          <input
-                            type="number"
-                            className="form-input"
-                            value={currentPayoutsForm.q1}
-                            onChange={(e) => setCurrentPayoutsForm({ ...currentPayoutsForm, q1: Number(e.target.value) })}
-                            min={0}
-                          />
-                        </div>
-                        <div className="form-group">
-                          <label className="form-label">Quiniela 2da (x1)</label>
-                          <input
-                            type="number"
-                            className="form-input"
-                            value={currentPayoutsForm.q2}
-                            onChange={(e) => setCurrentPayoutsForm({ ...currentPayoutsForm, q2: Number(e.target.value) })}
-                            min={0}
-                          />
-                        </div>
-                        <div className="form-group">
-                          <label className="form-label">Quiniela 3ra (x1)</label>
-                          <input
-                            type="number"
-                            className="form-input"
-                            value={currentPayoutsForm.q3}
-                            onChange={(e) => setCurrentPayoutsForm({ ...currentPayoutsForm, q3: Number(e.target.value) })}
-                            min={0}
-                          />
-                        </div>
-                        <div className="form-group">
-                          <label className="form-label">Palé (x1)</label>
-                          <input
-                            type="number"
-                            className="form-input"
-                            value={currentPayoutsForm.pale}
-                            onChange={(e) => setCurrentPayoutsForm({ ...currentPayoutsForm, pale: Number(e.target.value) })}
-                            min={0}
-                          />
-                        </div>
-                        <div className="form-group">
-                          <label className="form-label">Super Palé (x1)</label>
-                          <input
-                            type="number"
-                            className="form-input"
-                            value={currentPayoutsForm.superPale}
-                            onChange={(e) => setCurrentPayoutsForm({ ...currentPayoutsForm, superPale: Number(e.target.value) })}
-                            min={0}
-                          />
-                        </div>
-                        <div className="form-group">
-                          <label className="form-label">Tripleta (x1)</label>
-                          <input
-                            type="number"
-                            className="form-input"
-                            value={currentPayoutsForm.tripleta}
-                            onChange={(e) => setCurrentPayoutsForm({ ...currentPayoutsForm, tripleta: Number(e.target.value) })}
-                            min={0}
-                          />
-                        </div>
-                        <div className="form-group" style={{ gridColumn: 'span 2' }}>
-                          <label className="form-label">Tripleta 2 Aciertos (Consolación)</label>
-                          <input
-                            type="number"
-                            className="form-input"
-                            value={currentPayoutsForm.tripleta2}
-                            onChange={(e) => setCurrentPayoutsForm({ ...currentPayoutsForm, tripleta2: Number(e.target.value) })}
-                            min={0}
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* USA Pick Payouts */}
-                  {systemModeConfig.pickModeEnabled !== false && (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                      <h5 style={{ fontSize: '0.9rem', fontWeight: 600, borderBottom: '1px solid hsl(var(--border))', paddingBottom: '8px', color: 'var(--primary)' }}>
-                        Loterías USA (Pick 3 / Pick 4)
-                      </h5>
-
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                        <div className="form-group">
-                          <label className="form-label">Pick 3 Straight</label>
-                          <input
-                            type="number"
-                            className="form-input"
-                            value={currentPayoutsForm.pick3Straight}
-                            onChange={(e) => setCurrentPayoutsForm({ ...currentPayoutsForm, pick3Straight: Number(e.target.value) })}
-                            min={0}
-                          />
-                        </div>
-                        <div className="form-group">
-                          <label className="form-label">Pick 3 Back Pair</label>
-                          <input
-                            type="number"
-                            className="form-input"
-                            value={currentPayoutsForm.pick3BackPair}
-                            onChange={(e) => setCurrentPayoutsForm({ ...currentPayoutsForm, pick3BackPair: Number(e.target.value) })}
-                            min={0}
-                          />
-                        </div>
-                        <div className="form-group">
-                          <label className="form-label">Pick 3 Box 3-Way</label>
-                          <input
-                            type="number"
-                            className="form-input"
-                            value={currentPayoutsForm.pick3Box3}
-                            onChange={(e) => setCurrentPayoutsForm({ ...currentPayoutsForm, pick3Box3: Number(e.target.value) })}
-                            min={0}
-                          />
-                        </div>
-                        <div className="form-group">
-                          <label className="form-label">Pick 3 Box 6-Way</label>
-                          <input
-                            type="number"
-                            className="form-input"
-                            value={currentPayoutsForm.pick3Box6}
-                            onChange={(e) => setCurrentPayoutsForm({ ...currentPayoutsForm, pick3Box6: Number(e.target.value) })}
-                            min={0}
-                          />
-                        </div>
-
-                        <div className="form-group">
-                          <label className="form-label">Pick 4 Straight</label>
-                          <input
-                            type="number"
-                            className="form-input"
-                            value={currentPayoutsForm.pick4Straight}
-                            onChange={(e) => setCurrentPayoutsForm({ ...currentPayoutsForm, pick4Straight: Number(e.target.value) })}
-                            min={0}
-                          />
-                        </div>
-                        <div className="form-group">
-                          <label className="form-label">Pick 4 Back Pair</label>
-                          <input
-                            type="number"
-                            className="form-input"
-                            value={currentPayoutsForm.pick4BackPair}
-                            onChange={(e) => setCurrentPayoutsForm({ ...currentPayoutsForm, pick4BackPair: Number(e.target.value) })}
-                            min={0}
-                          />
-                        </div>
-
-                        <div className="form-group">
-                          <label className="form-label">Pick 4 Box 4-Way</label>
-                          <input
-                            type="number"
-                            className="form-input"
-                            value={currentPayoutsForm.pick4Box4}
-                            onChange={(e) => setCurrentPayoutsForm({ ...currentPayoutsForm, pick4Box4: Number(e.target.value) })}
-                            min={0}
-                          />
-                        </div>
-                        <div className="form-group">
-                          <label className="form-label">Pick 4 Box 6-Way</label>
-                          <input
-                            type="number"
-                            className="form-input"
-                            value={currentPayoutsForm.pick4Box6}
-                            onChange={(e) => setCurrentPayoutsForm({ ...currentPayoutsForm, pick4Box6: Number(e.target.value) })}
-                            min={0}
-                          />
-                        </div>
-                        <div className="form-group">
-                          <label className="form-label">Pick 4 Box 12-Way</label>
-                          <input
-                            type="number"
-                            className="form-input"
-                            value={currentPayoutsForm.pick4Box12}
-                            onChange={(e) => setCurrentPayoutsForm({ ...currentPayoutsForm, pick4Box12: Number(e.target.value) })}
-                            min={0}
-                          />
-                        </div>
-                        <div className="form-group">
-                          <label className="form-label">Pick 4 Box 24-Way</label>
-                          <input
-                            type="number"
-                            className="form-input"
-                            value={currentPayoutsForm.pick4Box24}
-                            onChange={(e) => setCurrentPayoutsForm({ ...currentPayoutsForm, pick4Box24: Number(e.target.value) })}
-                            min={0}
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* CARD 4.5: SPORTSBOOK LIMITS CONFIGURATION */}
-                  <div className="glass-panel-premium" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                    <div>
-                      <h4 style={{ fontSize: '1.05rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <Trophy size={18} color="var(--primary)" />
-                        Límites de Banca Deportiva
-                      </h4>
-                      <p style={{ fontSize: '0.75rem', color: 'hsl(var(--text-secondary))', marginTop: '4px' }}>
-                        Establece topes máximos para apuestas y cobros deportivos en este ámbito.
-                      </p>
-                    </div>
-
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                      <div className="form-group">
-                        <label className="form-label" style={{ fontWeight: 600 }}>
-                          Apuesta Máxima por Ticket ($)
-                        </label>
-                        <input
-                          type="number"
-                          className="form-input"
-                          value={sportsLimitsForm.max_ticket_stake}
-                          onChange={(e) => setSportsLimitsForm({ ...sportsLimitsForm, max_ticket_stake: Number(e.target.value) })}
-                          min={0}
-                        />
-                      </div>
-
-                      <div className="form-group">
-                        <label className="form-label" style={{ fontWeight: 600 }}>
-                          Pago Máximo por Ticket ($)
-                        </label>
-                        <input
-                          type="number"
-                          className="form-input"
-                          value={sportsLimitsForm.max_potential_payout}
-                          onChange={(e) => setSportsLimitsForm({ ...sportsLimitsForm, max_potential_payout: Number(e.target.value) })}
-                          min={0}
-                        />
-                      </div>
-
-                      <div className="form-group">
-                        <label className="form-label" style={{ fontWeight: 600, marginBottom: '8px', display: 'block' }}>
-                          Mercados Deportivos Autorizados
-                        </label>
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-                          {[
-                            { id: 'moneyline', label: 'Moneyline (Ganador)' },
-                            { id: 'spread', label: 'Spread (Handicap)' },
-                            { id: 'total', label: 'Alta/Baja (Totals)' },
-                            { id: 'runline', label: 'Runline (Handicap)' },
-                            { id: 'first_half', label: 'Primera Mitad' },
-                            { id: 'first_five', label: 'Primeras 5 Entradas' }
-                          ].map((mkt) => {
-                            const isChecked = sportsLimitsForm.enabled_markets.includes(mkt.id);
-                            return (
-                              <label key={mkt.id} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.8rem', cursor: 'pointer' }}>
-                                <input
-                                  type="checkbox"
-                                  checked={isChecked}
-                                  onChange={(e) => {
-                                    let nextMkts = [...sportsLimitsForm.enabled_markets];
-                                    if (e.target.checked) {
-                                      if (!nextMkts.includes(mkt.id)) nextMkts.push(mkt.id);
-                                    } else {
-                                      nextMkts = nextMkts.filter(m => m !== mkt.id);
-                                    }
-                                    setSportsLimitsForm({ ...sportsLimitsForm, enabled_markets: nextMkts });
-                                  }}
-                                />
-                                {mkt.label}
-                              </label>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                </div>
-              </div>
-
-
-              {/* CARD 5: SPECIFIC PLAYS / NUMBERS BLOCK CONTROL */}
-              <div className="glass-panel" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px', marginTop: '24px' }}>
-                <div>
-                  <h4 style={{ fontSize: '1.05rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '8px', color: 'hsl(var(--danger))' }}>
-                    <Lock size={18} />
-                    Bloqueo de Jugadas y Números Específicos
-                  </h4>
-                  <p style={{ fontSize: '0.75rem', color: 'hsl(var(--text-secondary))', marginTop: '4px' }}>
-                    Bloquea jugadas específicas (ej. un número en Quiniela o una combinación de Palé) para impedir su venta en los cajeros de tu red.
-                  </p>
-                </div>
-
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '24px' }}>
-                  {/* Form to Add Blocked Play */}
-                  <form onSubmit={handleAddBlockedPlay} style={{ display: 'flex', flexDirection: 'column', gap: '16px', borderRight: '1px solid hsl(var(--border))', paddingRight: '24px' }}>
-                    <h5 style={{ fontSize: '0.9rem', fontWeight: 600 }}>Agregar Nuevo Bloqueo</h5>
-                    
-                    <div className="form-group">
-                      <label className="form-label">Tipo de Jugada</label>
-                      <select
-                        className="form-input"
-                        value={blockedPlayForm.playType}
-                        onChange={(e) => setBlockedPlayForm({ ...blockedPlayForm, playType: e.target.value })}
-                      >
-                        <option value="Q">Quiniela</option>
-                        <option value="P">Palé</option>
-                        <option value="SP">Super Palé</option>
-                        <option value="T">Tripleta</option>
-                        <option value="P3">Pick 3 Straight</option>
-                        <option value="P3BOX">Pick 3 Box</option>
-                        <option value="P4">Pick 4 Straight</option>
-                        <option value="P4BOX">Pick 4 Box</option>
-                      </select>
-                    </div>
-
-                    <div className="form-group">
-                      <label className="form-label">Número(s) a Bloquear</label>
-                      <input
-                        type="text"
-                        className="form-input"
-                        placeholder={
-                          blockedPlayForm.playType === 'Q' ? 'Ej. 14 (2 dígitos)' :
-                          blockedPlayForm.playType === 'P' || blockedPlayForm.playType === 'SP' ? 'Ej. 1422 (4 dígitos)' :
-                          blockedPlayForm.playType === 'T' ? 'Ej. 142205 (6 dígitos)' :
-                          blockedPlayForm.playType === 'P3' || blockedPlayForm.playType === 'P3BOX' ? 'Ej. 123 (3 dígitos)' : 'Ej. 1234 (4 dígitos)'
-                        }
-                        value={blockedPlayForm.number}
-                        onChange={(e) => setBlockedPlayForm({ ...blockedPlayForm, number: e.target.value })}
-                        maxLength={blockedPlayForm.playType === 'T' ? 6 : blockedPlayForm.playType === 'Q' ? 2 : blockedPlayForm.playType === 'P3' || blockedPlayForm.playType === 'P3BOX' ? 3 : 4}
-                        required
-                      />
-                      <span style={{ fontSize: '0.675rem', color: 'hsl(var(--text-muted))', marginTop: '4px', display: 'block' }}>
-                        Introduce solo los dígitos numéricos consecutivos. El sistema formateará el Super Palé automáticamente.
-                      </span>
-                    </div>
-
-                    <button type="submit" className="btn btn-primary" style={{ width: '100%', padding: '10px', marginTop: '8px' }}>
-                      Bloquear Jugada
-                    </button>
-                  </form>
-
-                  {/* List of Blocked Plays */}
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                    <h5 style={{ fontSize: '0.9rem', fontWeight: 600, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <span>Jugadas Bloqueadas Actualmente</span>
-                      <span className="badge" style={{ backgroundColor: 'hsl(var(--danger) / 0.1)', color: 'hsl(var(--danger))', fontSize: '0.7rem' }}>
-                        {blockedSalePlays.length} Bloqueo(s)
-                      </span>
-                    </h5>
-
-                    {blockedSalePlays.length === 0 ? (
-                      <div style={{ padding: '24px', textAlign: 'center', color: 'hsl(var(--text-muted))', backgroundColor: 'hsl(var(--background))', borderRadius: 'var(--radius-md)', border: '1px dashed hsl(var(--border))' }}>
-                        No tienes jugadas bloqueadas en esta banca.
-                      </div>
-                    ) : (
-                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', maxHeight: '280px', overflowY: 'auto', paddingRight: '8px' }}>
-                        {blockedSalePlays.map((play, index) => {
-                          const displayType = 
-                            play.playType === 'Q' ? 'Quin' :
-                            play.playType === 'P' ? 'Palé' :
-                            play.playType === 'SP' ? 'S.Palé' :
-                            play.playType === 'T' ? 'Trip' :
-                            play.playType === 'P3' ? 'P3 Str' :
-                            play.playType === 'P3BOX' ? 'P3 Box' :
-                            play.playType === 'P4' ? 'P4 Str' : 'P4 Box';
-                          
-                          return (
-                            <div key={index} className="glass-panel-premium table-row-stagger" style={{
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: '8px',
-                              padding: '6px 12px',
-                              borderRadius: '20px',
-                              border: '1px solid hsl(var(--danger) / 0.2)',
-                              fontSize: '0.8rem',
-                              backgroundColor: 'hsl(var(--danger) / 0.03)'
-                            }}>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                <span style={{ fontWeight: 700, color: 'hsl(var(--text-primary))', fontFamily: 'monospace' }}>
-                                  {play.number}
-                                </span>
-                                <span style={{ fontSize: '0.65rem', color: 'hsl(var(--text-muted))', backgroundColor: 'hsl(var(--surface-hover))', padding: '2px 6px', borderRadius: '4px' }}>
-                                  {displayType}
-                                </span>
-                              </div>
-                              <button
-                                onClick={() => handleRemoveBlockedPlay(play)}
-                                style={{
-                                  border: 'none',
-                                  background: 'transparent',
-                                  color: 'hsl(var(--text-muted))',
-                                  cursor: 'pointer',
-                                  padding: '2px',
-                                  borderRadius: '50%',
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  justifyContent: 'center',
-                                  transition: 'all 0.2s',
-                                  width: '18px',
-                                  height: '18px'
-                                }}
-                                title="Eliminar Bloqueo"
-                                onMouseEnter={(e) => {
-                                  e.currentTarget.style.color = 'hsl(var(--danger))';
-                                  e.currentTarget.style.backgroundColor = 'hsl(var(--danger) / 0.1)';
-                                }}
-                                onMouseLeave={(e) => {
-                                  e.currentTarget.style.color = 'hsl(var(--text-muted))';
-                                  e.currentTarget.style.backgroundColor = 'transparent';
-                                }}
-                              >
-                                <X size={12} />
-                              </button>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              {/* SAVE BUTTON ACTION BAR */}
-              <div className="glass-panel" style={{ padding: '20px 24px', display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
-                <button
-                  className="btn btn-primary"
-                  onClick={() => setLimitsConfirmOpen(true)}
-                  style={{
-                    padding: '12px 32px',
-                    fontSize: '0.95rem',
-                    fontWeight: 600,
-                    borderRadius: 'var(--radius-md)',
-                    cursor: 'pointer',
-                    boxShadow: 'var(--shadow-glow)'
-                  }}
-                >
-                  Guardar Cambios
-                </button>
-              </div>
-
-            </div>
+            <ConfigTab
+              user={user}
+              users={users}
+              lotteries={lotteries}
+              saveSuccessNotification={saveSuccessNotification}
+              selectedScope={selectedScope}
+              setSelectedScope={setSelectedScope}
+              selectedCashierUsername={selectedCashierUsername}
+              setSelectedCashierUsername={setSelectedCashierUsername}
+              currentLimitsForm={currentLimitsForm}
+              setCurrentLimitsForm={setCurrentLimitsForm}
+              systemModeConfig={systemModeConfig}
+              setSystemModeConfig={setSystemModeConfig}
+              currentPayoutsForm={currentPayoutsForm}
+              setCurrentPayoutsForm={setCurrentPayoutsForm}
+              sportsLimitsForm={sportsLimitsForm}
+              setSportsLimitsForm={setSportsLimitsForm}
+              blockedPlayForm={blockedPlayForm}
+              setBlockedPlayForm={setBlockedPlayForm}
+              blockedSalePlays={blockedSalePlays}
+              manualDisabledLotteryIds={manualDisabledLotteryIds}
+              setLimitsConfirmOpen={setLimitsConfirmOpen}
+              handleAddBlockedPlay={handleAddBlockedPlay}
+              handleRemoveBlockedPlay={handleRemoveBlockedPlay}
+              handleToggleManualDisabledLottery={handleToggleManualDisabledLottery}
+            />
           )}
 
           {/* TAB 7: FINANCE SUMMARY AND RECHARGES */}
-          {activeTab === 'finanzas' && (user.role === 'ADMIN' || user.role === 'MASTER') && (
-            <div className="fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-              
-              {/* Filtro de Recargas */}
-              <div className="glass-panel" style={{
-                padding: '12px 20px',
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                backgroundColor: 'hsl(var(--surface) / 0.6)',
-                gap: '12px',
-                flexWrap: 'wrap'
-              }}>
-                <div style={{ display: 'flex', flexDirection: 'column' }}>
-                  <span style={{ fontSize: '0.9rem', fontWeight: 600, color: 'hsl(var(--text-primary))' }}>
-                    Filtro de Recargas
-                  </span>
-                  <span style={{ fontSize: '0.75rem', color: 'hsl(var(--text-muted))' }}>
-                    Visualizar historial de recargas por día
-                  </span>
-                </div>
-                <div style={{ display: 'flex', gap: '6px' }}>
-                  {(['today', 'yesterday', 'all'] as const).map((filter) => (
-                    <button
-                      key={filter}
-                      onClick={() => setFinanzasDateFilter(filter)}
-                      style={{
-                        padding: '8px 14px',
-                        borderRadius: 'var(--radius-sm)',
-                        border: '1px solid hsl(var(--border))',
-                        backgroundColor: finanzasDateFilter === filter ? 'hsl(var(--primary))' : 'hsl(var(--surface-hover))',
-                        color: finanzasDateFilter === filter ? '#ffffff' : 'hsl(var(--text-secondary))',
-                        fontSize: '0.8rem',
-                        fontWeight: 600,
-                        cursor: 'pointer',
-                        transition: 'all 0.2s ease'
-                      }}
-                    >
-                      {filter === 'today' ? 'Hoy (Limpio)' : filter === 'yesterday' ? 'Ayer' : 'Todos los días'}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Cupos summary */}
-              <div className="glass-panel" style={{ padding: '24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                  <span style={{ fontSize: '0.85rem', color: 'hsl(var(--text-secondary))' }}>Mi Cupo Total Recargas (Asignado por Master)</span>
-                  <span style={{ fontSize: '2rem', fontWeight: 700, color: 'hsl(var(--text-primary))', fontFamily: 'var(--font-display)' }}>
-                    ${(user?.rechargesAssignedBalance || 0).toLocaleString()}
-                  </span>
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', textAlign: 'right' }}>
-                  <span style={{ fontSize: '0.85rem', color: 'hsl(var(--text-secondary))' }}>Cupo Disponible FF</span>
-                  <span style={{ fontSize: '2rem', fontWeight: 700, color: 'hsl(var(--success))', fontFamily: 'var(--font-display)' }}>
-                    ${(user?.rechargesBalance || 0).toLocaleString()}
-                  </span>
-                </div>
-              </div>
-
-              {/* Gráfico de Tendencia de Recargas */}
-              <div className="glass-panel-premium" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                  <span style={{ fontSize: '1.1rem', fontWeight: 600, color: 'hsl(var(--text-primary))' }}>
-                    Flujo y Distribución de Recargas
-                  </span>
-                  <span style={{ fontSize: '0.8rem', color: 'hsl(var(--text-muted))' }}>
-                    Monto total de recargas distribuidas a cajeros en los últimos 7 días
-                  </span>
-                </div>
-                <RechargeTrendChart audits={audits} />
-              </div>
-
-              {/* Transactions grid list */}
-              <div className="glass-panel" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                <h3 style={{ fontSize: '1.1rem' }}>Historial Recientes de Recargas</h3>
-                
-                <div className="table-container">
-                  <table className="table-el">
-                    <thead>
-                      <tr>
-                        <th>Fecha y Hora</th>
-                        <th>Cajero Destinatario</th>
-                        <th>Monto Asignado</th>
-                        <th>Tipo</th>
-                        <th>Estado</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {(() => {
-                        const allRecharges = audits.filter(a => a.action === 'PROCESS_RECHARGE');
-                        const filteredRecharges = allRecharges.filter(a => {
-                          if (finanzasDateFilter === 'today') {
-                            return isSameLocalDate(a.timestampMs, 0);
-                          } else if (finanzasDateFilter === 'yesterday') {
-                            return isSameLocalDate(a.timestampMs, 1);
-                          }
-                          return true; // 'all'
-                        });
-
-                        if (filteredRecharges.length === 0) {
-                          return (
-                            <tr>
-                              <td colSpan={5} style={{ textAlign: 'center', color: 'hsl(var(--text-secondary))' }}>
-                                No hay recargas financieras procesadas recientemente.
-                              </td>
-                            </tr>
-                          );
-                        }
-
-                        return filteredRecharges.map((a) => (
-                          <tr key={a.id}>
-                            <td>{new Date(a.timestampMs).toLocaleString()}</td>
-                            <td style={{ fontWeight: 600 }}>{a.details.split('a ')[1] || 'Cajero'}</td>
-                            <td style={{ fontWeight: 600, color: 'hsl(var(--success))' }}>
-                              {a.details.split(' ')[2] || 'Monto'}
-                            </td>
-                            <td>REPARTO_CUPOS</td>
-                            <td>
-                              <span className="badge badge-success">COMPLETADA</span>
-                            </td>
-                          </tr>
-                        ));
-                      })()}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-
-            </div>
+          {activeTab === 'finanzas' && (user.role === 'ADMIN' || user.role === 'MASTER' || user.role === 'SUPERVISOR') && (
+            <FinanzasTab
+              user={user}
+              users={users}
+              tickets={tickets}
+              sportsTickets={sportsTickets}
+              audits={audits}
+              finanzasDateFilter={finanzasDateFilter}
+              setFinanzasDateFilter={setFinanzasDateFilter}
+              setRechargeModalOpen={setRechargeModalOpen}
+              setRechargeForm={setRechargeForm}
+              isSameLocalDate={isSameLocalDate}
+              normalizeRate={normalizeRate}
+            />
           )}
 
           {/* TAB 8: MASTER & ADMIN & SUPERVISOR REPORTS */}
           {activeTab === 'reportes' && (
-            <div className="fade-in glass-panel" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <h3 style={{ fontSize: '1.1rem' }}>Análisis de Ventas vs Premios</h3>
-                <button className="btn btn-secondary" onClick={() => alert('Generando exportación de reporte XLS...')}>
-                  <FileSpreadsheet size={16} />
-                  Exportar a Excel
-                </button>
-              </div>
-
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '20px' }}>
-                <div style={{ backgroundColor: 'hsl(var(--background))', padding: '20px', borderRadius: 'var(--radius-md)', display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                  <span style={{ color: 'hsl(var(--text-secondary))', fontSize: '0.85rem' }}>Ventas Brutas Totales</span>
-                  <span style={{ fontSize: '1.5rem', fontWeight: 700 }}>
-                    ${tickets.filter(t => t.status !== 'cancelled' && t.status !== 'voided').reduce((acc, t) => acc + t.total, 0).toFixed(2)}
-                  </span>
-                </div>
-                <div style={{ backgroundColor: 'hsl(var(--background))', padding: '20px', borderRadius: 'var(--radius-md)', display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                  <span style={{ color: 'hsl(var(--text-secondary))', fontSize: '0.85rem' }}>Premios Aprobados</span>
-                  <span style={{ fontSize: '1.5rem', fontWeight: 700, color: 'hsl(var(--danger))' }}>
-                    ${tickets.filter(t => t.status === 'paid' || t.status === 'winner').reduce((acc, t) => acc + t.totalPrize, 0).toFixed(2)}
-                  </span>
-                </div>
-                <div style={{ backgroundColor: 'hsl(var(--background))', padding: '20px', borderRadius: 'var(--radius-md)', display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                  <span style={{ color: 'hsl(var(--text-secondary))', fontSize: '0.85rem' }}>Ingreso Neto (Ganancia)</span>
-                  <span style={{ fontSize: '1.5rem', fontWeight: 700, color: 'hsl(var(--success))' }}>
-                    ${(
-                      tickets.filter(t => t.status !== 'cancelled' && t.status !== 'voided').reduce((acc, t) => acc + t.total, 0) -
-                      tickets.filter(t => t.status === 'paid' || t.status === 'winner').reduce((acc, t) => acc + t.totalPrize, 0)
-                    ).toFixed(2)}
-                  </span>
-                </div>
-              </div>
-            </div>
+            <ReportesTab
+              tickets={tickets}
+              sportsTickets={sportsTickets}
+            />
           )}
 
           {/* TAB 9: AUDIT LOG SYSTEM */}
           {activeTab === 'auditoria' && (
-            <div className="fade-in glass-panel" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
-              <h3 style={{ fontSize: '1.15rem' }}>Bitácora de Auditoría del Sistema</h3>
-
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                {audits.map((a) => (
-                  <div key={a.id} style={{
-                    display: 'flex',
-                    alignItems: 'flex-start',
-                    gap: '16px',
-                    padding: '16px',
-                    borderRadius: 'var(--radius-md)',
-                    border: '1px solid hsl(var(--border))',
-                    backgroundColor: 'hsl(var(--surface))'
-                  }}>
-                    <div style={{
-                      width: '38px',
-                      height: '38px',
-                      borderRadius: '50%',
-                      backgroundColor: a.status === 'success' ? 'hsl(var(--success) / 0.1)' : 'hsl(var(--warning) / 0.1)',
-                      color: a.status === 'success' ? 'hsl(var(--success))' : 'hsl(var(--warning))',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      flexShrink: 0
-                    }}>
-                      <Info size={18} />
-                    </div>
-
-                    <div style={{ flex: 1 }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
-                        <strong style={{ fontSize: '0.9rem' }}>{a.action}</strong>
-                        <span style={{ fontSize: '0.75rem', color: 'hsl(var(--text-muted))' }}>
-                          {new Date(a.timestampMs).toLocaleString()}
-                        </span>
-                      </div>
-                      <p style={{ fontSize: '0.85rem', color: 'hsl(var(--text-secondary))', lineHeight: '1.5' }}>
-                        {a.details}
-                      </p>
-                      <div style={{ marginTop: '8px', display: 'flex', gap: '10px', fontSize: '0.75rem', color: 'hsl(var(--text-muted))' }}>
-                        <span>Actor: <strong>@{a.actorUser}</strong> ({a.role})</span>
-                        <span>•</span>
-                        <span>IP: {a.ipAddress}</span>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
+            <AuditoriaTab
+              audits={audits}
+            />
           )}
 
-        </>
-      )}
-
-      {/* --- MODAL: CREATE BANCA / ADMIN (MASTER ONLY) --- */}
-      {adminModalOpen && (
-        <div style={{
-          position: 'fixed',
-          inset: 0,
-          backgroundColor: 'rgba(0,0,0,0.5)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 100,
-          backdropFilter: 'blur(4px)'
-        }}>
-          <form onSubmit={handleCreateAdmin} className="glass-panel fade-in" style={{
-            maxWidth: '520px',
-            width: '100%',
-            padding: '30px',
-            backgroundColor: 'hsl(var(--surface))',
-            maxHeight: '90vh',
-            overflowY: 'auto'
-          }}>
-            <h3 style={{ fontSize: '1.25rem', marginBottom: '20px' }}>Registrar Nueva Banca Comercial</h3>
-            
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-              <div className="form-group">
-                <label className="form-label">Nombre Comercial Banca</label>
-                <input
-                  type="text"
-                  placeholder="ej. Banca El Sol Churchill"
-                  value={adminForm.bankName}
-                  onChange={(e) => setAdminForm({ ...adminForm, bankName: e.target.value })}
-                  className="form-input"
-                  required
-                />
-              </div>
-
-              <div className="form-group">
-                <label className="form-label">Nombre del Dueño (Socio)</label>
-                <input
-                  type="text"
-                  placeholder="ej. Juan Pérez"
-                  value={adminForm.ownerName}
-                  onChange={(e) => setAdminForm({ ...adminForm, ownerName: e.target.value })}
-                  className="form-input"
-                  required
-                />
-              </div>
-            </div>
-
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-              <div className="form-group">
-                <label className="form-label">Prefijo Cajeros (Auto)</label>
-                <input
-                  type="text"
-                  placeholder="ej. sol"
-                  value={adminForm.cashierPrefix}
-                  onChange={(e) => setAdminForm({ ...adminForm, cashierPrefix: e.target.value })}
-                  className="form-input"
-                  maxLength={6}
-                />
-              </div>
-
-              <div className="form-group">
-                <label className="form-label">Cantidad Cajeros Iniciales</label>
-                <input
-                  type="number"
-                  value={adminForm.cashierCount}
-                  onChange={(e) => setAdminForm({ ...adminForm, cashierCount: parseInt(e.target.value) })}
-                  className="form-input"
-                  min={1}
-                  max={10}
-                  required
-                />
-              </div>
-            </div>
-
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-              <div className="form-group">
-                <label className="form-label">Cupo Financiero Inicial ($)</label>
-                <input
-                  type="number"
-                  value={adminForm.baseBalance}
-                  onChange={(e) => setAdminForm({ ...adminForm, baseBalance: parseFloat(e.target.value) })}
-                  className="form-input"
-                  required
-                />
-              </div>
-
-              <div className="form-group">
-                <label className="form-label">Teléfono</label>
-                <input
-                  type="text"
-                  placeholder="809-555-0199"
-                  value={adminForm.phone}
-                  onChange={(e) => setAdminForm({ ...adminForm, phone: e.target.value })}
-                  className="form-input"
-                />
-              </div>
-            </div>
-
-            <div className="form-group">
-              <label className="form-label">Dirección Local comercial</label>
-              <input
-                type="text"
-                placeholder="Av. Principal #20"
-                value={adminForm.address}
-                onChange={(e) => setAdminForm({ ...adminForm, address: e.target.value })}
-                className="form-input"
-              />
-            </div>
-
-            <div style={{ display: 'flex', gap: '12px', marginTop: '24px' }}>
-              <button type="submit" className="btn btn-primary" style={{ flex: 1 }}>
-                Crear Banca
-              </button>
-              <button type="button" className="btn btn-secondary" onClick={() => setAdminModalOpen(false)}>
-                Cancelar
-              </button>
-            </div>
-          </form>
-        </div>
-      )}
-
-      {/* --- MODAL: CREATE CAJERO (ADMIN ONLY) --- */}
-      {cajeroModalOpen && (
-        <div style={{
-          position: 'fixed',
-          inset: 0,
-          backgroundColor: 'rgba(0,0,0,0.5)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 100,
-          backdropFilter: 'blur(4px)'
-        }}>
-          <form onSubmit={handleCreateCajero} className="glass-panel fade-in" style={{
-            maxWidth: '460px',
-            width: '100%',
-            padding: '30px',
-            backgroundColor: 'hsl(var(--surface))'
-          }}>
-            <h3 style={{ fontSize: '1.25rem', marginBottom: '20px' }}>Registrar Nuevo Cajero Terminal</h3>
-
-            <div className="form-group">
-              <label className="form-label">Nombre del Cajero</label>
-              <input
-                type="text"
-                placeholder="ej. Cajera Principal Churchill"
-                value={cajeroForm.displayName}
-                onChange={(e) => setCajeroForm({ ...cajeroForm, displayName: e.target.value })}
-                className="form-input"
-                required
-              />
-            </div>
-
-            <div className="form-group">
-              <label className="form-label">Usuario de Venta (ej. caj01)</label>
-              <input
-                type="text"
-                placeholder="ej. chu03"
-                value={cajeroForm.user}
-                onChange={(e) => setCajeroForm({ ...cajeroForm, user: e.target.value })}
-                className="form-input"
-                required
-              />
-            </div>
-
-            <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: '12px' }}>
-              <div className="form-group">
-                <label className="form-label">Supervisor Asignado (Opcional)</label>
-                <select 
-                  className="form-input"
-                  value={cajeroForm.supervisorId}
-                  onChange={(e) => setCajeroForm({ ...cajeroForm, supervisorId: e.target.value })}
-                >
-                  <option value="">Ninguno</option>
-                  {users.filter(u => u.role === 'SUPERVISOR' && u.adminId === user.id).map(s => (
-                    <option key={s.id} value={s.id}>{s.displayName}</option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="form-group">
-                <label className="form-label">Cupo Recarga ($)</label>
-                <input
-                  type="number"
-                  value={cajeroForm.baseBalance}
-                  onChange={(e) => setCajeroForm({ ...cajeroForm, baseBalance: parseFloat(e.target.value) })}
-                  className="form-input"
-                  required
-                />
-              </div>
-            </div>
-
-            <div style={{ display: 'flex', gap: '12px', marginTop: '24px' }}>
-              <button type="submit" className="btn btn-primary" style={{ flex: 1 }}>
-                Crear Cajero
-              </button>
-              <button type="button" className="btn btn-secondary" onClick={() => setCajeroModalOpen(false)}>
-                Cancelar
-              </button>
-            </div>
-          </form>
-        </div>
-      )}
-
-      {/* --- MODAL: CREATE SUPERVISOR (ADMIN ONLY) --- */}
-      {supervisorModalOpen && (
-        <div style={{
-          position: 'fixed',
-          inset: 0,
-          backgroundColor: 'rgba(0,0,0,0.5)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 100,
-          backdropFilter: 'blur(4px)'
-        }}>
-          <form onSubmit={handleCreateSupervisor} className="glass-panel fade-in" style={{
-            maxWidth: '440px',
-            width: '100%',
-            padding: '30px',
-            backgroundColor: 'hsl(var(--surface))'
-          }}>
-            <h3 style={{ fontSize: '1.25rem', marginBottom: '20px' }}>Registrar Nuevo Supervisor</h3>
-
-            <div className="form-group">
-              <label className="form-label">Nombre del Supervisor</label>
-              <input
-                type="text"
-                placeholder="ej. Carlos Gómez"
-                value={supervisorForm.displayName}
-                onChange={(e) => setSupervisorForm({ ...supervisorForm, displayName: e.target.value })}
-                className="form-input"
-                required
-              />
-            </div>
-
-            <div className="form-group">
-              <label className="form-label">Usuario de Acceso</label>
-              <input
-                type="text"
-                placeholder="ej. carlosg"
-                value={supervisorForm.user}
-                onChange={(e) => setSupervisorForm({ ...supervisorForm, user: e.target.value })}
-                className="form-input"
-                required
-              />
-            </div>
-
-            <div className="form-group">
-              <label className="form-label">Teléfono Celular</label>
-              <input
-                type="text"
-                placeholder="809-555-0199"
-                value={supervisorForm.phone}
-                onChange={(e) => setSupervisorForm({ ...supervisorForm, phone: e.target.value })}
-                className="form-input"
-              />
-            </div>
-
-            <div style={{ display: 'flex', gap: '12px', marginTop: '24px' }}>
-              <button type="submit" className="btn btn-primary" style={{ flex: 1 }}>
-                Crear Supervisor
-              </button>
-              <button type="button" className="btn btn-secondary" onClick={() => setSupervisorModalOpen(false)}>
-                Cancelar
-              </button>
-            </div>
-          </form>
-        </div>
-      )}
-
-      {/* --- MODAL: PROCESS RECHARGE BALANCE (ADMIN ONLY) --- */}
-      {rechargeModalOpen && (
-        <div style={{
-          position: 'fixed',
-          inset: 0,
-          backgroundColor: 'rgba(0,0,0,0.5)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 100,
-          backdropFilter: 'blur(4px)'
-        }}>
-          <form onSubmit={handleProcessRecharge} className="glass-panel fade-in" style={{
-            maxWidth: '420px',
-            width: '100%',
-            padding: '30px',
-            backgroundColor: 'hsl(var(--surface))'
-          }}>
-            <h3 style={{ fontSize: '1.25rem', marginBottom: '20px' }}>Asignar Balance a Cajero</h3>
-
-            <div className="form-group">
-              <label className="form-label">Seleccionar Cajero Destino</label>
-              <select
-                className="form-input"
-                value={rechargeForm.cashierId}
-                onChange={(e) => setRechargeForm({ ...rechargeForm, cashierId: e.target.value })}
-                required
-              >
-                <option value="">Seleccione un cajero...</option>
-                {users.filter(u => u.role === 'CASHIER' && u.adminId === user.id).map(c => (
-                  <option key={c.id} value={c.id}>{c.displayName} (@{c.user})</option>
-                ))}
-              </select>
-            </div>
-
-            <div className="form-group">
-              <label className="form-label">Monto de Balance a Traspasar ($)</label>
-              <input
-                type="number"
-                placeholder="ej. 5000"
-                value={rechargeForm.amount}
-                onChange={(e) => setRechargeForm({ ...rechargeForm, amount: e.target.value })}
-                className="form-input"
-                required
-              />
-            </div>
-
-            <div style={{ display: 'flex', gap: '12px', marginTop: '24px' }}>
-              <button type="submit" className="btn btn-primary" style={{ flex: 1 }}>
-                Confirmar Traspaso
-              </button>
-              <button type="button" className="btn btn-secondary" onClick={() => setRechargeModalOpen(false)}>
-                Cancelar
-              </button>
-            </div>
-          </form>
-        </div>
-      )}
-
-      {/* --- MODAL: ASSIGN CASHIERS TO SUPERVISOR (ADMIN ONLY) --- */}
-      {assignModalOpen && selectedSupervisor && (
-        <div style={{
-          position: 'fixed',
-          inset: 0,
-          backgroundColor: 'rgba(0,0,0,0.5)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 100,
-          backdropFilter: 'blur(4px)'
-        }}>
-          <div className="glass-panel fade-in" style={{
-            maxWidth: '460px',
-            width: '100%',
-            padding: '30px',
-            backgroundColor: 'hsl(var(--surface))'
-          }}>
-            <h3 style={{ fontSize: '1.25rem', marginBottom: '10px' }}>Asignar Cajeros a Supervisor</h3>
-            <p style={{ fontSize: '0.85rem', color: 'hsl(var(--text-secondary))', marginBottom: '20px' }}>
-              Seleccione los cajeros de su red que estarán bajo la supervisión de <strong style={{ color: 'hsl(var(--text-primary))' }}>{selectedSupervisor.displayName} (@{selectedSupervisor.user})</strong>.
-            </p>
-
-            <div style={{ 
-              maxHeight: '260px', 
-              overflowY: 'auto', 
-              display: 'flex', 
-              flexDirection: 'column', 
-              gap: '10px', 
-              padding: '12px',
-              backgroundColor: 'hsl(var(--background))',
-              borderRadius: 'var(--radius-md)',
-              border: '1px solid hsl(var(--border))',
-              marginBottom: '20px'
-            }}>
-              {users.filter(u => u.role === 'CASHIER' && u.adminId === user.id).length === 0 ? (
-                <div style={{ fontSize: '0.85rem', color: 'hsl(var(--text-muted))', textAlign: 'center', padding: '12px' }}>
-                  No tiene cajeros creados en su red.
-                </div>
-              ) : (
-                users.filter(u => u.role === 'CASHIER' && u.adminId === user.id).map(c => {
-                  const isChecked = assignedCashiersSet.has(c.id);
-                  return (
-                    <label key={c.id} style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', fontSize: '0.9rem', userSelect: 'none' }}>
-                      <input
-                        type="checkbox"
-                        checked={isChecked}
-                        onChange={(e) => {
-                          const newSet = new Set(assignedCashiersSet);
-                          if (e.target.checked) {
-                            newSet.add(c.id);
-                          } else {
-                            newSet.delete(c.id);
-                          }
-                          setAssignedCashiersSet(newSet);
-                        }}
-                        style={{ width: '16px', height: '16px', accentColor: 'hsl(var(--primary))' }}
-                      />
-                      <div>
-                        <strong>{c.displayName}</strong>
-                        <span style={{ fontSize: '0.75rem', color: 'hsl(var(--text-muted))', display: 'block' }}>@{c.user} • ${c.balance.toFixed(2)} Balance</span>
-                      </div>
-                    </label>
-                  );
-                })
-              )}
-            </div>
-
-            <div style={{ display: 'flex', gap: '12px' }}>
-              <button className="btn btn-primary" style={{ flex: 1 }} onClick={handleSaveAssignments}>
-                Guardar Asignaciones
-              </button>
-              <button className="btn btn-secondary" style={{ flex: 1 }} onClick={() => {
-                setAssignModalOpen(false);
-                setSelectedSupervisor(null);
-              }}>
-                Cancelar
-              </button>
-            </div>
-          </div>
-        </div>
+        </Suspense>
       )}
 
 
-      {/* --- MODAL: ANNUL TICKET CONFIRMATION --- */}
-      {annulModalOpen && selectedTicketForAnnul && (
-        <div style={{
-          position: 'fixed',
-          inset: 0,
-          backgroundColor: 'rgba(0,0,0,0.5)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 101,
-          backdropFilter: 'blur(4px)'
-        }}>
-          <div className="glass-panel fade-in" style={{
-            maxWidth: '480px',
-            width: '100%',
-            padding: '30px',
-            backgroundColor: 'hsl(var(--surface))',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '16px'
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: 'hsl(var(--danger))' }}>
-              <AlertTriangle size={24} />
-              <h3 style={{ fontSize: '1.25rem', margin: 0 }}>Anulación de Ticket</h3>
-            </div>
-            
-            <p style={{ fontSize: '0.875rem', color: 'hsl(var(--text-secondary))', lineHeight: 1.5 }}>
-              ¿Está seguro que desea anular el ticket <strong style={{ color: 'hsl(var(--text-primary))' }}>{selectedTicketForAnnul.serial || selectedTicketForAnnul.id}</strong>?
-              Esta acción es irreversible y restablecerá el balance de caja del cajero <strong style={{ color: 'hsl(var(--text-primary))' }}>@{selectedTicketForAnnul.sellerUser}</strong> devolviendo <strong style={{ color: 'hsl(var(--primary))' }}>${selectedTicketForAnnul.total.toFixed(2)}</strong>.
-            </p>
+      {/* Modales deconstruidos */}
+      <AdminFormModal
+        isOpen={adminModalOpen}
+        onClose={() => setAdminModalOpen(false)}
+        onSubmit={handleCreateAdmin}
+        form={adminForm}
+        setForm={setAdminForm}
+      />
 
-            <div style={{ backgroundColor: 'hsl(var(--background))', padding: '12px', borderRadius: 'var(--radius-sm)', border: '1px solid hsl(var(--border))', fontSize: '0.8rem' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
-                <span style={{ color: 'hsl(var(--text-secondary))' }}>Emisor:</span>
-                <strong>@{selectedTicketForAnnul.sellerUser}</strong>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
-                <span style={{ color: 'hsl(var(--text-secondary))' }}>Monto:</span>
-                <strong>${selectedTicketForAnnul.total.toFixed(2)}</strong>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
-                <span style={{ color: 'hsl(var(--text-secondary))' }}>Hora Emisión:</span>
-                <strong>{new Date(selectedTicketForAnnul.createdAtEpochMs).toLocaleTimeString()}</strong>
-              </div>
-              
-              {/* Parity checks: void limit window feedback */}
-              <div style={{ borderTop: '1px solid hsl(var(--border))', marginTop: '8px', paddingTop: '8px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                {(() => {
-                  const ticketTime = Number(selectedTicketForAnnul.createdAtEpochMs);
-                  const elapsed = annulTimer - ticketTime;
-                  const isTimeLimitExceeded = elapsed > 120000;
-                  const remainingSecs = Math.max(0, Math.floor((120000 - elapsed) / 1000));
-                  const canBypass = user.role === 'ADMIN' || user.role === 'MASTER' || user.role === 'SUPERVISOR';
-                  
-                  if (!canBypass) {
-                    if (isTimeLimitExceeded) {
-                      return (
-                        <div style={{ color: 'hsl(var(--danger))', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px' }}>
-                          <span>⚠️ Límite de 2 minutos superado. Bloqueado.</span>
-                        </div>
-                      );
-                    } else {
-                      return (
-                        <div style={{ color: 'hsl(var(--primary))', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px' }}>
-                          <span>⏱️ Ventana de anulación activa: {remainingSecs}s restantes.</span>
-                        </div>
-                      );
-                    }
-                  } else {
-                    return (
-                      <div style={{ color: 'hsl(var(--success))', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                        <span>✓ Permiso gerencial ({user.role}): Omitiendo límite de 2m.</span>
-                      </div>
-                    );
-                  }
-                })()}
-              </div>
-            </div>
+      <CajeroFormModal
+        isOpen={cajeroModalOpen}
+        onClose={() => {
+          setCajeroModalOpen(false);
+          setEditingCashier(null);
+        }}
+        onSubmit={handleCreateCajero}
+        form={cajeroForm}
+        setForm={setCajeroForm}
+        users={users}
+        editingCashier={editingCashier}
+        currentUser={user}
+      />
 
-            <div style={{ display: 'flex', gap: '12px', marginTop: '12px' }}>
-              <button
-                className="btn btn-primary"
-                style={{ flex: 1, backgroundColor: 'hsl(var(--danger))', border: 'none' }}
-                disabled={(() => {
-                  const ticketTime = Number(selectedTicketForAnnul.createdAtEpochMs);
-                  const elapsed = annulTimer - ticketTime;
-                  const isTimeLimitExceeded = elapsed > 120000;
-                  const canBypass = user.role === 'ADMIN' || user.role === 'MASTER' || user.role === 'SUPERVISOR';
-                  return !canBypass && isTimeLimitExceeded;
-                })()}
-                onClick={() => handleAnnulTicket(selectedTicketForAnnul)}
-              >
-                Confirmar Anulación
-              </button>
-              <button
-                className="btn btn-secondary"
-                style={{ flex: 1 }}
-                onClick={() => {
-                  setAnnulModalOpen(false);
-                  setSelectedTicketForAnnul(null);
-                }}
-              >
-                Cancelar
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <SupervisorFormModal
+        isOpen={supervisorModalOpen}
+        onClose={() => setSupervisorModalOpen(false)}
+        onSubmit={handleCreateSupervisor}
+        form={supervisorForm}
+        setForm={setSupervisorForm}
+      />
+
+      <RechargeModal
+        isOpen={rechargeModalOpen}
+        onClose={() => setRechargeModalOpen(false)}
+        onSubmit={handleProcessRecharge}
+        form={rechargeForm}
+        setForm={setRechargeForm}
+        users={users}
+        currentUser={user}
+      />
+
+      <AssignCashiersModal
+        isOpen={assignModalOpen}
+        onClose={() => {
+          setAssignModalOpen(false);
+          setSelectedSupervisor(null);
+        }}
+        selectedSupervisor={selectedSupervisor}
+        users={users}
+        currentUser={user}
+        assignedCashiersSet={assignedCashiersSet}
+        setAssignedCashiersSet={setAssignedCashiersSet}
+        onSave={handleSaveAssignments}
+      />
+
+      <CredsShareModal
+        isOpen={credsShareOpen}
+        onClose={() => setCredsShareOpen(false)}
+        shareText={shareText}
+      />
+
+      <LimitsEditor
+        editingCashierLimits={editingCashierLimits}
+        onClose={() => setEditingCashierLimits(null)}
+        modalLimitsTab={modalLimitsTab}
+        setModalLimitsTab={setModalLimitsTab}
+        modalLimitsForm={modalLimitsForm}
+        setModalLimitsForm={setModalLimitsForm}
+        modalPayoutsForm={modalPayoutsForm}
+        setModalPayoutsForm={setModalPayoutsForm}
+        onSave={handleSaveModalCashierLimits}
+        limitsSaving={limitsSaving}
+      />
+
+      <AnnulTicketModal
+        isOpen={annulModalOpen}
+        onClose={() => {
+          setAnnulModalOpen(false);
+          setSelectedTicketForAnnul(null);
+        }}
+        onConfirm={() => selectedTicketForAnnul && handleAnnulTicket(selectedTicketForAnnul)}
+        ticket={selectedTicketForAnnul}
+        annulTimer={annulTimer}
+        user={user}
+      />
+
+      <DeleteTicketModal
+        isOpen={deleteModalOpen}
+        onClose={() => {
+          setDeleteModalOpen(false);
+          setSelectedTicketForDelete(null);
+        }}
+        onConfirm={() => selectedTicketForDelete && handleDeleteTicket(selectedTicketForDelete)}
+        ticket={selectedTicketForDelete}
+        isDeleting={isDeletingTicket}
+      />
+
+      <TicketDetailModal
+        ticket={selectedTicketForDetail}
+        onClose={() => setSelectedTicketForDetail(null)}
+      />
+
+      <SportsTicketDetailModal
+        ticket={selectedSportsTicketForDetail}
+        onClose={() => setSelectedSportsTicketForDetail(null)}
+      />
 
 
-      {/* --- MODAL: DELETE TICKET PHYSICAL CONFIRMATION --- */}
-      {deleteModalOpen && selectedTicketForDelete && (
-        <div style={{
-          position: 'fixed',
-          inset: 0,
-          backgroundColor: 'rgba(0,0,0,0.6)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 101,
-          backdropFilter: 'blur(5px)'
-        }}>
-          <div className="glass-panel fade-in" style={{
-            maxWidth: '480px',
-            width: '100%',
-            padding: '30px',
-            backgroundColor: 'hsl(var(--surface))',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '16px',
-            border: '2px solid hsl(var(--danger) / 0.4)'
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: 'hsl(var(--danger))' }}>
-              <AlertTriangle size={24} />
-              <h3 style={{ fontSize: '1.25rem', margin: 0 }}>¡ELIMINACIÓN FÍSICA CRÍTICA!</h3>
-            </div>
-            
-            <p style={{ fontSize: '0.875rem', color: 'hsl(var(--text-secondary))', lineHeight: 1.5 }}>
-              ¿Está completamente seguro que desea <strong style={{ color: 'hsl(var(--danger))' }}>ELIMINAR FÍSICAMENTE</strong> el ticket <strong style={{ color: 'hsl(var(--text-primary))' }}>{selectedTicketForDelete.serial || selectedTicketForDelete.id}</strong> del servidor?
-              <br/><br/>
-              <span style={{ color: 'hsl(var(--danger))', fontWeight: 'bold' }}>ADVERTENCIA: Esta acción es 100% irreversible.</span> Se borrará del registro de Supabase y recalculará la caja disponible y fianza a cero si es necesario.
-            </p>
-
-            <div style={{ backgroundColor: 'hsl(var(--background))', padding: '12px', borderRadius: 'var(--radius-sm)', border: '1px solid hsl(var(--border))', fontSize: '0.8rem' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
-                <span style={{ color: 'hsl(var(--text-secondary))' }}>Emisor:</span>
-                <strong>@{selectedTicketForDelete.sellerUser}</strong>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
-                <span style={{ color: 'hsl(var(--text-secondary))' }}>Monto:</span>
-                <strong>${selectedTicketForDelete.total.toFixed(2)}</strong>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <span style={{ color: 'hsl(var(--text-secondary))' }}>Hora:</span>
-                <strong>{new Date(selectedTicketForDelete.createdAtEpochMs).toLocaleTimeString()}</strong>
-              </div>
-            </div>
-
-            <div style={{ display: 'flex', gap: '12px', marginTop: '12px' }}>
-              <button
-                className="btn btn-primary"
-                style={{ flex: 1, backgroundColor: 'hsl(var(--danger))', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
-                onClick={() => handleDeleteTicket(selectedTicketForDelete)}
-                disabled={isDeletingTicket}
-              >
-                {isDeletingTicket ? 'Eliminando...' : 'Eliminar Permanentemente'}
-              </button>
-              <button
-                className="btn btn-secondary"
-                style={{ flex: 1 }}
-                onClick={() => {
-                  setDeleteModalOpen(false);
-                  setSelectedTicketForDelete(null);
-                }}
-                disabled={isDeletingTicket}
-              >
-                Cancelar
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-
-      {/* --- MODAL: SNAPSHOT VISOR TICKET PREMIUM (RECIBO TÉRMICO) --- */}
-      {selectedTicketForDetail && (
-        <div 
-          className="ticket-detail-modal-overlay"
-          style={{
-            position: 'fixed',
-            inset: 0,
-            backgroundColor: 'rgba(0,0,0,0.7)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 102,
-            backdropFilter: 'blur(6px)'
-          }}
-        >
-          <div className="ticket-detail-modal-card fade-in" style={{
-            maxWidth: '380px',
-            width: '100%',
-            backgroundColor: '#ffffff',
-            color: '#111111',
-            fontFamily: '"Courier New", Courier, monospace',
-            padding: '24px',
-            boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.3), 0 8px 10px -6px rgb(0 0 0 / 0.3)',
-            borderRadius: '8px',
-            display: 'block',
-            position: 'relative',
-            maxHeight: '90vh',
-            overflowY: 'auto'
-          }}>
-            {/* Watermark of status */}
-            <div style={{
-              position: 'absolute',
-              top: '50%',
-              left: '50%',
-              transform: 'translate(-50%, -50%) rotate(-30deg)',
-              fontSize: '3rem',
-              fontWeight: 900,
-              opacity: 0.12,
-              pointerEvents: 'none',
-              width: '100%',
-              textAlign: 'center',
-              color: selectedTicketForDetail.status === 'paid' ? '#10b981' 
-                     : selectedTicketForDetail.status === 'cancelled' || selectedTicketForDetail.status === 'voided' ? '#ef4444' 
-                     : selectedTicketForDetail.status === 'winner' ? '#f59e0b' : '#3b82f6',
-              border: `6px double ${selectedTicketForDetail.status === 'paid' ? '#10b981' : selectedTicketForDetail.status === 'cancelled' || selectedTicketForDetail.status === 'voided' ? '#ef4444' : selectedTicketForDetail.status === 'winner' ? '#f59e0b' : '#3b82f6'}`
-            }}>
-              {selectedTicketForDetail.status === 'paid' ? 'COBRADO' 
-               : selectedTicketForDetail.status === 'cancelled' || selectedTicketForDetail.status === 'voided' ? 'ANULADO' 
-               : selectedTicketForDetail.status === 'winner' ? 'PREMIADO' : 'ACTIVO'}
-            </div>
-
-            {/* Thermal Header */}
-            <div style={{ textAlign: 'center', borderBottom: '1px dashed #111111', paddingBottom: '12px', marginBottom: '12px' }}>
-              <h4 style={{ margin: '0 0 4px 0', fontSize: '1.1rem', fontWeight: 'bold', fontFamily: 'sans-serif' }}>BANCA EL FUERTE</h4>
-              <p style={{ margin: 0, fontSize: '0.75rem', textTransform: 'uppercase' }}>Consorcio de Loterías RD</p>
-              <p style={{ margin: '4px 0 0 0', fontSize: '0.75rem' }}>Cajero: @{selectedTicketForDetail.sellerUser}</p>
-            </div>
-
-            {/* Ticket Info */}
-            <div style={{ fontSize: '0.75rem', marginBottom: '12px', display: 'flex', flexDirection: 'column', gap: '2px' }}>
-              <div>FECHA: {new Date(selectedTicketForDetail.createdAtEpochMs).toLocaleString('es-DO', { timeZone: 'America/Santo_Domingo' })}</div>
-              <div>SERIAL: {selectedTicketForDetail.serial || selectedTicketForDetail.id}</div>
-              <div>TICKET ID: {selectedTicketForDetail.id}</div>
-              <div style={{ borderBottom: '1px dashed #111111', margin: '6px 0' }} />
-              <div>
-                <strong>LOTERÍAS:</strong>{' '}
-                {(() => {
-                  const uniqueLots = new Set();
-                  selectedTicketForDetail.plays.forEach(p => {
-                    if (p.lotteryName) {
-                      p.lotteryName.split(/[\/,]+/).forEach(part => {
-                        const trimmed = part.trim();
-                        if (trimmed) uniqueLots.add(trimmed);
-                      });
-                    }
-                  });
-                  return Array.from(uniqueLots).join(' / ');
-                })()}
-              </div>
-            </div>
-
-            {/* Plays Table Header */}
-            <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr', fontSize: '0.8rem', fontWeight: 'bold', borderBottom: '1px solid #111111', paddingBottom: '4px', marginBottom: '4px' }}>
-              <span>JUGADA</span>
-              <span style={{ textAlign: 'center' }}>TIPO</span>
-              <span style={{ textAlign: 'right' }}>MONTO</span>
-            </div>
-
-            {/* Plays Table Body */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '0.75rem', minHeight: '60px' }}>
-              {selectedTicketForDetail.plays.map((p, idx) => (
-                <div key={idx} style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr' }}>
-                  <span style={{ fontWeight: 'bold' }}>{p.number}</span>
-                  <span style={{ textAlign: 'center' }}>{p.playType.toUpperCase()}</span>
-                  <span style={{ textAlign: 'right' }}>${p.amount.toFixed(2)}</span>
-                </div>
-              ))}
-            </div>
-
-            {/* Total Footer */}
-            <div style={{ borderTop: '1px dashed #111111', marginTop: '12px', paddingTop: '8px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem' }}>
-                <span>SUBTOTAL:</span>
-                <span>${selectedTicketForDetail.total.toFixed(2)}</span>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem' }}>
-                <span>DESCUENTO:</span>
-                <span>$0.00</span>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.9rem', fontWeight: 'bold', borderTop: '1px solid #111111', paddingTop: '4px' }}>
-                <span>TOTAL APOSTADO:</span>
-                <span>${selectedTicketForDetail.total.toFixed(2)}</span>
-              </div>
-              {selectedTicketForDetail.totalPrize > 0 && (
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.9rem', fontWeight: 'bold', color: '#dc2626' }}>
-                  <span>PREMIO ACUMULADO:</span>
-                  <span>${selectedTicketForDetail.totalPrize.toFixed(2)}</span>
-                </div>
-              )}
-            </div>
-
-            {/* Simulated Barcode */}
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginTop: '20px', gap: '4px' }}>
-              <div style={{
-                height: '40px',
-                width: '100%',
-                background: 'repeating-linear-gradient(90deg, #111 0px, #111 2px, transparent 2px, transparent 6px, #111 6px, #111 7px, transparent 7px, transparent 10px)',
-                opacity: 0.8
-              }} />
-              <span style={{ fontSize: '0.65rem' }}>*{selectedTicketForDetail.id.substring(0, 18).toUpperCase()}*</span>
-            </div>
-
-            {/* Buttons for actions */}
-            <div style={{ display: 'flex', gap: '10px', marginTop: '24px', fontFamily: 'sans-serif' }} className="no-print">
-              <button
-                className="btn btn-primary"
-                style={{ flex: 1, backgroundColor: '#111111', color: '#ffffff', border: 'none', fontSize: '0.8rem', padding: '8px' }}
-                onClick={() => window.print()}
-              >
-                Imprimir
-              </button>
-              <button
-                className="btn btn-secondary"
-                style={{ flex: 1, border: '1px solid #111111', color: '#111111', background: '#ffffff', fontSize: '0.8rem', padding: '8px' }}
-                onClick={() => setSelectedTicketForDetail(null)}
-              >
-                Cerrar
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-
-      {/* --- MODAL: SNAPSHOT VISOR SPORTS TICKET PREMIUM (RECIBO TÉRMICO) --- */}
-      {selectedSportsTicketForDetail && (
-        <div 
-          className="ticket-detail-modal-overlay"
-          style={{
-            position: 'fixed',
-            inset: 0,
-            backgroundColor: 'rgba(0,0,0,0.7)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 102,
-            backdropFilter: 'blur(6px)'
-          }}
-        >
-          <div className="ticket-detail-modal-card fade-in" style={{
-            maxWidth: '380px',
-            width: '100%',
-            backgroundColor: '#ffffff',
-            color: '#111111',
-            fontFamily: '"Courier New", Courier, monospace',
-            padding: '24px',
-            boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.3), 0 8px 10px -6px rgb(0 0 0 / 0.3)',
-            borderRadius: '8px',
-            display: 'block',
-            position: 'relative',
-            maxHeight: '90vh',
-            overflowY: 'auto'
-          }}>
-            {/* Watermark of status */}
-            <div style={{
-              position: 'absolute',
-              top: '50%',
-              left: '50%',
-              transform: 'translate(-50%, -50%) rotate(-30deg)',
-              fontSize: '3rem',
-              fontWeight: 900,
-              color: selectedSportsTicketForDetail.status === 'paid' ? 'rgba(16, 185, 129, 0.15)'
-                     : selectedSportsTicketForDetail.status === 'void' ? 'rgba(107, 114, 128, 0.15)'
-                     : selectedSportsTicketForDetail.status === 'lost' ? 'rgba(239, 68, 68, 0.15)'
-                     : selectedSportsTicketForDetail.status === 'won' ? 'rgba(59, 130, 246, 0.15)' : 'rgba(245, 158, 11, 0.15)',
-              border: `6px double ${
-                selectedSportsTicketForDetail.status === 'paid' ? '#10b981'
-                : selectedSportsTicketForDetail.status === 'void' ? '#6b7280'
-                : selectedSportsTicketForDetail.status === 'lost' ? '#ef4448'
-                : selectedSportsTicketForDetail.status === 'won' ? '#3b82f6' : '#f59e0b'
-              }`,
-              padding: '10px 20px',
-              borderRadius: '8px',
-              pointerEvents: 'none',
-              zIndex: 1,
-              whiteSpace: 'nowrap'
-            }}>
-              {selectedSportsTicketForDetail.status === 'paid' ? 'COBRADO'
-               : selectedSportsTicketForDetail.status === 'void' ? 'ANULADO'
-               : selectedSportsTicketForDetail.status === 'lost' ? 'PERDIDO'
-               : selectedSportsTicketForDetail.status === 'won' ? 'GANADO' : 'PENDIENTE'}
-            </div>
-
-            <div style={{ textAlign: 'center', borderBottom: '1px dashed #111111', paddingBottom: '12px', zIndex: 2 }}>
-              <span style={{ fontSize: '1.25rem', fontWeight: 'bold', display: 'block' }}>SPORTS BOOK</span>
-              <span style={{ fontSize: '0.8rem', display: 'block', textTransform: 'uppercase' }}>{selectedSportsTicketForDetail.bancaName || 'BANCA DEPORTIVA'}</span>
-              <p style={{ margin: '4px 0 0 0', fontSize: '0.75rem' }}>Cajero: @{selectedSportsTicketForDetail.sellerUsername}</p>
-            </div>
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '0.75rem', padding: '10px 0', borderBottom: '1px dashed #111111', zIndex: 2 }}>
-              <div>FECHA: {new Date(selectedSportsTicketForDetail.soldAt).toLocaleString('es-DO')}</div>
-              <div>TICKET ID: {selectedSportsTicketForDetail.ticketCode}</div>
-              <div>TIPO: {selectedSportsTicketForDetail.ticketType.toUpperCase()}</div>
-            </div>
-
-            {/* Parlay legs detail */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', padding: '12px 0', borderBottom: '1px dashed #111111', zIndex: 2 }}>
-              {(selectedSportsTicketForDetail.legs || []).map((leg, idx) => (
-                <div key={idx} style={{ fontSize: '0.75rem' }}>
-                  <div style={{ fontWeight: 'bold' }}>{leg.eventLabel}</div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '2px', color: '#555' }}>
-                    <span>{leg.marketTitle} ({leg.selectionLabel})</span>
-                    <span>x{Number(leg.decimalOdds).toFixed(2)}</span>
-                  </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem', color: '#888' }}>
-                    <span>Estado:</span>
-                    <span style={{ fontWeight: 'bold', color: leg.status === 'won' ? '#10b981' : leg.status === 'lost' ? '#ef4448' : '#e59b0b' }}>
-                      {leg.status.toUpperCase()}
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            {/* Total / potential payout breakdown */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', padding: '10px 0', zIndex: 2 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem' }}>
-                <span>MONTO APOSTADO:</span>
-                <strong>${Number(selectedSportsTicketForDetail.stake).toFixed(2)}</strong>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem' }}>
-                <span>CUOTA TOTAL:</span>
-                <strong>x{Number(selectedSportsTicketForDetail.decimalOdds).toFixed(2)}</strong>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.9rem', fontWeight: 'bold', borderTop: '1px solid #111111', paddingTop: '4px' }}>
-                <span>POTENCIAL PREMIO:</span>
-                <span style={{ color: '#10b981' }}>${Number(selectedSportsTicketForDetail.potentialPayout).toFixed(2)}</span>
-              </div>
-            </div>
-
-            {/* Buttons for actions */}
-            <div style={{ display: 'flex', gap: '10px', marginTop: '24px', fontFamily: 'sans-serif', zIndex: 2 }} className="no-print">
-              <button
-                className="btn btn-primary"
-                style={{ flex: 1, backgroundColor: '#111111', color: '#ffffff', border: 'none', fontSize: '0.8rem', padding: '8px' }}
-                onClick={() => window.print()}
-              >
-                Imprimir
-              </button>
-              <button
-                className="btn btn-secondary"
-                style={{ flex: 1, border: '1px solid #111111', color: '#111111', background: '#ffffff', fontSize: '0.8rem', padding: '8px' }}
-                onClick={() => setSelectedSportsTicketForDetail(null)}
-              >
-                Cerrar
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-
-
-      {/* --- MODAL: SHARE CREDS (MASTER ONLY) --- */}
-      {credsShareOpen && (
-        <div style={{
-          position: 'fixed',
-          inset: 0,
-          backgroundColor: 'rgba(0,0,0,0.5)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 101,
-          backdropFilter: 'blur(4px)'
-        }}>
-          <div className="glass-panel fade-in" style={{
-            maxWidth: '480px',
-            width: '100%',
-            padding: '30px',
-            backgroundColor: 'hsl(var(--surface))'
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: 'hsl(var(--success))', marginBottom: '16px' }}>
-              <CheckCircle size={24} />
-              <h3 style={{ fontSize: '1.25rem', margin: 0 }}>¡Banca Creada Exitosamente!</h3>
-            </div>
-            
-            <p style={{ fontSize: '0.875rem', color: 'hsl(var(--text-secondary))', marginBottom: '16px' }}>
-              Copia y comparte este bloque de credenciales con el administrador y cajeros de la nueva banca.
-            </p>
-
-            <textarea
-              readOnly
-              value={shareText}
-              style={{
-                width: '100%',
-                height: '240px',
-                padding: '12px',
-                fontFamily: 'monospace',
-                fontSize: '0.825rem',
-                borderRadius: 'var(--radius-md)',
-                border: '1px solid hsl(var(--border))',
-                backgroundColor: 'hsl(var(--background))',
-                color: 'hsl(var(--text-primary))',
-                outline: 'none',
-                resize: 'none'
-              }}
-            />
-
-            <div style={{ display: 'flex', gap: '12px', marginTop: '20px' }}>
-              <button className="btn btn-primary" style={{ flex: 1 }} onClick={() => {
-                navigator.clipboard.writeText(shareText);
-                alert('Credenciales copiadas al portapapeles.');
-              }}>
-                Copiar al Portapapeles
-              </button>
-              <button className="btn btn-secondary" onClick={() => setCredsShareOpen(false)}>
-                Cerrar
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* --- MODAL: CONFIGURAR LÍMITES DIRECTOS DE CAJERO --- */}
-      {editingCashierLimits && (
-        <div style={{
-          position: 'fixed',
-          inset: 0,
-          backgroundColor: 'rgba(0,0,0,0.6)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 105,
-          backdropFilter: 'blur(8px)'
-        }}>
-          <div className="glass-panel fade-in" style={{
-            maxWidth: '640px',
-            width: '100%',
-            padding: '28px',
-            backgroundColor: 'hsl(var(--surface))',
-            maxHeight: '90vh',
-            overflowY: 'auto',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '16px',
-            boxShadow: '0 20px 25px -5px rgba(0,0,0,0.3)'
-          }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid hsl(var(--border))', paddingBottom: '12px' }}>
-              <div>
-                <h3 style={{ fontSize: '1.25rem', margin: 0, fontWeight: 700, display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <Settings size={20} color="var(--primary)" />
-                  Límites de Cajero: @{editingCashierLimits.user}
-                </h3>
-                <span style={{ fontSize: '0.75rem', color: 'hsl(var(--text-muted))' }}>{editingCashierLimits.displayName} • Banca: {editingCashierLimits.banca}</span>
-              </div>
-              <button 
-                onClick={() => setEditingCashierLimits(null)}
-                style={{ border: 'none', background: 'transparent', fontSize: '1.5rem', cursor: 'pointer', color: 'hsl(var(--text-muted))' }}
-              >
-                &times;
-              </button>
-            </div>
-
-            {/* Modal Sub-tabs */}
-            <div style={{ display: 'flex', gap: '8px', borderBottom: '1px solid hsl(var(--border))', paddingBottom: '8px' }}>
-              <button
-                className={`btn ${modalLimitsTab === 'limits' ? 'btn-primary' : 'btn-secondary'}`}
-                style={{ padding: '6px 12px', fontSize: '0.8rem' }}
-                onClick={() => setModalLimitsTab('limits')}
-              >
-                Topes y Límites Diarios
-              </button>
-              <button
-                className={`btn ${modalLimitsTab === 'payouts' ? 'btn-primary' : 'btn-secondary'}`}
-                style={{ padding: '6px 12px', fontSize: '0.8rem' }}
-                onClick={() => setModalLimitsTab('payouts')}
-              >
-                Premios y Multiplicadores
-              </button>
-            </div>
-
-            {modalLimitsTab === 'limits' ? (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                  <div className="form-group">
-                    <label className="form-label">Tope de Venta Diaria ($)</label>
-                    <input
-                      type="number"
-                      className="form-input"
-                      value={modalLimitsForm.daySale}
-                      onChange={(e) => setModalLimitsForm({ ...modalLimitsForm, daySale: e.target.value })}
-                    />
-                  </div>
-                  <div className="form-group">
-                    <label className="form-label">Tope Pago Premios ($)</label>
-                    <input
-                      type="number"
-                      className="form-input"
-                      value={modalLimitsForm.payout}
-                      onChange={(e) => setModalLimitsForm({ ...modalLimitsForm, payout: e.target.value })}
-                    />
-                  </div>
-                </div>
-
-                <div style={{ borderTop: '1px solid hsl(var(--border))', paddingTop: '12px' }}>
-                  <h4 style={{ fontSize: '0.9rem', marginBottom: '10px', color: 'hsl(var(--primary))' }}>Límites de Lotería Tradicional ($)</h4>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                    <div className="form-group">
-                      <label className="form-label">Quiniela</label>
-                      <input
-                        type="number"
-                        className="form-input"
-                        value={modalLimitsForm.q}
-                        onChange={(e) => setModalLimitsForm({ ...modalLimitsForm, q: e.target.value })}
-                      />
-                    </div>
-                    <div className="form-group">
-                      <label className="form-label">Palé</label>
-                      <input
-                        type="number"
-                        className="form-input"
-                        value={modalLimitsForm.pale}
-                        onChange={(e) => setModalLimitsForm({ ...modalLimitsForm, pale: e.target.value })}
-                      />
-                    </div>
-                    <div className="form-group">
-                      <label className="form-label">Super Palé</label>
-                      <input
-                        type="number"
-                        className="form-input"
-                        value={modalLimitsForm.sp}
-                        onChange={(e) => setModalLimitsForm({ ...modalLimitsForm, sp: e.target.value })}
-                      />
-                    </div>
-                    <div className="form-group">
-                      <label className="form-label">Tripleta</label>
-                      <input
-                        type="number"
-                        className="form-input"
-                        value={modalLimitsForm.t}
-                        onChange={(e) => setModalLimitsForm({ ...modalLimitsForm, t: e.target.value })}
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                <div style={{ borderTop: '1px solid hsl(var(--border))', paddingTop: '12px' }}>
-                  <h4 style={{ fontSize: '0.9rem', marginBottom: '10px', color: 'hsl(var(--primary))' }}>Límites de Picks (USA) ($)</h4>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                    <div className="form-group">
-                      <label className="form-label">Pick 3 Straight</label>
-                      <input
-                        type="number"
-                        className="form-input"
-                        value={modalLimitsForm.p3}
-                        onChange={(e) => setModalLimitsForm({ ...modalLimitsForm, p3: e.target.value })}
-                      />
-                    </div>
-                    <div className="form-group">
-                      <label className="form-label">Pick 3 Box</label>
-                      <input
-                        type="number"
-                        className="form-input"
-                        value={modalLimitsForm.p3box}
-                        onChange={(e) => setModalLimitsForm({ ...modalLimitsForm, p3box: e.target.value })}
-                      />
-                    </div>
-                    <div className="form-group">
-                      <label className="form-label">Pick 4 Straight</label>
-                      <input
-                        type="number"
-                        className="form-input"
-                        value={modalLimitsForm.p4}
-                        onChange={(e) => setModalLimitsForm({ ...modalLimitsForm, p4: e.target.value })}
-                      />
-                    </div>
-                    <div className="form-group">
-                      <label className="form-label">Pick 4 Box</label>
-                      <input
-                        type="number"
-                        className="form-input"
-                        value={modalLimitsForm.p4box}
-                        onChange={(e) => setModalLimitsForm({ ...modalLimitsForm, p4box: e.target.value })}
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                <div style={{ borderTop: '1px solid hsl(var(--border))', paddingTop: '12px' }}>
-                  <div className="form-group">
-                    <label className="form-label">Modo Visual de Terminal (POS)</label>
-                    <select
-                      className="form-input"
-                      value={modalLimitsForm.systemModeOverride || ''}
-                      onChange={(e) => setModalLimitsForm({ ...modalLimitsForm, systemModeOverride: e.target.value })}
-                    >
-                      <option value="">Por Defecto (Heredado)</option>
-                      <option value="standard">Estándar (Completo)</option>
-                      <option value="compact">Compacto (POS Térmica)</option>
-                    </select>
-                  </div>
-                </div>
-              </div>
-            ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                <div>
-                  <h4 style={{ fontSize: '0.9rem', marginBottom: '10px', color: 'hsl(var(--primary))' }}>Premios Lotería Tradicional</h4>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px' }}>
-                    <div className="form-group">
-                      <label className="form-label">1ra ($ por $1)</label>
-                      <input
-                        type="number"
-                        className="form-input"
-                        value={modalPayoutsForm.q1}
-                        onChange={(e) => setModalPayoutsForm({ ...modalPayoutsForm, q1: e.target.value })}
-                      />
-                    </div>
-                    <div className="form-group">
-                      <label className="form-label">2da ($ por $1)</label>
-                      <input
-                        type="number"
-                        className="form-input"
-                        value={modalPayoutsForm.q2}
-                        onChange={(e) => setModalPayoutsForm({ ...modalPayoutsForm, q2: e.target.value })}
-                      />
-                    </div>
-                    <div className="form-group">
-                      <label className="form-label">3ra ($ por $1)</label>
-                      <input
-                        type="number"
-                        className="form-input"
-                        value={modalPayoutsForm.q3}
-                        onChange={(e) => setModalPayoutsForm({ ...modalPayoutsForm, q3: e.target.value })}
-                      />
-                    </div>
-                    <div className="form-group">
-                      <label className="form-label">Palé 1ra y 2da</label>
-                      <input
-                        type="number"
-                        className="form-input"
-                        value={modalPayoutsForm.pale}
-                        onChange={(e) => setModalPayoutsForm({ ...modalPayoutsForm, pale: e.target.value })}
-                      />
-                    </div>
-                    <div className="form-group">
-                      <label className="form-label">Tripleta (3 aciertos)</label>
-                      <input
-                        type="number"
-                        className="form-input"
-                        value={modalPayoutsForm.tripleta}
-                        onChange={(e) => setModalPayoutsForm({ ...modalPayoutsForm, tripleta: e.target.value })}
-                      />
-                    </div>
-                    <div className="form-group">
-                      <label className="form-label">Super Palé</label>
-                      <input
-                        type="number"
-                        className="form-input"
-                        value={modalPayoutsForm.superPale}
-                        onChange={(e) => setModalPayoutsForm({ ...modalPayoutsForm, superPale: e.target.value })}
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                <div style={{ borderTop: '1px solid hsl(var(--border))', paddingTop: '12px' }}>
-                  <h4 style={{ fontSize: '0.9rem', marginBottom: '10px', color: 'hsl(var(--primary))' }}>Premios Picks (USA)</h4>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-                    <div className="form-group">
-                      <label className="form-label">Pick 3 Straight</label>
-                      <input
-                        type="number"
-                        className="form-input"
-                        value={modalPayoutsForm.pick3Straight}
-                        onChange={(e) => setModalPayoutsForm({ ...modalPayoutsForm, pick3Straight: e.target.value })}
-                      />
-                    </div>
-                    <div className="form-group">
-                      <label className="form-label">Pick 4 Straight</label>
-                      <input
-                        type="number"
-                        className="form-input"
-                        value={modalPayoutsForm.pick4Straight}
-                        onChange={(e) => setModalPayoutsForm({ ...modalPayoutsForm, pick4Straight: e.target.value })}
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Actions footer */}
-            <div style={{ display: 'flex', gap: '12px', marginTop: '16px', borderTop: '1px solid hsl(var(--border))', paddingTop: '16px' }}>
-              <button 
-                className="btn btn-primary" 
-                style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
-                onClick={handleSaveModalCashierLimits}
-                disabled={limitsSaving}
-              >
-                {limitsSaving ? (
-                  <>
-                    <RefreshCw size={16} className="animate-spin" />
-                    Guardando...
-                  </>
-                ) : (
-                  <>
-                    <CheckCircle size={16} />
-                    Guardar Límites
-                  </>
-                )}
-              </button>
-              <button 
-                className="btn btn-secondary" 
-                style={{ flex: 1 }}
-                onClick={() => setEditingCashierLimits(null)}
-                disabled={limitsSaving}
-              >
-                Cancelar
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* --- MODAL / BOTTOM SHEET: CONFIRMAR CAMBIOS EN LÍMITES --- */}
-      {limitsConfirmOpen && (
-        <div style={{
-          position: 'fixed',
-          inset: 0,
-          backgroundColor: 'rgba(0,0,0,0.6)',
-          display: 'flex',
-          alignItems: 'flex-end', // Slides up like a bottom sheet on mobile!
-          justifyContent: 'center',
-          zIndex: 110,
-          backdropFilter: 'blur(10px)',
-          transition: 'all 0.3s ease'
-        }}>
-          <div className="glass-panel fade-in" style={{
-            maxWidth: '540px',
-            width: '100%',
-            padding: '28px',
-            borderTopLeftRadius: '24px',
-            borderTopRightRadius: '24px',
-            borderBottomLeftRadius: '0px',
-            borderBottomRightRadius: '0px',
-            backgroundColor: 'hsl(var(--surface))',
-            maxHeight: '85vh',
-            overflowY: 'auto',
-            boxShadow: '0 -10px 25px rgba(0,0,0,0.3)',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '20px'
-          }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <Settings size={22} color="var(--primary)" />
-                <h3 style={{ fontSize: '1.2rem', margin: 0, fontWeight: 700 }}>Confirmar Guardar Límites</h3>
-              </div>
-              <button 
-                onClick={() => setLimitsConfirmOpen(false)}
-                style={{ border: 'none', background: 'transparent', fontSize: '1.4rem', cursor: 'pointer', color: 'hsl(var(--text-muted))' }}
-              >
-                &times;
-              </button>
-            </div>
-
-            <p style={{ fontSize: '0.85rem', color: 'hsl(var(--text-secondary))', lineHeight: 1.5 }}>
-              Revisa los límites operativos y la escala de premios antes de sincronizar con los cajeros y terminales en vivo.
-            </p>
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', backgroundColor: 'rgba(255,255,255,0.02)', padding: '16px', borderRadius: 'var(--radius-md)', border: '1px solid hsl(var(--border))' }}>
-              <div style={{ fontSize: '0.8rem', display: 'flex', justifyContent: 'space-between' }}>
-                <span style={{ color: 'hsl(var(--text-muted))' }}>Alcance / Destinatario:</span>
-                <strong style={{ color: 'var(--primary)' }}>
-                  {selectedScope === 'ADMIN_SELF' ? '⚙️ Banca / Propios' : selectedScope === 'CASHIER_DEFAULTS' ? '👥 Todos los Cajeros (Defecto)' : `👤 Cajero @${selectedCashierUsername}`}
-                </strong>
-              </div>
-
-              <div style={{ borderTop: '1px solid hsl(var(--border))', paddingTop: '10px' }}>
-                <span style={{ fontSize: '0.8rem', fontWeight: 600, display: 'block', marginBottom: '8px', color: 'hsl(var(--text-primary))' }}>Topes de Venta Diarios</span>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px 16px', fontSize: '0.75rem', color: 'hsl(var(--text-secondary))' }}>
-                  <div>Venta Máxima: <strong>${currentLimitsForm.daySale || 'Sin límite'}</strong></div>
-                  <div>Tope Pago Premios: <strong>${currentLimitsForm.payout || 'Sin tope'}</strong></div>
-                  {systemModeConfig.lotteryModeEnabled !== false && (
-                    <>
-                      <div>Quiniela Tope: <strong>${currentLimitsForm.q}</strong></div>
-                      <div>Palé Tope: <strong>${currentLimitsForm.pale}</strong></div>
-                      <div>Super Palé: <strong>${currentLimitsForm.sp}</strong></div>
-                      <div>Tripleta Tope: <strong>${currentLimitsForm.t}</strong></div>
-                    </>
-                  )}
-                  {systemModeConfig.pickModeEnabled !== false && (
-                    <>
-                      <div>Pick 3 Straight: <strong>${currentLimitsForm.p3}</strong></div>
-                      <div>Pick 3 Box: <strong>${currentLimitsForm.p3box}</strong></div>
-                      <div>Pick 4 Straight: <strong>${currentLimitsForm.p4}</strong></div>
-                      <div>Pick 4 Box: <strong>${currentLimitsForm.p4box}</strong></div>
-                    </>
-                  )}
-                </div>
-              </div>
-
-              {(selectedScope === 'ADMIN_SELF' || selectedScope === 'CASHIER_SPECIFIC') && (
-                <div style={{ borderTop: '1px solid hsl(var(--border))', paddingTop: '10px', fontSize: '0.75rem' }}>
-                  <span style={{ color: 'hsl(var(--text-muted))' }}>Modo Visual POS: </span>
-                  <strong style={{ color: 'hsl(var(--text-primary))' }}>
-                    {currentLimitsForm.systemModeOverride === 'compact' ? 'Compacto (POS)' : 'Estándar'}
-                  </strong>
-                </div>
-              )}
-            </div>
-
-            {/* Sync Warning */}
-            <div style={{ display: 'flex', gap: '10px', padding: '12px 16px', borderRadius: 'var(--radius-sm)', backgroundColor: 'hsl(var(--warning) / 0.08)', border: '1px solid hsl(var(--warning) / 0.15)', fontSize: '0.75rem', color: 'hsl(var(--warning))', alignItems: 'flex-start' }}>
-              <Info size={16} style={{ flexShrink: 0, marginTop: '2px' }} />
-              <div>
-                <strong>Guardado Seguro:</strong> Los cajeros de red recibirán estas configuraciones al instante mediante Supabase Realtime la próxima vez que abran wagers o actualicen su terminal.
-              </div>
-            </div>
-
-            {/* Action buttons */}
-            <div style={{ display: 'flex', gap: '12px', marginTop: '10px' }}>
-              <button
-                className="btn btn-primary"
-                style={{ flex: 2, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '12px' }}
-                onClick={handleSaveLimits}
-                disabled={limitsSaving}
-              >
-                {limitsSaving ? (
-                  <>
-                    <RefreshCw size={16} className="animate-spin" />
-                    Sincronizando con Servidor...
-                  </>
-                ) : (
-                  <>
-                    <CheckCircle size={16} />
-                    Confirmar y Sincronizar
-                  </>
-                )}
-              </button>
-              <button
-                className="btn btn-secondary"
-                style={{ flex: 1, padding: '12px' }}
-                onClick={() => setLimitsConfirmOpen(false)}
-                disabled={limitsSaving}
-              >
-                Cancelar
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <LimitsConfirmModal
+        isOpen={limitsConfirmOpen}
+        onClose={() => setLimitsConfirmOpen(false)}
+        onConfirm={handleSaveLimits}
+        limitsSaving={limitsSaving}
+        selectedScope={selectedScope}
+        selectedCashierUsername={selectedCashierUsername}
+        currentLimitsForm={currentLimitsForm}
+        systemModeConfig={systemModeConfig}
+      />
 
     </div>
   );

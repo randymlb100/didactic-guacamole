@@ -3,12 +3,12 @@ import { getAllowedAdminTabs, getSafeAdminTab } from './navigationPermissions';
 
 describe('getSafeAdminTab', () => {
   it('matches the Android master hierarchy', () => {
-    expect(getAllowedAdminTabs('MASTER')).toEqual(['dashboard', 'admins', 'auditoria']);
+    expect(getAllowedAdminTabs('MASTER')).toEqual(['dashboard', 'admins', 'deportiva', 'resultados', 'finanzas', 'auditoria']);
     expect(getSafeAdminTab('MASTER', 'admins')).toBe('admins');
-    expect(getSafeAdminTab('MASTER', 'deportiva')).toBe('dashboard');
-    expect(getSafeAdminTab('MASTER', 'finanzas')).toBe('dashboard');
+    expect(getSafeAdminTab('MASTER', 'deportiva')).toBe('deportiva');
+    expect(getSafeAdminTab('MASTER', 'finanzas')).toBe('finanzas');
     expect(getSafeAdminTab('MASTER', 'cuadre')).toBe('dashboard');
-    expect(getSafeAdminTab('MASTER', 'resultados')).toBe('dashboard');
+    expect(getSafeAdminTab('MASTER', 'resultados')).toBe('resultados');
   });
 
   it('keeps admin away only from master bank dashboard', () => {
@@ -23,7 +23,7 @@ describe('getSafeAdminTab', () => {
 
   it('lets supervisor open Android-equivalent read-only operation sections', () => {
     expect(getSafeAdminTab('SUPERVISOR', 'limites')).toBe('dashboard');
-    expect(getSafeAdminTab('SUPERVISOR', 'auditoria')).toBe('dashboard');
+    expect(getSafeAdminTab('SUPERVISOR', 'auditoria')).toBe('auditoria');
     expect(getSafeAdminTab('SUPERVISOR', 'finanzas')).toBe('finanzas');
     expect(getSafeAdminTab('SUPERVISOR', 'reportes')).toBe('reportes');
     expect(getSafeAdminTab('SUPERVISOR', 'deportiva')).toBe('deportiva');

@@ -1,6 +1,7 @@
 import React from 'react';
 import { Activity, BarChart3, ReceiptText, Trophy, Users } from 'lucide-react';
 import type { TicketRecord, UserAccount } from '../../types';
+import { ActionButton, MetricCard, Panel, PanelHeader } from '../ui';
 
 interface Props {
   user: UserAccount;
@@ -27,27 +28,23 @@ export const SupervisorConsole: React.FC<Props> = ({ user, users, tickets, onOpe
   ];
 
   return (
-    <div className="fintech-panel fintech-primary-panel" style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-      <div>
-        <h3 className="fintech-panel-title">Supervisión</h3>
-        <span style={{ color: 'hsl(var(--text-secondary))', fontSize: '0.8rem' }}>Cajeros asignados y operación del grupo</span>
+    <Panel tone="primary" className="flex flex-col gap-4">
+      <PanelHeader title="Supervisión" subtitle="Cajeros asignados y operación del grupo" />
+      <div className="grid grid-cols-[repeat(auto-fit,minmax(140px,1fr))] gap-3">
+        <MetricCard label="Mis cajeros" value={assignedCashiers.length} />
+        <MetricCard label="Tickets grupo" value={scopedTickets.length} accent="primary" />
+        <MetricCard label="Ventas grupo" value={`$${sales.toFixed(2)}`} accent="success" />
       </div>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 10 }}>
-        <div className="glass-panel" style={{ padding: 14 }}>Mis cajeros<br /><strong>{assignedCashiers.length}</strong></div>
-        <div className="glass-panel" style={{ padding: 14 }}>Tickets grupo<br /><strong>{scopedTickets.length}</strong></div>
-        <div className="glass-panel" style={{ padding: 14 }}>Ventas grupo<br /><strong>${sales.toFixed(2)}</strong></div>
-      </div>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: 10 }}>
+      <div className="grid grid-cols-[repeat(auto-fit,minmax(170px,1fr))] gap-3">
         {actions.map((action) => {
           const Icon = action.icon;
           return (
-            <button key={action.label} type="button" className="btn btn-secondary" onClick={() => onOpen(action.tab)} style={{ justifyContent: 'flex-start' }}>
-              <Icon size={16} />
+            <ActionButton key={action.label} variant="info" className="justify-start" icon={<Icon size={16} />} onClick={() => onOpen(action.tab)}>
               {action.label}
-            </button>
+            </ActionButton>
           );
         })}
       </div>
-    </div>
+    </Panel>
   );
 };

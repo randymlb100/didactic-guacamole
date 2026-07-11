@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { 
+import { playClickSound } from '../utils/audio';
+import {
   LayoutDashboard, 
   Users, 
   Sliders, 
@@ -18,6 +19,7 @@ import {
   DollarSign,
   Trophy
 } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 
 interface NavSubItem {
   id: string;
@@ -27,7 +29,7 @@ interface NavSubItem {
 interface NavItem {
   id: string;
   label: string;
-  icon: any;
+  icon: LucideIcon;
   roles?: string[];
   defaultTab?: string;
   subItems?: NavSubItem[];
@@ -39,24 +41,34 @@ interface AppShellProps {
   setActiveTab: (tab: string) => void;
 }
 
+type SectionTone = 'operations' | 'users' | 'sales' | 'finance' | 'monitoring' | 'config' | 'results';
+
+const getSectionTone = (tabId: string): SectionTone => {
+  if (['gestion_red', 'cajeros', 'supervisores', 'admins'].includes(tabId)) return 'users';
+  if (['control_ventas', 'deportiva', 'tickets', 'ganadores'].includes(tabId)) return 'sales';
+  if (['finanzas_grupo', 'finanzas', 'cuadre'].includes(tabId)) return 'finance';
+  if (['monitoreo', 'auditoria'].includes(tabId)) return 'monitoring';
+  if (['configuracion', 'limites'].includes(tabId)) return 'config';
+  if (['resultados'].includes(tabId)) return 'results';
+  return 'operations';
+};
+
 export const AppShell: React.FC<AppShellProps> = ({ children, activeTab, setActiveTab }) => {
   const { user, logout } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [theme, setTheme] = useState<'light' | 'dark'>('dark');
+  const [theme, setTheme] = useState<'light' | 'dark'>(() => {
+    if (typeof window === 'undefined') return 'dark';
+    return (localStorage.getItem('lotterynet_theme') as 'light' | 'dark' | null) || 'dark';
+  });
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
 
   // Initialize theme
   useEffect(() => {
-    const savedTheme = localStorage.getItem('lotterynet_theme') as 'light' | 'dark';
-    if (savedTheme) {
-      setTheme(savedTheme);
-      document.documentElement.setAttribute('data-theme', savedTheme);
-    } else {
-      document.documentElement.setAttribute('data-theme', 'dark');
-    }
-  }, []);
+    document.documentElement.setAttribute('data-theme', theme);
+  }, [theme]);
 
   const toggleTheme = () => {
+    playClickSound();
     const nextTheme = theme === 'light' ? 'dark' : 'light';
     setTheme(nextTheme);
     document.documentElement.setAttribute('data-theme', nextTheme);
@@ -71,10 +83,10 @@ export const AppShell: React.FC<AppShellProps> = ({ children, activeTab, setActi
   const getNavItems = (): NavItem[] => {
     if (role === 'ADMIN') {
       return [
-        { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+        { id: 'dashboard', label: 'Inicio', icon: LayoutDashboard },
         { 
           id: 'gestion_red', 
-          label: 'Gestión de Red', 
+          label: 'Usuarios', 
           icon: Users, 
           defaultTab: 'cajeros',
           subItems: [
@@ -82,16 +94,16 @@ export const AppShell: React.FC<AppShellProps> = ({ children, activeTab, setActi
             { id: 'supervisores', label: 'Supervisores' }
           ] 
         },
-        { id: 'monitoreo', label: 'Monitoreo Red', icon: Activity },
+        { id: 'monitoreo', label: 'Monitoreo', icon: Activity },
         { 
           id: 'control_ventas', 
-          label: 'Control de Ventas', 
+          label: 'Ventas y Tickets', 
           icon: Trophy, 
           defaultTab: 'tickets',
           subItems: [
-            { id: 'deportiva', label: 'Venta Deportiva' },
-            { id: 'tickets', label: 'Tickets Emitidos' },
-            { id: 'ganadores', label: 'Cobro de Premios' }
+            { id: 'deportiva', label: 'Deportes' },
+            { id: 'tickets', label: 'Tickets' },
+            { id: 'ganadores', label: 'Premios' }
           ] 
         },
         { 
@@ -100,30 +112,31 @@ export const AppShell: React.FC<AppShellProps> = ({ children, activeTab, setActi
           icon: DollarSign, 
           defaultTab: 'finanzas',
           subItems: [
-            { id: 'finanzas', label: 'Balances & Recargas' },
+            { id: 'finanzas', label: 'Balances y Recargas' },
             { id: 'cuadre', label: 'Cuadre de Caja' }
           ] 
         },
+        { id: 'resultados', label: 'Resultados', icon: History },
         { 
           id: 'configuracion', 
           label: 'Configuración', 
           icon: Settings, 
           defaultTab: 'limites',
           subItems: [
-            { id: 'limites', label: 'Límites de Juego' },
-            { id: 'resultados', label: 'Resultados Sorteos' }
+            { id: 'limites', label: 'Límites de Juego' }
           ] 
         }
       ];
     }
 
     const items = [
-      { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, roles: ['MASTER', 'SUPERVISOR'] },
+      { id: 'dashboard', label: 'Inicio', icon: LayoutDashboard, roles: ['MASTER', 'SUPERVISOR'] },
       { id: 'admins', label: 'Bancas y Admins', icon: Layers, roles: ['MASTER'] },
-      { id: 'monitoreo', label: 'Monitoreo Red', icon: Activity, roles: ['SUPERVISOR'] },
-      { id: 'deportiva', label: 'Venta Deportiva', icon: Trophy, roles: ['MASTER'] },
-      { id: 'tickets', label: 'Tickets Emitidos', icon: History, roles: ['SUPERVISOR'] },
-      { id: 'resultados', label: 'Resultados Sorteos', icon: Sliders, roles: ['MASTER', 'SUPERVISOR'] },
+      { id: 'monitoreo', label: 'Monitoreo', icon: Activity, roles: ['SUPERVISOR'] },
+      { id: 'deportiva', label: 'Deportes', icon: Trophy, roles: ['MASTER', 'SUPERVISOR'] },
+      { id: 'tickets', label: 'Tickets', icon: History, roles: ['SUPERVISOR'] },
+      { id: 'resultados', label: 'Resultados', icon: Sliders, roles: ['MASTER', 'SUPERVISOR'] },
+      { id: 'finanzas', label: 'Balances y Recargas', icon: DollarSign, roles: ['MASTER', 'SUPERVISOR'] },
       { id: 'cuadre', label: 'Cuadre de Caja', icon: DollarSign, roles: ['SUPERVISOR'] },
       { id: 'auditoria', label: 'Auditoría', icon: History, roles: ['MASTER', 'SUPERVISOR'] },
     ];
@@ -133,19 +146,18 @@ export const AppShell: React.FC<AppShellProps> = ({ children, activeTab, setActi
   const navItems = getNavItems();
 
   const handleNavClick = (tabId: string) => {
+    playClickSound();
     setActiveTab(tabId);
     setSidebarOpen(false);
   };
 
   const activeItem = navItems.find(item => 
     item.id === activeTab || (item.subItems && item.subItems.some(sub => sub.id === activeTab))
-  ) || navItems[0] || { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard };
+  ) || navItems[0] || { id: 'dashboard', label: 'Inicio', icon: LayoutDashboard };
+  const sectionTone = getSectionTone(activeItem.id === activeTab ? activeTab : activeItem.id);
 
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', backgroundColor: 'hsl(var(--background))', position: 'relative', overflow: 'hidden' }}>
-      {/* Premium Ambient Radial Glows */}
-      <div className="atmospheric-glow-1"></div>
-      <div className="atmospheric-glow-2"></div>
+    <div className="app-shell-root" data-section-tone={sectionTone} style={{ display: 'flex', minHeight: '100vh', backgroundColor: 'hsl(var(--background))', position: 'relative', overflowX: 'hidden' }}>
       
       {/* SIDEBAR - DESKTOP & MOBILE */}
       <aside className={`glass-panel ${sidebarOpen ? 'sidebar-open' : ''}`} style={{
@@ -162,10 +174,10 @@ export const AppShell: React.FC<AppShellProps> = ({ children, activeTab, setActi
         borderBottom: 'none',
         display: 'flex',
         flexDirection: 'column',
-        padding: '24px 16px',
+        padding: '20px 14px',
         transform: sidebarOpen ? 'translateX(0)' : 'translateX(-100%)',
-        transition: 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-        backgroundColor: 'hsl(var(--surface) / 0.85)'
+        transition: 'transform 0.2s ease',
+        backgroundColor: 'hsl(var(--surface))'
       }} id="app-sidebar">
         
         {/* Sidebar Header */}
@@ -231,21 +243,29 @@ export const AppShell: React.FC<AppShellProps> = ({ children, activeTab, setActi
               </svg>
             </div>
             <div>
-              <span style={{ fontSize: '1.15rem', fontWeight: 800, fontFamily: 'var(--font-display)', letterSpacing: '0.02em', display: 'block', textTransform: 'uppercase', color: 'hsl(var(--text-primary))' }}>
-                RLR SYSTEM UP
+              <span style={{ 
+                fontSize: '1.25rem', 
+                fontWeight: 800, 
+                fontFamily: '"Satoshi", sans-serif', 
+                letterSpacing: 0, 
+                display: 'block', 
+                color: 'hsl(var(--text-primary))',
+                lineHeight: 1.1
+              }}>
+                LotteryNet
               </span>
-              <span style={{ fontSize: '0.625rem', color: 'hsl(var(--primary))', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.03em', display: 'block', lineHeight: '1.2' }}>
-                Organiza tu mundo
+              <span style={{ 
+                fontSize: '0.525rem', 
+                color: 'hsl(var(--text-secondary))', 
+                fontWeight: 800, 
+                letterSpacing: 0, 
+                display: 'block', 
+                lineHeight: '1.4',
+                marginTop: '4px',
+                opacity: 0.85
+              }}>
+                Panel operativo
               </span>
-              {/* Animated gradient underline */}
-              <div style={{
-                height: '2px',
-                marginTop: '6px',
-                borderRadius: '1px',
-                background: 'linear-gradient(90deg, hsl(var(--primary)), #10b981, hsl(var(--primary)))',
-                backgroundSize: '200% 100%',
-                animation: 'gradientShift 3s ease infinite'
-              }} />
             </div>
           </div>
           <button className="btn-icon mobile-only" onClick={() => setSidebarOpen(false)} style={{ border: 'none', background: 'transparent' }}>
@@ -263,6 +283,7 @@ export const AppShell: React.FC<AppShellProps> = ({ children, activeTab, setActi
               <button
                 key={item.id}
                 onClick={() => handleNavClick(item.defaultTab || item.id)}
+                data-active={isActive}
                 style={{
                   display: 'flex',
                   alignItems: 'center',
@@ -271,14 +292,14 @@ export const AppShell: React.FC<AppShellProps> = ({ children, activeTab, setActi
                   padding: '12px 14px',
                   borderRadius: 'var(--radius-md)',
                   border: 'none',
-                  borderLeft: isActive ? '3px solid hsl(var(--primary))' : '3px solid transparent',
-                  background: isActive ? 'hsl(var(--primary) / 0.12)' : 'transparent',
-                  color: isActive ? 'hsl(var(--primary))' : 'hsl(var(--text-secondary))',
+                  borderLeft: isActive ? '3px solid var(--section-accent)' : '3px solid transparent',
+                  background: isActive ? 'var(--section-accent-soft)' : 'transparent',
+                  color: isActive ? 'var(--section-accent)' : 'hsl(var(--text-secondary))',
                   cursor: 'pointer',
                   fontWeight: isActive ? 600 : 500,
                   fontSize: '0.9rem',
                   textAlign: 'left',
-                  transition: 'var(--transition-fast)'
+                  transition: 'background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease'
                 }}
                 className="sidebar-nav-btn"
               >
@@ -308,7 +329,7 @@ export const AppShell: React.FC<AppShellProps> = ({ children, activeTab, setActi
               justifyContent: 'center',
               color: 'hsl(var(--primary))',
               fontWeight: 600,
-              boxShadow: '0 0 0 3px hsl(var(--primary) / 0.15), 0 0 12px hsl(var(--primary) / 0.1)'
+            boxShadow: '0 0 0 1px hsl(var(--primary) / 0.20)'
             }}>
               {(user?.displayName || user?.user || 'A').charAt(0).toUpperCase()}
             </div>
@@ -324,7 +345,7 @@ export const AppShell: React.FC<AppShellProps> = ({ children, activeTab, setActi
             </div>
           </div>
 
-          <button onClick={logout} style={{
+          <button onClick={() => { playClickSound(); logout(); }} style={{
             display: 'flex',
             alignItems: 'center',
             gap: '10px',
@@ -339,7 +360,7 @@ export const AppShell: React.FC<AppShellProps> = ({ children, activeTab, setActi
             fontSize: '0.85rem',
             justifyContent: 'center',
             transition: 'var(--transition-fast)',
-            boxShadow: '0 2px 8px hsl(var(--danger) / 0.08)'
+            boxShadow: 'none'
           }}>
             <LogOut size={16} />
             Cerrar Sesión
@@ -356,7 +377,7 @@ export const AppShell: React.FC<AppShellProps> = ({ children, activeTab, setActi
             inset: 0,
             backgroundColor: 'rgba(0,0,0,0.5)',
             zIndex: 40,
-            backdropFilter: 'blur(4px)'
+            backdropFilter: 'none'
           }}
           className="mobile-only"
         />
@@ -388,8 +409,8 @@ export const AppShell: React.FC<AppShellProps> = ({ children, activeTab, setActi
           alignItems: 'center',
           justifyContent: 'space-between',
           padding: '0 24px',
-          backgroundColor: 'hsl(var(--surface) / 0.7)',
-          backdropFilter: 'blur(20px)'
+          backgroundColor: 'hsl(var(--surface))',
+          backdropFilter: 'none'
         }}>
           {/* Topbar Left */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
@@ -567,17 +588,16 @@ export const AppShell: React.FC<AppShellProps> = ({ children, activeTab, setActi
                   <button
                     key={sub.id}
                     onClick={() => setActiveTab(sub.id)}
+                    className="fintech-tab-button"
+                    data-active={isSubActive}
                     style={{
                       padding: '8px 16px',
                       borderRadius: 'var(--radius-sm)',
                       border: 'none',
-                      background: isSubActive ? 'hsl(var(--primary) / 0.12)' : 'transparent',
-                      color: isSubActive ? 'hsl(var(--primary))' : 'hsl(var(--text-secondary))',
                       fontWeight: isSubActive ? 600 : 500,
                       fontSize: '0.85rem',
                       cursor: 'pointer',
-                      transition: 'all 0.2s ease',
-                      borderBottom: isSubActive ? '2.5px solid hsl(var(--primary))' : '2.5px solid transparent'
+                      borderBottom: isSubActive ? '2.5px solid var(--section-accent)' : '2.5px solid transparent'
                     }}
                   >
                     {sub.label}

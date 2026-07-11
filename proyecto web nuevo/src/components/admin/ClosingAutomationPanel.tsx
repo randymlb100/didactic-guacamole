@@ -1,4 +1,5 @@
 import React from 'react';
+import { ActionButton, Panel, PanelHeader, StatusBadge } from '../ui';
 
 interface Props {
   emailEnabled: boolean;
@@ -10,22 +11,23 @@ interface Props {
 
 export const ClosingAutomationPanel: React.FC<Props> = ({ emailEnabled, whatsappEnabled, onToggleEmail, onToggleWhatsapp, onSave }) => {
   return (
-    <div className="fintech-panel fintech-primary-panel" style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-      <div>
-        <h3 className="fintech-panel-title">Cierre y listado automático</h3>
-        <span style={{ color: 'hsl(var(--text-secondary))', fontSize: '0.8rem' }}>
-          Snapshot al cierre de lotería y envío de listado operativo
-        </span>
-      </div>
-      <label className="glass-panel" style={{ padding: 14, display: 'flex', justifyContent: 'space-between', gap: 10, alignItems: 'center' }}>
-        <span>Enviar listado por email al cierre</span>
-        <input type="checkbox" checked={emailEnabled} onChange={(event) => onToggleEmail(event.target.checked)} />
+    <Panel tone="primary" className="flex flex-col gap-4">
+      <PanelHeader
+        title="Cierre y listado automático"
+        subtitle="Snapshot al cierre de lotería y envío de listado operativo"
+        action={<StatusBadge tone={emailEnabled || whatsappEnabled ? 'success' : 'neutral'}>{emailEnabled || whatsappEnabled ? 'Activo' : 'Manual'}</StatusBadge>}
+      />
+      <label className="flex items-center justify-between gap-3 rounded-ln-md border border-ln-border bg-ln-surface/75 p-4">
+        <span className="text-sm font-semibold text-ln-text-primary">Enviar listado por email al cierre</span>
+        <input className="h-5 w-5 accent-ln-primary" type="checkbox" checked={emailEnabled} onChange={(event) => onToggleEmail(event.target.checked)} />
       </label>
-      <label className="glass-panel" style={{ padding: 14, display: 'flex', justifyContent: 'space-between', gap: 10, alignItems: 'center' }}>
-        <span>Enviar listado por WhatsApp al cierre</span>
-        <input type="checkbox" checked={whatsappEnabled} onChange={(event) => onToggleWhatsapp(event.target.checked)} />
+      <label className="flex items-center justify-between gap-3 rounded-ln-md border border-ln-border bg-ln-surface/75 p-4">
+        <span className="text-sm font-semibold text-ln-text-primary">Enviar listado por WhatsApp al cierre</span>
+        <input className="h-5 w-5 accent-ln-primary" type="checkbox" checked={whatsappEnabled} onChange={(event) => onToggleWhatsapp(event.target.checked)} />
       </label>
-      <button type="button" className="btn btn-primary" onClick={onSave} style={{ alignSelf: 'flex-start' }}>Guardar automatización</button>
-    </div>
+      <ActionButton variant="primary" onClick={onSave} className="self-start">
+        Guardar automatización
+      </ActionButton>
+    </Panel>
   );
 };

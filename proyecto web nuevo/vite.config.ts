@@ -1,10 +1,12 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
+import tailwindcss from '@tailwindcss/vite'
 
 // https://vite.dev/config/
 export default defineConfig({
-  plugins: [react()],
+  plugins: [react(), tailwindcss()],
   build: {
+    target: 'es2022',
     rollupOptions: {
       output: {
         manualChunks(id) {
@@ -14,6 +16,9 @@ export default defineConfig({
             }
             if (id.includes('react') || id.includes('scheduler')) {
               return 'react-vendor';
+            }
+            if (id.includes('lucide')) {
+              return 'icons';
             }
             return 'vendor';
           }

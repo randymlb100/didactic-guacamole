@@ -2,6 +2,8 @@ import React, { useMemo, useState } from 'react';
 import { X } from 'lucide-react';
 import type { TicketRecord, UserAccount } from '../../types';
 import { canEditCashierFromMonitoring, getCashierScopedTickets, getCashierScopedWinners } from '../../utils/cashierScope';
+import { ActionButton, MetricCard, StatusBadge } from '../ui';
+import { cn } from '../../utils/classNames';
 
 interface Props {
   role: string;
@@ -34,65 +36,82 @@ export const CashierOperationSheet: React.FC<Props> = ({ role, cashier, tickets,
   ];
 
   return (
-    <div style={{ position: 'fixed', inset: 0, background: 'rgba(8, 22, 28, 0.44)', zIndex: 100, display: 'flex', justifyContent: 'flex-end' }} role="dialog" aria-modal="true">
-      <section className="glass-panel" style={{ width: 'min(560px, 100vw)', height: '100%', borderRadius: '18px 0 0 18px', padding: 18, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 14 }}>
-        <header style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'flex-start' }}>
+    <div className="fixed inset-0 z-[100] flex justify-end bg-black/45" role="dialog" aria-modal="true">
+      <section className="flex h-full w-[min(560px,100vw)] flex-col gap-4 overflow-y-auto rounded-l-ln-lg border border-ln-border bg-ln-surface/95 p-5 shadow-ln-lg backdrop-blur-md">
+        <header className="flex items-start justify-between gap-3">
           <div>
-            <h3 style={{ margin: 0 }}>{cashier.displayName || cashier.user}</h3>
-            <span style={{ color: 'hsl(var(--text-secondary))', fontSize: '0.82rem' }}>{cashier.banca || 'Banca'} · @{cashier.user}</span>
+            <h3 className="text-lg font-semibold text-ln-text-primary">{cashier.displayName || cashier.user}</h3>
+            <span className="text-sm text-ln-text-secondary">{cashier.banca || 'Banca'} · @{cashier.user}</span>
           </div>
-          <button type="button" className="btn btn-secondary" onClick={onClose} aria-label="Cerrar">
-            <X size={18} />
-          </button>
+          <ActionButton className="min-h-9 px-3" onClick={onClose} aria-label="Cerrar" icon={<X size={18} />}>
+            Cerrar
+          </ActionButton>
         </header>
 
-        <nav style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+        <nav className="flex flex-wrap gap-2">
           {tabs.map(([id, label]) => (
-            <button key={id} type="button" className={tab === id ? 'btn btn-primary' : 'btn btn-secondary'} onClick={() => setTab(id)}>
+            <button
+              key={id}
+              type="button"
+              className={cn(
+                'min-h-9 rounded-ln-md border px-3 py-2 text-sm font-semibold transition-colors',
+                tab === id
+                  ? 'border-ln-primary bg-ln-primary text-white shadow-ln-md'
+                  : 'border-ln-border bg-ln-surface text-ln-text-primary hover:bg-ln-surface-hover',
+              )}
+              onClick={() => setTab(id)}
+            >
               {label}
             </button>
           ))}
         </nav>
 
         {tab === 'summary' && (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10 }}>
-            <div className="glass-panel" style={{ padding: 12 }}>Tickets<br /><strong>{scopedTickets.length}</strong></div>
-            <div className="glass-panel" style={{ padding: 12 }}>Ventas<br /><strong>${sales.toFixed(2)}</strong></div>
-            <div className="glass-panel" style={{ padding: 12 }}>Pendiente<br /><strong>${pendingPayout.toFixed(2)}</strong></div>
+          <div className="grid grid-cols-[repeat(auto-fit,minmax(140px,1fr))] gap-3">
+            <MetricCard label="Tickets" value={scopedTickets.length} />
+            <MetricCard label="Ventas" value={`$${sales.toFixed(2)}`} accent="success" />
+            <MetricCard label="Pendiente" value={`$${pendingPayout.toFixed(2)}`} accent="warning" />
           </div>
         )}
 
-        {tab === 'tickets' && scopedTickets.map((ticket) => (
-          <div key={ticket.id} className="glass-panel" style={{ padding: 12, display: 'flex', justifyContent: 'space-between', gap: 8 }}>
-            <strong>{ticket.serial || ticket.id}</strong>
-            <span>${Number(ticket.total || 0).toFixed(2)} · {ticket.status}</span>
+        {tab === 'tickets' && (
+          <div className="flex flex-col gap-3">
+            {scopedTickets.length === 0 && <EmptySheetState text="No hay tickets para este cajero." />}
+            {scopedTickets.map((ticket) => (
+              <SheetRow key={ticket.id} title={ticket.serial || ticket.id} value={`$${Number(ticket.total || 0).toFixed(2)} · ${ticket.status}`} />
+            ))}
           </div>
-        ))}
+        )}
 
-        {tab === 'payouts' && winners.map((ticket) => (
-          <div key={ticket.id} className="glass-panel" style={{ padding: 12, display: 'flex', justifyContent: 'space-between', gap: 8 }}>
-            <strong>{ticket.serial || ticket.id}</strong>
-            <span>${Number(ticket.totalPrize || 0).toFixed(2)} · {ticket.status}</span>
+        {tab === 'payouts' && (
+          <div className="flex flex-col gap-3">
+            {winners.length === 0 && <EmptySheetState text="No hay cobros pendientes para este cajero." />}
+            {winners.map((ticket) => (
+              <SheetRow key={ticket.id} title={ticket.serial || ticket.id} value={`$${Number(ticket.totalPrize || 0).toFixed(2)} · ${ticket.status}`} />
+            ))}
           </div>
-        ))}
+        )}
 
         {tab === 'limits' && (
-          <div className="glass-panel" style={{ padding: 14, display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'center' }}>
-            <span>Límites operacionales de este cajero</span>
-            <button type="button" className="btn btn-primary" disabled={!canEdit} onClick={() => onOpenLimits(cashier)}>Administrar</button>
+          <div className="flex items-center justify-between gap-3 rounded-ln-md border border-ln-border bg-ln-surface/75 p-4">
+            <span className="text-sm text-ln-text-primary">Límites operacionales de este cajero</span>
+            <ActionButton variant="warning" disabled={!canEdit} onClick={() => onOpenLimits(cashier)}>Administrar</ActionButton>
           </div>
         )}
 
         {tab === 'recharges' && (
-          <div className="glass-panel" style={{ padding: 14, display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'center' }}>
-            <span>Cupo y acceso de recargas</span>
-            <button type="button" className="btn btn-primary" disabled={!canEdit} onClick={() => onOpenRecharge(cashier)}>Administrar</button>
+          <div className="flex items-center justify-between gap-3 rounded-ln-md border border-ln-border bg-ln-surface/75 p-4">
+            <span className="text-sm text-ln-text-primary">Cupo y acceso de recargas</span>
+            <ActionButton variant="finance" disabled={!canEdit} onClick={() => onOpenRecharge(cashier)}>Administrar</ActionButton>
           </div>
         )}
 
         {tab === 'data' && (
-          <div className="glass-panel" style={{ padding: 14, display: 'grid', gap: 8 }}>
-            <span>Estado: <strong>{cashier.active === false ? 'Bloqueado' : 'Activo'}</strong></span>
+          <div className="grid gap-3 rounded-ln-md border border-ln-border bg-ln-surface/75 p-4">
+            <span className="flex items-center justify-between gap-3">
+              Estado:
+              <StatusBadge tone={cashier.active === false ? 'danger' : 'success'}>{cashier.active === false ? 'Bloqueado' : 'Activo'}</StatusBadge>
+            </span>
             <span>Balance: <strong>${Number(cashier.balance || 0).toFixed(2)}</strong></span>
             <span>Comisión: <strong>{Number(cashier.commissionRate || 0).toFixed(2)}%</strong></span>
           </div>
@@ -101,3 +120,16 @@ export const CashierOperationSheet: React.FC<Props> = ({ role, cashier, tickets,
     </div>
   );
 };
+
+const SheetRow = ({ title, value }: { title: string; value: string }) => (
+  <div className="flex items-center justify-between gap-3 rounded-ln-md border border-ln-border bg-ln-surface/75 p-3">
+    <strong className="min-w-0 truncate text-sm text-ln-text-primary">{title}</strong>
+    <span className="shrink-0 text-sm text-ln-text-secondary">{value}</span>
+  </div>
+);
+
+const EmptySheetState = ({ text }: { text: string }) => (
+  <div className="rounded-ln-md border border-dashed border-ln-border bg-ln-background/45 p-4 text-center text-sm text-ln-text-secondary">
+    {text}
+  </div>
+);

@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import type { UserAccount } from '../../types';
+import { ActionButton, Panel, PanelHeader, StatusBadge } from '../ui';
 
 interface Props {
   admin: UserAccount;
@@ -36,39 +37,43 @@ export const AdminCommissionsPanel: React.FC<Props> = ({ admin, users, onSaveCom
   };
 
   return (
-    <div className="fintech-panel fintech-primary-panel" style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-      <div>
-        <h3 className="fintech-panel-title">Comisiones</h3>
-        <span style={{ color: 'hsl(var(--text-secondary))', fontSize: '0.8rem' }}>Cajeros y supervisores de {admin.banca || admin.user}</span>
-      </div>
+    <Panel tone="primary" className="flex flex-col gap-4">
+      <PanelHeader title="Comisiones" subtitle={`Cajeros y supervisores de ${admin.banca || admin.user}`} />
 
-      {message && <div className="badge badge-secondary" style={{ alignSelf: 'flex-start' }}>{message}</div>}
+      {message && <StatusBadge tone="primary" className="self-start">{message}</StatusBadge>}
 
-      {scopedUsers.map((target) => {
-        const draft = drafts[target.id] ?? toPercent(target.commissionRate);
-        return (
-          <div key={target.id} className="glass-panel" style={{ padding: 12, display: 'grid', gridTemplateColumns: 'minmax(160px, 1fr) 160px 110px', gap: 10, alignItems: 'center' }}>
-            <div>
-              <strong>{target.displayName || target.user}</strong>
-              <span style={{ display: 'block', color: 'hsl(var(--text-secondary))', fontSize: '0.8rem' }}>{target.role === 'SUPERVISOR' ? 'Supervisor' : 'Cajero'} · @{target.user}</span>
+      <div className="flex flex-col gap-3">
+        {scopedUsers.map((target) => {
+          const draft = drafts[target.id] ?? toPercent(target.commissionRate);
+          return (
+            <div
+              key={target.id}
+              className="grid items-center gap-3 rounded-ln-md border border-ln-border bg-ln-surface/75 p-3 md:grid-cols-[minmax(160px,1fr)_160px_110px]"
+            >
+              <div>
+                <strong>{target.displayName || target.user}</strong>
+                <span className="block text-xs text-ln-text-secondary">
+                  {target.role === 'SUPERVISOR' ? 'Supervisor' : 'Cajero'} · @{target.user}
+                </span>
+              </div>
+              <label className="flex flex-col gap-1">
+                <span className="text-xs text-ln-text-secondary">Comisión %</span>
+                <input
+                  className="form-input"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={draft}
+                  onChange={(event) => setDrafts((current) => ({ ...current, [target.id]: event.target.value }))}
+                />
+              </label>
+              <ActionButton variant="primary" disabled={savingId === target.id} onClick={() => save(target, draft)}>
+                {savingId === target.id ? 'Guardando' : 'Guardar'}
+              </ActionButton>
             </div>
-            <label style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-              <span style={{ fontSize: '0.75rem', color: 'hsl(var(--text-secondary))' }}>Comisión %</span>
-              <input
-                className="form-input"
-                type="number"
-                min="0"
-                step="0.01"
-                value={draft}
-                onChange={(event) => setDrafts((current) => ({ ...current, [target.id]: event.target.value }))}
-              />
-            </label>
-            <button type="button" className="btn btn-primary" disabled={savingId === target.id} onClick={() => save(target, draft)}>
-              {savingId === target.id ? 'Guardando' : 'Guardar'}
-            </button>
-          </div>
-        );
-      })}
-    </div>
+          );
+        })}
+      </div>
+    </Panel>
   );
 };

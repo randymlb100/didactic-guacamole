@@ -34,6 +34,8 @@ export interface UserAccount {
   updatedAtEpochMs?: number | null;
   systemModeOverride?: string | null;
   limitsPayload?: string | null;
+  accessToken?: string | null;
+  refreshToken?: string | null;
 }
 
 export interface PlayItem {

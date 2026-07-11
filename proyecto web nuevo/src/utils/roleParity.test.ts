@@ -5,10 +5,10 @@ describe('roleParity', () => {
   it('matches real Android MASTER console sections', () => {
     const parity = getRoleParity('MASTER');
     expect(parity.homeTab).toBe('dashboard');
-    expect(parity.visibleTabs).toEqual(['dashboard', 'admins', 'auditoria']);
+    expect(parity.visibleTabs).toEqual(['dashboard', 'admins', 'deportiva', 'resultados', 'finanzas', 'auditoria']);
     expect(parity.consoleSections).toEqual(['banks', 'credentials', 'server', 'recharges', 'audit']);
-    expect(isTabAllowedForRole('MASTER', 'deportiva')).toBe(false);
-    expect(isTabAllowedForRole('MASTER', 'finanzas')).toBe(false);
+    expect(isTabAllowedForRole('MASTER', 'deportiva')).toBe(true);
+    expect(isTabAllowedForRole('MASTER', 'finanzas')).toBe(true);
   });
 
   it('matches real Android ADMIN operational admin scope without POS sale', () => {
@@ -41,9 +41,10 @@ describe('roleParity', () => {
       'finanzas',
       'cuadre',
       'reportes',
+      'auditoria',
     ]);
     expect(isTabAllowedForRole('SUPERVISOR', 'limites')).toBe(false);
-    expect(isTabAllowedForRole('SUPERVISOR', 'auditoria')).toBe(false);
+    expect(isTabAllowedForRole('SUPERVISOR', 'auditoria')).toBe(true);
   });
 
   it('can hide sportsbook at runtime without changing role parity source', () => {
