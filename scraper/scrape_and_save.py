@@ -2786,7 +2786,13 @@ async def _async_fetch_king_results(date_str, client=None):
                 continue
             result_id = "23" if "día" in normalized or "dia" in normalized else "24"
             sessions = item.get("sessions") or []
-            session = item.get("lastSession") or (sessions[-1] if sessions else {})
+            requested_api_date = _king_api_date(date_str).replace(".000Z", "Z")
+            session = next(
+                (candidate for candidate in sessions if str(candidate.get("date") or "") == requested_api_date),
+                {},
+            )
+            if not session and str((item.get("lastSession") or {}).get("date") or "") == requested_api_date:
+                session = item.get("lastSession") or {}
             score = session.get("score") or []
             values = score[0] if score and isinstance(score[0], list) else score
             numbers = [str(value).strip().zfill(2) for value in values if str(value).strip()]
