@@ -1,19 +1,56 @@
 services:
   - type: web
-    name: didactic-guacamole
-    runtime: python
+    name: lotterynet-results
+    env: python
+    plan: free
     buildCommand: pip install -r requirements.txt
-    startCommand: gunicorn app:app --config gunicorn.conf.py
+    startCommand: gunicorn app:app --bind 0.0.0.0:$PORT --workers 1 --worker-class gevent --worker-connections 100 --timeout 120 --max-requests 1000 --max-requests-jitter 100
+    autoDeploy: true
+
   - type: cron
-    name: didactic-guacamole-results-cron
-    runtime: python
-    schedule: "*/10 * * * *"
+    name: lotterynet-scraper-cron
+    env: python
+    plan: free
+    schedule: "*/10 8-22 * * *"
     buildCommand: pip install -r requirements.txt
     startCommand: python scraper/scrape_and_save.py
+    autoDeploy: true
+
+  - type: cron
+    name: lotterynet-sports-odds-sync
+    env: python
+    plan: starter
+    schedule: "*/5 8-23 * * *"
+    buildCommand: pip install -r requirements.txt
+    startCommand: python tools/render/sync_sports_odds.py
+    autoDeploy: true
     envVars:
       - key: SUPABASE_URL
         sync: false
       - key: SUPABASE_KEY
         sync: false
-      - key: SUPABASE_SECRET_KEY
+      - key: LOTTERYNET_ADMIN_SHARED_SECRET
         sync: false
+      - key: SPORTS_ODDS_SYNC_LIMIT
+        value: "25"
+
+  - type: cron
+    name: lotterynet-sports-results-sync
+    env: python
+    plan: starter
+    schedule: "*/5 8-23 * * *"
+    buildCommand: pip install -r requirements.txt
+    startCommand: python tools/render/sync_sports_results.py
+    autoDeploy: true
+    envVars:
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_KEY
+        sync: false
+      - key: LOTTERYNET_ADMIN_SHARED_SECRET
+        sync: false
+      - key: SPORTS_RESULTS_SYNC_ENABLED
+        value: "false"
+      - key: SPORTS_RESULTS_SYNC_LIMIT
+        value: "50"
+
