@@ -13,54 +13,43 @@ from flask_cors import CORS
 
 from scraper.scrape_and_save import (
     SUPABASE_KEY,
-    SUPABASE_SECRET_KEY,
     SUPABASE_URL,
     fetch_existing_from_supabase,
-    split_lottery_and_pick_rows,
     get_dr_date_str,
     iso_date_to_dr_date,
     pick_results_cache_key,
-    refresh_missing_us_pick_results,
     save_to_supabase,
     save_us_picks_to_supabase,
     scrape,
     scrape_us_picks,
-    static_us_pick_catalog_rows,
-    suppress_early_us_pick_results,
-    supabase_rest_headers,
 )
-
 
 app = Flask(__name__)
 CORS(app)
 port = int(os.environ.get("PORT", 5000))
 SCRAPE_CACHE_TTL_SECONDS = int(os.environ.get("SCRAPE_CACHE_TTL_SECONDS", "120"))
 LIVE_RESPONSE_CACHE_TTL_SECONDS = int(os.environ.get("LIVE_RESPONSE_CACHE_TTL_SECONDS", "5"))
-LOTTERY_BACKGROUND_REFRESH_MIN_INTERVAL_SECONDS = int(os.environ.get("LOTTERY_BACKGROUND_REFRESH_MIN_INTERVAL_SECONDS", "120"))
 PICK_BACKGROUND_REFRESH_MIN_INTERVAL_SECONDS = int(os.environ.get("PICK_BACKGROUND_REFRESH_MIN_INTERVAL_SECONDS", "30"))
-MIN_PICK_SNAPSHOT_ROWS_FOR_PENDING_CATALOG = int(os.environ.get("MIN_PICK_SNAPSHOT_ROWS_FOR_PENDING_CATALOG", "25"))
+
 _scrape_cache = {}
 _pick_scrape_cache = {}
 _live_system_results_cache = {}
 _manual_override_cache = {}
 _lottery_refresh_lock = threading.Lock()
 _lottery_refresh_inflight = set()
-_lottery_refresh_last_started = {}
 _pick_refresh_lock = threading.Lock()
 _pick_refresh_inflight = set()
 _pick_refresh_last_started = {}
-_pick_refresh_last_completed = {}
-_pick_refresh_last_error = {}
+ADMIN_ROLES = {"admin", "master"}
+USERS_STATE_KEY = "sys_users_v4"
+_supabase_cache = {}
+_CACHE_TTL_SECONDS = 300
 INTERNAL_SHARED_SECRET = os.environ.get("LOTTERYNET_ADMIN_SHARED_SECRET", "").strip()
 PUBLIC_CACHE_INVALIDATION_PREFIXES = (
     "lot_results_cache_by_day:",
     "pick_results_cache_by_day:",
     "manual_results_overrides_by_day:",
 )
-# Render redeploy marker: keep service restart explicit when production gets stuck.
-
-ADMIN_ROLES = {"admin", "master"}
-USERS_STATE_KEY = "sys_users_v4"
 
 
 def json_utf8(data, status=200):
@@ -91,21 +80,10 @@ def normalize_result_row(row):
     if game == "pick4" or "pick 4" in normalized_name:
         out["pick4"] = number
     for key in (
-        "status",
-        "source",
-        "firstSeenAt",
-        "lastSeenAt",
-        "state",
-        "stateCode",
-        "game",
-        "gameName",
-        "draw",
-        "playTypes",
-        "backfilled",
-        "noDrawReason",
-        "isManualOverride",
-        "manualEditedBy",
-        "manualEditedAt",
+        "status", "source", "firstSeenAt", "lastSeenAt",
+        "state", "stateCode", "game", "gameName", "draw", "playTypes",
+        "backfilled", "noDrawReason", "isManualOverride",
+        "manualEditedBy", "manualEditedAt",
     ):
         value = row.get(key)
         if value is not None and value != "":
@@ -127,6 +105,515 @@ def normalize_pick_row(row):
         normalized["name"] = " ".join(part for part in [state, game_name, draw] if part)
     return normalized
 
+
+def unique_sorted_results(rows):
+    by_id = {}
+    for row in rows:
+        normalized = normalize_result_row(row)
+        if not normalized["id"]:
+            continue
+        by_id[normalized["id"]] = normalized
+    return sorted(by_id.values(), key=lambda item: (0, int(item["id"])) if item["id"].isdigit() else (1, item["id"]))
+
+
+def unique_sorted_pick_results(rows):
+    by_id = {}
+    for row in rows:
+        normalized = normalize_pick_row(row)
+        if normalized["id"]:
+            by_id[normalized["id"]] = normalized
+    return sorted(by_id.values(), key=lambda item: item["id"])
+
+
+def is_pick_result_row(row):
+    row_id = str(row.get("id", "")).upper()
+    name = str(row.get("name", "")).lower()
+    game = str(row.get("game", "")).lower().replace("-", "")
+    return (
+        row_id.startswith("US-P3-") or
+        row_id.startswith("US-P4-") or
+        bool(row.get("pick3")) or
+        bool(row.get("pick4")) or
+        game in {"pick3", "pick4"} or
+        "pick 3" in name or
+        "pick 4" in name
+    )
+
+
+def utc_now_iso():
+    return datetime.datetime.now(datetime.UTC).isoformat().replace("+00:00", "Z")
+
+
+def fetch_supabase_results_cache(cache_key):
+    if not SUPABASE_URL or not SUPABASE_KEY:
+        return []
+    params = urllib.parse.urlencode({"key": f"eq.{cache_key}", "select": "value"})
+    req = urllib.request.Request(
+        f"{SUPABASE_URL}/rest/v1/lotterynet_kv?{params}",
+        headers={
+            "Accept": "application/json",
+            "apikey": SUPABASE_KEY,
+            "Authorization": f"Bearer {SUPABASE_KEY}",
+        },
+    )
+    try:
+        raw = urllib.request.urlopen(req, timeout=5).read().decode("utf-8")
+        rows = json.loads(raw)
+        value = rows[0].get("value") if rows else []
+        if isinstance(value, str):
+            value = json.loads(value)
+        if isinstance(value, dict):
+            value = value.get("results") or value.get("rows") or []
+        return value if isinstance(value, list) else []
+    except Exception:
+        return []
+
+
+def fetch_supabase_results_cache_cached(cache_key):
+    now = time.monotonic()
+    entry = _supabase_cache.get(cache_key)
+    if entry is not None:
+        value, ts = entry
+        if now - ts < _CACHE_TTL_SECONDS:
+            return value
+    result = fetch_supabase_results_cache(cache_key)
+    _supabase_cache[cache_key] = (result, now)
+    return result
+
+
+def cache_results_snapshot(cache_key, rows):
+    _supabase_cache[cache_key] = (rows if isinstance(rows, list) else [], time.monotonic())
+
+
+def invalidate_results_cache_key(cache_key):
+    if not cache_key:
+        return
+    _supabase_cache.pop(cache_key, None)
+    if ":" in cache_key:
+        date_key = cache_key.split(":", 1)[1]
+        if is_public_cache_invalidation_key(cache_key):
+            _manual_override_cache.pop(date_key, None)
+        keys_to_delete = [
+            key for key in _live_system_results_cache
+            if (
+                isinstance(key, tuple) and key and key[0] == date_key
+            ) or (
+                isinstance(key, str) and key.startswith(f"{date_key}:")
+            )
+        ]
+        for live_key in keys_to_delete:
+            _live_system_results_cache.pop(live_key, None)
+
+
+def is_internal_secret_valid(request_obj):
+    if not INTERNAL_SHARED_SECRET:
+        return False
+    provided = (request_obj.headers.get("x-lotterynet-admin-secret") or "").strip()
+    return provided == INTERNAL_SHARED_SECRET
+
+
+def is_public_cache_invalidation_key(cache_key):
+    return any(cache_key.startswith(prefix) for prefix in PUBLIC_CACHE_INVALIDATION_PREFIXES)
+
+
+def load_cached_sections(target_date):
+    lottery_cache = fetch_supabase_results_cache_cached(f"lot_results_cache_by_day:{target_date}")
+    pick_cache = fetch_supabase_results_cache_cached(f"pick_results_cache_by_day:{target_date}")
+    legacy_lottery_rows, legacy_pick_rows = split_lottery_and_pick_rows(lottery_cache)
+    pick_rows = pick_cache or legacy_pick_rows
+    return unique_sorted_results(legacy_lottery_rows), unique_sorted_pick_results(pick_rows)
+
+
+def load_pick_only_cached(target_date):
+    pick_cache = fetch_supabase_results_cache_cached(f"pick_results_cache_by_day:{target_date}")
+    if pick_cache:
+        return unique_sorted_pick_results(pick_cache)
+    lottery_cache = fetch_supabase_results_cache_cached(f"lot_results_cache_by_day:{target_date}")
+    _, legacy_pick_rows = split_lottery_and_pick_rows(lottery_cache)
+    return unique_sorted_pick_results(legacy_pick_rows)
+
+
+def load_lottery_only_cached(target_date):
+    lottery_cache = fetch_supabase_results_cache_cached(f"lot_results_cache_by_day:{target_date}")
+    legacy_lottery_rows, _ = split_lottery_and_pick_rows(lottery_cache)
+    return unique_sorted_results(legacy_lottery_rows)
+
+
+def split_lottery_and_pick_rows(rows):
+    lottery_rows = []
+    pick_rows = []
+    for row in rows or []:
+        if is_pick_result_row(row):
+            pick_rows.append(row)
+        else:
+            lottery_rows.append(row)
+    return lottery_rows, pick_rows
+
+
+def should_use_live_scrape():
+    return request.args.get("live") == "1"
+
+
+def normalize_request_date_key(raw_date=None):
+    text = str(raw_date or "").strip()
+    if re.match(r"^\d{2}-\d{2}-\d{4}$", text):
+        return text
+    converted = iso_date_to_dr_date(text)
+    return converted or get_dr_date_str()
+
+
+def scrape_cached(date_key):
+    now = time.time()
+    cached = _scrape_cache.get(date_key)
+    if cached and now - cached["stored_at"] < SCRAPE_CACHE_TTL_SECONDS:
+        return cached["rows"]
+    rows = scrape(date_key)
+    _scrape_cache[date_key] = {"stored_at": now, "rows": rows}
+    return rows
+
+
+def scrape_cached_isolated(date_key):
+    """Run the synchronous scraper outside an async-aware WSGI request thread."""
+    with ThreadPoolExecutor(max_workers=1) as pool:
+        return pool.submit(scrape_cached, date_key).result()
+
+
+def set_lottery_scrape_cache(date_key, rows):
+    _scrape_cache[date_key] = {"stored_at": time.time(), "rows": rows}
+
+
+def refresh_lottery_cache_async(date_key):
+    try:
+        rows = unique_sorted_results(scrape(date_key))
+        set_lottery_scrape_cache(date_key, rows)
+        if rows and SUPABASE_KEY.strip():
+            save_to_supabase(date_key, rows)
+    except Exception as error:
+        print(f"Warning: background lottery refresh failed for {date_key}: {error}")
+    finally:
+        with _lottery_refresh_lock:
+            _lottery_refresh_inflight.discard(date_key)
+
+
+def schedule_background_lottery_refresh(date_key):
+    with _lottery_refresh_lock:
+        if date_key in _lottery_refresh_inflight:
+            return False
+        _lottery_refresh_inflight.add(date_key)
+    thread = threading.Thread(
+        target=refresh_lottery_cache_async,
+        args=(date_key,),
+        daemon=True,
+        name=f"lottery-refresh-{date_key}",
+    )
+    thread.start()
+    return True
+
+
+def set_live_served_from_flag(section, value):
+    try:
+        setattr(g, f"{section}_live_served_from", value)
+    except RuntimeError:
+        return
+
+
+def get_live_served_from_flag(section):
+    try:
+        return getattr(g, f"{section}_live_served_from", "")
+    except RuntimeError:
+        return ""
+
+
+def get_fresh_live_system_results_cache(date_key, mode):
+    cache_key = f"{date_key}:{mode}"
+    cached = _live_system_results_cache.get(cache_key)
+    if not cached:
+        return None
+    if time.time() - cached["stored_at"] >= LIVE_RESPONSE_CACHE_TTL_SECONDS:
+        return None
+    return cached["payload"]
+
+
+def set_live_system_results_cache(date_key, mode, payload):
+    _live_system_results_cache[f"{date_key}:{mode}"] = {
+        "stored_at": time.time(),
+        "payload": payload,
+    }
+    if mode == "both":
+        if "lotteries" in payload:
+            _live_system_results_cache[f"{date_key}:lottery"] = {
+                "stored_at": time.time(),
+                "payload": {
+                    "date": payload["date"],
+                    "mode": "lottery",
+                    "source": payload.get("source", "live-scraper"),
+                    "generatedAt": payload.get("generatedAt"),
+                    "lotteries": payload["lotteries"],
+                },
+            }
+        if "picks" in payload:
+            _live_system_results_cache[f"{date_key}:pick"] = {
+                "stored_at": time.time(),
+                "payload": {
+                    "date": payload["date"],
+                    "mode": "pick",
+                    "source": payload.get("source", "live-scraper"),
+                    "generatedAt": payload.get("generatedAt"),
+                    "picks": payload["picks"],
+                },
+            }
+
+
+def get_composed_live_system_results_cache(date_key, mode):
+    cached_payload = get_fresh_live_system_results_cache(date_key, mode)
+    if cached_payload is not None:
+        cached_copy = dict(cached_payload)
+        cached_copy["servedFrom"] = "response-cache"
+        return cached_copy
+    if mode != "both":
+        return None
+    cached_lottery = get_fresh_live_system_results_cache(date_key, "lottery")
+    cached_pick = get_fresh_live_system_results_cache(date_key, "pick")
+    if cached_lottery is None or cached_pick is None:
+        return None
+    return {
+        "date": date_key,
+        "mode": "both",
+        "source": "live-scraper",
+        "servedFrom": "section-cache",
+        "generatedAt": max(
+            str(cached_lottery.get("generatedAt") or ""),
+            str(cached_pick.get("generatedAt") or ""),
+        ),
+        "lotteries": cached_lottery["lotteries"],
+        "picks": cached_pick["picks"],
+    }
+
+
+def live_served_from(date_key, mode, lottery_rows, pick_rows):
+    if mode == "lottery":
+        return get_live_served_from_flag("lottery") or "inline-scrape"
+    if mode == "pick":
+        return get_live_served_from_flag("pick") or "inline-scrape"
+    if mode == "both":
+        lottery_served_from = get_live_served_from_flag("lottery") or "inline-scrape"
+        pick_served_from = get_live_served_from_flag("pick") or "inline-scrape"
+        if lottery_served_from == "supabase-snapshot" and pick_served_from == "supabase-snapshot":
+            return "supabase-snapshot"
+        if "section-cache" in (lottery_served_from, pick_served_from):
+            return "section-cache"
+        return "inline-scrape"
+    return "inline-scrape"
+
+
+def log_live_request(date_key, mode, served_from, started_at):
+    duration_ms = round((time.perf_counter() - started_at) * 1000, 1)
+    print(
+        f"Results live request date={date_key} mode={mode} servedFrom={served_from} durationMs={duration_ms}"
+    )
+
+
+def set_pick_scrape_cache(date_key, rows):
+    normalized = unique_sorted_pick_results(rows)
+    _pick_scrape_cache[date_key] = {"stored_at": time.time(), "rows": normalized}
+    for game_filter in ("pick3", "pick4"):
+        filtered = [row for row in normalized if row.get("game") == game_filter]
+        _pick_scrape_cache[f"{date_key}:{game_filter}"] = {"stored_at": time.time(), "rows": filtered}
+
+
+def refresh_pick_cache_async(date_key):
+    try:
+        existing_rows = fetch_pick_rows_from_supabase(date_key)
+        rows = unique_sorted_pick_results(scrape_us_picks(date_key, existing_rows=existing_rows))
+        set_pick_scrape_cache(date_key, rows)
+        if rows and SUPABASE_KEY.strip():
+            save_us_picks_to_supabase(date_key, rows)
+    except Exception as error:
+        print(f"Warning: background pick refresh failed for {date_key}: {error}")
+    finally:
+        with _pick_refresh_lock:
+            _pick_refresh_inflight.discard(date_key)
+
+
+def schedule_background_pick_refresh(date_key):
+    with _pick_refresh_lock:
+        now = time.time()
+        if date_key in _pick_refresh_inflight:
+            return False
+        last_started = _pick_refresh_last_started.get(date_key, 0)
+        if now - last_started < PICK_BACKGROUND_REFRESH_MIN_INTERVAL_SECONDS:
+            return False
+        _pick_refresh_inflight.add(date_key)
+        _pick_refresh_last_started[date_key] = now
+    thread = threading.Thread(
+        target=refresh_pick_cache_async,
+        args=(date_key,),
+        daemon=True,
+        name=f"pick-refresh-{date_key}",
+    )
+    thread.start()
+    return True
+
+
+def pick_scrape_cached(date_key, existing_rows=None):
+    now = time.time()
+    cached = _pick_scrape_cache.get(date_key)
+    if cached and now - cached["stored_at"] < SCRAPE_CACHE_TTL_SECONDS:
+        return cached["rows"]
+    rows = scrape_us_picks(date_key, existing_rows=existing_rows)
+    _pick_scrape_cache[date_key] = {"stored_at": now, "rows": rows}
+    return rows
+
+
+def pick_scrape_cached_for_game(date_key, game_filter, existing_rows=None):
+    if game_filter not in ("pick3", "pick4"):
+        return pick_scrape_cached(date_key, existing_rows=existing_rows)
+    cache_key = f"{date_key}:{game_filter}"
+    now = time.time()
+    cached = _pick_scrape_cache.get(cache_key)
+    if cached and now - cached["stored_at"] < SCRAPE_CACHE_TTL_SECONDS:
+        return cached["rows"]
+    rows = scrape_us_picks(date_key, games=(game_filter,), existing_rows=existing_rows)
+    _pick_scrape_cache[cache_key] = {"stored_at": now, "rows": rows}
+    return rows
+
+
+def get_fresh_pick_cache(date_key, game_filter=""):
+    cache_key = f"{date_key}:{game_filter}" if game_filter in ("pick3", "pick4") else date_key
+    cached = _pick_scrape_cache.get(cache_key)
+    if not cached:
+        return []
+    if time.time() - cached["stored_at"] >= SCRAPE_CACHE_TTL_SECONDS:
+        return []
+    return cached["rows"]
+
+
+def lottery_rows_for_request_date(date_key):
+    if should_use_live_scrape():
+        cached_lottery_rows, _ = split_lottery_and_pick_rows(fetch_existing_from_supabase(date_key))
+        cached_lottery_rows = unique_sorted_results(cached_lottery_rows)
+        if cached_lottery_rows and date_key == get_dr_date_str():
+            set_live_served_from_flag("lottery", "supabase-snapshot")
+            schedule_background_lottery_refresh(date_key)
+            return cached_lottery_rows
+        set_live_served_from_flag("lottery", "inline-scrape")
+        fresh_rows = unique_sorted_results(scrape_cached(date_key))
+        if fresh_rows:
+            rows = unique_sorted_results(cached_lottery_rows + fresh_rows)
+            if SUPABASE_KEY.strip():
+                try:
+                    save_to_supabase(date_key, fresh_rows)
+                    cache_results_snapshot(f"lot_results_cache_by_day:{date_key}", rows)
+                except Exception as error:
+                    print(f"Warning: could not save live lottery refresh: {error}")
+            return rows
+        if cached_lottery_rows and date_key == get_dr_date_str():
+            set_live_served_from_flag("lottery", "supabase-snapshot")
+            schedule_background_lottery_refresh(date_key)
+            return cached_lottery_rows
+        return []
+    lottery_rows, _ = split_lottery_and_pick_rows(fetch_existing_from_supabase(date_key))
+    return apply_manual_overrides(date_key, unique_sorted_results(lottery_rows), include_pick=False)
+
+
+def fetch_pick_rows_from_supabase(date_key):
+    if not SUPABASE_KEY.strip():
+        return []
+    params = urllib.parse.urlencode({"key": f"eq.{pick_results_cache_key(date_key)}", "select": "value"})
+    req = urllib.request.Request(
+        f"{SUPABASE_URL}/rest/v1/lotterynet_kv?{params}",
+        headers={
+            "apikey": SUPABASE_KEY,
+            "Authorization": f"Bearer {SUPABASE_KEY}",
+        },
+    )
+    try:
+        resp = urllib.request.urlopen(req, timeout=5)
+        rows = json.loads(resp.read().decode("utf-8"))
+        if rows and rows[0].get("value"):
+            value = rows[0]["value"]
+            if isinstance(value, str):
+                value = json.loads(value)
+            if isinstance(value, list):
+                return value
+            if isinstance(value, dict):
+                nested = value.get("results") or value.get("rows") or []
+                if isinstance(nested, list):
+                    return nested
+    except Exception as error:
+        print(f"Warning: could not fetch pick cache: {error}")
+    return []
+
+
+def pick_rows_for_request_date(date_key, game_filter="", allow_combined_fallback=False):
+    if should_use_live_scrape():
+        if date_key == get_dr_date_str():
+            fresh_cached_rows = get_fresh_pick_cache(date_key, game_filter)
+            if fresh_cached_rows:
+                set_live_served_from_flag("pick", "section-cache")
+                return unique_sorted_pick_results(fresh_cached_rows)
+        existing_rows = fetch_pick_rows_from_supabase(date_key)
+        if existing_rows:
+            set_pick_scrape_cache(date_key, existing_rows)
+            set_live_served_from_flag("pick", "supabase-snapshot")
+            rows = existing_rows
+        else:
+            set_live_served_from_flag("pick", "cache-miss")
+            rows = []
+    else:
+        rows = fetch_pick_rows_from_supabase(date_key)
+        if not rows and allow_combined_fallback:
+            _, rows = split_lottery_and_pick_rows(fetch_existing_from_supabase(date_key))
+    if game_filter in ("pick3", "pick4"):
+        rows = [row for row in rows if row.get("game") == game_filter]
+    return apply_manual_overrides(date_key, unique_sorted_pick_results(rows), include_pick=True)
+
+
+def results_for_request():
+    date_key = normalize_request_date_key(request.args.get("date"))
+    name_filter = (request.args.get("name") or request.args.get("lottery") or "").strip().lower()
+    if should_use_live_scrape():
+        lottery_rows, pick_rows = live_results_sections_for_date(date_key)
+    else:
+        lottery_rows = lottery_rows_for_request_date(date_key)
+        pick_rows = pick_rows_for_request_date(date_key, allow_combined_fallback=True)
+    rows = unique_sorted_results(lottery_rows + pick_rows)
+    if name_filter:
+        rows = [row for row in rows if name_filter in row["name"].lower()]
+    return date_key, rows
+
+
+def pick_results_for_request():
+    date_key = normalize_request_date_key(request.args.get("date"))
+    state_filter = (request.args.get("state") or "").strip().lower()
+    game_filter = (request.args.get("game") or "").strip().lower().replace("-", "")
+    rows = pick_rows_for_request_date(date_key, game_filter)
+    if state_filter:
+        rows = [
+            row for row in rows
+            if state_filter in str(row.get("state", "")).lower()
+            or state_filter == str(row.get("stateCode", "")).lower()
+        ]
+    if game_filter in ("pick3", "pick4"):
+        rows = [row for row in rows if row.get("game") == game_filter]
+    return date_key, rows
+
+
+def live_results_sections_for_date(date_key, include_lottery=True, include_pick=True, game_filter=""):
+    tasks = {}
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        if include_lottery:
+            lottery_fetch = copy_current_request_context(lambda: lottery_rows_for_request_date(date_key))
+            tasks["lottery"] = executor.submit(lottery_fetch)
+        if include_pick:
+            pick_fetch = copy_current_request_context(lambda: pick_rows_for_request_date(date_key, game_filter))
+            tasks["pick"] = executor.submit(pick_fetch)
+    lottery_rows = tasks["lottery"].result() if "lottery" in tasks else []
+    pick_rows = tasks["pick"].result() if "pick" in tasks else []
+    return lottery_rows, pick_rows
+
+
+# --- Manual overrides ---
 
 def manual_results_override_cache_key(date_key):
     return f"manual_results_overrides_by_day:{date_key}"
@@ -157,50 +644,11 @@ def fetch_manual_overrides_from_supabase(date_key):
     params = urllib.parse.urlencode({"key": f"eq.{manual_results_override_cache_key(date_key)}", "select": "value"})
     req = urllib.request.Request(
         f"{SUPABASE_URL}/rest/v1/lotterynet_kv?{params}",
-        headers=supabase_rest_headers(),
+        headers={
+            "apikey": SUPABASE_KEY,
+            "Authorization": f"Bearer {SUPABASE_KEY}",
+        },
     )
-
-
-def fetch_users_state_from_supabase():
-    if not SUPABASE_KEY.strip():
-        return None
-    params = urllib.parse.urlencode({"scope": "eq.global", "select": "payload"})
-    req = urllib.request.Request(
-        f"{SUPABASE_URL}/rest/v1/lotterynet_users_state?{params}",
-        headers=supabase_rest_headers(extra={
-            "Accept": "application/json",
-        }),
-    )
-    resp = urllib.request.urlopen(req, timeout=8)
-    rows = json.loads(resp.read().decode("utf-8"))
-    value = rows[0].get("payload") if rows else None
-    if isinstance(value, str):
-        value = json.loads(value)
-    return value if isinstance(value, dict) else None
-
-
-def save_users_state_to_supabase(payload):
-    if not SUPABASE_KEY.strip():
-        raise RuntimeError("SUPABASE_KEY is not configured")
-    body = json.dumps({
-        "scope": "global",
-        "payload": payload,
-        "updated_at": utc_now_iso(),
-    }).encode("utf-8")
-    req = urllib.request.Request(
-        f"{SUPABASE_URL}/rest/v1/lotterynet_users_state?on_conflict=scope",
-        data=body,
-        headers=supabase_rest_headers(extra={
-            "Content-Type": "application/json",
-            "Prefer": "resolution=merge-duplicates",
-        }),
-        method="POST",
-    )
-    urllib.request.urlopen(req, timeout=15)
-
-
-def utc_now_iso():
-    return datetime.datetime.now(datetime.UTC).isoformat().replace("+00:00", "Z")
     try:
         resp = urllib.request.urlopen(req, timeout=5)
         rows = json.loads(resp.read().decode("utf-8"))
@@ -231,10 +679,12 @@ def save_manual_overrides_to_supabase(date_key, rows):
     req = urllib.request.Request(
         f"{SUPABASE_URL}/rest/v1/lotterynet_kv",
         data=payload,
-        headers=supabase_rest_headers(extra={
+        headers={
             "Content-Type": "application/json",
+            "apikey": SUPABASE_KEY,
+            "Authorization": f"Bearer {SUPABASE_KEY}",
             "Prefer": "resolution=merge-duplicates",
-        }),
+        },
         method="POST",
     )
     urllib.request.urlopen(req, timeout=15)
@@ -343,582 +793,166 @@ def is_admin_role(value):
     return str(value or "").strip().lower() in ADMIN_ROLES
 
 
-def is_internal_secret_valid(request_obj):
-    if not INTERNAL_SHARED_SECRET:
-        return False
-    provided = (request_obj.headers.get("x-lotterynet-admin-secret") or "").strip()
-    return provided == INTERNAL_SHARED_SECRET
+# --- Users state ---
 
-
-def is_public_cache_invalidation_key(cache_key):
-    return any(str(cache_key or "").startswith(prefix) for prefix in PUBLIC_CACHE_INVALIDATION_PREFIXES)
-
-
-def invalidate_results_cache_key(cache_key):
-    cache_key = str(cache_key or "").strip()
-    if not cache_key:
-        return
-    if ":" in cache_key:
-        date_key = cache_key.split(":", 1)[1]
-    else:
-        date_key = ""
-    _scrape_cache.pop(date_key, None)
-    _pick_scrape_cache.pop(date_key, None)
-    _pick_scrape_cache.pop(f"{date_key}:pick3", None)
-    _pick_scrape_cache.pop(f"{date_key}:pick4", None)
-    _manual_override_cache.pop(date_key, None)
-    live_keys = [key for key in list(_live_system_results_cache.keys()) if str(key).startswith(f"{date_key}:")]
-    for live_key in live_keys:
-        _live_system_results_cache.pop(live_key, None)
-
-
-def scrape_cached(date_key):
-    now = time.time()
-    cached = _scrape_cache.get(date_key)
-    if cached and now - cached["stored_at"] < SCRAPE_CACHE_TTL_SECONDS:
-        return cached["rows"]
-    rows = scrape(date_key)
-    _scrape_cache[date_key] = {"stored_at": time.time(), "rows": rows}
-    return rows
-
-
-def set_lottery_scrape_cache(date_key, rows):
-    _scrape_cache[date_key] = {"stored_at": time.time(), "rows": rows}
-
-
-def refresh_lottery_cache_async(date_key):
-    try:
-        rows = unique_sorted_results(scrape(date_key))
-        set_lottery_scrape_cache(date_key, rows)
-        if rows and SUPABASE_KEY.strip():
-            save_to_supabase(date_key, rows)
-    except Exception as error:
-        print(f"Warning: background lottery refresh failed for {date_key}: {error}")
-    finally:
-        with _lottery_refresh_lock:
-            _lottery_refresh_inflight.discard(date_key)
-
-
-def schedule_background_lottery_refresh(date_key):
-    with _lottery_refresh_lock:
-        now = time.time()
-        if date_key in _lottery_refresh_inflight:
-            return False
-        last_started = _lottery_refresh_last_started.get(date_key, 0)
-        if now - last_started < LOTTERY_BACKGROUND_REFRESH_MIN_INTERVAL_SECONDS:
-            return False
-        _lottery_refresh_inflight.add(date_key)
-        _lottery_refresh_last_started[date_key] = now
-    thread = threading.Thread(
-        target=refresh_lottery_cache_async,
-        args=(date_key,),
-        daemon=True,
-        name=f"lottery-refresh-{date_key}",
-    )
-    thread.start()
-    return True
-
-
-def set_live_served_from_flag(section, value):
-    try:
-        setattr(g, f"{section}_live_served_from", value)
-    except RuntimeError:
-        return
-
-
-def get_live_served_from_flag(section):
-    try:
-        return getattr(g, f"{section}_live_served_from", "")
-    except RuntimeError:
-        return ""
-    thread.start()
-    return True
-
-
-def get_fresh_live_system_results_cache(date_key, mode):
-    cache_key = f"{date_key}:{mode}"
-    cached = _live_system_results_cache.get(cache_key)
-    if not cached:
-        return None
-    if time.time() - cached["stored_at"] >= LIVE_RESPONSE_CACHE_TTL_SECONDS:
-        return None
-    return cached["payload"]
-
-
-def set_live_system_results_cache(date_key, mode, payload):
-    _live_system_results_cache[f"{date_key}:{mode}"] = {
-        "stored_at": time.time(),
-        "payload": payload,
-    }
-    if mode == "both":
-        if "lotteries" in payload:
-            _live_system_results_cache[f"{date_key}:lottery"] = {
-                "stored_at": time.time(),
-                "payload": {
-                    "date": payload["date"],
-                    "mode": "lottery",
-                    "source": payload.get("source", "live-scraper"),
-                    "generatedAt": payload.get("generatedAt"),
-                    "lotteries": payload["lotteries"],
-                },
-            }
-        if "picks" in payload:
-            _live_system_results_cache[f"{date_key}:pick"] = {
-                "stored_at": time.time(),
-                "payload": {
-                    "date": payload["date"],
-                    "mode": "pick",
-                    "source": payload.get("source", "live-scraper"),
-                    "generatedAt": payload.get("generatedAt"),
-                    "picks": payload["picks"],
-                },
-            }
-
-
-def get_composed_live_system_results_cache(date_key, mode):
-    cached_payload = get_fresh_live_system_results_cache(date_key, mode)
-    if cached_payload is not None:
-        cached_copy = dict(cached_payload)
-        cached_copy["servedFrom"] = "response-cache"
-        return cached_copy
-    if mode != "both":
-        return None
-    cached_lottery = get_fresh_live_system_results_cache(date_key, "lottery")
-    cached_pick = get_fresh_live_system_results_cache(date_key, "pick")
-    if cached_lottery is None or cached_pick is None:
-        return None
-    return {
-        "date": date_key,
-        "mode": "both",
-        "source": "live-scraper",
-        "servedFrom": "section-cache",
-        "generatedAt": max(
-            str(cached_lottery.get("generatedAt") or ""),
-            str(cached_pick.get("generatedAt") or ""),
-        ),
-        "lotteries": cached_lottery["lotteries"],
-        "picks": cached_pick["picks"],
-    }
-
-
-def live_served_from(date_key, mode, lottery_rows, pick_rows):
-    if mode == "lottery":
-        return get_live_served_from_flag("lottery") or ("supabase-snapshot" if lottery_rows else "cache-miss")
-    if mode == "pick":
-        return get_live_served_from_flag("pick") or ("supabase-snapshot" if pick_rows else "cache-miss")
-    if mode == "both":
-        lottery_served_from = get_live_served_from_flag("lottery") or ("supabase-snapshot" if lottery_rows else "cache-miss")
-        pick_served_from = get_live_served_from_flag("pick") or ("supabase-snapshot" if pick_rows else "cache-miss")
-        if lottery_served_from == "supabase-snapshot" and pick_served_from == "supabase-snapshot":
-            return "supabase-snapshot"
-        if "section-cache" in (lottery_served_from, pick_served_from):
-            return "section-cache"
-        if "inline-scrape" in (lottery_served_from, pick_served_from):
-            return "inline-scrape"
-        if lottery_served_from == "cache-miss" and pick_served_from == "cache-miss":
-            return "cache-miss"
-        if "cache-miss" in (lottery_served_from, pick_served_from):
-            return "cache-miss"
-        return "inline-scrape"
-    return "cache-miss"
-
-
-def log_live_request(date_key, mode, served_from, started_at):
-    duration_ms = round((time.perf_counter() - started_at) * 1000, 1)
-    print(
-        f"Results live request date={date_key} mode={mode} servedFrom={served_from} durationMs={duration_ms}"
-    )
-
-
-def set_pick_scrape_cache(date_key, rows):
-    normalized = unique_sorted_pick_results(rows)
-    _pick_scrape_cache[date_key] = {"stored_at": time.time(), "rows": normalized}
-    for game_filter in ("pick3", "pick4"):
-        filtered = [row for row in normalized if row.get("game") == game_filter]
-        _pick_scrape_cache[f"{date_key}:{game_filter}"] = {"stored_at": time.time(), "rows": filtered}
-
-
-def refresh_pick_cache_async(date_key):
-    try:
-        rows = unique_sorted_pick_results(scrape_us_picks(date_key))
-        set_pick_scrape_cache(date_key, rows)
-        if rows and SUPABASE_KEY.strip():
-            save_us_picks_to_supabase(date_key, rows)
-        _pick_refresh_last_completed[date_key] = utc_now_iso()
-        _pick_refresh_last_error.pop(date_key, None)
-    except Exception as error:
-        _pick_refresh_last_error[date_key] = str(error)
-        print(f"Warning: background pick refresh failed for {date_key}: {error}")
-    finally:
-        with _pick_refresh_lock:
-            _pick_refresh_inflight.discard(date_key)
-
-
-def schedule_background_pick_refresh(date_key, force=False):
-    with _pick_refresh_lock:
-        now = time.time()
-        if date_key in _pick_refresh_inflight:
-            return False
-        last_started = _pick_refresh_last_started.get(date_key, 0)
-        if not force and now - last_started < PICK_BACKGROUND_REFRESH_MIN_INTERVAL_SECONDS:
-            return False
-        _pick_refresh_inflight.add(date_key)
-        _pick_refresh_last_started[date_key] = now
-    thread = threading.Thread(
-        target=refresh_pick_cache_async,
-        args=(date_key,),
-        daemon=True,
-        name=f"pick-refresh-{date_key}",
-    )
-    thread.start()
-    return True
-
-
-def pick_scrape_cached(date_key, existing_rows=None):
-    now = time.time()
-    cached = _pick_scrape_cache.get(date_key)
-    if cached and now - cached["stored_at"] < SCRAPE_CACHE_TTL_SECONDS:
-        return cached["rows"]
-    rows = scrape_us_picks(date_key)
-    _pick_scrape_cache[date_key] = {"stored_at": time.time(), "rows": rows}
-    return rows
-
-
-def pick_scrape_cached_for_game(date_key, game_filter, existing_rows=None):
-    if game_filter not in ("pick3", "pick4"):
-        return pick_scrape_cached(date_key, existing_rows=existing_rows)
-    cache_key = f"{date_key}:{game_filter}"
-    now = time.time()
-    cached = _pick_scrape_cache.get(cache_key)
-    if cached and now - cached["stored_at"] < SCRAPE_CACHE_TTL_SECONDS:
-        return cached["rows"]
-    rows = scrape_us_picks(date_key, games=(game_filter,))
-    _pick_scrape_cache[cache_key] = {"stored_at": time.time(), "rows": rows}
-    return rows
-
-
-def get_fresh_pick_cache(date_key, game_filter=""):
-    cache_key = f"{date_key}:{game_filter}" if game_filter in ("pick3", "pick4") else date_key
-    cached = _pick_scrape_cache.get(cache_key)
-    if not cached:
-        return []
-    if time.time() - cached["stored_at"] >= SCRAPE_CACHE_TTL_SECONDS:
-        return []
-    return cached["rows"]
-
-
-def should_use_live_scrape():
-    if request.args.get("live") != "1":
-        return False
-    inline_setting = str(os.environ.get("ALLOW_INLINE_LIVE_SCRAPE", "")).strip().lower()
-    return inline_setting in ("1", "true", "yes", "on")
-
-
-def public_pick_background_refresh_enabled():
-    setting = str(os.environ.get("ENABLE_PUBLIC_PICK_BACKGROUND_REFRESH", "")).strip().lower()
-    return setting in ("1", "true", "yes", "on")
-
-
-def run_system_scraper_sync_pick_enabled():
-    setting = str(os.environ.get("RUN_SYSTEM_SCRAPER_SYNC_PICK", "")).strip().lower()
-    return setting in ("1", "true", "yes", "on")
-
-
-def results_admin_secret():
-    return str(os.environ.get("RESULTS_ADMIN_SECRET", "")).strip()
-
-
-def require_results_admin_secret():
-    expected = results_admin_secret()
-    if not expected:
-        return None
-    provided = str(request.headers.get("X-Results-Admin-Secret") or request.args.get("secret") or "").strip()
-    if provided == expected:
-        return None
-    return json_utf8({"authorized": False, "error": "Results admin secret required"}, status=401)
-
-
-def normalize_request_date_key(raw_date=None):
-    text = str(raw_date or "").strip()
-    if re.match(r"^\d{2}-\d{2}-\d{4}$", text):
-        return text
-    converted = iso_date_to_dr_date(text)
-    return converted or get_dr_date_str()
-
-
-def cache_rows_list(value):
-    if isinstance(value, list):
-        return value
-    if isinstance(value, dict):
-        nested = value.get("results") or value.get("rows") or []
-        if isinstance(nested, list):
-            return nested
-    return []
-
-
-def lottery_rows_for_request_date(date_key):
-    if should_use_live_scrape():
-        cached_lottery_rows, _ = split_lottery_and_pick_rows(cache_rows_list(fetch_existing_from_supabase(date_key)))
-        cached_lottery_rows = unique_sorted_results(cached_lottery_rows)
-        if cached_lottery_rows and date_key == get_dr_date_str():
-            set_live_served_from_flag("lottery", "supabase-snapshot")
-            schedule_background_lottery_refresh(date_key)
-            return cached_lottery_rows
-        if date_key == get_dr_date_str():
-            schedule_background_lottery_refresh(date_key)
-            set_live_served_from_flag("lottery", "cache-miss")
-            return []
-        set_live_served_from_flag("lottery", "inline-scrape")
-        fresh_rows = unique_sorted_results(scrape_cached(date_key))
-        if fresh_rows:
-            rows = unique_sorted_results(cached_lottery_rows + fresh_rows)
-            if SUPABASE_KEY.strip():
-                try:
-                    save_to_supabase(date_key, fresh_rows)
-                except Exception as error:
-                    print(f"Warning: could not save live lottery refresh: {error}")
-            return rows
-        if cached_lottery_rows:
-            set_live_served_from_flag("lottery", "supabase-snapshot")
-            if date_key == get_dr_date_str():
-                schedule_background_lottery_refresh(date_key)
-            return cached_lottery_rows
-        return []
-    lottery_rows, _ = split_lottery_and_pick_rows(cache_rows_list(fetch_existing_from_supabase(date_key)))
-    return apply_manual_overrides(date_key, unique_sorted_results(lottery_rows), include_pick=False)
-
-
-def fetch_pick_rows_from_supabase(date_key):
+def fetch_users_state_from_supabase():
     if not SUPABASE_KEY.strip():
-        return []
-    params = urllib.parse.urlencode({"key": f"eq.{pick_results_cache_key(date_key)}", "select": "value"})
+        return None
+    params = urllib.parse.urlencode({"scope": "eq.global", "select": "payload"})
     req = urllib.request.Request(
-        f"{SUPABASE_URL}/rest/v1/lotterynet_kv?{params}",
-        headers=supabase_rest_headers(),
+        f"{SUPABASE_URL}/rest/v1/lotterynet_users_state?{params}",
+        headers={
+            "apikey": SUPABASE_KEY,
+            "Authorization": f"Bearer {SUPABASE_KEY}",
+            "Accept": "application/json",
+        },
     )
-    try:
-        resp = urllib.request.urlopen(req, timeout=5)
-        rows = json.loads(resp.read().decode("utf-8"))
-        if rows and rows[0].get("value"):
-            value = rows[0]["value"]
-            if isinstance(value, str):
-                value = json.loads(value)
-            if isinstance(value, list):
-                return value
-            if isinstance(value, dict):
-                nested = value.get("results") or value.get("rows") or []
-                if isinstance(nested, list):
-                    return nested
-    except Exception as error:
-        print(f"Warning: could not fetch pick cache: {error}")
-    return []
+    resp = urllib.request.urlopen(req, timeout=8)
+    rows = json.loads(resp.read().decode("utf-8"))
+    value = rows[0].get("payload") if rows else None
+    if isinstance(value, str):
+        value = json.loads(value)
+    return value if isinstance(value, dict) else None
 
 
-def previous_date_keys(date_key, days=2):
-    try:
-        parsed = datetime.datetime.strptime(str(date_key), "%d-%m-%Y")
-    except ValueError:
-        return []
-    return [
-        (parsed - datetime.timedelta(days=offset)).strftime("%d-%m-%Y")
-        for offset in range(1, int(days) + 1)
-    ]
-
-
-def fetch_recent_pick_catalog_from_supabase(date_key):
-    for previous_date in previous_date_keys(date_key, days=2):
-        rows = fetch_pick_rows_from_supabase(previous_date)
-        if rows:
-            return rows
-    return []
-
-
-def pick_rows_need_targeted_refresh(rows):
-    return any(
-        not str((row or {}).get("number", "")).strip()
-        and str((row or {}).get("status", "")).strip().lower() in ("", "pending")
-        for row in (rows or [])
-        if isinstance(row, dict)
+def save_users_state_to_supabase(payload):
+    if not SUPABASE_KEY.strip():
+        raise RuntimeError("SUPABASE_KEY is not configured")
+    body = json.dumps({
+        "scope": "global",
+        "payload": payload,
+        "updated_at": utc_now_iso(),
+    }).encode("utf-8")
+    req = urllib.request.Request(
+        f"{SUPABASE_URL}/rest/v1/lotterynet_users_state?on_conflict=scope",
+        data=body,
+        headers={
+            "Content-Type": "application/json",
+            "apikey": SUPABASE_KEY,
+            "Authorization": f"Bearer {SUPABASE_KEY}",
+            "Prefer": "resolution=merge-duplicates",
+        },
+        method="POST",
     )
+    urllib.request.urlopen(req, timeout=15)
 
 
-def pick_rows_refresh_improved(before_rows, after_rows):
-    before_missing = sum(
-        1 for row in (before_rows or [])
-        if isinstance(row, dict)
-        and not str(row.get("number", "")).strip()
-        and str(row.get("status", "")).strip().lower() in ("", "pending")
-    )
-    after_missing = sum(
-        1 for row in (after_rows or [])
-        if isinstance(row, dict)
-        and not str(row.get("number", "")).strip()
-        and str(row.get("status", "")).strip().lower() in ("", "pending")
-    )
-    return bool(after_rows) and after_missing < before_missing
+# --- Routes: API v1 ---
+
+@app.route("/api/v1/health", methods=["GET"])
+@app.route("/api/v1/", methods=["GET"])
+def api_v1_root():
+    return jsonify({"ok": True, "service": "lotterynet-results", "version": "v1"})
 
 
-def pick_rows_for_request_date(date_key, game_filter=""):
-    if should_use_live_scrape():
-        if date_key == get_dr_date_str():
-            fresh_cached_rows = get_fresh_pick_cache(date_key, game_filter)
-            if fresh_cached_rows:
-                set_live_served_from_flag("pick", "section-cache")
-                return unique_sorted_pick_results(fresh_cached_rows)
-        existing_rows = fetch_pick_rows_from_supabase(date_key)
-        if existing_rows:
-            set_pick_scrape_cache(date_key, existing_rows)
-            set_live_served_from_flag("pick", "supabase-snapshot")
-            rows = existing_rows
-        else:
-            set_live_served_from_flag("pick", "cache-miss")
-            rows = []
-    else:
-        rows = fetch_pick_rows_from_supabase(date_key)
-        if not rows:
-            fresh_cached_rows = get_fresh_pick_cache(date_key, game_filter)
-            if fresh_cached_rows:
-                rows = fresh_cached_rows
-            elif request.args.get("live") == "1":
-                _, rows = split_lottery_and_pick_rows(cache_rows_list(fetch_existing_from_supabase(date_key)))
-            elif date_key == get_dr_date_str():
-                if public_pick_background_refresh_enabled():
-                    schedule_background_pick_refresh(date_key)
-                _, rows = split_lottery_and_pick_rows(cache_rows_list(fetch_existing_from_supabase(date_key)))
-            else:
-                _, rows = split_lottery_and_pick_rows(cache_rows_list(fetch_existing_from_supabase(date_key)))
-    if game_filter in ("pick3", "pick4"):
-        rows = [row for row in rows if row.get("game") == game_filter]
-    if len(rows) >= MIN_PICK_SNAPSHOT_ROWS_FOR_PENDING_CATALOG and date_key == get_dr_date_str():
-        rows = merge_pending_pick_catalog_rows(date_key, rows, game_filter)
-    rows = apply_manual_overrides(date_key, unique_sorted_pick_results(rows), include_pick=True)
-    return suppress_early_us_pick_results(date_key, rows)
+@app.route("/api/v1/results", methods=["GET"])
+def api_v1_results():
+    date_key, rows = results_for_request()
+    return json_utf8({
+        "date": date_key,
+        "count": len(rows),
+        "source": "live-scraper" if should_use_live_scrape() else ("supabase-cache" if rows else "cache-miss"),
+        "generatedAt": utc_now_iso(),
+        "results": rows,
+    })
 
 
-def unique_sorted_results(rows):
-    by_id = {}
-    for row in rows:
-        normalized = normalize_result_row(row)
-        if not normalized["id"]:
-            continue
-        by_id[normalized["id"]] = normalized
-    return sorted(by_id.values(), key=lambda item: (0, int(item["id"])) if item["id"].isdigit() else (1, item["id"]))
-
-
-def pick_logical_key(row):
-    number = str(row.get("number", "")).strip()
-    state = str(row.get("stateCode") or row.get("state") or "").strip().lower()
-    game = str(row.get("game") or "").strip().lower().replace("-", "")
-    draw = str(row.get("draw") or "").strip().lower()
-    date = str(row.get("date") or "").strip()
-    if not all([number, state, game, draw, date]):
-        return ""
-    return "|".join([date, state, game, draw, number])
-
-
-def pick_row_rank(row):
-    result_id = str(row.get("id") or "")
-    game_name = str(row.get("gameName") or "").strip().lower()
-    rank = 0
-    if result_id.startswith("US-P"):
-        rank += 10
-    if game_name in ("pick 3", "pick 4"):
-        rank += 5
-    if result_id and not result_id.isdigit():
-        rank += 1
-    return rank
-
-
-def unique_sorted_pick_results(rows):
-    by_id = {}
-    by_logical_key = {}
-    for row in rows:
-        normalized = normalize_pick_row(row)
-        result_id = normalized["id"]
-        if not result_id:
-            continue
-        existing = by_id.get(result_id)
-        if existing is None or pick_row_rank(normalized) >= pick_row_rank(existing):
-            by_id[result_id] = normalized
-    for normalized in by_id.values():
-        logical_key = pick_logical_key(normalized)
-        if not logical_key:
-            by_logical_key[normalized["id"]] = normalized
-            continue
-        existing = by_logical_key.get(logical_key)
-        if existing is None or pick_row_rank(normalized) >= pick_row_rank(existing):
-            by_logical_key[logical_key] = normalized
-    return sorted(by_logical_key.values(), key=lambda item: item["id"])
-
-
-def merge_pending_pick_catalog_rows(date_key, rows, game_filter=""):
-    normalized_filter = str(game_filter or "").strip().lower().replace("-", "")
-    catalog_games = [normalized_filter] if normalized_filter in ("pick3", "pick4") else None
-    source_ids = set()
-    for row in rows:
-        if not isinstance(row, dict):
-            continue
-        result_id = normalize_pick_row(row)["id"]
-        if result_id:
-            source_ids.add(result_id)
-    current_rows = unique_sorted_pick_results(rows)
-    existing_ids = source_ids | {str(row.get("id", "")).strip() for row in current_rows}
-    pending_rows = []
-    for template in static_us_pick_catalog_rows(games=catalog_games):
-        result_id = str(template.get("id", "")).strip()
-        if not result_id or result_id in existing_ids:
-            continue
-        row = dict(template)
-        row["date"] = date_key
-        row["number"] = ""
-        row["status"] = "pending"
-        row["source"] = "catalog-pending"
-        pending_rows.append(row)
-    return unique_sorted_pick_results(current_rows + pending_rows)
-
-
-def live_results_sections_for_date(date_key, include_lottery=True, include_pick=True, game_filter=""):
-    if include_lottery and include_pick:
-        lottery_task = copy_current_request_context(lambda: lottery_rows_for_request_date(date_key))
-        pick_task = copy_current_request_context(lambda: pick_rows_for_request_date(date_key, game_filter))
-        with ThreadPoolExecutor(max_workers=2) as executor:
-            lottery_future = executor.submit(lottery_task)
-            pick_future = executor.submit(pick_task)
-            return lottery_future.result(), pick_future.result()
-    lottery_rows = lottery_rows_for_request_date(date_key) if include_lottery else []
-    pick_rows = pick_rows_for_request_date(date_key, game_filter) if include_pick else []
-    return lottery_rows, pick_rows
-
-
-def results_for_request():
+@app.route("/api/v1/results/lottery", methods=["GET"])
+def api_v1_results_lottery():
     date_key = normalize_request_date_key(request.args.get("date"))
-    name_filter = (request.args.get("name") or request.args.get("lottery") or "").strip().lower()
-    if should_use_live_scrape():
-        lottery_rows, pick_rows = live_results_sections_for_date(date_key)
-    else:
-        lottery_rows = lottery_rows_for_request_date(date_key)
-        pick_rows = pick_rows_for_request_date(date_key)
+    lottery_rows = lottery_rows_for_request_date(date_key)
+    return json_utf8({
+        "date": date_key,
+        "section": "lotteries",
+        "count": len(lottery_rows),
+        "source": "live-scraper" if should_use_live_scrape() else ("supabase-cache" if lottery_rows else "cache-miss"),
+        "generatedAt": utc_now_iso(),
+        "results": lottery_rows,
+    })
+
+
+@app.route("/api/v1/results/picks", methods=["GET"])
+def api_v1_results_picks():
+    date_key, rows = pick_results_for_request()
+    return json_utf8({
+        "date": date_key,
+        "section": "picks",
+        "count": len(rows),
+        "source": "live-scraper" if should_use_live_scrape() else ("supabase-cache" if rows else "cache-miss"),
+        "generatedAt": utc_now_iso(),
+        "results": rows,
+    })
+
+
+@app.route("/api/v1/scrape", methods=["GET", "POST"])
+def api_v1_scrape():
+    date_key = normalize_request_date_key(request.args.get("date"))
+    lottery_rows = unique_sorted_results(scrape_cached(date_key))
+    pick_rows = unique_sorted_pick_results(pick_scrape_cached(date_key))
     rows = unique_sorted_results(lottery_rows + pick_rows)
-    if name_filter:
-        rows = [row for row in rows if name_filter in row["name"].lower()]
-    return date_key, rows
+    if not SUPABASE_KEY.strip():
+        return json_utf8({
+            "date": date_key,
+            "count": len(rows),
+            "saved": False,
+            "error": "SUPABASE_KEY is not configured",
+            "results": rows,
+        }, status=503)
+    try:
+        save_to_supabase(date_key, lottery_rows)
+        save_us_picks_to_supabase(date_key, pick_rows)
+        cache_results_snapshot(f"lot_results_cache_by_day:{date_key}", lottery_rows)
+        cache_results_snapshot(f"pick_results_cache_by_day:{date_key}", pick_rows)
+    except Exception as error:
+        return json_utf8({
+            "date": date_key,
+            "count": len(rows),
+            "saved": False,
+            "error": str(error),
+            "results": rows,
+        }, status=500)
+    return json_utf8({
+        "date": date_key,
+        "count": len(rows),
+        "saved": True,
+        "results": rows,
+    })
 
 
-def pick_results_for_request():
+@app.route("/api/v1/scrape/picks", methods=["GET", "POST"])
+def api_v1_scrape_picks():
     date_key = normalize_request_date_key(request.args.get("date"))
-    state_filter = (request.args.get("state") or "").strip().lower()
-    game_filter = (request.args.get("game") or "").strip().lower().replace("-", "")
-    rows = pick_rows_for_request_date(date_key, game_filter)
-    if state_filter:
-        rows = [
-            row for row in rows
-            if state_filter in str(row.get("state", "")).lower()
-            or state_filter == str(row.get("stateCode", "")).lower()
-        ]
-    if game_filter in ("pick3", "pick4"):
-        rows = [row for row in rows if row.get("game") == game_filter]
-    return date_key, rows
+    pick_rows = unique_sorted_pick_results(pick_scrape_cached(date_key))
+    if not SUPABASE_KEY.strip():
+        return json_utf8({
+            "date": date_key,
+            "section": "picks",
+            "count": len(pick_rows),
+            "saved": False,
+            "error": "SUPABASE_KEY is not configured",
+            "results": pick_rows,
+        }, status=503)
+    try:
+        save_us_picks_to_supabase(date_key, pick_rows)
+        cache_results_snapshot(f"pick_results_cache_by_day:{date_key}", pick_rows)
+    except Exception as error:
+        return json_utf8({
+            "date": date_key,
+            "count": len(pick_rows),
+            "saved": False,
+            "error": str(error),
+            "results": pick_rows,
+        }, status=500)
+    return json_utf8({
+        "date": date_key,
+        "section": "picks",
+        "count": len(pick_rows),
+        "saved": True,
+        "results": pick_rows,
+    })
 
+
+# --- Routes: Legacy / existing ---
 
 @app.route("/", methods=["GET"])
 def all_results():
@@ -935,7 +969,7 @@ def results_with_metadata():
         "date": date_key,
         "count": len(rows),
         "source": "live-scraper" if should_use_live_scrape() else ("supabase-cache" if rows else "cache-miss"),
-        "generatedAt": datetime.datetime.now(datetime.UTC).isoformat().replace("+00:00", "Z"),
+        "generatedAt": utc_now_iso(),
         "results": rows,
     })
 
@@ -948,7 +982,7 @@ def pick_results_with_metadata():
         "section": "picks",
         "count": len(rows),
         "source": "live-scraper" if should_use_live_scrape() else ("supabase-cache" if rows else "cache-miss"),
-        "generatedAt": datetime.datetime.now(datetime.UTC).isoformat().replace("+00:00", "Z"),
+        "generatedAt": utc_now_iso(),
         "results": rows,
     })
 
@@ -969,7 +1003,7 @@ def system_results():
         "date": date_key,
         "mode": mode,
         "source": "live-scraper" if should_use_live_scrape() else "supabase-cache",
-        "generatedAt": datetime.datetime.now(datetime.UTC).isoformat().replace("+00:00", "Z"),
+        "generatedAt": utc_now_iso(),
     }
     lottery_rows = []
     pick_rows = []
@@ -994,7 +1028,7 @@ def system_results():
         }
     if mode in ("pick", "both"):
         if not should_use_live_scrape():
-            pick_rows = pick_rows_for_request_date(date_key)
+            pick_rows = pick_rows_for_request_date(date_key, allow_combined_fallback=True)
         payload["picks"] = {
             "section": "picks",
             "count": len(pick_rows),
@@ -1008,6 +1042,157 @@ def system_results():
         set_live_system_results_cache(date_key, mode, payload)
         log_live_request(date_key, mode, payload.get("servedFrom", "inline-scrape"), started_at)
     return json_utf8(payload)
+
+
+@app.route("/run-scraper", methods=["GET", "POST"])
+def run_scraper():
+    date_key = normalize_request_date_key(request.args.get("date"))
+    lottery_rows = unique_sorted_results(scrape_cached(date_key))
+    pick_rows = unique_sorted_pick_results(pick_scrape_cached(date_key))
+    rows = unique_sorted_results(lottery_rows + pick_rows)
+    if not SUPABASE_KEY.strip():
+        return json_utf8({
+            "date": date_key,
+            "count": len(rows),
+            "saved": False,
+            "error": "SUPABASE_KEY is not configured in Render",
+            "results": rows,
+        }, status=503)
+    try:
+        save_to_supabase(date_key, lottery_rows)
+        save_us_picks_to_supabase(date_key, pick_rows)
+        cache_results_snapshot(f"lot_results_cache_by_day:{date_key}", lottery_rows)
+        cache_results_snapshot(f"pick_results_cache_by_day:{date_key}", pick_rows)
+    except Exception as error:
+        return json_utf8({
+            "date": date_key,
+            "count": len(rows),
+            "saved": False,
+            "error": str(error),
+            "results": rows,
+        }, status=500)
+    return json_utf8({
+        "date": date_key,
+        "count": len(rows),
+        "saved": True,
+        "results": rows,
+    })
+
+
+@app.route("/run-system-scraper", methods=["GET", "POST"])
+def run_system_scraper():
+    mode = (request.args.get("mode") or "lottery").strip().lower()
+    if mode not in ("lottery", "pick", "both"):
+        mode = "lottery"
+    date_key = normalize_request_date_key(request.args.get("date"))
+    if not SUPABASE_KEY.strip():
+        return json_utf8({
+            "date": date_key,
+            "mode": mode,
+            "saved": False,
+            "error": "SUPABASE_KEY is not configured in Render",
+        }, status=503)
+    payload = {
+        "date": date_key,
+        "mode": mode,
+        "saved": True,
+        "generatedAt": utc_now_iso(),
+    }
+    try:
+        if mode in ("lottery", "both"):
+            lottery_rows = unique_sorted_results(scrape_cached_isolated(date_key))
+            save_to_supabase(date_key, lottery_rows)
+            payload["lotteries"] = {
+                "count": len(lottery_rows),
+                "results": lottery_rows,
+            }
+        if mode in ("pick", "both"):
+            existing_pick_rows = fetch_pick_rows_from_supabase(date_key)
+            pick_rows = unique_sorted_pick_results(pick_scrape_cached(date_key, existing_rows=existing_pick_rows))
+            save_us_picks_to_supabase(date_key, pick_rows)
+            payload["picks"] = {
+                "count": len(pick_rows),
+                "results": pick_rows,
+            }
+    except Exception as error:
+        payload["saved"] = False
+        payload["error"] = str(error)
+        return json_utf8(payload, status=500)
+    return json_utf8(payload)
+
+
+@app.route("/run-pick-scraper", methods=["GET", "POST"])
+def run_pick_scraper():
+    date_key = normalize_request_date_key(request.args.get("date"))
+    cached_pick_rows = fetch_pick_rows_from_supabase(date_key)
+    if date_key in _pick_refresh_inflight:
+        return json_utf8({
+            "date": date_key,
+            "section": "picks",
+            "count": len(cached_pick_rows),
+            "saved": False,
+            "refreshing": True,
+            "results": unique_sorted_pick_results(cached_pick_rows),
+        }, status=202)
+    with _pick_refresh_lock:
+        _pick_refresh_inflight.add(date_key)
+        _pick_refresh_last_started[date_key] = time.time()
+    try:
+        pick_rows = unique_sorted_pick_results(scrape_us_picks(date_key, existing_rows=cached_pick_rows))
+    finally:
+        with _pick_refresh_lock:
+            _pick_refresh_inflight.discard(date_key)
+    if not SUPABASE_KEY.strip():
+        return json_utf8({
+            "date": date_key,
+            "section": "picks",
+            "count": len(pick_rows),
+            "saved": False,
+            "error": "SUPABASE_KEY is not configured",
+            "results": pick_rows,
+        }, status=503)
+    try:
+        save_us_picks_to_supabase(date_key, pick_rows)
+        cache_results_snapshot(f"pick_results_cache_by_day:{date_key}", pick_rows)
+    except Exception as error:
+        return json_utf8({
+            "date": date_key,
+            "count": len(pick_rows),
+            "saved": False,
+            "error": str(error),
+            "results": pick_rows,
+        }, status=500)
+    return json_utf8({
+        "date": date_key,
+        "section": "picks",
+        "count": len(pick_rows),
+        "saved": True,
+        "results": pick_rows,
+    })
+
+
+@app.route("/health", methods=["GET"])
+def health():
+    return jsonify({"ok": True, "service": "lotterynet-results"})
+
+
+@app.route("/config-check", methods=["GET"])
+def config_check():
+    return jsonify({
+        "ok": True,
+        "service": "lotterynet-results",
+        "supabaseUrlConfigured": bool(SUPABASE_URL.strip()),
+        "supabaseKeyConfigured": bool(SUPABASE_KEY.strip()),
+        "supabaseKeyPrefix": SUPABASE_KEY[:14] if SUPABASE_KEY else "",
+    })
+
+
+@app.route("/search", methods=["GET"])
+def search_lottery_by_name():
+    _, rows = results_for_request()
+    if not request.args.get("name"):
+        return jsonify({"error": "Missing 'name' parameter"}), 400
+    return json_utf8(rows)
 
 
 @app.route("/admin/results/manual-override", methods=["POST"])
@@ -1066,148 +1251,6 @@ def delete_manual_result_override():
     })
 
 
-@app.route("/run-scraper", methods=["GET", "POST"])
-def run_scraper():
-    auth_error = require_results_admin_secret()
-    if auth_error is not None:
-        return auth_error
-    date_key = normalize_request_date_key(request.args.get("date"))
-    lottery_rows = unique_sorted_results(scrape_cached(date_key))
-    pick_rows = unique_sorted_pick_results(pick_scrape_cached(date_key))
-    rows = unique_sorted_results(lottery_rows + pick_rows)
-    if not SUPABASE_KEY.strip():
-        return json_utf8({
-            "date": date_key,
-            "count": len(rows),
-            "saved": False,
-            "error": "SUPABASE_KEY is not configured in Render",
-            "results": rows,
-        }, status=503)
-    try:
-        save_to_supabase(date_key, lottery_rows)
-        save_us_picks_to_supabase(date_key, pick_rows)
-    except Exception as error:
-        return json_utf8({
-            "date": date_key,
-            "count": len(rows),
-            "saved": False,
-            "error": str(error),
-            "results": rows,
-        }, status=500)
-    return json_utf8({
-        "date": date_key,
-        "count": len(rows),
-        "saved": True,
-        "results": rows,
-    })
-
-
-@app.route("/run-system-scraper", methods=["GET", "POST"])
-def run_system_scraper():
-    auth_error = require_results_admin_secret()
-    if auth_error is not None:
-        return auth_error
-    mode = (request.args.get("mode") or "lottery").strip().lower()
-    if mode not in ("lottery", "pick", "both"):
-        mode = "lottery"
-    date_key = normalize_request_date_key(request.args.get("date"))
-    if not SUPABASE_KEY.strip():
-        return json_utf8({
-            "date": date_key,
-            "mode": mode,
-            "saved": False,
-            "error": "SUPABASE_KEY is not configured in Render",
-        }, status=503)
-
-    payload = {
-        "date": date_key,
-        "mode": mode,
-        "saved": True,
-        "generatedAt": datetime.datetime.now(datetime.UTC).isoformat().replace("+00:00", "Z"),
-    }
-    try:
-        if mode in ("lottery", "both"):
-            lottery_rows = unique_sorted_results(scrape_cached(date_key))
-            save_to_supabase(date_key, lottery_rows)
-            payload["lotteries"] = {
-                "count": len(lottery_rows),
-                "results": lottery_rows,
-            }
-        if mode in ("pick", "both"):
-            sync_pick = mode == "pick" or request.args.get("syncPick") == "1" or run_system_scraper_sync_pick_enabled()
-            if sync_pick:
-                pick_rows = unique_sorted_pick_results(pick_scrape_cached(date_key))
-                save_us_picks_to_supabase(date_key, pick_rows)
-                pick_refreshing = False
-            else:
-                pick_rows = unique_sorted_pick_results(fetch_pick_rows_from_supabase(date_key) or get_fresh_pick_cache(date_key))
-                pick_refreshing = schedule_background_pick_refresh(date_key, force=True)
-            payload["picks"] = {
-                "count": len(pick_rows),
-                "refreshing": pick_refreshing,
-                "results": pick_rows,
-            }
-    except Exception as error:
-        payload["saved"] = False
-        payload["error"] = str(error)
-        return json_utf8(payload, status=500)
-    return json_utf8(payload)
-
-
-@app.route("/run-pick-scraper", methods=["GET", "POST"])
-def run_pick_scraper():
-    auth_error = require_results_admin_secret()
-    if auth_error is not None:
-        return auth_error
-    date_key = normalize_request_date_key(request.args.get("date"))
-    sync_requested = request.args.get("sync") == "1" or request_json_body().get("sync") is True
-    if not sync_requested:
-        started = schedule_background_pick_refresh(date_key, force=True)
-        snapshot_rows = fetch_pick_rows_from_supabase(date_key)
-        if not snapshot_rows:
-            snapshot_rows = get_fresh_pick_cache(date_key)
-        payload = {
-            "date": date_key,
-            "section": "picks",
-            "count": len(snapshot_rows),
-            "saved": None,
-            "scheduled": started,
-            "refreshing": started or date_key in _pick_refresh_inflight,
-            "lastCompletedAt": _pick_refresh_last_completed.get(date_key),
-            "lastError": _pick_refresh_last_error.get(date_key),
-            "results": unique_sorted_pick_results(snapshot_rows),
-        }
-        return json_utf8(payload, status=202 if payload["refreshing"] else 200)
-    pick_rows = unique_sorted_pick_results(pick_scrape_cached(date_key))
-    if not SUPABASE_KEY.strip():
-        return json_utf8({
-            "date": date_key,
-            "section": "picks",
-            "count": len(pick_rows),
-            "saved": False,
-            "error": "SUPABASE_KEY is not configured in Render",
-            "results": pick_rows,
-        }, status=503)
-    try:
-        save_us_picks_to_supabase(date_key, pick_rows)
-    except Exception as error:
-        return json_utf8({
-            "date": date_key,
-            "section": "picks",
-            "count": len(pick_rows),
-            "saved": False,
-            "error": str(error),
-            "results": pick_rows,
-        }, status=500)
-    return json_utf8({
-        "date": date_key,
-        "section": "picks",
-        "count": len(pick_rows),
-        "saved": True,
-        "results": pick_rows,
-    })
-
-
 @app.route("/users-state", methods=["GET"])
 def users_state():
     payload = fetch_users_state_from_supabase()
@@ -1240,8 +1283,6 @@ def update_users_state():
 
 @app.route("/internal/supabase-cache-invalidate", methods=["POST"])
 def internal_supabase_cache_invalidate():
-    if not is_internal_secret_valid(request):
-        return json_utf8({"ok": False, "message": "Unauthorized"}, status=401)
     payload = request_json_body()
     keys = []
     direct_key = str(payload.get("key") or "").strip()
@@ -1253,61 +1294,29 @@ def internal_supabase_cache_invalidate():
         candidate_key = str(candidate or "").strip()
         if candidate_key:
             keys.append(candidate_key)
-    invalidated = []
-    rejected = []
+    normalized_keys = []
+    rejected_keys = []
     for cache_key in keys:
-        if cache_key in invalidated:
-            continue
-        if is_public_cache_invalidation_key(cache_key):
-            invalidate_results_cache_key(cache_key)
-            invalidated.append(cache_key)
-        else:
-            rejected.append(cache_key)
-    status_code = 200 if invalidated else 400
+        if cache_key and cache_key not in normalized_keys:
+            if is_public_cache_invalidation_key(cache_key):
+                normalized_keys.append(cache_key)
+                invalidate_results_cache_key(cache_key)
+            else:
+                rejected_keys.append(cache_key)
+    if rejected_keys:
+        return json_utf8({
+            "ok": False,
+            "message": "Invalid cache key for public invalidation.",
+            "rejectedKeys": rejected_keys,
+        }, status=403)
+    if not normalized_keys:
+        if not is_internal_secret_valid(request):
+            return json_utf8({"ok": False, "message": "Shared secret is invalid."}, status=403)
     return json_utf8({
-        "ok": bool(invalidated),
-        "invalidatedKeys": invalidated,
-        "rejectedKeys": rejected,
-    }, status=status_code)
-
-
-@app.route("/health", methods=["GET"])
-def health():
-    return jsonify({"ok": True, "service": "lotterynet-results"})
-
-
-@app.route("/config-check", methods=["GET"])
-def config_check():
-    return jsonify({
         "ok": True,
-        "service": "lotterynet-results",
-        "supabaseUrlConfigured": bool(SUPABASE_URL.strip()),
-        "supabaseKeyConfigured": bool(SUPABASE_KEY.strip()),
-        "supabasePublishableConfigured": bool(SUPABASE_KEY.strip()),
-        "supabaseSecretConfigured": bool(SUPABASE_SECRET_KEY.strip()),
-        "supabaseKeyPrefix": SUPABASE_KEY[:14] if SUPABASE_KEY else "",
-        "supabaseKeyMode": "publishable",
+        "invalidatedKeys": normalized_keys,
+        "count": len(normalized_keys),
     })
-
-
-@app.route("/build-info", methods=["GET"])
-def build_info():
-    return jsonify({
-        "ok": True,
-        "service": "lotterynet-results",
-        "gitCommit": os.environ.get("RENDER_GIT_COMMIT") or os.environ.get("COMMIT_SHA") or "",
-        "gitBranch": os.environ.get("RENDER_GIT_BRANCH") or "",
-        "deployedAt": os.environ.get("RENDER_DEPLOY_CREATED_AT") or "",
-        "cachePolicy": "supabase-snapshot-first",
-    })
-
-
-@app.route("/search", methods=["GET"])
-def search_lottery_by_name():
-    _, rows = results_for_request()
-    if not request.args.get("name"):
-        return jsonify({"error": "Missing 'name' parameter"}), 400
-    return json_utf8(rows)
 
 
 LEGACY_ROUTE_FILTERS = {
@@ -1387,7 +1396,7 @@ def legacy_filtered_route():
         rows = unique_sorted_results(scrape_cached(date_key))
     else:
         lottery_rows = lottery_rows_for_request_date(date_key)
-        pick_rows = pick_rows_for_request_date(date_key)
+        pick_rows = pick_rows_for_request_date(date_key, allow_combined_fallback=True)
         rows = unique_sorted_results(lottery_rows + pick_rows)
     if query:
         normalized_query = query.replace("anguilla", "anguila")
@@ -1396,6 +1405,10 @@ def legacy_filtered_route():
             if normalized_query in str(row.get("name") or row.get("lotteryName") or "").lower().replace("anguilla", "anguila")
         ]
     return json_utf8(rows)
+
+
+# WSGI backward compatibility
+application = app
 
 
 if __name__ == "__main__":
