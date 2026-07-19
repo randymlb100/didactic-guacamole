@@ -303,14 +303,14 @@ def split_lottery_and_pick_rows(rows):
 
 
 def sync_run(coro):
-    """Run an async coroutine synchronously. Safe for CLI scripts, Flask threads, and WSGI."""
-    global _http_client
-    try:
-        loop = asyncio.get_running_loop()
-    except RuntimeError:
-        _renew_http_client()
-        return asyncio.run(coro)
-    # Already in an event loop -- create a new one in a separate thread
+    """Run an async coroutine synchronously in an isolated event-loop thread.
+
+    Render can execute Flask handlers under a runner that already owns an
+    event loop. Running ``asyncio.run`` on that handler thread then fails with
+    ``asyncio.run() cannot be called from a running event loop``. Always using
+    a short-lived worker keeps the scraper safe for CLI, WSGI and async-aware
+    runners while preserving the synchronous API consumed by ``app.py``.
+    """
     import concurrent.futures
     with concurrent.futures.ThreadPoolExecutor(max_workers=1) as pool:
         return pool.submit(_run_with_fresh_client, coro).result()
@@ -1708,6 +1708,19 @@ async def _async_fetch_king_results(date_str, client=None):
             result_id = "23" if "día" in normalized_title or "dia" in normalized_title else "24"
             sessions = item.get("sessions") or []
             last_session = item.get("lastSession") or (sessions[-1] if sessions else {})
+            session_date = str(last_session.get("date") or "")[:10]
+            requested_date = _king_api_date(date_str)[:10]
+            # The provider can return the previous draw when today's session
+            # has not been published yet. Never persist that stale draw under
+            # the requested date.
+            if session_date and session_date != requested_date:
+                logger.warning(
+                    "Ignoring stale King session for %s: requested=%s session=%s",
+                    game_names.get(game_id) or game_id,
+                    requested_date,
+                    session_date,
+                )
+                continue
             score = last_session.get("score") or []
             numbers = score[0] if score and isinstance(score[0], list) else score
             numbers = [str(value).strip().zfill(2) for value in numbers if str(value).strip()]
