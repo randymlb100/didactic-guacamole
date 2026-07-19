@@ -9,7 +9,9 @@ import httpx
 from bs4 import BeautifulSoup
 
 SUPABASE_URL = os.environ.get("SUPABASE_URL", "https://unhoulkujbtsypccpirc.supabase.co")
-SUPABASE_KEY = os.environ.get("SUPABASE_KEY", "")
+# The cron must use the server-side secret key for writes. Keep the publishable
+# key as a fallback for local/dev environments, where writes may be mocked.
+SUPABASE_KEY = os.environ.get("SUPABASE_SECRET_KEY") or os.environ.get("SUPABASE_KEY", "")
 TRACKED_REMOTE_RESULT_IDS = {"23", "24", "27", "28"}
 US_PICK_NORMAL_CATALOG_STATE_CODES = set()
 US_PICK_URLS = {
