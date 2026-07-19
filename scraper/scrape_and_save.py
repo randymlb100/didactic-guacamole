@@ -9,9 +9,10 @@ import httpx
 from bs4 import BeautifulSoup
 
 SUPABASE_URL = os.environ.get("SUPABASE_URL", "https://unhoulkujbtsypccpirc.supabase.co")
-# The cron must use the server-side secret key for writes. Keep the publishable
-# key as a fallback for local/dev environments, where writes may be mocked.
-SUPABASE_KEY = os.environ.get("SUPABASE_SECRET_KEY") or os.environ.get("SUPABASE_KEY", "")
+# Use the publishable key only as the API-key header. The server-side secret is
+# used exclusively as the bearer credential for protected writes.
+SUPABASE_API_KEY = os.environ.get("SUPABASE_KEY", "")
+SUPABASE_KEY = os.environ.get("SUPABASE_SECRET_KEY") or SUPABASE_API_KEY
 TRACKED_REMOTE_RESULT_IDS = {"23", "24", "27", "28"}
 US_PICK_NORMAL_CATALOG_STATE_CODES = set()
 US_PICK_URLS = {
@@ -1853,7 +1854,7 @@ async def _async_fetch_kv_list(key, client=None):
         return []
     try:
         resp = await c.get(url, headers={
-            "apikey": SUPABASE_KEY,
+            "apikey": SUPABASE_API_KEY,
             "Authorization": f"Bearer {SUPABASE_KEY}",
         })
         resp.raise_for_status()
@@ -1944,7 +1945,7 @@ async def _async_save_us_picks_to_supabase(date_str, rows, client=None):
     try:
         resp = await c.post(url, content=payload, headers={
             "Content-Type": "application/json",
-            "apikey": SUPABASE_KEY,
+            "apikey": SUPABASE_API_KEY,
             "Authorization": f"Bearer {SUPABASE_KEY}",
             "Prefer": "resolution=merge-duplicates",
         })
@@ -2017,7 +2018,7 @@ async def _async_save_native_results_table(date_str, merged_list, client=None):
     c = client or get_http_client()
     resp = await c.post(url, content=payload, headers={
         "Content-Type": "application/json",
-        "apikey": SUPABASE_KEY,
+        "apikey": SUPABASE_API_KEY,
         "Authorization": f"Bearer {SUPABASE_KEY}",
         "Prefer": "resolution=merge-duplicates",
     })
@@ -2042,7 +2043,7 @@ async def _async_save_to_supabase(date_str, results, prune_missing_ids=None, cli
     try:
         resp = await c.post(url, content=payload, headers={
             "Content-Type": "application/json",
-            "apikey": SUPABASE_KEY,
+            "apikey": SUPABASE_API_KEY,
             "Authorization": f"Bearer {SUPABASE_KEY}",
             "Prefer": "resolution=merge-duplicates",
         })
