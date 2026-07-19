@@ -2748,6 +2748,63 @@ async def _async_fetch_blocks(url, client):
         return []
 
 
+def _king_api_date(date_str):
+    try:
+        parsed = datetime.datetime.strptime(str(date_str), "%d-%m-%Y")
+        return parsed.strftime("%Y-%m-%dT04:00:00.000Z")
+    except ValueError:
+        return str(date_str)
+
+
+async def _async_fetch_king_results(date_str, client=None):
+    """Fetch King Lottery results from the JSON API used by the current site."""
+    c = client or get_http_client()
+    try:
+        site_resp, sessions_resp = await asyncio.gather(
+            async_http_get("https://api.loteriasdominicanas.com/dominicana/sites/env", client=c, accept_json=True),
+            async_http_get(
+                "https://api.loteriasdominicanas.com/dominicana/sessions?date="
+                + urllib.parse.quote(_king_api_date(date_str)),
+                client=c,
+                accept_json=True,
+            ),
+        )
+        game_names = {}
+        for company in (site_resp.json() or {}).get("siteCompanies", []):
+            for game in company.get("siteGames", []):
+                title = str(game.get("title") or "").strip()
+                game_id = str(game.get("game_id") or "")
+                if "king lottery" in title.lower() and game_id:
+                    game_names[game_id] = title
+
+        sessions_payload = sessions_resp.json()
+        rows = []
+        for item in sessions_payload if isinstance(sessions_payload, list) else []:
+            title = str(game_names.get(str(item.get("game_id") or "")) or "")
+            normalized = title.lower()
+            if "king lottery" not in normalized:
+                continue
+            result_id = "23" if "día" in normalized or "dia" in normalized else "24"
+            sessions = item.get("sessions") or []
+            session = item.get("lastSession") or (sessions[-1] if sessions else {})
+            score = session.get("score") or []
+            values = score[0] if score and isinstance(score[0], list) else score
+            numbers = [str(value).strip().zfill(2) for value in values if str(value).strip()]
+            if len(numbers) >= 3:
+                rows.append({
+                    "id": result_id,
+                    "name": "King Lottery Día" if result_id == "23" else "King Lottery Noche",
+                    "date": date_str,
+                    "number": "-".join(numbers[:3]),
+                    "source": "king-api",
+                    "status": "published",
+                })
+        return rows
+    except Exception as error:
+        logger.warning("King API fetch failed for %s: %s", date_str, error)
+        return []
+
+
 def parse_loterias_dominicanas_blocks(blocks, date_str, wanted_ids=None):
     results = []
     seen_ids = set()
@@ -2893,6 +2950,13 @@ async def _async_fetch_loterias_dominicanas_results(date_str, wanted_ids=None, c
         client=c,
     )
     for row in api_rows:
+        if str(row.get("id")) not in seen_ids:
+            results.append(row)
+            seen_ids.add(str(row.get("id")))
+    king_rows = await _async_fetch_king_results(date_str, client=c)
+    for row in king_rows:
+        if wanted_ids and str(row.get("id")) not in {str(value) for value in wanted_ids}:
+            continue
         if str(row.get("id")) not in seen_ids:
             results.append(row)
             seen_ids.add(str(row.get("id")))
