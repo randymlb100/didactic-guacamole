@@ -9,78 +9,8 @@ import httpx
 from bs4 import BeautifulSoup
 
 SUPABASE_URL = os.environ.get("SUPABASE_URL", "https://unhoulkujbtsypccpirc.supabase.co")
-
-
-def get_supabase_publishable_key_from_env(source_env=None):
-    env = source_env or os.environ
-    for name in (
-        "SUPABASE_PUBLISHABLE_KEY",
-        "SUPABASE_KEY",
-        "SUPABASE_ANON_KEY",
-    ):
-        value = str(env.get(name) or "").strip()
-        if value:
-            return value
-    return ""
-
-
-def get_supabase_secret_key_from_env(source_env=None):
-    env = source_env or os.environ
-    for name in (
-        "SUPABASE_SECRET_KEY",
-        "SUPABASE_SERVICE_ROLE_KEY",
-        "SUPABASE_SERVICE_KEY",
-    ):
-        value = str(env.get(name) or "").strip()
-        if value:
-            return value
-    return ""
-
-
-def get_supabase_key_from_env(source_env=None):
-    return get_supabase_publishable_key_from_env(source_env)
-
-
-def supabase_rest_headers(api_key=None, extra=None):
-    key = str(api_key if api_key is not None else SUPABASE_KEY).strip()
-    headers = dict(extra or {})
-    if not key:
-        return headers
-    headers["apikey"] = key
-    headers["Authorization"] = f"Bearer {key}"
-    return headers
-
-
-def supabase_write_key():
-    return str(SUPABASE_SECRET_KEY or SUPABASE_KEY or "").strip()
-
-
-def supabase_write_headers(extra=None):
-    publishable_key = str(SUPABASE_KEY or "").strip()
-    write_key = supabase_write_key()
-    headers = dict(extra or {})
-    headers.setdefault("User-Agent", "LotteryNet-Render/1.0")
-    if write_key.startswith("sb_secret_"):
-        headers["apikey"] = write_key
-        return headers
-    if publishable_key:
-        headers["apikey"] = publishable_key
-    if write_key:
-        headers["Authorization"] = f"Bearer {write_key}"
-    return headers
-
-
-SUPABASE_KEY = get_supabase_key_from_env()
-SUPABASE_SECRET_KEY = get_supabase_secret_key_from_env()
-TRACKED_REMOTE_RESULT_IDS = {
-    "1", "2", "3", "4", "5", "6", "7", "8", "9", "10",
-    "11", "12", "13", "14", "15", "16", "17",
-    "18",  # New York Noche often completes after the first daily cache write.
-    "23", "24",  # King Lottery
-    "25", "26",  # New Jersey normal draws
-    "27", "28", "29", "30", "31", "32", "33", "34", "35", "36",
-    "37", "38", "39", "40", "41", "42", "43", "44", "45", "46",
-}
+SUPABASE_KEY = os.environ.get("SUPABASE_KEY", "")
+TRACKED_REMOTE_RESULT_IDS = {"23", "24", "27", "28"}
 US_PICK_NORMAL_CATALOG_STATE_CODES = set()
 US_PICK_URLS = {
     "pick3": "https://pick-3.com/winning-numbers",
@@ -98,9 +28,6 @@ US_PICK_SOURCE_NAMES = {
     "pick3": "pick-3.com",
     "pick4": "pick-4.com",
 }
-US_PICK_LEGACY_RESULT_ID_ALIASES = {
-    "US-P3-AZ-PICK-3-DAY": "US-P3-AZ-PICK-3-DRAW",
-}
 US_PICK_SINGLE_DRAW_LABELS = {
     ("pick3", "LA"): "Day Draw",
     ("pick3", "MN"): "Day Draw",
@@ -108,6 +35,10 @@ US_PICK_SINGLE_DRAW_LABELS = {
     ("pick3", "OK"): "Day Draw",
     ("pick3", "WA"): "Day Draw",
     ("pick3", "WV"): "09:00 PM Draw",
+}
+
+US_PICK_LEGACY_RESULT_ID_ALIASES = {
+    "US-P3-AZ-PICK-3-DAY": "US-P3-AZ-PICK-3-DRAW",
 }
 
 US_PICK_SUNDAY_NO_DRAW_ROWS = [
@@ -120,10 +51,13 @@ US_PICK_SUNDAY_NO_DRAW_ROWS = [
     {"id": "US-P4-AR-CASH-4-MIDDAY", "state": "Arkansas", "stateCode": "AR", "game": "pick4", "gameName": "Cash 4", "draw": "Midday Draw"},
     {"id": "US-P4-SC-PICK-4-MIDDAY", "state": "South Carolina", "stateCode": "SC", "game": "pick4", "gameName": "Pick 4", "draw": "Midday Draw"},
     {"id": "US-P4-TN-CASH-4-DAY", "state": "Tennessee", "stateCode": "TN", "game": "pick4", "gameName": "Cash 4", "draw": "Day Draw"},
+    {"id": "US-P4-TN-CASH-4-MORNING", "state": "Tennessee", "stateCode": "TN", "game": "pick4", "gameName": "Cash 4", "draw": "Morning Draw"},
     {"id": "US-P4-TX-DAILY-4-DAY", "state": "Texas", "stateCode": "TX", "game": "pick4", "gameName": "Daily 4", "draw": "Day Draw"},
     {"id": "US-P4-TX-DAILY-4-EVENING", "state": "Texas", "stateCode": "TX", "game": "pick4", "gameName": "Daily 4", "draw": "Evening Draw"},
     {"id": "US-P4-TX-DAILY-4-MORNING", "state": "Texas", "stateCode": "TX", "game": "pick4", "gameName": "Daily 4", "draw": "Morning Draw"},
     {"id": "US-P4-TX-DAILY-4-NIGHT", "state": "Texas", "stateCode": "TX", "game": "pick4", "gameName": "Daily 4", "draw": "Night Draw"},
+    {"id": "US-P3-WV-DAILY-3-DAY", "state": "West Virginia", "stateCode": "WV", "game": "pick3", "gameName": "Daily 3", "draw": "Day Draw"},
+    {"id": "US-P4-WV-DAILY-4-DAY", "state": "West Virginia", "stateCode": "WV", "game": "pick4", "gameName": "Daily 4", "draw": "Day Draw"},
 ]
 
 US_STATE_CODES = {
@@ -176,96 +110,6 @@ US_STATE_CODES = {
     "West Virginia": "WV",
     "Wisconsin": "WI",
     "Wyoming": "WY",
-}
-
-US_PICK_TIME_ZONES_BY_STATE = {
-    "AR": "America/Chicago",
-    "AZ": "America/Phoenix",
-    "CA": "America/Los_Angeles",
-    "CO": "America/Denver",
-    "CT": "America/New_York",
-    "DC": "America/New_York",
-    "DE": "America/New_York",
-    "FL": "America/New_York",
-    "GA": "America/New_York",
-    "IA": "America/Chicago",
-    "ID": "America/Boise",
-    "IL": "America/Chicago",
-    "IN": "America/New_York",
-    "KS": "America/Chicago",
-    "KY": "America/New_York",
-    "LA": "America/Chicago",
-    "MA": "America/New_York",
-    "MD": "America/New_York",
-    "ME": "America/New_York",
-    "MI": "America/New_York",
-    "MN": "America/Chicago",
-    "MO": "America/Chicago",
-    "MS": "America/Chicago",
-    "NC": "America/New_York",
-    "NE": "America/Chicago",
-    "NH": "America/New_York",
-    "NJ": "America/New_York",
-    "NM": "America/Denver",
-    "NY": "America/New_York",
-    "OH": "America/New_York",
-    "OK": "America/Chicago",
-    "OR": "America/Los_Angeles",
-    "PA": "America/New_York",
-    "RI": "America/New_York",
-    "SC": "America/New_York",
-    "TN": "America/Chicago",
-    "TX": "America/Chicago",
-    "VA": "America/New_York",
-    "VT": "America/New_York",
-    "WA": "America/Los_Angeles",
-    "WI": "America/Chicago",
-    "WV": "America/New_York",
-}
-
-US_PICK_DRAW_TIMES_BY_STATE_PERIOD = {
-    ("AR", "MIDDAY"): "12:59 PM", ("AR", "EVENING"): "6:59 PM",
-    ("AZ", "DRAW"): "7:00 PM",
-    ("CA", "DAY"): "1:00 PM", ("CA", "MIDDAY"): "1:00 PM", ("CA", "EVENING"): "6:30 PM",
-    ("CO", "MIDDAY"): "1:30 PM", ("CO", "EVENING"): "7:30 PM",
-    ("CT", "DAY"): "1:57 PM", ("CT", "MIDDAY"): "1:57 PM", ("CT", "NIGHT"): "10:29 PM", ("CT", "EVENING"): "10:29 PM",
-    ("DC", "MIDDAY"): "1:50 PM", ("DC", "EVENING"): "7:50 PM", ("DC", "NIGHT"): "11:30 PM",
-    ("DE", "DAY"): "1:58 PM", ("DE", "MIDDAY"): "1:58 PM", ("DE", "NIGHT"): "7:57 PM", ("DE", "EVENING"): "7:57 PM",
-    ("FL", "MIDDAY"): "1:30 PM", ("FL", "EVENING"): "9:45 PM",
-    ("GA", "MIDDAY"): "12:29 PM", ("GA", "EVENING"): "6:59 PM", ("GA", "NIGHT"): "11:34 PM",
-    ("IA", "MIDDAY"): "12:20 PM", ("IA", "EVENING"): "10:00 PM",
-    ("ID", "DAY"): "1:59 PM", ("ID", "MIDDAY"): "1:59 PM", ("ID", "NIGHT"): "7:59 PM",
-    ("IL", "MIDDAY"): "12:40 PM", ("IL", "MORNING"): "12:40 PM", ("IL", "EVENING"): "9:22 PM",
-    ("IN", "MIDDAY"): "1:20 PM", ("IN", "EVENING"): "11:00 PM",
-    ("KS", "MIDDAY"): "1:10 PM", ("KS", "EVENING"): "9:10 PM",
-    ("KY", "MIDDAY"): "1:20 PM", ("KY", "EVENING"): "11:00 PM",
-    ("LA", "DAY"): "9:59 PM",
-    ("MA", "MIDDAY"): "2:00 PM", ("MA", "EVENING"): "9:00 PM",
-    ("MD", "MIDDAY"): "12:27 PM", ("MD", "EVENING"): "7:56 PM",
-    ("ME", "MIDDAY"): "1:10 PM", ("ME", "EVENING"): "6:50 PM",
-    ("MI", "MIDDAY"): "12:59 PM", ("MI", "EVENING"): "7:29 PM",
-    ("MN", "DAY"): "6:17 PM",
-    ("MO", "DAY"): "12:45 PM", ("MO", "MIDDAY"): "12:45 PM", ("MO", "EVENING"): "8:59 PM",
-    ("MS", "MIDDAY"): "2:30 PM", ("MS", "EVENING"): "9:30 PM",
-    ("NC", "MIDDAY"): "3:00 PM", ("NC", "EVENING"): "11:22 PM",
-    ("NE", "DAY"): "10:00 PM",
-    ("NH", "MIDDAY"): "1:10 PM", ("NH", "EVENING"): "6:55 PM",
-    ("NJ", "MIDDAY"): "12:59 PM", ("NJ", "EVENING"): "10:57 PM",
-    ("NM", "MIDDAY"): "1:00 PM", ("NM", "EVENING"): "9:30 PM",
-    ("NY", "MIDDAY"): "2:30 PM", ("NY", "EVENING"): "10:30 PM",
-    ("OH", "MIDDAY"): "12:29 PM", ("OH", "EVENING"): "7:29 PM",
-    ("OK", "DAY"): "9:00 PM",
-    ("OR", "EVENING"): "7:00 PM",
-    ("PA", "DAY"): "1:35 PM", ("PA", "MIDDAY"): "1:35 PM", ("PA", "EVENING"): "6:59 PM",
-    ("RI", "MIDDAY"): "1:20 PM", ("RI", "EVENING"): "6:59 PM",
-    ("SC", "MIDDAY"): "12:59 PM", ("SC", "EVENING"): "6:59 PM",
-    ("TN", "MORNING"): "9:28 AM", ("TN", "DAY"): "12:28 PM", ("TN", "MIDDAY"): "12:28 PM", ("TN", "EVENING"): "6:28 PM", ("TN", "6:28 PM"): "6:28 PM",
-    ("TX", "MORNING"): "10:00 AM", ("TX", "DAY"): "12:27 PM", ("TX", "EVENING"): "6:00 PM", ("TX", "NIGHT"): "10:12 PM",
-    ("VA", "DAY"): "1:59 PM", ("VA", "MIDDAY"): "1:59 PM", ("VA", "NIGHT"): "11:00 PM", ("VA", "EVENING"): "11:00 PM",
-    ("VT", "MIDDAY"): "1:10 PM", ("VT", "EVENING"): "6:59 PM",
-    ("WA", "DAY"): "8:00 PM",
-    ("WI", "MIDDAY"): "1:30 PM", ("WI", "1:30 PM"): "1:30 PM", ("WI", "EVENING"): "9:00 PM", ("WI", "9:00 PM"): "9:00 PM",
-    ("WV", "DAY"): "6:59 PM", ("WV", "EVENING"): "9:00 PM", ("WV", "9:00 PM"): "9:00 PM",
 }
 
 # Mapa: nombre en loteriasdominicanas.com → id de lotería en la app
@@ -403,26 +247,6 @@ async def async_http_get(url, client=None, accept_json=False):
                 raise
 
 
-async def async_lotteryusa_http_get(url, client=None):
-    c = client or get_http_client()
-    max_attempts = max(1, int(os.environ.get("LOTTERYUSA_PICK_RETRY_MAX", "1")))
-    timeout_seconds = max(1.0, float(os.environ.get("LOTTERYUSA_PICK_TIMEOUT", "18")))
-    request_timeout = httpx.Timeout(timeout_seconds, connect=min(5.0, timeout_seconds))
-    for attempt in range(1, max_attempts + 1):
-        try:
-            resp = await c.get(url, timeout=request_timeout)
-            if resp.is_error:
-                resp.raise_for_status()
-            return resp
-        except httpx.HTTPStatusError:
-            raise
-        except (httpx.RequestError, httpx.TimeoutException) as exc:
-            logger.warning("Lottery USA HTTP error fetching %s (attempt %d/%d): %s", url, attempt, max_attempts, exc)
-            if attempt >= max_attempts:
-                raise
-            await asyncio.sleep(_RETRY_BASE_DELAY * (2 ** (attempt - 1)))
-
-
 async def async_http_post(url, data_bytes, content_type="application/x-www-form-urlencoded; charset=UTF-8", client=None):
     c = client or get_http_client()
     headers = {"Content-Type": content_type}
@@ -452,128 +276,6 @@ async def async_http_post(url, data_bytes, content_type="application/x-www-form-
                 raise
 
 
-async def async_supabase_rest_post(url, payload, headers, client=None, label="Supabase write"):
-    c = client or get_http_client()
-    for attempt in range(1, _RETRY_MAX + 1):
-        try:
-            resp = await c.post(url, content=payload, headers=headers)
-            resp.raise_for_status()
-            return resp
-        except httpx.HTTPStatusError as exc:
-            status = exc.response.status_code
-            retryable = status >= 500
-            if not retryable or attempt >= _RETRY_MAX:
-                raise
-            logger.warning(
-                "%s failed with HTTP %d (attempt %d/%d): %s",
-                label,
-                status,
-                attempt,
-                _RETRY_MAX,
-                exc.response.text,
-            )
-            await asyncio.sleep(_RETRY_BASE_DELAY * (2 ** (attempt - 1)))
-        except (httpx.RequestError, httpx.TimeoutException) as exc:
-            if attempt >= _RETRY_MAX:
-                raise
-            logger.warning(
-                "%s request failed (attempt %d/%d): %s",
-                label,
-                attempt,
-                _RETRY_MAX,
-                exc,
-            )
-            await asyncio.sleep(_RETRY_BASE_DELAY * (2 ** (attempt - 1)))
-
-
-async def async_supabase_rest_patch(url, payload, headers, client=None, label="Supabase update"):
-    c = client or get_http_client()
-    for attempt in range(1, _RETRY_MAX + 1):
-        try:
-            resp = await c.patch(url, content=payload, headers=headers)
-            resp.raise_for_status()
-            return resp
-        except httpx.HTTPStatusError as exc:
-            status = exc.response.status_code
-            retryable = status >= 500
-            if not retryable or attempt >= _RETRY_MAX:
-                raise
-            logger.warning(
-                "%s failed with HTTP %d (attempt %d/%d): %s",
-                label,
-                status,
-                attempt,
-                _RETRY_MAX,
-                exc.response.text,
-            )
-            await asyncio.sleep(_RETRY_BASE_DELAY * (2 ** (attempt - 1)))
-        except (httpx.RequestError, httpx.TimeoutException) as exc:
-            if attempt >= _RETRY_MAX:
-                raise
-            logger.warning(
-                "%s request failed (attempt %d/%d): %s",
-                label,
-                attempt,
-                _RETRY_MAX,
-                exc,
-            )
-            await asyncio.sleep(_RETRY_BASE_DELAY * (2 ** (attempt - 1)))
-
-
-async def async_supabase_kv_save(cache_key, value, client=None, label="Supabase KV save"):
-    c = client or get_http_client()
-    now = utc_now_iso()
-    rpc_url = f"{SUPABASE_URL}/rest/v1/rpc/ln_save_lotterynet_kv"
-    rpc_payload = json.dumps({
-        "p_key": cache_key,
-        "p_value": value,
-        "p_upd": now,
-    }).encode("utf-8")
-    try:
-        return await async_supabase_rest_post(
-            rpc_url,
-            payload=rpc_payload,
-            headers=supabase_rest_headers(extra={
-                "Content-Type": "application/json",
-                "Prefer": "return=minimal",
-            }),
-            client=c,
-            label=f"{label} rpc",
-        )
-    except httpx.HTTPStatusError as exc:
-        logger.warning("%s rpc failed, falling back to REST table write: %s", label, exc.response.text)
-
-    update_url = f"{SUPABASE_URL}/rest/v1/lotterynet_kv?key=eq.{urllib.parse.quote(cache_key, safe='')}"
-    update_payload = json.dumps({"value": value, "upd": now}).encode("utf-8")
-    try:
-        resp = await async_supabase_rest_patch(
-            update_url,
-            payload=update_payload,
-            headers=supabase_rest_headers(extra={
-                "Content-Type": "application/json",
-                "Prefer": "return=minimal",
-            }),
-            client=c,
-            label=f"{label} update",
-        )
-        if resp.status_code != 404:
-            return resp
-    except httpx.HTTPStatusError as exc:
-        if exc.response.status_code != 404:
-            raise
-
-    return await async_supabase_rest_post(
-        f"{SUPABASE_URL}/rest/v1/lotterynet_kv",
-        payload=json.dumps({"key": cache_key, "value": value, "upd": now}).encode("utf-8"),
-        headers=supabase_rest_headers(extra={
-            "Content-Type": "application/json",
-            "Prefer": "resolution=merge-duplicates,return=minimal",
-        }),
-        client=c,
-        label=f"{label} upsert",
-    )
-
-
 def is_pick_result_row(row):
     row_id = str(row.get("id", "")).upper()
     name = str(row.get("name", "")).lower()
@@ -601,14 +303,14 @@ def split_lottery_and_pick_rows(rows):
 
 
 def sync_run(coro):
-    """Run an async coroutine synchronously. Safe for CLI scripts, Flask threads, and WSGI."""
-    global _http_client
-    try:
-        loop = asyncio.get_running_loop()
-    except RuntimeError:
-        _renew_http_client()
-        return asyncio.run(coro)
-    # Already in an event loop -- create a new one in a separate thread
+    """Run an async coroutine synchronously in an isolated event-loop thread.
+
+    Render can execute Flask handlers under a runner that already owns an
+    event loop. Running ``asyncio.run`` on that handler thread then fails with
+    ``asyncio.run() cannot be called from a running event loop``. Always using
+    a short-lived worker keeps the scraper safe for CLI, WSGI and async-aware
+    runners while preserving the synchronous API consumed by ``app.py``.
+    """
     import concurrent.futures
     with concurrent.futures.ThreadPoolExecutor(max_workers=1) as pool:
         return pool.submit(_run_with_fresh_client, coro).result()
@@ -647,12 +349,9 @@ def get_dr_now():
     """Current Dominican Republic time (AST / UTC-4)."""
     return datetime.datetime.utcnow() - datetime.timedelta(hours=4)
 
-def get_et_now():
-    return datetime.datetime.now(ZoneInfo("America/New_York"))
-
-def get_et_date_str(now_et=None):
+def get_et_date_str():
     """Today's date in US/Eastern timezone (proper DST handling)."""
-    return (now_et or get_et_now()).strftime("%d-%m-%Y")
+    return datetime.datetime.now(ZoneInfo("America/New_York")).strftime("%d-%m-%Y")
 
 def get_dr_date_str():
     """Today's date in Dominican Republic / Atlantic Standard Time (UTC-4)."""
@@ -661,69 +360,6 @@ def get_dr_date_str():
 def get_dr_date_str_for_offset(days_ago):
     """Date string in DR time for today/ayer/antes de ayer style backfills."""
     return (get_dr_now() - datetime.timedelta(days=int(days_ago))).strftime("%d-%m-%Y")
-
-
-def default_scrape_dates():
-    return [get_dr_date_str_for_offset(offset) for offset in range(3)]
-
-
-def should_require_supabase_save(target_date, current_date, explicit_dates=False):
-    return bool(explicit_dates) or str(target_date) == str(current_date)
-
-
-def should_continue_after_supabase_save_error(save_required, explicit_dates=False):
-    return (not explicit_dates) or (not save_required)
-
-
-def missing_us_pick_catalog_ids(existing_pick_rows, catalog_rows=None):
-    expected_ids = {
-        str(row.get("id") or "").strip()
-        for row in (catalog_rows if catalog_rows is not None else static_us_pick_catalog_rows())
-        if catalog_row_game(row) in {"pick3", "pick4"} and str(row.get("id") or "").strip()
-    }
-    if not expected_ids:
-        return []
-    available_ids = {
-        str(row.get("id") or "").strip()
-        for row in (existing_pick_rows or [])
-        if str(row.get("id") or "").strip()
-    }
-    return sorted(expected_ids - available_ids)
-
-
-def non_current_backfill_should_run(existing_rd_rows, existing_pick_rows):
-    missing_pick_ids = missing_us_pick_catalog_ids(existing_pick_rows)
-    return (
-        bool(missing_tracked_result_ids(existing_rd_rows))
-        or bool(missing_pick_ids)
-        or any(us_pick_row_needs_refresh(row) for row in (existing_pick_rows or []))
-    )
-
-
-async def async_save_result_draws_payload(date_str, rows, source, client=None):
-    c = client or get_http_client()
-    resp = await async_supabase_rest_post(
-        f"{SUPABASE_URL}/rest/v1/rpc/lotterynet_upsert_result_draws_from_payload",
-        payload=json.dumps({
-            "p_result_day_key": date_str,
-            "p_payload": rows or [],
-            "p_source": source,
-        }, ensure_ascii=False).encode("utf-8"),
-        headers=supabase_write_headers(extra={
-            "Content-Type": "application/json",
-            "Prefer": "return=minimal",
-        }),
-        client=c,
-        label=f"Supabase result_draws save for {date_str} ({source})",
-    )
-    logger.info(
-        "Saved %d %s result_draws rows for %s -> HTTP %s",
-        len(rows or []),
-        source,
-        date_str,
-        resp.status_code,
-    )
-    return resp
 
 
 def parse_miloteria_date(raw):
@@ -748,182 +384,6 @@ def parse_lotteryusa_date(raw):
     except ValueError:
         return ""
     return parsed.strftime("%d-%m-%Y")
-
-
-LOTTERYUSA_BASE_URL = "https://www.lotteryusa.com"
-US_PICK_STATIC_CATALOG_PATH = os.path.join(os.path.dirname(__file__), "us_pick_catalog.json")
-_static_us_pick_catalog = None
-LOTTERYUSA_STATE_SLUG_OVERRIDES = {
-    "DC": "district-of-columbia",
-    "Washington DC": "district-of-columbia",
-}
-
-
-def lotteryusa_slug(raw):
-    text = str(raw or "").strip().lower()
-    text = text.replace("&", "and")
-    text = re.sub(r"[^a-z0-9]+", "-", text)
-    return text.strip("-")
-
-
-def lotteryusa_state_slug(state_name):
-    state = str(state_name or "").strip()
-    return LOTTERYUSA_STATE_SLUG_OVERRIDES.get(state) or lotteryusa_slug(state)
-
-
-def state_name_from_code(state_code):
-    code = str(state_code or "").strip().upper()
-    for state_name, candidate_code in US_STATE_CODES.items():
-        if candidate_code == code and len(state_name) > 2:
-            return "Washington DC" if state_name == "DC" else state_name
-    return ""
-
-
-def normalize_static_us_pick_catalog_row(row):
-    normalized = enrich_us_pick_result_row(dict(row))
-    game = catalog_row_game(normalized)
-    if not normalized.get("state") and normalized.get("stateCode"):
-        normalized["state"] = state_name_from_code(normalized.get("stateCode"))
-    if not normalized.get("gameName") and game:
-        normalized["gameName"] = "Pick 3" if game == "pick3" else "Pick 4"
-    if not normalized.get("name"):
-        normalized["name"] = " ".join(
-            part for part in (
-                normalized.get("state"),
-                normalized.get("gameName"),
-                normalized.get("draw"),
-            )
-            if part
-        )
-    normalized["game"] = game
-    normalized.setdefault("playTypes", ["straight", "box"])
-    return normalized
-
-
-def static_us_pick_catalog_rows(games=None):
-    global _static_us_pick_catalog
-    if _static_us_pick_catalog is None:
-        try:
-            with open(US_PICK_STATIC_CATALOG_PATH, "r", encoding="utf-8") as catalog_file:
-                raw_rows = json.load(catalog_file)
-        except Exception as error:
-            logger.warning("Could not load static US pick catalog: %s", error)
-            raw_rows = []
-        _static_us_pick_catalog = [
-            normalize_static_us_pick_catalog_row(row)
-            for row in raw_rows
-            if str(row.get("id", "")).strip()
-        ]
-    selected_games = {normalize_us_pick_game(game) for game in (games or []) if normalize_us_pick_game(game)}
-    if not selected_games:
-        return list(_static_us_pick_catalog)
-    return [row for row in _static_us_pick_catalog if catalog_row_game(row) in selected_games]
-
-
-def lotteryusa_catalog_row_url(row):
-    raw_url = str(
-        row.get("lotteryUsaUrl")
-        or row.get("lotteryusaUrl")
-        or row.get("sourceUrl")
-        or ""
-    ).strip()
-    if not raw_url:
-        return ""
-    url = urllib.parse.urljoin(LOTTERYUSA_BASE_URL, raw_url)
-    parsed = urllib.parse.urlparse(url)
-    if parsed.scheme not in {"http", "https"} or parsed.netloc != "www.lotteryusa.com":
-        return ""
-    return url
-
-
-def normalize_lotteryusa_draw_label(raw):
-    text = str(raw or "").strip()
-    text = re.sub(r"\s+", " ", text)
-    text = text.replace("Mid-day", "Midday").replace("Mid Day", "Midday")
-    if not text:
-        return ""
-    for token, label in (
-        ("Midday", "Midday Draw"),
-        ("Morning", "Morning Draw"),
-        ("Afternoon", "Afternoon Draw"),
-        ("Evening", "Evening Draw"),
-        ("Night", "Night Draw"),
-        ("Day", "Day Draw"),
-    ):
-        if re.search(rf"\b{token}\b", text, re.I):
-            return label
-    match = re.search(r"\b(\d{1,2}:?\d{0,2}\s*(?:A\.?M\.?|P\.?M\.?))\b", text, re.I)
-    if match:
-        value = match.group(1).upper().replace(" ", "").replace(".", "")
-        if ":" not in value:
-            value = value[:-2] + ":00" + value[-2:]
-        return f"{value} Draw"
-    return "Draw"
-
-
-def strip_lotteryusa_draw_words(raw):
-    text = str(raw or "").strip()
-    text = re.sub(r"^Go to\s+", "", text, flags=re.I)
-    text = re.sub(r"\b(Mid[- ]?day|Morning|Afternoon|Evening|Night|Day)\b", "", text, flags=re.I)
-    text = re.sub(r"\b\d{1,2}:?\d{0,2}\s*(?:A\.?M\.?|P\.?M\.?)\b", "", text, flags=re.I)
-    text = text.replace("-", " ")
-    return re.sub(r"\s+", " ", text).strip()
-
-
-def normalize_lotteryusa_game_name(raw):
-    text = strip_lotteryusa_draw_words(raw)
-    text = text.replace("Play3", "Play 3")
-    text = text.replace("Play4", "Play 4")
-    text = text.replace("DC-3", "3").replace("DC 3", "3")
-    text = text.replace("DC-4", "Match 4").replace("DC 4", "Match 4")
-    return text.strip()
-
-
-def lotteryusa_pick_game_from_label(raw):
-    text = str(raw or "").lower()
-    if any(token in text for token in ("pick 4", "pick-4", "cash 4", "cash-4", "daily 4", "daily-4", "play4", "play 4", "play-4", "win 4", "win-4", "match 4", "match-4", "dc-4", "dc 4")):
-        return "pick4"
-    if any(token in text for token in ("pick 3", "pick-3", "cash 3", "cash-3", "daily 3", "daily-3", "play 3", "play-3", "play3", "numbers", "dc-3", "dc 3")):
-        return "pick3"
-    return ""
-
-
-def parse_lotteryusa_state_pick_sources(html_text, state_name, state_code):
-    soup = BeautifulSoup(str(html_text or ""), "html.parser")
-    sources = []
-    seen_urls = set()
-    state_path = f"/{lotteryusa_state_slug(state_name)}/"
-    for anchor in soup.find_all("a", href=True):
-        label = re.sub(r"\s+", " ", anchor.get_text(" ", strip=True)).strip()
-        label = re.sub(r"^Go to\s+", "", label, flags=re.I).strip()
-        game = lotteryusa_pick_game_from_label(label)
-        if str(state_code).upper() in {"MA", "RI"} and "numbers" in label.lower():
-            game = "pick4"
-        if not game:
-            continue
-        href = str(anchor.get("href") or "").strip()
-        if not href or "/quick-picks" in href:
-            continue
-        url = urllib.parse.urljoin(LOTTERYUSA_BASE_URL, href)
-        parsed_url = urllib.parse.urlparse(url)
-        if parsed_url.netloc != "www.lotteryusa.com" or not parsed_url.path.startswith(state_path):
-            continue
-        if url in seen_urls:
-            continue
-        seen_urls.add(url)
-        game_name = normalize_lotteryusa_game_name(label)
-        if not game_name:
-            continue
-        sources.append({
-            "url": url,
-            "state": state_name,
-            "stateCode": state_code,
-            "game": game,
-            "gameName": game_name,
-            "draw": normalize_lotteryusa_draw_label(label),
-            "digits": 3 if game == "pick3" else 4,
-        })
-    return sources
 
 
 def slug_token(raw):
@@ -1491,40 +951,14 @@ def fetch_us_pick_overview(game):
 
 
 async def _async_scrape_us_picks(date_str=None, games=None, existing_rows=None, client=None):
+    _ = existing_rows  # kept for API compat; scraper always fetches fresh
     target_date = date_str or get_dr_date_str()
     c = client or get_http_client()
     rows_by_id = {}
     game_list = games or ("pick3", "pick4")
-    catalog_source_rows = existing_rows or static_us_pick_catalog_rows(games=game_list)
-    existing_catalog = [
-        enrich_us_pick_result_row(dict(row))
-        for row in (catalog_source_rows or [])
-        if catalog_row_game(row) in {"pick3", "pick4"}
-    ]
 
     async def _process_game(game):
         game_rows_by_id = {}
-        catalog_rows = [row for row in existing_catalog if catalog_row_game(row) == normalize_us_pick_game(game)]
-        for catalog_row in await _async_fetch_lotteryusa_pick_catalog_rows(target_date, catalog_rows, client=c):
-            game_rows_by_id[catalog_row["id"]] = catalog_row
-        if catalog_rows:
-            missing_catalog_ids = [
-                str(row.get("id", "")).strip()
-                for row in catalog_rows
-                if str(row.get("id", "")).strip() and str(row.get("id", "")).strip() not in game_rows_by_id
-            ]
-            if missing_catalog_ids:
-                for fallback_row in await _async_fetch_lotteryusa_pick_fallbacks(
-                    target_date,
-                    ids=missing_catalog_ids,
-                    client=c,
-                ):
-                    previous = game_rows_by_id.get(fallback_row["id"]) or {}
-                    merged = dict(previous)
-                    merged.update(fallback_row)
-                    merged["source"] = "lotteryusa.com"
-                    game_rows_by_id[fallback_row["id"]] = enrich_us_pick_result_row(merged)
-            return game_rows_by_id
         overview_rows = await _async_fetch_us_pick_overview(game, client=c)
         if target_date:
             history_keys = set()
@@ -1536,9 +970,18 @@ async def _async_scrape_us_picks(date_str=None, games=None, existing_rows=None, 
                 if row.get("id"):
                     overview_rows_by_id[row["id"]] = row
 
-            # Fetch all state history pages in parallel
+            # Fetch state history pages in parallel with smart time-filtering to avoid timeouts
+            current_hour = datetime.datetime.now(ZoneInfo("America/New_York")).hour
             history_tasks = []
             for row in state_rows.values():
+                draw_type = str(row.get("draw", "")).lower()
+                # 1. Early morning: No US states have draw results before 12:00 PM ET for today
+                if current_hour < 12 and target_date == get_et_date_str():
+                    continue
+                # 2. Daytime: Ignore evening and night draws if running before 7:00 PM ET
+                if current_hour < 19 and target_date == get_et_date_str():
+                    if "evening" in draw_type or "night" in draw_type or "09:00" in draw_type:
+                        continue
                 history_tasks.append(
                     _async_fetch_us_pick_state_history(
                         game,
@@ -1551,8 +994,16 @@ async def _async_scrape_us_picks(date_str=None, games=None, existing_rows=None, 
                 )
             nj_home_task = _async_fetch_new_jersey_pick_home(game, client=c)
             nj_lotteryusa_task = _async_fetch_nj_picks_lotteryusa(target_date, client=c)
+            
+            if history_tasks:
+                history_gather = asyncio.gather(*history_tasks)
+            else:
+                async def empty_gather():
+                    return []
+                history_gather = empty_gather()
+                
             state_history_results, nj_rows, nj_lotteryusa_rows = await asyncio.gather(
-                asyncio.gather(*history_tasks),
+                history_gather,
                 nj_home_task,
                 nj_lotteryusa_task,
             )
@@ -1590,15 +1041,20 @@ async def _async_scrape_us_picks(date_str=None, games=None, existing_rows=None, 
             for row in overview_rows:
                 state_key = (row.get("stateCode"), row.get("gameName"))
                 if state_key not in history_keys:
-                    overview_date = str(row.get("date", "")).strip()
+                    overview_date = str(row.get("date") or "").strip()
+                    overview_number = str(row.get("number") or "").strip()
                     if overview_date == target_date:
                         game_rows_by_id[row["id"]] = row
+                    elif not overview_number:
+                        pending_row = dict(row)
+                        pending_row["date"] = target_date
+                        game_rows_by_id[pending_row["id"]] = pending_row
                     else:
-                        pending = dict(row)
-                        pending["date"] = target_date
-                        pending["number"] = ""
-                        pending["status"] = "pending"
-                        game_rows_by_id[pending["id"]] = pending
+                        pending_row = dict(row)
+                        pending_row["date"] = target_date
+                        pending_row["number"] = ""
+                        pending_row["status"] = "pending"
+                        game_rows_by_id[pending_row["id"]] = pending_row
 
             # Extra states not listed in overview but with working subdomains
             extra_states = {"pick3": {"NH"}, "pick4": set()}
@@ -1621,15 +1077,10 @@ async def _async_scrape_us_picks(date_str=None, games=None, existing_rows=None, 
                 for result_id, row in game_rows_by_id.items()
                 if not str(row.get("number", "")).strip()
             )
-            if missing_ids or not game_rows_by_id:
-                fallback_ids = missing_ids or [
-                    result_id
-                    for result_id, source in LOTTERYUSA_PICK_FALLBACK_SOURCES.items()
-                    if normalize_us_pick_game(source.get("game")) == normalize_us_pick_game(game)
-                ]
+            if missing_ids:
                 for fallback_row in await _async_fetch_lotteryusa_pick_fallbacks(
                     target_date,
-                    ids=fallback_ids,
+                    ids=missing_ids,
                     client=c,
                 ):
                     previous = game_rows_by_id.get(fallback_row["id"]) or {}
@@ -1653,7 +1104,6 @@ async def _async_scrape_us_picks(date_str=None, games=None, existing_rows=None, 
     rows = list(rows_by_id.values())
     if target_date:
         rows = [row for row in rows if row.get("date") == target_date]
-        rows = sanitize_unreleased_nj_pick_rows(rows, target_date)
         append_us_pick_calendar_no_draw_rows(rows, target_date)
     return sorted(rows, key=lambda row: (row["state"], row["game"], row["draw"], row["gameName"]))
 
@@ -2105,150 +1555,6 @@ US_PICK_STATIC_RESULT_METADATA = {
     "22": {"state": "New Jersey", "stateCode": "NJ", "game": "pick4", "gameName": "Pick 4", "draw": "Evening Draw"},
 }
 
-US_PICK_TIME_ZONES_BY_STATE = {
-    "AR": "America/Chicago",
-    "AZ": "America/Phoenix",
-    "CA": "America/Los_Angeles",
-    "CO": "America/Denver",
-    "CT": "America/New_York",
-    "DC": "America/New_York",
-    "DE": "America/New_York",
-    "FL": "America/New_York",
-    "GA": "America/New_York",
-    "IA": "America/Chicago",
-    "ID": "America/Boise",
-    "IL": "America/Chicago",
-    "IN": "America/New_York",
-    "KS": "America/Chicago",
-    "KY": "America/New_York",
-    "LA": "America/Chicago",
-    "MA": "America/New_York",
-    "MD": "America/New_York",
-    "ME": "America/New_York",
-    "MI": "America/New_York",
-    "MN": "America/Chicago",
-    "MO": "America/Chicago",
-    "MS": "America/Chicago",
-    "NC": "America/New_York",
-    "NE": "America/Chicago",
-    "NH": "America/New_York",
-    "NJ": "America/New_York",
-    "NM": "America/Denver",
-    "NY": "America/New_York",
-    "OH": "America/New_York",
-    "OK": "America/Chicago",
-    "OR": "America/Los_Angeles",
-    "PA": "America/New_York",
-    "RI": "America/New_York",
-    "SC": "America/New_York",
-    "TN": "America/Chicago",
-    "TX": "America/Chicago",
-    "VA": "America/New_York",
-    "VT": "America/New_York",
-    "WA": "America/Los_Angeles",
-    "WI": "America/Chicago",
-    "WV": "America/New_York",
-}
-
-US_PICK_DRAW_RELEASE_MINUTES_BY_STATE_PERIOD = {
-    ("AR", "MIDDAY"): 12 * 60 + 59,
-    ("AR", "EVENING"): 18 * 60 + 59,
-    ("AZ", "DRAW"): 19 * 60,
-    ("CA", "DAY"): 13 * 60,
-    ("CA", "MIDDAY"): 13 * 60,
-    ("CA", "EVENING"): 18 * 60 + 30,
-    ("CO", "MIDDAY"): 13 * 60 + 30,
-    ("CO", "EVENING"): 19 * 60 + 30,
-    ("CT", "DAY"): 13 * 60 + 57,
-    ("CT", "MIDDAY"): 13 * 60 + 57,
-    ("CT", "NIGHT"): 22 * 60 + 29,
-    ("CT", "EVENING"): 22 * 60 + 29,
-    ("DC", "MIDDAY"): 13 * 60 + 50,
-    ("DC", "EVENING"): 19 * 60 + 50,
-    ("DC", "NIGHT"): 23 * 60 + 30,
-    ("DE", "DAY"): 13 * 60 + 58,
-    ("DE", "MIDDAY"): 13 * 60 + 58,
-    ("DE", "NIGHT"): 19 * 60 + 57,
-    ("DE", "EVENING"): 19 * 60 + 57,
-    ("FL", "MIDDAY"): 13 * 60 + 30,
-    ("FL", "EVENING"): 21 * 60 + 45,
-    ("GA", "MIDDAY"): 12 * 60 + 29,
-    ("GA", "EVENING"): 18 * 60 + 59,
-    ("GA", "NIGHT"): 23 * 60 + 34,
-    ("IA", "MIDDAY"): 12 * 60 + 20,
-    ("IA", "EVENING"): 22 * 60,
-    ("ID", "DAY"): 13 * 60 + 59,
-    ("ID", "MIDDAY"): 13 * 60 + 59,
-    ("ID", "NIGHT"): 19 * 60 + 59,
-    ("IL", "MIDDAY"): 12 * 60 + 40,
-    ("IL", "MORNING"): 12 * 60 + 40,
-    ("IL", "EVENING"): 21 * 60 + 22,
-    ("IN", "MIDDAY"): 13 * 60 + 20,
-    ("IN", "EVENING"): 23 * 60,
-    ("KS", "MIDDAY"): 13 * 60 + 10,
-    ("KS", "EVENING"): 21 * 60 + 10,
-    ("KY", "MIDDAY"): 13 * 60 + 20,
-    ("KY", "EVENING"): 23 * 60,
-    ("LA", "DAY"): 21 * 60 + 59,
-    ("MA", "MIDDAY"): 14 * 60,
-    ("MA", "EVENING"): 21 * 60,
-    ("MD", "MIDDAY"): 12 * 60 + 27,
-    ("MD", "EVENING"): 19 * 60 + 56,
-    ("ME", "DAY"): 13 * 60 + 10,
-    ("ME", "MIDDAY"): 13 * 60 + 10,
-    ("ME", "EVENING"): 18 * 60 + 50,
-    ("MI", "MIDDAY"): 12 * 60 + 59,
-    ("MI", "EVENING"): 19 * 60 + 29,
-    ("MN", "DAY"): 18 * 60 + 17,
-    ("MO", "DAY"): 12 * 60 + 45,
-    ("MO", "MIDDAY"): 12 * 60 + 45,
-    ("MO", "EVENING"): 20 * 60 + 59,
-    ("MS", "MIDDAY"): 14 * 60 + 30,
-    ("MS", "EVENING"): 21 * 60 + 30,
-    ("NC", "MIDDAY"): 15 * 60,
-    ("NC", "EVENING"): 23 * 60 + 22,
-    ("NE", "DAY"): 22 * 60,
-    ("NH", "DAY"): 13 * 60 + 10,
-    ("NH", "MIDDAY"): 13 * 60 + 10,
-    ("NH", "EVENING"): 18 * 60 + 55,
-    ("NJ", "MIDDAY"): 12 * 60 + 59,
-    ("NJ", "EVENING"): 22 * 60 + 57,
-    ("NM", "MIDDAY"): 13 * 60,
-    ("NM", "EVENING"): 21 * 60 + 30,
-    ("NY", "MIDDAY"): 14 * 60 + 30,
-    ("NY", "EVENING"): 22 * 60 + 30,
-    ("OH", "MIDDAY"): 12 * 60 + 29,
-    ("OH", "EVENING"): 19 * 60 + 29,
-    ("OK", "DAY"): 21 * 60,
-    ("OR", "EVENING"): 19 * 60,
-    ("PA", "DAY"): 13 * 60 + 35,
-    ("PA", "MIDDAY"): 13 * 60 + 35,
-    ("PA", "EVENING"): 18 * 60 + 59,
-    ("RI", "MIDDAY"): 13 * 60 + 20,
-    ("RI", "EVENING"): 18 * 60 + 59,
-    ("SC", "MIDDAY"): 12 * 60 + 59,
-    ("SC", "EVENING"): 18 * 60 + 59,
-    ("TN", "MORNING"): 9 * 60 + 28,
-    ("TN", "DAY"): 12 * 60 + 28,
-    ("TN", "MIDDAY"): 12 * 60 + 28,
-    ("TN", "EVENING"): 18 * 60 + 28,
-    ("TX", "MORNING"): 10 * 60,
-    ("TX", "DAY"): 12 * 60 + 27,
-    ("TX", "EVENING"): 18 * 60,
-    ("TX", "NIGHT"): 22 * 60 + 12,
-    ("VA", "DAY"): 13 * 60 + 59,
-    ("VA", "MIDDAY"): 13 * 60 + 59,
-    ("VA", "NIGHT"): 23 * 60,
-    ("VA", "EVENING"): 23 * 60,
-    ("VT", "MIDDAY"): 13 * 60 + 10,
-    ("VT", "EVENING"): 18 * 60 + 59,
-    ("WA", "DAY"): 20 * 60,
-    ("WI", "MIDDAY"): 13 * 60 + 30,
-    ("WI", "EVENING"): 21 * 60,
-    ("WV", "DAY"): 18 * 60 + 59,
-    ("WV", "EVENING"): 21 * 60,
-}
-
 
 def enrich_us_pick_result_row(row):
     result_id = str(row.get("id", "")).strip()
@@ -2263,121 +1569,6 @@ def enrich_us_pick_result_row(row):
     enriched.update(row)
     enriched.setdefault("playTypes", ["straight", "box"])
     return enriched
-
-
-def us_pick_state_code(row):
-    state_code = str((row or {}).get("stateCode") or "").strip().upper()
-    if state_code:
-        return state_code
-    result_id = str((row or {}).get("id") or "").upper()
-    parts = result_id.split("-")
-    if len(parts) >= 3 and len(parts[2]) == 2:
-        return parts[2]
-    return US_STATE_CODES.get(str((row or {}).get("state") or "").strip(), "")
-
-
-def parse_us_pick_clock_minutes_from_text(text):
-    raw = str(text or "").upper()
-    match = re.search(r"(\d{1,2})(?::|-)(\d{2})\s*-?\s*(AM|PM)", raw)
-    if not match:
-        match = re.search(r"(\d{1,2})(\d{2})(AM|PM)", raw)
-    if not match:
-        return None
-    hour = int(match.group(1))
-    minute = int(match.group(2))
-    meridiem = match.group(3)
-    if hour < 1 or hour > 12 or minute > 59:
-        return None
-    if meridiem == "AM":
-        hour = 0 if hour == 12 else hour
-    elif hour != 12:
-        hour += 12
-    return hour * 60 + minute
-
-
-def resolve_us_pick_period(row):
-    text = " ".join(
-        str((row or {}).get(field) or "")
-        for field in ("id", "name", "gameName", "draw")
-    ).upper()
-    clock_minutes = parse_us_pick_clock_minutes_from_text(text)
-    if clock_minutes is not None:
-        return f"{clock_minutes // 60}:{str(clock_minutes % 60).zfill(2)}"
-    draw_key = normalize_draw_key((row or {}).get("draw"))
-    if "MORNING" in draw_key:
-        return "MORNING"
-    if "MIDDAY" in draw_key:
-        return "MIDDAY"
-    if "EVENING" in draw_key:
-        return "EVENING"
-    if "NIGHT" in draw_key:
-        return "NIGHT"
-    if "DAY" in draw_key:
-        return "DAY"
-    if "DRAW" in draw_key:
-        return "DRAW"
-    return ""
-
-
-def us_pick_draw_release_minutes(row):
-    state_code = us_pick_state_code(row)
-    period = resolve_us_pick_period(row)
-    release_minutes = US_PICK_DRAW_RELEASE_MINUTES_BY_STATE_PERIOD.get((state_code, period))
-    if release_minutes is not None:
-        return release_minutes
-    if ":" in period:
-        hour_text, minute_text = period.split(":", 1)
-        try:
-            return int(hour_text) * 60 + int(minute_text)
-        except ValueError:
-            return None
-    return None
-
-
-def sanitize_unreleased_us_pick_rows(rows, target_date, now=None):
-    try:
-        target_day = datetime.datetime.strptime(str(target_date or ""), "%d-%m-%Y").date()
-    except ValueError:
-        return [dict(row) for row in (rows or [])]
-    current = now or datetime.datetime.now(datetime.timezone.utc)
-    if current.tzinfo is None:
-        current = current.replace(tzinfo=ZoneInfo("America/New_York"))
-    sanitized = []
-    for row in rows or []:
-        candidate = dict(row)
-        state_code = us_pick_state_code(candidate)
-        release_minutes = us_pick_draw_release_minutes(candidate)
-        if not state_code or release_minutes is None:
-            sanitized.append(candidate)
-            continue
-        zone = ZoneInfo(US_PICK_TIME_ZONES_BY_STATE.get(state_code, "America/New_York"))
-        local_now = current.astimezone(zone)
-        if local_now.date() > target_day:
-            sanitized.append(candidate)
-            continue
-        if local_now.date() == target_day:
-            now_minutes = local_now.hour * 60 + local_now.minute
-            if now_minutes >= release_minutes:
-                sanitized.append(candidate)
-                continue
-        if str(candidate.get("number") or "").strip():
-            logger.warning(
-                "Ignoring early %s %s result for %s before draw release time",
-                state_code,
-                candidate.get("draw") or candidate.get("id"),
-                target_date,
-            )
-        candidate["number"] = ""
-        candidate["pick3"] = ""
-        candidate["pick4"] = ""
-        candidate["status"] = "pending"
-        candidate["source"] = "pending_before_draw"
-        sanitized.append(candidate)
-    return sanitized
-
-
-def sanitize_unreleased_nj_pick_rows(rows, target_date, now_et=None):
-    return sanitize_unreleased_us_pick_rows(rows, target_date, now=now_et)
 
 
 async def _async_fetch_lotteryusa_pick_fallbacks(date_str=None, ids=None, client=None):
@@ -2401,281 +1592,6 @@ async def _async_fetch_lotteryusa_pick_fallbacks(date_str=None, ids=None, client
         return []
     rows = await asyncio.gather(*sources)
     return [row for row in rows if row is not None]
-
-
-def us_pick_row_needs_refresh(row):
-    number = str((row or {}).get("number", "")).strip()
-    status = str((row or {}).get("status", "")).strip().lower()
-    return not number and status in ("", "pending")
-
-
-async def _async_refresh_missing_us_pick_results(date_str, existing_rows, client=None):
-    target_date = date_str or get_et_date_str()
-    c = client or get_http_client()
-    rows = [dict(row) for row in (existing_rows or []) if isinstance(row, dict)]
-    missing_templates = []
-    pending_ids = set()
-    for row in rows:
-        if not us_pick_row_needs_refresh(row):
-            continue
-        result_id = str(row.get("id") or "").strip()
-        if not result_id:
-            continue
-        canonical_id = US_PICK_LEGACY_RESULT_ID_ALIASES.get(result_id, result_id)
-        template = dict(row)
-        template["id"] = canonical_id
-        missing_templates.append(enrich_us_pick_result_row(template))
-        pending_ids.add(canonical_id)
-
-    if not pending_ids:
-        return unique_us_pick_results(rows)
-
-    refreshed_by_id = {}
-    for refreshed in await _async_fetch_lotteryusa_pick_catalog_rows(target_date, missing_templates, client=c):
-        refreshed_id = str(refreshed.get("id") or "").strip()
-        if refreshed_id and str(refreshed.get("number") or "").strip():
-            refreshed_by_id[refreshed_id] = enrich_us_pick_result_row(refreshed)
-
-    fallback_ids = sorted(pending_ids - set(refreshed_by_id))
-    if fallback_ids:
-        for refreshed in await _async_fetch_lotteryusa_pick_fallbacks(target_date, ids=fallback_ids, client=c):
-            refreshed_id = str(refreshed.get("id") or "").strip()
-            if refreshed_id and str(refreshed.get("number") or "").strip():
-                refreshed_by_id[refreshed_id] = enrich_us_pick_result_row(refreshed)
-
-    if not refreshed_by_id:
-        return unique_us_pick_results(rows)
-
-    replaced_ids = set()
-    merged_rows = []
-    for row in rows:
-        result_id = str(row.get("id") or "").strip()
-        canonical_id = US_PICK_LEGACY_RESULT_ID_ALIASES.get(result_id, result_id)
-        refreshed = refreshed_by_id.get(canonical_id)
-        if refreshed and us_pick_row_needs_refresh(row):
-            candidate = dict(row)
-            candidate.update(refreshed)
-            candidate["id"] = canonical_id
-            candidate["date"] = target_date
-            candidate["source"] = "lotteryusa.com"
-            replaced_ids.add(canonical_id)
-            merged_rows.append(enrich_us_pick_result_row(candidate))
-        else:
-            merged_rows.append(row)
-
-    for refreshed_id, refreshed in refreshed_by_id.items():
-        if refreshed_id not in replaced_ids and refreshed_id not in {
-            str(row.get("id") or "").strip() for row in merged_rows
-        }:
-            merged_rows.append(refreshed)
-
-    return unique_us_pick_results(merged_rows)
-
-
-def refresh_missing_us_pick_results(date_str, existing_rows):
-    return sync_run(_async_refresh_missing_us_pick_results(date_str, existing_rows))
-
-
-def catalog_row_game(row):
-    game = normalize_us_pick_game(row.get("game"))
-    if game:
-        return game
-    result_id = str(row.get("id", "")).upper()
-    if result_id.startswith("US-P4-") or str(row.get("pick4", "")).strip():
-        return "pick4"
-    if result_id.startswith("US-P3-") or str(row.get("pick3", "")).strip():
-        return "pick3"
-    return ""
-
-
-def normalize_draw_key(raw):
-    return re.sub(r"[^A-Z0-9]+", "", normalize_lotteryusa_draw_label(raw).upper())
-
-
-def lotteryusa_draw_keys_compatible(source_draw, row_draw):
-    source_key = normalize_draw_key(source_draw)
-    row_key = normalize_draw_key(row_draw)
-    if source_key == row_key:
-        return True
-    if source_key == "DRAW" or row_key == "DRAW":
-        return True
-    compatible_groups = [
-        {"DAYDRAW", "MIDDAYDRAW", "MORNINGDRAW"},
-        {"EVENINGDRAW", "NIGHTDRAW", "0628PMDRAW", "900PMDRAW"},
-        {"100PMDRAW", "MORNINGDRAW", "MIDDAYDRAW", "DAYDRAW"},
-        {"130PMDRAW", "MIDDAYDRAW", "DAYDRAW"},
-        {"400PMDRAW", "DAYDRAW"},
-        {"700PMDRAW", "EVENINGDRAW"},
-        {"1000PMDRAW", "NIGHTDRAW"},
-    ]
-    return any(source_key in group and row_key in group for group in compatible_groups)
-
-
-def normalize_game_key(raw):
-    text = str(raw or "").upper()
-    text = text.replace("PLAY3", "PLAY 3")
-    text = re.sub(r"[^A-Z0-9]+", "", text)
-    aliases = {
-        "DC3": "3",
-        "DC4": "MATCH4",
-    }
-    return aliases.get(text, text)
-
-
-def lotteryusa_source_matches_catalog_row(source, row):
-    game = catalog_row_game(row)
-    if source.get("game") != game:
-        return False
-    if not lotteryusa_draw_keys_compatible(source.get("draw"), row.get("draw")):
-        return False
-    source_game = normalize_game_key(source.get("gameName"))
-    row_game = normalize_game_key(row.get("gameName"))
-    if source_game == row_game:
-        return True
-    compatible_pairs = {
-        ("NUMBERS", "PICK3"),
-        ("PICK3", "NUMBERS"),
-        ("PLAY3", "PLAY3"),
-        ("3", "DC3"),
-        ("MATCH4", "DC4"),
-    }
-    return (source_game, row_game) in compatible_pairs or bool(source_game and row_game)
-
-
-def parse_lotteryusa_result_page_row(html_text, source, target_date):
-    soup = BeautifulSoup(str(html_text or ""), "html.parser")
-    digits = int(source.get("digits") or 0)
-    for row in soup.select("tbody#js-state-results-table tr.c-draw-card"):
-        date_el = row.select_one(".c-draw-card__draw-date-sub")
-        draw_date = parse_lotteryusa_date(date_el.get_text(" ", strip=True) if date_el else "")
-        if draw_date != target_date:
-            continue
-        balls = []
-        for ball in row.select("li.c-ball"):
-            classes = ball.get("class") or []
-            if "c-ball--fire" in classes:
-                continue
-            value = ball.get_text(strip=True)
-            if re.fullmatch(r"\d{1,2}", value):
-                balls.append(value)
-        if len(balls) < digits:
-            return None
-        return {
-            "date": target_date,
-            "number": "-".join(balls[:digits]),
-        }
-    return None
-
-
-async def _async_fetch_lotteryusa_pick_catalog_rows(date_str, catalog_rows, client=None):
-    target_date = date_str or get_et_date_str()
-    c = client or get_http_client()
-    concurrency = int(os.environ.get("LOTTERYUSA_PICK_CONCURRENCY", "4"))
-    limiter = asyncio.Semaphore(max(1, concurrency))
-
-    async def _limited_get(url):
-        async with limiter:
-            return await async_lotteryusa_http_get(url, client=c)
-
-    rows = [
-        enrich_us_pick_result_row(dict(row))
-        for row in (catalog_rows or [])
-        if catalog_row_game(row) in {"pick3", "pick4"}
-    ]
-
-    jobs = {}
-    source_for_row = {}
-    direct_ids = set()
-    for row in rows:
-        direct_url = lotteryusa_catalog_row_url(row)
-        if not direct_url:
-            continue
-        source = {
-            "url": direct_url,
-            "state": row.get("state"),
-            "stateCode": row.get("stateCode"),
-            "game": catalog_row_game(row),
-            "gameName": row.get("gameName"),
-            "draw": row.get("draw"),
-            "digits": 3 if catalog_row_game(row) == "pick3" else 4,
-        }
-        jobs[direct_url] = source
-        source_for_row.setdefault(direct_url, []).append(row)
-        direct_ids.add(str(row.get("id") or ""))
-
-    discovery_rows = [
-        row for row in rows
-        if str(row.get("id") or "") not in direct_ids
-    ]
-    state_keys = {}
-    for row in discovery_rows:
-        state = str(row.get("state") or "").strip()
-        state_code = str(row.get("stateCode") or "").strip()
-        if state and state_code:
-            state_keys[(state, state_code)] = f"{LOTTERYUSA_BASE_URL}/{lotteryusa_state_slug(state)}/"
-
-    async def _fetch_state_sources(state, state_code, url):
-        try:
-            resp = await _limited_get(url)
-        except Exception as error:
-            logger.warning("Lottery USA state catalog error for %s: %s", state, error)
-            return []
-        return parse_lotteryusa_state_pick_sources(resp.text, state, state_code)
-
-    state_source_lists = await asyncio.gather(*[
-        _fetch_state_sources(state, state_code, url)
-        for (state, state_code), url in state_keys.items()
-    ])
-    sources_by_state = {}
-    for source_list in state_source_lists:
-        for source in source_list:
-            sources_by_state.setdefault(source["stateCode"], []).append(source)
-
-    for row in discovery_rows:
-        state_code = str(row.get("stateCode") or "").strip()
-        for source in sources_by_state.get(state_code, []):
-            if lotteryusa_source_matches_catalog_row(source, row):
-                jobs[source["url"]] = source
-                source_for_row.setdefault(source["url"], []).append(row)
-                break
-
-    async def _fetch_result(source):
-        try:
-            resp = await _limited_get(source["url"])
-        except Exception as error:
-            logger.warning("Lottery USA pick catalog error for %s: %s", source["url"], error)
-            return source["url"], None, True
-        return source["url"], parse_lotteryusa_result_page_row(resp.text, source, target_date), False
-
-    fetched = list(await asyncio.gather(*[_fetch_result(source) for source in jobs.values()]))
-    retry_limit = max(0, int(os.environ.get("LOTTERYUSA_PICK_SECOND_PASS_LIMIT", "80")))
-    failed_sources = [
-        jobs[url]
-        for url, parsed, failed in fetched
-        if failed and url in jobs
-    ][:retry_limit]
-    if failed_sources:
-        retried = await asyncio.gather(*[_fetch_result(source) for source in failed_sources])
-        fetched_by_url = {url: (url, parsed, failed) for url, parsed, failed in fetched}
-        fetched_by_url.update({url: (url, parsed, failed) for url, parsed, failed in retried})
-        fetched = list(fetched_by_url.values())
-    results = []
-    for url, parsed, _failed in fetched:
-        if not parsed:
-            continue
-        for template in source_for_row.get(url, []):
-            row = enrich_us_pick_result_row(dict(template))
-            row["date"] = target_date
-            row["number"] = parsed["number"]
-            row["source"] = "lotteryusa.com"
-            if catalog_row_game(row) == "pick3":
-                row["pick3"] = parsed["number"]
-                row.pop("pick4", None)
-            elif catalog_row_game(row) == "pick4":
-                row["pick4"] = parsed["number"]
-                row.pop("pick3", None)
-            results.append(row)
-    return unique_us_pick_results(results)
 
 
 async def _async_fetch_miloteria_new_jersey(date_str=None, client=None):
@@ -2757,67 +1673,84 @@ def _king_api_date(date_str):
 
 
 async def _async_fetch_king_results(date_str, client=None):
-    """Fetch King Lottery results from the JSON API used by the current site."""
+    """Fetch King sessions from the site's current JSON API.
+
+    The public HTML changed from game-block/game-title markup to a Nuxt app.
+    The sessions endpoint is the stable data source used by that app.
+    """
     c = client or get_http_client()
     try:
         site_resp, sessions_resp = await asyncio.gather(
             async_http_get("https://api.loteriasdominicanas.com/dominicana/sites/env", client=c, accept_json=True),
             async_http_get(
-                "https://api.loteriasdominicanas.com/dominicana/sessions?date="
-                + urllib.parse.quote(_king_api_date(date_str)),
+                "https://api.loteriasdominicanas.com/dominicana/sessions?date=" + urllib.parse.quote(_king_api_date(date_str)),
                 client=c,
                 accept_json=True,
             ),
         )
-        game_names = {}
-        for company in (site_resp.json() or {}).get("siteCompanies", []):
-            for game in company.get("siteGames", []):
-                title = str(game.get("title") or "").strip()
-                game_id = str(game.get("game_id") or "")
-                if "king lottery" in title.lower() and game_id:
-                    game_names[game_id] = title
-
+        site_payload = site_resp.json()
         sessions_payload = sessions_resp.json()
+        game_names = {}
+        for company in site_payload.get("siteCompanies", []):
+            for game in company.get("siteGames", []):
+                title = str(game.get("title") or "").strip().lower()
+                game_id = str(game.get("game_id") or "")
+                if "king lottery" in title and game_id:
+                    game_names[game_id] = game.get("title")
+
         rows = []
         for item in sessions_payload if isinstance(sessions_payload, list) else []:
-            title = str(game_names.get(str(item.get("game_id") or "")) or "")
-            normalized = title.lower()
-            if "king lottery" not in normalized:
+            game_id = str(item.get("game_id") or "")
+            title = str(game_names.get(game_id) or "")
+            normalized_title = title.lower()
+            if "king lottery" not in normalized_title:
                 continue
-            result_id = "23" if "día" in normalized or "dia" in normalized else "24"
+            result_id = "23" if "día" in normalized_title or "dia" in normalized_title else "24"
             sessions = item.get("sessions") or []
-            requested_api_date = _king_api_date(date_str).replace(".000Z", "Z")
-            session = next(
-                (candidate for candidate in sessions if str(candidate.get("date") or "") == requested_api_date),
-                {},
-            )
-            if not session and str((item.get("lastSession") or {}).get("date") or "") == requested_api_date:
-                session = item.get("lastSession") or {}
-            score = session.get("score") or []
-            values = score[0] if score and isinstance(score[0], list) else score
-            numbers = [str(value).strip().zfill(2) for value in values if str(value).strip()]
-            if len(numbers) >= 3:
-                rows.append({
-                    "id": result_id,
-                    "name": "King Lottery Día" if result_id == "23" else "King Lottery Noche",
-                    "date": date_str,
-                    "number": "-".join(numbers[:3]),
-                    "source": "king-api",
-                    "status": "published",
-                })
+            last_session = item.get("lastSession") or (sessions[-1] if sessions else {})
+            score = last_session.get("score") or []
+            numbers = score[0] if score and isinstance(score[0], list) else score
+            numbers = [str(value).strip().zfill(2) for value in numbers if str(value).strip()]
+            if len(numbers) < 3:
+                continue
+            rows.append({
+                "id": result_id,
+                "name": "King Lottery Día" if result_id == "23" else "King Lottery Noche",
+                "date": date_str,
+                "number": "-".join(numbers[:3]),
+                "source": "king-api",
+                "status": "published",
+            })
         return rows
     except Exception as error:
         logger.warning("King API fetch failed for %s: %s", date_str, error)
         return []
 
 
-def parse_loterias_dominicanas_blocks(blocks, date_str, wanted_ids=None):
+async def _async_scrape(date_str=None, client=None):
+    if not date_str:
+        date_str = get_dr_date_str()
+    c = client or get_http_client()
+
+    base = "https://loteriasdominicanas.com"
+    urls = [
+        f"{base}/?date={date_str}",
+        f"{base}/anguila?date={date_str}",
+        f"{base}/king-lottery?date={date_str}",
+    ]
+
+    block_results = await asyncio.gather(*[_async_fetch_blocks(u, c) for u in urls])
+    all_blocks = [b for blocks in block_results for b in blocks]
+
     results = []
     seen_ids = set()
     expected_ddmm = date_str[:5]
-    wanted = {str(value) for value in (wanted_ids or [])}
 
-    for block in blocks:
+    for row in await _async_fetch_king_results(date_str, client=c):
+        results.append(row)
+        seen_ids.add(row["id"])
+
+    for block in all_blocks:
         try:
             date_el = block.find("div", class_="session-date")
             if date_el:
@@ -2831,8 +1764,6 @@ def parse_loterias_dominicanas_blocks(blocks, date_str, wanted_ids=None):
             title = title_el.getText().strip().lower()
             match = LOTTERY_MAP.get(title)
             if not match or match["id"] in seen_ids:
-                continue
-            if wanted and match["id"] not in wanted:
                 continue
 
             scores = block.find_all("span", "score")
@@ -2850,173 +1781,6 @@ def parse_loterias_dominicanas_blocks(blocks, date_str, wanted_ids=None):
         except Exception as e:
             logger.warning("Parse error: %s", e)
             continue
-    return results
-
-
-def loterias_dominicanas_api_date_iso(date_str):
-    try:
-        parsed = datetime.datetime.strptime(str(date_str), "%d-%m-%Y")
-    except ValueError:
-        return ""
-    dr_midnight = parsed.replace(tzinfo=ZoneInfo("America/Santo_Domingo"))
-    return dr_midnight.astimezone(datetime.timezone.utc).isoformat().replace("+00:00", "Z")
-
-
-def parse_loterias_dominicanas_api_site(payload, date_str, wanted_ids=None):
-    results = []
-    seen_ids = set()
-    wanted = {str(value) for value in (wanted_ids or [])}
-    expected_iso_prefix = ""
-    try:
-        expected_iso_prefix = datetime.datetime.strptime(str(date_str), "%d-%m-%Y").strftime("%Y-%m-%d")
-    except ValueError:
-        return results
-
-    for company in (payload or {}).get("siteCompanies") or []:
-        for site_game in company.get("siteGames") or []:
-            title = str(site_game.get("title") or "").strip().lower()
-            match = LOTTERY_MAP.get(title)
-            if not match or match["id"] in seen_ids:
-                continue
-            if wanted and match["id"] not in wanted:
-                continue
-
-            sessions = ((site_game.get("game") or {}).get("sessions") or [])
-            for session in sessions:
-                session_date = str(session.get("date") or "")
-                if not session_date.startswith(expected_iso_prefix):
-                    continue
-                numbers = []
-                for score_row in session.get("score") or []:
-                    for value in score_row or []:
-                        text = str(value or "").strip()
-                        if re.fullmatch(r"\d{1,2}", text):
-                            numbers.append(text.zfill(2))
-                    if len(numbers) >= 3:
-                        break
-                if len(numbers) < 3:
-                    continue
-
-                results.append({
-                    "id": match["id"],
-                    "name": match["name"],
-                    "date": date_str,
-                    "number": "-".join(numbers[:3]),
-                })
-                seen_ids.add(match["id"])
-                break
-    return results
-
-
-async def _async_fetch_loterias_dominicanas_api_results(date_str, wanted_ids=None, client=None):
-    api_date = loterias_dominicanas_api_date_iso(date_str)
-    if not api_date:
-        return []
-    c = client or get_http_client()
-    url = (
-        "https://api.loteriasdominicanas.com/dominicana/sites/env"
-        f"?date={urllib.parse.quote(api_date, safe='')}&limit=2"
-    )
-    try:
-        resp = await async_http_get(url, client=c, accept_json=True)
-    except Exception as e:
-        logger.warning("LoteriasDominicanas API error for %s: %s", date_str, e)
-        return []
-    try:
-        payload = resp.json()
-    except Exception as e:
-        logger.warning("LoteriasDominicanas API JSON parse error for %s: %s", date_str, e)
-        return []
-    rows = parse_loterias_dominicanas_api_site(payload, date_str, wanted_ids=wanted_ids)
-    for row in rows:
-        logger.info("LoteriasDominicanas API [%s] %s: %s", row["id"], row["name"], row["number"])
-    return rows
-
-
-async def _async_fetch_loterias_dominicanas_results(date_str, wanted_ids=None, client=None):
-    c = client or get_http_client()
-    base = "https://loteriasdominicanas.com"
-    urls = [
-        f"{base}/?date={date_str}",
-        f"{base}/anguila?date={date_str}",
-        f"{base}/king-lottery?date={date_str}",
-    ]
-    block_results = await asyncio.gather(*[_async_fetch_blocks(u, c) for u in urls])
-    all_blocks = [b for blocks in block_results for b in blocks]
-    results = parse_loterias_dominicanas_blocks(all_blocks, date_str, wanted_ids=wanted_ids)
-    seen_ids = {str(row.get("id")) for row in results}
-    api_wanted = None
-    if wanted_ids:
-        api_wanted = {str(value) for value in wanted_ids} - seen_ids
-        if not api_wanted:
-            return results
-    api_rows = await _async_fetch_loterias_dominicanas_api_results(
-        date_str,
-        wanted_ids=api_wanted,
-        client=c,
-    )
-    for row in api_rows:
-        if str(row.get("id")) not in seen_ids:
-            results.append(row)
-            seen_ids.add(str(row.get("id")))
-    king_rows = await _async_fetch_king_results(date_str, client=c)
-    for row in king_rows:
-        if wanted_ids and str(row.get("id")) not in {str(value) for value in wanted_ids}:
-            continue
-        if str(row.get("id")) not in seen_ids:
-            results.append(row)
-            seen_ids.add(str(row.get("id")))
-    return sorted(results, key=result_sort_key)
-
-
-
-async def _async_scrape_missing_rd_results(date_str, missing_ids, client=None):
-    wanted = {str(value) for value in (missing_ids or []) if str(value).strip()}
-    if not wanted:
-        return []
-    c = client or get_http_client()
-    results = []
-    seen_ids = set()
-
-    loterias_rows = await _async_fetch_loterias_dominicanas_results(date_str, wanted_ids=wanted, client=c)
-    for row in loterias_rows:
-        results.append(row)
-        seen_ids.add(row["id"])
-
-    still_missing = wanted - seen_ids
-    enloteria_sources = [
-        source for source in ENLOTERIA_RESULT_SOURCES
-        if str(source.get("id")) in still_missing
-    ]
-    if enloteria_sources:
-        enloteria_rows = await _async_fetch_enloteria_results(
-            date_str,
-            fallback_days=0,
-            sources=enloteria_sources,
-            client=c,
-        )
-        for row in enloteria_rows:
-            if row["id"] not in seen_ids:
-                results.append(row)
-                seen_ids.add(row["id"])
-
-    still_missing = wanted - seen_ids
-    for row in build_king_no_draw_rows(date_str, seen_ids):
-        if row["id"] in still_missing:
-            results.append(row)
-            seen_ids.add(row["id"])
-            logger.info("King [%s] %s: no_draw for %s", row['id'], row['name'], date_str)
-
-    return sorted(results, key=result_sort_key)
-
-
-async def _async_scrape(date_str=None, client=None):
-    if not date_str:
-        date_str = get_dr_date_str()
-    c = client or get_http_client()
-
-    results = await _async_fetch_loterias_dominicanas_results(date_str, client=c)
-    seen_ids = {row["id"] for row in results}
 
     for row in build_king_no_draw_rows(date_str, seen_ids):
         results.append(row)
@@ -3073,7 +1837,10 @@ async def _async_fetch_kv_list(key, client=None):
     if not SUPABASE_KEY.strip():
         return []
     try:
-        resp = await c.get(url, headers=supabase_rest_headers())
+        resp = await c.get(url, headers={
+            "apikey": SUPABASE_KEY,
+            "Authorization": f"Bearer {SUPABASE_KEY}",
+        })
         resp.raise_for_status()
         rows = resp.json()
         if rows and rows[0].get("value"):
@@ -3108,136 +1875,6 @@ async def _async_fetch_existing_pick_results_from_supabase(date_str, client=None
     return await _async_fetch_kv_list(pick_results_cache_key(date_str), client=client)
 
 
-def us_pick_period_from_row(row):
-    text = " ".join(str(row.get(key, "") or "") for key in ("id", "name", "draw")).upper()
-    match = re.search(r"\b([01]?\d):([0-5]\d)\s*(AM|PM)\b", text)
-    if match:
-        return f"{int(match.group(1))}:{match.group(2)} {match.group(3)}"
-    match = re.search(r"\b([01]?\d)-([0-5]\d)-(AM|PM)\b", text)
-    if match:
-        return f"{int(match.group(1))}:{match.group(2)} {match.group(3)}"
-    if re.search(r"\b(MORNING|MANANA|MAÑANA)\b", text):
-        return "MORNING"
-    if re.search(r"\b(MIDDAY|DIA|DÍA)\b", text):
-        return "MIDDAY"
-    if re.search(r"\b(EVENING|TARDE)\b", text):
-        return "EVENING"
-    if re.search(r"\b(NIGHT|NOCHE)\b", text):
-        return "NIGHT"
-    if re.search(r"\bDAY\b", text):
-        return "DAY"
-    if re.search(r"\bDRAW\b", text):
-        return "DRAW"
-    return ""
-
-
-def parse_us_pick_result_date(date_str):
-    text = str(date_str or "").strip()
-    for fmt in ("%d-%m-%Y", "%Y-%m-%d"):
-        try:
-            return datetime.datetime.strptime(text, fmt).date()
-        except ValueError:
-            continue
-    return None
-
-
-def us_pick_official_draw_utc(row, date_str):
-    state_code = str(row.get("stateCode") or "").strip().upper()
-    if not state_code:
-        result_id_parts = str(row.get("id") or "").upper().split("-")
-        if len(result_id_parts) >= 3:
-            state_code = result_id_parts[2]
-    period = us_pick_period_from_row(row)
-    if not state_code or not period:
-        return None
-    draw_time = US_PICK_DRAW_TIMES_BY_STATE_PERIOD.get((state_code, period))
-    if not draw_time and period == "DAY":
-        draw_time = US_PICK_DRAW_TIMES_BY_STATE_PERIOD.get((state_code, "MIDDAY"))
-    if not draw_time:
-        return None
-    draw_date = parse_us_pick_result_date(row.get("date") or date_str)
-    if not draw_date:
-        return None
-    zone = ZoneInfo(US_PICK_TIME_ZONES_BY_STATE.get(state_code, "America/New_York"))
-    for fmt in ("%I:%M %p", "%H:%M"):
-        try:
-            draw_clock = datetime.datetime.strptime(draw_time, fmt).time()
-            draw_local = datetime.datetime.combine(draw_date, draw_clock, tzinfo=zone)
-            return draw_local.astimezone(datetime.UTC)
-        except ValueError:
-            continue
-    return None
-
-
-def recently_closed_us_pick_catalog_rows(
-    date_str,
-    catalog_rows=None,
-    existing_rows=None,
-    now_utc=None,
-    lookback_minutes=90,
-):
-    now = now_utc or datetime.datetime.now(datetime.UTC)
-    if now.tzinfo is None:
-        now = now.replace(tzinfo=datetime.UTC)
-    now = now.astimezone(datetime.UTC)
-    lookback = now - datetime.timedelta(minutes=int(lookback_minutes))
-    existing_by_id = {
-        str(row.get("id") or "").strip(): row
-        for row in (existing_rows or [])
-        if str(row.get("id") or "").strip()
-    }
-    candidates = []
-    for source_row in (catalog_rows if catalog_rows is not None else static_us_pick_catalog_rows()):
-        row = enrich_us_pick_result_row(dict(source_row))
-        if not str(row.get("date") or "").strip():
-            row["date"] = date_str
-        draw_utc = us_pick_official_draw_utc(row, date_str)
-        if draw_utc is None or draw_utc > now:
-            continue
-        existing = existing_by_id.get(str(row.get("id") or "").strip()) or {}
-        is_pending = us_pick_row_needs_refresh(existing) if existing else False
-        if draw_utc >= lookback or is_pending:
-            candidates.append((draw_utc, str(row.get("id") or ""), row))
-    return [row for _, _, row in sorted(candidates, key=lambda item: (item[0], item[1]))]
-
-
-def should_run_full_us_pick_sweep(now_utc=None, interval_minutes=60):
-    now = now_utc or datetime.datetime.now(datetime.UTC)
-    if now.tzinfo is None:
-        now = now.replace(tzinfo=datetime.UTC)
-    now = now.astimezone(datetime.UTC)
-    return now.minute % int(interval_minutes) < 5
-
-
-def suppress_early_us_pick_results(date_str, rows, now_utc=None):
-    now = now_utc or datetime.datetime.now(datetime.UTC)
-    if now.tzinfo is None:
-        now = now.replace(tzinfo=datetime.UTC)
-    now = now.astimezone(datetime.UTC)
-    filtered = []
-    for row in rows or []:
-        candidate = dict(row)
-        if not str(candidate.get("number", "")).strip():
-            filtered.append(candidate)
-            continue
-        draw_utc = us_pick_official_draw_utc(candidate, date_str)
-        if draw_utc is None or now >= draw_utc:
-            filtered.append(candidate)
-            continue
-        candidate["number"] = ""
-        candidate["status"] = "pending"
-        candidate["source"] = "early-result-suppressed"
-        candidate["suppressedUntil"] = draw_utc.isoformat().replace("+00:00", "Z")
-        if catalog_row_game(candidate) == "pick3" or str(candidate.get("pick3", "")).strip():
-            candidate["pick3"] = ""
-            candidate.pop("pick4", None)
-        elif catalog_row_game(candidate) == "pick4" or str(candidate.get("pick4", "")).strip():
-            candidate["pick4"] = ""
-            candidate.pop("pick3", None)
-        filtered.append(candidate)
-    return filtered
-
-
 def _pick_result_quality(row):
     number = str(row.get("number", "")).strip()
     status = str(row.get("status", "")).strip().lower()
@@ -3250,34 +1887,19 @@ def _pick_result_quality(row):
     return (0, 0)
 
 
-def normalize_us_pick_status(row):
-    normalized = dict(row)
-    if str(normalized.get("number", "")).strip() and str(normalized.get("status", "")).strip().lower() == "pending":
-        normalized["status"] = "published"
-    return normalized
-
-
 def merge_us_pick_results_by_id(existing, results, observed_at=None):
     observed = observed_at or utc_now_iso()
     merged = {str(r["id"]): dict(r) for r in existing if str(r.get("id", "")).strip()}
+    incoming_ids = {str(r.get("id", "")).strip() for r in results}
+    for legacy_id, canonical_id in US_PICK_LEGACY_RESULT_ID_ALIASES.items():
+        if canonical_id in incoming_ids:
+            merged.pop(legacy_id, None)
     for r in results:
         key = str(r.get("id", "")).strip()
         if not key:
             continue
-        stale_aliases = [
-            alias_id
-            for alias_id, canonical_id in US_PICK_LEGACY_RESULT_ID_ALIASES.items()
-            if canonical_id == key
-        ]
-        for alias_id in stale_aliases:
-            merged.pop(alias_id, None)
         previous = merged.get(key) or {}
         candidate = dict(r)
-        if str(candidate.get("source", "")).strip() == "early-result-suppressed":
-            candidate["firstSeenAt"] = previous.get("firstSeenAt") or observed
-            candidate["lastSeenAt"] = observed
-            merged[key] = candidate
-            continue
         if previous and _pick_result_quality(previous) > _pick_result_quality(candidate):
             preserved = dict(previous)
             preserved["lastSeenAt"] = observed
@@ -3293,63 +1915,26 @@ def merge_us_pick_results_by_id(existing, results, observed_at=None):
             candidate["firstSeenAt"] = observed
         candidate["lastSeenAt"] = observed
         merged[key] = candidate
-    return sorted((normalize_us_pick_status(row) for row in merged.values()), key=lambda row: row.get("id", ""))
-
-
-def prune_stale_us_pick_rows_when_catalog_is_complete(existing, incoming, catalog_rows=None):
-    incoming_ids = {str(row.get("id") or "").strip() for row in (incoming or [])}
-    incoming_ids.discard("")
-    alias_replacements = {
-        "US-P3-WV-DAILY-3-DAY": {
-            "US-P3-WV-DAILY-3-01-30-PM",
-            "US-P3-WV-DAILY-3-09-00-PM",
-        },
-    }
-    stale_alias_ids = {
-        stale_id
-        for canonical_id, stale_ids in alias_replacements.items()
-        if canonical_id in incoming_ids
-        for stale_id in stale_ids
-    }
-    if stale_alias_ids:
-        existing = [
-            row for row in (existing or [])
-            if str(row.get("id") or "").strip() not in stale_alias_ids
-        ]
-    existing = [
-        row for row in (existing or [])
-        if (
-            str(row.get("id") or "").strip() in incoming_ids
-            or _pick_result_quality(row) > (1, 0)
-        )
-    ]
-    catalog_ids = {
-        str(row.get("id") or "").strip()
-        for row in (catalog_rows if catalog_rows is not None else static_us_pick_catalog_rows())
-    }
-    catalog_ids.discard("")
-    if catalog_ids and catalog_ids.issubset(incoming_ids):
-        return [
-            row for row in (existing or [])
-            if str(row.get("id") or "").strip() in incoming_ids
-        ]
-    return existing
+    return sorted(merged.values(), key=lambda row: row.get("id", ""))
 
 
 async def _async_save_us_picks_to_supabase(date_str, rows, client=None):
+    key = pick_results_cache_key(date_str)
     c = client or get_http_client()
-    rows = suppress_early_us_pick_results(date_str, rows)
     existing = await _async_fetch_existing_pick_results_from_supabase(date_str, client=c)
-    existing = prune_stale_us_pick_rows_when_catalog_is_complete(existing, rows)
     merged_rows = merge_us_pick_results_by_id(existing, rows, observed_at=utc_now_iso())
-    merged_rows = sanitize_unreleased_nj_pick_rows(merged_rows, date_str)
+    value = json.dumps(merged_rows, ensure_ascii=False)
+    payload = json.dumps({"key": key, "value": value, "upd": utc_now_iso()}).encode("utf-8")
+    url = f"{SUPABASE_URL}/rest/v1/lotterynet_kv"
     try:
-        await async_save_result_draws_payload(
-            date_str,
-            merged_rows,
-            "pick",
-            client=c,
-        )
+        resp = await c.post(url, content=payload, headers={
+            "Content-Type": "application/json",
+            "apikey": SUPABASE_KEY,
+            "Authorization": f"Bearer {SUPABASE_KEY}",
+            "Prefer": "resolution=merge-duplicates",
+        })
+        logger.info("Saved %d US pick results for %s -> HTTP %s", len(merged_rows), date_str, resp.status_code)
+        resp.raise_for_status()
     except httpx.HTTPStatusError as e:
         logger.error("Supabase pick error %s: %s", e.response.status_code, e.response.text)
         raise
@@ -3407,34 +1992,26 @@ def missing_tracked_result_ids(results):
     return sorted(TRACKED_REMOTE_RESULT_IDS - available, key=int)
 
 
-def us_pick_rows_changed(existing_rows, refreshed_rows):
-    existing_by_id = {
-        str(row.get("id") or "").strip(): row
-        for row in (existing_rows or [])
-        if str(row.get("id") or "").strip()
-    }
-    for row in refreshed_rows or []:
-        result_id = str(row.get("id") or "").strip()
-        if not result_id:
-            continue
-        previous = existing_by_id.get(result_id)
-        if previous is None:
-            return True
-        if _pick_result_quality(row) > _pick_result_quality(previous):
-            return True
-        if (
-            str(row.get("number", "")) != str(previous.get("number", "")) or
-            str(row.get("status", "")) != str(previous.get("status", ""))
-        ):
-            return True
-    return False
-
-
 async def _async_save_native_results_table(date_str, merged_list, client=None):
-    return await async_save_result_draws_payload(date_str, merged_list, "lottery", client=client)
+    payload = json.dumps([{
+        "result_date": date_str,
+        "payload": merged_list,
+        "updated_at": utc_now_iso(),
+    }], ensure_ascii=False).encode("utf-8")
+    url = f"{SUPABASE_URL}/rest/v1/lotterynet_results_by_day"
+    c = client or get_http_client()
+    resp = await c.post(url, content=payload, headers={
+        "Content-Type": "application/json",
+        "apikey": SUPABASE_KEY,
+        "Authorization": f"Bearer {SUPABASE_KEY}",
+        "Prefer": "resolution=merge-duplicates",
+    })
+    resp.raise_for_status()
+    logger.info("Saved native results table for %s -> HTTP %s", date_str, resp.status_code)
 
 
 async def _async_save_to_supabase(date_str, results, prune_missing_ids=None, client=None):
+    key = f"lot_results_cache_by_day:{date_str}"
     c = client or get_http_client()
 
     existing = await _async_fetch_existing_from_supabase(date_str, client=c)
@@ -3443,8 +2020,23 @@ async def _async_save_to_supabase(date_str, results, prune_missing_ids=None, cli
     if missing_tracked:
         logger.warning("Missing tracked remote result ids for %s: %s", date_str, ", ".join(missing_tracked))
 
+    value = json.dumps(merged_list, ensure_ascii=False)
+    payload = json.dumps({"key": key, "value": value, "upd": utc_now_iso()}).encode("utf-8")
+    url = f"{SUPABASE_URL}/rest/v1/lotterynet_kv"
+
     try:
-        await _async_save_native_results_table(date_str, merged_list, client=c)
+        resp = await c.post(url, content=payload, headers={
+            "Content-Type": "application/json",
+            "apikey": SUPABASE_KEY,
+            "Authorization": f"Bearer {SUPABASE_KEY}",
+            "Prefer": "resolution=merge-duplicates",
+        })
+        resp.raise_for_status()
+        logger.info("Saved %d results (merged) for %s -> HTTP %s", len(merged_list), date_str, resp.status_code)
+        try:
+            await _async_save_native_results_table(date_str, merged_list, client=c)
+        except Exception as e:
+            logger.warning("Native results table save failed for %s: %s", date_str, e)
     except httpx.HTTPStatusError as e:
         logger.error("Supabase error %s: %s", e.response.status_code, e.response.text)
         raise
@@ -3456,77 +2048,21 @@ def save_to_supabase(date_str, results, prune_missing_ids=None):
 async def _async_main():
     import sys
 
-    explicit_dates = len(sys.argv) > 1
     if len(sys.argv) > 1:
         target_dates = sys.argv[1:]
     else:
-        target_dates = default_scrape_dates()
+        target_dates = [get_dr_date_str()]
 
     logger.info("Syncing dates: %s (UTC now=%s)", ", ".join(target_dates), datetime.datetime.utcnow().strftime("%H:%M"))
     client = get_http_client()
 
     for idx, target_date in enumerate(target_dates):
         logger.info("Scraping %s...", target_date)
-        current_date = get_dr_date_str()
-        save_required = should_require_supabase_save(
-            target_date=target_date,
-            current_date=current_date,
-            explicit_dates=explicit_dates,
+
+        results, pick_results = await asyncio.gather(
+            _async_scrape(target_date, client=client),
+            _async_scrape_us_picks(target_date, client=client),
         )
-
-        existing_results = []
-        existing_pick_results = []
-        if not save_required:
-            existing_results, existing_pick_results = await asyncio.gather(
-                _async_fetch_existing_from_supabase(target_date, client=client),
-                _async_fetch_existing_pick_results_from_supabase(target_date, client=client),
-            )
-            if not non_current_backfill_should_run(existing_results, existing_pick_results):
-                logger.info("Backfill %s already complete — skipping scrape and save", target_date)
-                continue
-            logger.info(
-                "Backfill %s needs RD ids [%s] and %d pending Pick rows",
-                target_date,
-                ", ".join(missing_tracked_result_ids(existing_results)) or "none",
-                sum(1 for row in existing_pick_results if us_pick_row_needs_refresh(row)),
-            )
-
-        if save_required:
-            pick_source_rows = None
-            should_scrape_picks = True
-            if target_date == current_date and not explicit_dates:
-                existing_pick_results = await _async_fetch_existing_pick_results_from_supabase(target_date, client=client)
-                if should_run_full_us_pick_sweep():
-                    logger.info("Running hourly full US Pick sweep for %s", target_date)
-                else:
-                    pick_source_rows = recently_closed_us_pick_catalog_rows(
-                        target_date,
-                        existing_rows=existing_pick_results,
-                    )
-                    should_scrape_picks = bool(pick_source_rows)
-                    if should_scrape_picks:
-                        logger.info(
-                            "Prioritizing %d recently closed/pending US Pick draws for %s",
-                            len(pick_source_rows),
-                            target_date,
-                        )
-                    else:
-                        logger.info("No US Pick draw is due yet for %s — skipping pick scrape this run", target_date)
-            pick_task = (
-                _async_scrape_us_picks(target_date, existing_rows=pick_source_rows, client=client)
-                if should_scrape_picks
-                else asyncio.sleep(0, result=[])
-            )
-            results, pick_results = await asyncio.gather(
-                _async_scrape(target_date, client=client),
-                pick_task,
-            )
-        else:
-            missing_rd_ids = missing_tracked_result_ids(existing_results)
-            results, pick_results = await asyncio.gather(
-                _async_scrape_missing_rd_results(target_date, missing_rd_ids, client=client),
-                _async_refresh_missing_us_pick_results(target_date, existing_pick_results, client=client),
-            )
 
         logger.info("Found %d lotteries and %d US Pick results", len(results), len(pick_results))
         for r in results:
@@ -3540,13 +2076,8 @@ async def _async_main():
             continue
 
         if results:
-            prune_missing_ids = AUTHORITATIVE_NJ_IDS if idx == 0 and target_date == current_date else None
-            try:
-                await _async_save_to_supabase(target_date, results, prune_missing_ids=prune_missing_ids, client=client)
-            except (httpx.HTTPError, httpx.TimeoutException) as e:
-                if not should_continue_after_supabase_save_error(save_required, explicit_dates):
-                    raise
-                logger.warning("Continuing after RD Supabase save error for %s; health check will verify cache: %s", target_date, e)
+            prune_missing_ids = AUTHORITATIVE_NJ_IDS if idx == 0 and target_date == get_dr_date_str() else None
+            await _async_save_to_supabase(target_date, results, prune_missing_ids=prune_missing_ids, client=client)
         else:
             logger.info("No results found for %s — skipping RD save", target_date)
 
@@ -3555,15 +2086,7 @@ async def _async_main():
             pick3_count = sum(1 for row in pick_results if row.get("game") == "pick3")
             pick4_count = sum(1 for row in pick_results if row.get("game") == "pick4")
             logger.info("  Pick 3: %d  Pick 4: %d", pick3_count, pick4_count)
-            if not save_required and not us_pick_rows_changed(existing_pick_results, pick_results):
-                logger.info("Backfill %s Pick rows unchanged — skipping save", target_date)
-                continue
-            try:
-                await _async_save_us_picks_to_supabase(target_date, pick_results, client=client)
-            except (httpx.HTTPError, httpx.TimeoutException) as e:
-                if not should_continue_after_supabase_save_error(save_required, explicit_dates):
-                    raise
-                logger.warning("Continuing after Pick Supabase save error for %s; health check will verify cache: %s", target_date, e)
+            await _async_save_us_picks_to_supabase(target_date, pick_results, client=client)
         else:
             logger.info("No US Pick results found for %s — skipping pick save", target_date)
 
