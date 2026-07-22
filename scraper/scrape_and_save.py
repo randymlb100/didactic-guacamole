@@ -533,7 +533,7 @@ async def async_supabase_kv_save(cache_key, value, client=None, label="Supabase 
         return await async_supabase_rest_post(
             rpc_url,
             payload=rpc_payload,
-            headers=supabase_rest_headers(extra={
+            headers=supabase_write_headers(extra={
                 "Content-Type": "application/json",
                 "Prefer": "return=minimal",
             }),
@@ -549,7 +549,7 @@ async def async_supabase_kv_save(cache_key, value, client=None, label="Supabase 
         resp = await async_supabase_rest_patch(
             update_url,
             payload=update_payload,
-            headers=supabase_rest_headers(extra={
+            headers=supabase_write_headers(extra={
                 "Content-Type": "application/json",
                 "Prefer": "return=minimal",
             }),
@@ -565,7 +565,7 @@ async def async_supabase_kv_save(cache_key, value, client=None, label="Supabase 
     return await async_supabase_rest_post(
         f"{SUPABASE_URL}/rest/v1/lotterynet_kv",
         payload=json.dumps({"key": cache_key, "value": value, "upd": now}).encode("utf-8"),
-        headers=supabase_rest_headers(extra={
+        headers=supabase_write_headers(extra={
             "Content-Type": "application/json",
             "Prefer": "resolution=merge-duplicates,return=minimal",
         }),
@@ -2756,6 +2756,12 @@ def _king_api_date(date_str):
         return str(date_str)
 
 
+def _king_session_matches_date(session_date, requested_api_date):
+    """Compare King API timestamps without treating optional milliseconds as different dates."""
+    normalize = lambda value: str(value or "").replace(".000Z", "Z")
+    return normalize(session_date) == normalize(requested_api_date)
+
+
 async def _async_fetch_king_results(date_str, client=None):
     """Fetch King Lottery results from the JSON API used by the current site."""
     c = client or get_http_client()
@@ -2786,12 +2792,19 @@ async def _async_fetch_king_results(date_str, client=None):
                 continue
             result_id = "23" if "día" in normalized or "dia" in normalized else "24"
             sessions = item.get("sessions") or []
-            requested_api_date = _king_api_date(date_str).replace(".000Z", "Z")
+            requested_api_date = _king_api_date(date_str)
             session = next(
-                (candidate for candidate in sessions if str(candidate.get("date") or "") == requested_api_date),
+                (
+                    candidate
+                    for candidate in sessions
+                    if _king_session_matches_date(candidate.get("date"), requested_api_date)
+                ),
                 {},
             )
-            if not session and str((item.get("lastSession") or {}).get("date") or "") == requested_api_date:
+            if not session and _king_session_matches_date(
+                (item.get("lastSession") or {}).get("date"),
+                requested_api_date,
+            ):
                 session = item.get("lastSession") or {}
             score = session.get("score") or []
             values = score[0] if score and isinstance(score[0], list) else score

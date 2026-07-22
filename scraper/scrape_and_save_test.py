@@ -8,6 +8,20 @@ import scrape_and_save as scraper
 
 
 class ScraperContractsTest(unittest.TestCase):
+    def test_supabase_secret_key_is_sent_as_api_key_for_writes(self):
+        with patch.object(scraper, "SUPABASE_SECRET_KEY", "sb_secret_test_key"), \
+                patch.object(scraper, "SUPABASE_KEY", "sb_publishable_test_key"):
+            headers = scraper.supabase_write_headers()
+
+        self.assertEqual("sb_secret_test_key", headers["apikey"])
+        self.assertNotIn("Authorization", headers)
+
+    def test_king_session_date_accepts_optional_milliseconds(self):
+        requested = "2026-07-21T04:00:00Z"
+        self.assertTrue(scraper._king_session_matches_date("2026-07-21T04:00:00.000Z", requested))
+        self.assertTrue(scraper._king_session_matches_date(requested, "2026-07-21T04:00:00.000Z"))
+        self.assertFalse(scraper._king_session_matches_date("2026-07-20T04:00:00.000Z", requested))
+
     def test_supabase_secret_key_accepts_service_role_env_alias(self):
         env = {"SUPABASE_SERVICE_ROLE_KEY": "service-role-key"}
 
