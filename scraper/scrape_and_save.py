@@ -645,7 +645,9 @@ def should_fail_without_supabase_key(supabase_key, env=None):
 
 def get_dr_now():
     """Current Dominican Republic time (AST / UTC-4)."""
-    return datetime.datetime.utcnow() - datetime.timedelta(hours=4)
+    # Keep the existing naive local-time contract while avoiding deprecated utcnow().
+    utc_now = datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None)
+    return utc_now - datetime.timedelta(hours=4)
 
 def get_et_now():
     return datetime.datetime.now(ZoneInfo("America/New_York"))
@@ -3475,7 +3477,11 @@ async def _async_main():
     else:
         target_dates = default_scrape_dates()
 
-    logger.info("Syncing dates: %s (UTC now=%s)", ", ".join(target_dates), datetime.datetime.utcnow().strftime("%H:%M"))
+    logger.info(
+        "Syncing dates: %s (UTC now=%s)",
+        ", ".join(target_dates),
+        datetime.datetime.now(datetime.timezone.utc).strftime("%H:%M"),
+    )
     client = get_http_client()
 
     for idx, target_date in enumerate(target_dates):
