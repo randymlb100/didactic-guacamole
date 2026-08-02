@@ -1091,6 +1091,31 @@ class ScraperContractsTest(unittest.TestCase):
 
         self.assertEqual(["27", "28"], scraper.missing_tracked_result_ids(complete_except_haiti))
 
+    def test_parse_sessions_payload_accepts_current_anguila_titles_and_flat_scores(self):
+        site_payload = {
+            "siteCompanies": [{
+                "siteGames": [
+                    {"title": "Anguila 10:00 AM", "game_id": "g-anguila"},
+                ]
+            }]
+        }
+        sessions_payload = [{
+            "game_id": "g-anguila",
+            "sessions": [{
+                "date": "08/02/2026 04:00:00",
+                "score": ["05", "40", "71"],
+            }],
+        }]
+
+        rows = scraper.parse_loterias_dominicanas_sessions_payload(
+            site_payload,
+            sessions_payload,
+            "02-08-2026",
+        )
+
+        self.assertEqual(["2"], [row["id"] for row in rows])
+        self.assertEqual("05-40-71", rows[0]["number"])
+
     def test_merge_results_by_id_sorts_mixed_numeric_and_pick_ids(self):
         merged = scraper.merge_results_by_id(
             existing=[{"id": "US-P4-IL-PICK-4-MORNING", "number": "1-2-3-4"}],

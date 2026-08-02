@@ -292,6 +292,16 @@ LOTTERY_MAP = {
     "king lottery 7:30":     {"id": "24", "name": "King Lottery Noche"},
 }
 
+# The current loteriasdominicanas.com catalog renamed the Anguilla draws to
+# clock-based titles. Keep both names mapped to the same application IDs so a
+# catalog rename cannot make an otherwise valid result disappear.
+LOTTERY_MAP.update({
+    "anguila 10:00 am":      {"id": "2",  "name": "Anguila Mañana"},
+    "anguila 1:00 pm":       {"id": "4",  "name": "Anguila Mediodía"},
+    "anguila 6:00 pm":       {"id": "11", "name": "Anguila Tarde"},
+    "anguila 9:00 pm":       {"id": "14", "name": "Anguila Noche"},
+})
+
 MILOTERIA_NJ_MAP = {
     "new jersey am": {"id": "25", "name": "New Jersey AM"},
     "new jersey pm": {"id": "26", "name": "New Jersey PM"},
@@ -2877,6 +2887,110 @@ def loterias_dominicanas_api_date_iso(date_str):
     return dr_midnight.astimezone(datetime.timezone.utc).isoformat().replace("+00:00", "Z")
 
 
+def parse_loterias_dominicanas_session_date(raw):
+    text = str(raw or "").strip()
+    if not text:
+        return None
+
+    normalized = text.replace("Z", "+00:00")
+    try:
+        return datetime.datetime.fromisoformat(normalized).date()
+    except ValueError:
+        pass
+
+    for fmt in (
+        "%m/%d/%Y %H:%M:%S",
+        "%m/%d/%Y %I:%M:%S %p",
+        "%m/%d/%Y",
+        "%d-%m-%Y",
+        "%Y-%m-%d",
+    ):
+        try:
+            return datetime.datetime.strptime(text, fmt).date()
+        except ValueError:
+            continue
+    return None
+
+
+def session_score_numbers(score):
+    """Extract lottery numbers from both flat and grouped API score arrays."""
+    values = []
+    for item in score or []:
+        if isinstance(item, (list, tuple)):
+            values.extend(item)
+        else:
+            values.append(item)
+    return [
+        str(value).strip().zfill(2)
+        for value in values
+        if re.fullmatch(r"\d{1,2}", str(value or "").strip())
+    ]
+
+
+def parse_loterias_dominicanas_sessions_payload(site_payload, sessions_payload, date_str, wanted_ids=None):
+    results = []
+    seen_ids = set()
+    wanted = {str(value) for value in (wanted_ids or [])}
+    target_date = None
+    try:
+        target_date = datetime.datetime.strptime(str(date_str), "%d-%m-%Y").date()
+    except ValueError:
+        return results
+
+    game_names = {}
+    for company in (site_payload or {}).get("siteCompanies") or []:
+        for site_game in company.get("siteGames") or []:
+            title = str(site_game.get("title") or "").strip().lower()
+            game_id = str(site_game.get("game_id") or "").strip()
+            if game_id and title:
+                game_names[game_id] = title
+
+    for item in sessions_payload if isinstance(sessions_payload, list) else []:
+        game_id = str(item.get("game_id") or "").strip()
+        title = game_names.get(game_id, "")
+        match = LOTTERY_MAP.get(title)
+        if not match and "king lottery" in title:
+            is_day = "día" in title or "dia" in title or "day" in title or "12:30" in title
+            match = {
+                "id": "23" if is_day else "24",
+                "name": "King Lottery Día" if is_day else "King Lottery Noche",
+            }
+        if not match or match["id"] in seen_ids:
+            continue
+        if wanted and match["id"] not in wanted:
+            continue
+
+        sessions = item.get("sessions") or []
+        candidates = list(sessions)
+        last_session = item.get("lastSession") or {}
+        if last_session:
+            candidates.append(last_session)
+
+        chosen_session = None
+        for session in candidates:
+            session_date = parse_loterias_dominicanas_session_date(session.get("date"))
+            if session_date == target_date:
+                chosen_session = session
+                break
+        if not chosen_session:
+            continue
+
+        numbers = session_score_numbers(chosen_session.get("score"))
+
+        if len(numbers) < 3:
+            continue
+
+        results.append({
+            "id": match["id"],
+            "name": match["name"],
+            "date": date_str,
+            "number": "-".join(numbers),
+        })
+        seen_ids.add(match["id"])
+
+    return results
+
+
 def parse_loterias_dominicanas_api_site(payload, date_str, wanted_ids=None):
     results = []
     seen_ids = set()
@@ -2901,14 +3015,7 @@ def parse_loterias_dominicanas_api_site(payload, date_str, wanted_ids=None):
                 session_date = str(session.get("date") or "")
                 if not session_date.startswith(expected_iso_prefix):
                     continue
-                numbers = []
-                for score_row in session.get("score") or []:
-                    for value in score_row or []:
-                        text = str(value or "").strip()
-                        if re.fullmatch(r"\d{1,2}", text):
-                            numbers.append(text.zfill(2))
-                    if len(numbers) >= 3:
-                        break
+                numbers = session_score_numbers(session.get("score"))
                 if len(numbers) < 3:
                     continue
 
@@ -2928,21 +3035,45 @@ async def _async_fetch_loterias_dominicanas_api_results(date_str, wanted_ids=Non
     if not api_date:
         return []
     c = client or get_http_client()
-    url = (
-        "https://api.loteriasdominicanas.com/dominicana/sites/env"
-        f"?date={urllib.parse.quote(api_date, safe='')}&limit=2"
-    )
+    env_url = "https://api.loteriasdominicanas.com/dominicana/sites/env"
+    sessions_url = "https://api.loteriasdominicanas.com/dominicana/sessions?date=" + urllib.parse.quote(api_date, safe="")
     try:
-        resp = await async_http_get(url, client=c, accept_json=True)
+        env_resp, sessions_resp = await asyncio.gather(
+            async_http_get(env_url, client=c, accept_json=True),
+            async_http_get(sessions_url, client=c, accept_json=True),
+        )
     except Exception as e:
         logger.warning("LoteriasDominicanas API error for %s: %s", date_str, e)
         return []
     try:
-        payload = resp.json()
+        site_payload = env_resp.json()
+        sessions_payload = sessions_resp.json()
     except Exception as e:
         logger.warning("LoteriasDominicanas API JSON parse error for %s: %s", date_str, e)
         return []
-    rows = parse_loterias_dominicanas_api_site(payload, date_str, wanted_ids=wanted_ids)
+    rows = parse_loterias_dominicanas_sessions_payload(
+        site_payload,
+        sessions_payload,
+        date_str,
+        wanted_ids=wanted_ids,
+    )
+
+    # The sessions endpoint is not complete while draws are being published.
+    # Always fill only the missing IDs from the site catalog instead of
+    # discarding that complementary source when the first endpoint has rows.
+    seen_ids = {str(row.get("id")) for row in rows}
+    remaining_ids = None
+    if wanted_ids:
+        remaining_ids = {str(value) for value in wanted_ids} - seen_ids
+    catalog_rows = parse_loterias_dominicanas_api_site(
+        site_payload,
+        date_str,
+        wanted_ids=remaining_ids,
+    )
+    for row in catalog_rows:
+        if str(row.get("id")) not in seen_ids:
+            rows.append(row)
+            seen_ids.add(str(row.get("id")))
     for row in rows:
         logger.info("LoteriasDominicanas API [%s] %s: %s", row["id"], row["name"], row["number"])
     return rows
