@@ -59,7 +59,7 @@ test("cache local y payload remoto conservan fecha real de sorteo, detalles gana
   assertContains(model, "drawDateKey?.takeIf { it.isNotBlank() } ?: dominicanDayKey(createdAtEpochMs)", "modelo fecha sorteo");
 
   assertContains(localSales, "val dayKey = ticket.effectiveDrawDateKey()", "guardar ticket local");
-  assertContains(localSales, "tickets.groupBy { it.effectiveDrawDateKey() }", "guardar todos local");
+  assertContains(localSales, "groupBy { it.effectiveDrawDateKey() }", "guardar todos local");
   assertContains(localSales, 'put("drawDateKey", ticket.drawDateKey)', "json local");
   assertContains(localSales, 'put("drawDate", ticket.effectiveDrawDateKey())', "json local");
   assertContains(localSales, '"winningDetails"', "json local");

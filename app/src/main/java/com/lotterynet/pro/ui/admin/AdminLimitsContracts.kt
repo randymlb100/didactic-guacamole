@@ -33,11 +33,10 @@ internal data class AdminLimitScopeContract(
 )
 
 internal fun adminLimitSections(): List<AdminLimitSection> = listOf(
-    AdminLimitSection("Mis límites de venta", "Topes propios del admin"),
-    AdminLimitSection("Límite de venta de cajeros", "Dinero diario y topes por jugada"),
-    AdminLimitSection("Pagos", "Control de cobro por cajero"),
-    AdminLimitSection("Recargas", "Topes globales y master"),
-    AdminLimitSection("Sistema", "Modo compacto para POS"),
+    AdminLimitSection("Mis límites de venta", "Solo mi cuenta, sin mezclar con cajeros"),
+    AdminLimitSection("Límite de venta de cajeros", "Global, por cajero y por jugada"),
+    AdminLimitSection("Caja", "Pagos, recargas y tope de cobro"),
+    AdminLimitSection("Sistema POS", "Vista compacta para equipos POS"),
 )
 
 internal fun adminSalesLimitFieldLabels(): List<String> = listOf(
@@ -73,7 +72,7 @@ internal fun resolveAdminLimitScopeContract(
         },
         adminSalesUnlimitedWhenEmpty = !adminHasSelfLimits,
         cashierDefaultsAffectAdmin = false,
-        scopeLabels = listOf("Mis límites", "Todos los cajeros", "Por cajero"),
+        scopeLabels = listOf("Propio", "Global", "Por cajero"),
     )
 }
 
@@ -83,7 +82,7 @@ internal fun resolveCashierSalesLimitVisibilityContract(
     return CashierSalesLimitVisibilityContract(
         title = "Límite de venta de cajeros",
         meta = "Dinero por día",
-        description = "Este es el dinero máximo que puede vender cada cajero en un día. Los límites por jugada quedan debajo.",
+        description = "Este bloque separa el tope global, el tope por cajero y los topes por jugada para que no se mezclen.",
         currentDaySaleLabel = "Venta diaria actual",
         currentDaySaleValue = if (salesLimits.daySale > 0.0) {
             com.lotterynet.pro.core.format.formatWholeMoney(salesLimits.daySale)

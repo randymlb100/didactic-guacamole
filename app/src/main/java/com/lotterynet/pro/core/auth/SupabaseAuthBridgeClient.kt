@@ -3,6 +3,7 @@ package com.lotterynet.pro.core.auth
 import com.lotterynet.pro.core.config.SupabaseConfig
 import com.lotterynet.pro.core.model.UserAccount
 import com.lotterynet.pro.core.remote.SupabaseEdgeClient
+import com.lotterynet.pro.core.remote.SupabaseDns
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -15,7 +16,7 @@ interface SupabaseAuthRefresher {
 
 class SupabaseAuthBridgeClient(
     private val edgeClient: SupabaseEdgeClient = SupabaseEdgeClient(SupabaseConfig.URL, SupabaseConfig.KEY),
-    private val httpClient: OkHttpClient = OkHttpClient(),
+    private val httpClient: OkHttpClient = SupabaseDns.okHttpBuilder().build(),
 ) : SupabaseAuthRefresher {
     fun legacyLogin(account: UserAccount, password: String): SupabaseAuthBridgeSession {
         val response = edgeClient.invoke(

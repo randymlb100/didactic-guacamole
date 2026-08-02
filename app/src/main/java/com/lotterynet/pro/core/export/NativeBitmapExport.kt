@@ -62,7 +62,6 @@ object NativeBitmapExport {
     }
 
 private const val RESULTS_ROWS_PER_PAGE = 4
-private const val RESULTS_POSTER_MAX_PAGES = 5
 private const val PICK_DENSE_ROWS_PER_PAGE = 16
 private const val RESULTS_WHATSAPP_BALL_GREEN = -15293622
 
@@ -243,20 +242,7 @@ internal fun resolveResultsListPageSize(rowCount: Int): Int {
 }
 
 internal fun chunkResultsRowsForPoster(rows: List<ResultShareRow>): List<List<ResultShareRow>> {
-    if (rows.isEmpty()) return emptyList()
-    if (rows.size <= RESULTS_ROWS_PER_PAGE) return listOf(rows)
-    val pageCount = kotlin.math.min(RESULTS_POSTER_MAX_PAGES, rows.size)
-    val baseSize = rows.size / pageCount
-    val remainder = rows.size % pageCount
-    val chunks = mutableListOf<List<ResultShareRow>>()
-    var start = 0
-    repeat(pageCount) { index ->
-        val size = baseSize + if (index < remainder) 1 else 0
-        val end = (start + size).coerceAtMost(rows.size)
-        if (start < end) chunks += rows.subList(start, end)
-        start = end
-    }
-    return chunks
+    return rows.chunked(RESULTS_ROWS_PER_PAGE)
 }
 
 internal fun chunkPickResultsRowsForDenseList(rows: List<ResultShareRow>): List<List<ResultShareRow>> {
@@ -452,6 +438,7 @@ internal fun resolveResultRowLayout(row: ResultShareRow): ResultRowLayout {
     private data class TicketGroupLayout(
         val lotteryName: String,
         val lotteryLogoAssetPath: String?,
+        val secondaryLotteryLogoAssetPath: String?,
         val plays: List<PlayItem>,
         val columns: List<List<PlayItem>>,
         val rows: Int,
@@ -491,6 +478,12 @@ internal fun resolveResultRowLayout(row: ResultShareRow): ResultRowLayout {
         val playTextSizePx: Float,
         val amountTextSizePx: Float,
         val headerTextSizePx: Float,
+    )
+
+    internal data class OfficialTicketShareSpacing(
+        val columnGapPx: Float,
+        val rowGapPx: Float,
+        val showRowDividers: Boolean,
     )
 
     internal data class OfficialTicketLotteryHeaderLayout(
@@ -582,9 +575,18 @@ internal fun resolveResultRowLayout(row: ResultShareRow): ResultRowLayout {
         totalPlayCount: Int,
         groupCount: Int,
         maxGroupPlayCount: Int,
+        forceCompact: Boolean = false,
     ): OfficialTicketBitmapDensity {
-        val compact = totalPlayCount >= 24 || groupCount >= 4 || maxGroupPlayCount >= 16
+        val whatsappSmallTicket = forceCompact && totalPlayCount <= 8
+        val compact = forceCompact || totalPlayCount >= 24 || groupCount >= 4 || maxGroupPlayCount >= 16
         return when {
+            whatsappSmallTicket -> OfficialTicketBitmapDensity(
+                compact = true,
+                rowHeightPx = 56,
+                playTextSizePx = 34f,
+                amountTextSizePx = 33f,
+                headerTextSizePx = 28f,
+            )
             !compact -> OfficialTicketBitmapDensity(
                 compact = false,
                 rowHeightPx = resolveOfficialTicketBitmapPlayVisual(partCount = 2, hasLongPart = false).rowHeightPx,
@@ -649,13 +651,16 @@ internal fun resolveResultRowLayout(row: ResultShareRow): ResultRowLayout {
         bancaName: String,
         securityCode: String = "",
         bancaLogoUri: String? = null,
+        forceCompactLayout: Boolean = false,
     ): Bitmap {
         val width = 1260
+        val compactOfficialVisual = forceCompactLayout
         val headerHeight = 342
         val serialBandHeight = 132
         val securityBandHeight = if (securityCode.isNotBlank()) 142 else 0
+        val totalGapHeight = if (compactOfficialVisual) 18 else 0
         val totalBarHeight = 198
-        val qrSectionHeight = 284
+        val qrSectionHeight = if (compactOfficialVisual) 404 else 284
         val footerHeight = 200
         val catalog = StaticLotteryCatalogRepository()
         val grouped = ticket.plays.groupBy { play ->
@@ -667,6 +672,13 @@ internal fun resolveResultRowLayout(row: ResultShareRow): ResultRowLayout {
             totalPlayCount = ticket.plays.size,
             groupCount = grouped.size,
             maxGroupPlayCount = grouped.values.maxOfOrNull { it.size } ?: 0,
+            forceCompact = forceCompactLayout,
+        )
+        val shareSpacing = resolveOfficialTicketShareSpacing(
+            totalPlayCount = ticket.plays.size,
+            groupCount = grouped.size,
+            maxGroupPlayCount = grouped.values.maxOfOrNull { it.size } ?: 0,
+            compactOfficialVisual = compactOfficialVisual,
         )
         val lotteryHeaderLayout = resolveOfficialTicketLotteryHeaderLayout()
         val groupEntries = grouped.entries.map { entry ->
@@ -677,11 +689,21 @@ internal fun resolveResultRowLayout(row: ResultShareRow): ResultRowLayout {
             TicketGroupLayout(
                 lotteryName = entry.key.replace(" | ", " · "),
                 lotteryLogoAssetPath = catalog.getLotteryByName(primaryName)?.logoAssetPath,
+                secondaryLotteryLogoAssetPath = entry.value.firstOrNull()?.let { firstPlay ->
+                    firstPlay.secondaryLotteryId
+                        ?.trim()
+                        ?.takeIf { it.isNotBlank() }
+                        ?.let { secondaryId -> catalog.getLotteryById(secondaryId)?.logoAssetPath }
+                        ?: firstPlay.secondaryLotteryName
+                            ?.trim()
+                            ?.takeIf { it.isNotBlank() }
+                            ?.let { secondaryName -> catalog.getLotteryByName(secondaryName)?.logoAssetPath }
+                },
                 plays = sortedPlays,
                 columns = columns,
                 rows = rows,
                 density = density,
-                height = lotteryHeaderLayout.heightPx + 44 + (rows * density.rowHeightPx),
+                height = lotteryHeaderLayout.heightPx + 44 + (rows * density.rowHeightPx) + (kotlin.math.max(0, rows - 1) * shareSpacing.rowGapPx.toInt()),
             )
         }
         val groupsHeight = groupEntries.sumOf { it.height } + (kotlin.math.max(0, groupEntries.size - 1) * 24)
@@ -691,10 +713,10 @@ internal fun resolveResultRowLayout(row: ResultShareRow): ResultRowLayout {
         } else {
             0
         }
-        val height = headerHeight + serialBandHeight + securityBandHeight + groupsHeight + winnerDetailsHeight + totalBarHeight + qrSectionHeight + footerHeight
+        val height = headerHeight + serialBandHeight + securityBandHeight + groupsHeight + winnerDetailsHeight + totalGapHeight + totalBarHeight + qrSectionHeight + footerHeight
         val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
         val canvas = Canvas(bitmap)
-        canvas.drawColor(Color.WHITE)
+        canvas.drawColor(if (compactOfficialVisual) Color.parseColor("#F3F5F8") else Color.WHITE)
 
         val navy = Color.parseColor("#071A44")
         val navyDeep = Color.parseColor("#13367A")
@@ -705,8 +727,8 @@ internal fun resolveResultRowLayout(row: ResultShareRow): ResultRowLayout {
         val green = Color.parseColor("#16A34A")
         val greenDeep = Color.parseColor("#14532D")
         val greenSoft = Color.parseColor("#DCFCE7")
-        val outline = Color.parseColor("#E2E8F0")
-        val surfaceAlt = Color.parseColor("#F8FAFC")
+        val outline = Color.parseColor(if (compactOfficialVisual) "#D7DEE8" else "#E2E8F0")
+        val surfaceAlt = Color.parseColor(if (compactOfficialVisual) "#F6F8FB" else "#F8FAFC")
         val muted = Color.parseColor("#64748B")
         val mono = Paint(Paint.ANTI_ALIAS_FLAG).apply {
             color = navy
@@ -756,22 +778,24 @@ internal fun resolveResultRowLayout(row: ResultShareRow): ResultRowLayout {
         } else {
             drawHeaderMedallion(canvas, 48f, 48f, headerIdentity.logoWidthPx, goldSoft, navy)
         }
-        fill.color = green
-        canvas.drawCircle(1136f, 84f, 18f, fill)
-        canvas.drawCircle(1188f, 84f, 18f, fill)
+        if (!compactOfficialVisual) {
+            fill.color = green
+            canvas.drawCircle(1136f, 84f, 18f, fill)
+            canvas.drawCircle(1188f, 84f, 18f, fill)
+        }
         if (brandLogo == null) {
             small.color = goldSoft
             canvas.drawText(headerIdentity.secondaryText, 246f, 98f, small)
             body.color = Color.WHITE
             body.textSize = if (headerIdentity.primaryText.length > 16) 68f else 82f
-            drawTextFitted(canvas, headerIdentity.primaryText, 246f, 180f, body, 620f)
+            drawTextFitted(canvas, headerIdentity.primaryText, 246f, 180f, body, 520f)
         } else {
             small.color = goldSoft
             small.textAlign = Paint.Align.LEFT
             canvas.drawText(headerIdentity.secondaryText, 520f, 96f, small)
             body.color = Color.WHITE
             body.textSize = if (headerIdentity.primaryText.length > 18) 44f else 54f
-            drawTextFitted(canvas, headerIdentity.primaryText, 520f, 168f, body, 360f)
+            drawTextFitted(canvas, headerIdentity.primaryText, 520f, 168f, body, 300f)
         }
         val headerInfo = listOf(ticket.adminUser, ticket.sellerUser).filter { !it.isNullOrBlank() }.joinToString("  ·  ")
         if (headerInfo.isNotBlank()) {
@@ -786,10 +810,17 @@ internal fun resolveResultRowLayout(row: ResultShareRow): ResultRowLayout {
         )
 
         var top = headerHeight.toFloat()
-        fill.color = Color.parseColor("#F9FBFF")
+        fill.color = if (compactOfficialVisual) Color.WHITE else Color.parseColor("#F9FBFF")
         canvas.drawRect(0f, top, width.toFloat(), top + serialBandHeight, fill)
-        fill.color = gold
-        canvas.drawRect(0f, top, 12f, top + serialBandHeight, fill)
+        if (compactOfficialVisual) {
+            fill.color = gold
+            canvas.drawRect(0f, top, width.toFloat(), top + 7f, fill)
+            fill.color = goldPale
+            canvas.drawRect(0f, top + 7f, 12f, top + serialBandHeight, fill)
+        } else {
+            fill.color = gold
+            canvas.drawRect(0f, top, 12f, top + serialBandHeight, fill)
+        }
         small.color = muted
         small.textAlign = Paint.Align.LEFT
         small.textSize = 22f
@@ -805,10 +836,14 @@ internal fun resolveResultRowLayout(row: ResultShareRow): ResultRowLayout {
         canvas.drawText(formatDateForTicket(ticket.createdAtEpochMs), width - 42f, top + 92f, mono)
         mono.color = navySoft
         mono.textSize = 32f
-        canvas.drawText(formatTimeForTicket(ticket.createdAtEpochMs), width - 42f, top + 134f, mono)
+        canvas.drawText(formatTimeForTicket(ticket.createdAtEpochMs), width - 42f, top + 124f, mono)
         canvas.drawLine(0f, top + serialBandHeight, width.toFloat(), top + serialBandHeight, stroke)
         top += serialBandHeight
         if (securityCode.isNotBlank()) {
+            if (compactOfficialVisual) {
+                fill.color = Color.parseColor("#F8FAFC")
+                canvas.drawRect(0f, top, width.toFloat(), top + securityBandHeight, fill)
+            }
             drawInfoBox(canvas, 42f, top + 18f, width - 42f, top + 118f, "Codigo de seguridad", securityCode, body, small, stroke)
             top += securityBandHeight
         }
@@ -829,25 +864,40 @@ internal fun resolveResultRowLayout(row: ResultShareRow): ResultRowLayout {
             } else {
                 null
             }
+            val secondaryLogoBitmap = if (context != null && !group.secondaryLotteryLogoAssetPath.isNullOrBlank()) {
+                LotteryLogoBitmapLoader.load(context, group.secondaryLotteryLogoAssetPath)
+            } else {
+                null
+            }
             if (logoBitmap != null) {
                 drawLogoThumb(canvas, logoBitmap, 34f, top + 10f, lotteryHeaderLayout.logoSizePx)
             } else {
                 drawLotteryBadge(canvas, 34f, top + 10f, lotteryHeaderLayout.logoSizePx, group.lotteryName.take(2), lotColor)
             }
+            if (secondaryLogoBitmap != null) {
+                drawLogoThumb(canvas, secondaryLogoBitmap, 86f, top + 10f, lotteryHeaderLayout.logoSizePx)
+            }
             body.color = Color.WHITE
-            body.textSize = 36f
-            canvas.drawText(group.lotteryName, 110f, top + 43f, body)
+            body.textSize = if (secondaryLogoBitmap != null) 32f else 36f
+            drawTextFitted(
+                canvas,
+                group.lotteryName,
+                if (secondaryLogoBitmap != null) 166f else 110f,
+                top + 43f,
+                body,
+                if (secondaryLogoBitmap != null) 820f else 900f,
+            )
             small.color = Color.argb(218, 255, 255, 255)
             small.textAlign = Paint.Align.LEFT
             small.textSize = 20f
-            canvas.drawText("JUGADAS ${group.plays.size}", 110f, top + 66f, small)
+            canvas.drawText("JUGADAS ${group.plays.size}", if (secondaryLogoBitmap != null) 166f else 110f, top + 66f, small)
             top += lotteryHeaderLayout.heightPx
 
-            val columnGap = 24f
+            val columnGap = shareSpacing.columnGapPx
             val columnWidth = if (group.columns.size > 1) (width - 84f - columnGap) / 2f else width - 84f
             group.columns.forEachIndexed { columnIndex, column ->
                 val columnLeft = 42f + (columnIndex * (columnWidth + columnGap))
-                fill.color = Color.parseColor("#FBFDFF")
+                fill.color = Color.parseColor(if (compactOfficialVisual) "#EEF3F8" else "#FBFDFF")
                 canvas.drawRoundRect(RectF(columnLeft, top + 6f, columnLeft + columnWidth, top + 44f), 12f, 12f, fill)
                 small.color = Color.parseColor("#334155")
                 small.textAlign = Paint.Align.LEFT
@@ -858,12 +908,12 @@ internal fun resolveResultRowLayout(row: ResultShareRow): ResultRowLayout {
 
                 column.forEachIndexed { rowIndex, play ->
                     val rowHeight = group.density.rowHeightPx.toFloat()
-                    val rowTop = top + 44f + (rowIndex * rowHeight)
+                    val rowTop = top + 44f + (rowIndex * (rowHeight + shareSpacing.rowGapPx))
                     if (rowIndex % 2 == 0) {
                         fill.color = surfaceAlt
                         canvas.drawRect(columnLeft, rowTop, columnLeft + columnWidth, rowTop + rowHeight, fill)
                     }
-                    if (rowIndex > 0) {
+                    if (shareSpacing.showRowDividers && rowIndex > 0) {
                         canvas.drawLine(columnLeft + 12f, rowTop, columnLeft + columnWidth - 12f, rowTop, stroke)
                     }
                     if (group.density.compact) {
@@ -871,7 +921,7 @@ internal fun resolveResultRowLayout(row: ResultShareRow): ResultRowLayout {
                         mono.textSize = group.density.playTextSizePx
                         mono.textAlign = Paint.Align.LEFT
                         canvas.drawText(
-                            "${play.playType.uppercase(Locale.US)} ${formatPlayDisplayNumber(play.number, play.playType)}",
+                            "${playTypeShortLabel(play.playType)} ${formatPlayDisplayNumber(play.number, play.playType)}",
                             columnLeft + 24f,
                             rowTop + (rowHeight * 0.72f),
                             mono,
@@ -972,7 +1022,7 @@ internal fun resolveResultRowLayout(row: ResultShareRow): ResultRowLayout {
             }
         }
 
-        val totalTop = top + 18f
+        val totalTop = top + if (compactOfficialVisual) totalGapHeight.toFloat() else 18f
         val totalPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
             shader = android.graphics.LinearGradient(
                 0f,
@@ -987,7 +1037,7 @@ internal fun resolveResultRowLayout(row: ResultShareRow): ResultRowLayout {
         canvas.drawRect(0f, totalTop, width.toFloat(), totalTop + totalBarHeight, totalPaint)
         fill.color = gold
         canvas.drawRect(0f, totalTop, width.toFloat(), totalTop + 14f, fill)
-        fill.color = Color.argb(24, Color.red(goldPale), Color.green(goldPale), Color.blue(goldPale))
+        fill.color = Color.argb(if (compactOfficialVisual) 34 else 24, Color.red(goldPale), Color.green(goldPale), Color.blue(goldPale))
         canvas.drawRoundRect(RectF(34f, totalTop + 38f, 312f, totalTop + 106f), 34f, 34f, fill)
         small.color = Color.parseColor("#F8DF8C")
         small.textAlign = Paint.Align.LEFT
@@ -999,15 +1049,24 @@ internal fun resolveResultRowLayout(row: ResultShareRow): ResultRowLayout {
         canvas.drawText("$ ${formatMoney(ticket.total)}", width - 36f, totalTop + 144f, mono)
         top = totalTop + totalBarHeight
 
+        if (compactOfficialVisual) {
+            fill.color = Color.parseColor("#F8FAFC")
+            canvas.drawRect(0f, top, width.toFloat(), top + qrSectionHeight, fill)
+        }
         drawQrBlock(
             canvas = canvas,
-            left = 42f,
-            top = top,
-            size = 196,
+            left = if (compactOfficialVisual) 64f else 42f,
+            top = if (compactOfficialVisual) top + 28f else top,
+            size = if (compactOfficialVisual) 184 else 196,
             payload = TicketQrPayload(
                 id = ticket.id,
                 banca = bancaName,
-                lots = ticket.plays.mapNotNull { it.lotteryName }.distinct().joinToString(" / "),
+                lots = ticket.plays
+                    .flatMap { play -> listOfNotNull(play.lotteryName, play.secondaryLotteryName) }
+                    .map { it.trim() }
+                    .filter { it.isNotBlank() }
+                    .distinct()
+                    .joinToString(" / "),
                 date = formatDateForTicket(ticket.createdAtEpochMs),
                 total = ticket.total,
                 securityCode = securityCode,
@@ -1023,6 +1082,7 @@ internal fun resolveResultRowLayout(row: ResultShareRow): ResultRowLayout {
             outline = outline,
             navy = navy,
             muted = muted,
+            polished = compactOfficialVisual,
         )
         top += qrSectionHeight
 
@@ -1121,11 +1181,12 @@ internal fun resolveResultRowLayout(row: ResultShareRow): ResultRowLayout {
             groupCount = groups.size,
             maxGroupPlayCount = groups.values.maxOfOrNull { it.size } ?: 0,
         )
+        val rowGapPx = if (density.compact) 6 else 10
         val lotteryHeaderLayout = resolveOfficialTicketLotteryHeaderLayout()
         val groupsHeight = groups.values.sumOf { plays ->
             val columns = splitTicketColumns(sortOfficialTicketPlays(plays))
             val rows = columns.maxOfOrNull { it.size } ?: 0
-            lotteryHeaderLayout.heightPx + 44 + (rows * density.rowHeightPx)
+            lotteryHeaderLayout.heightPx + 44 + (rows * density.rowHeightPx) + (kotlin.math.max(0, rows - 1) * rowGapPx)
         } + (kotlin.math.max(0, groups.size - 1) * 24)
         val winnerGroups = groupOfficialTicketWinnerDetails(ticket)
         val winnerDetailsHeight = if (winnerGroups.isNotEmpty()) {
@@ -2287,7 +2348,7 @@ internal fun resolveResultRowLayout(row: ResultShareRow): ResultRowLayout {
         var top = headerHeight + 32f
         payload.rows.forEach { row ->
             val accent = runCatching { Color.parseColor(row.accentColor ?: "#6366F1") }.getOrElse { Color.parseColor("#6366F1") }
-            val localLogoAssetPath = row.logoAssetPath
+            val localLogoAssetPath = row.logoAssetPath?.takeIf { it.isNotBlank() }
                 ?: StaticLotteryCatalogRepository().getLotteryByName(row.displayName)?.logoAssetPath
             val logoBitmap = context?.let { LotteryLogoBitmapLoader.load(it, localLogoAssetPath) }
             val layout = resolveResultRowLayout(row)
@@ -2531,7 +2592,7 @@ internal fun resolveResultRowLayout(row: ResultShareRow): ResultRowLayout {
             fill.color = if (index % 2 == 0) panelAlt else panel
             canvas.drawRoundRect(RectF(tableLeft + 18f, rowTop - 8f, tableRight - 18f, rowTop + 66f), 16f, 16f, fill)
 
-            val localLogoAssetPath = row.logoAssetPath
+            val localLogoAssetPath = row.logoAssetPath?.takeIf { it.isNotBlank() }
                 ?: StaticLotteryCatalogRepository().getLotteryByName(row.displayName)?.logoAssetPath
             val logoBitmap = context?.let { LotteryLogoBitmapLoader.load(it, localLogoAssetPath) }
             if (logoBitmap != null) {
@@ -3201,6 +3262,20 @@ internal fun resolveResultRowLayout(row: ResultShareRow): ResultRowLayout {
     }
 
     private fun winnerHitLabel(raw: String): String {
+        val tokens = raw
+            .split(',', '|')
+            .map { it.trim() }
+            .filter { it.isNotBlank() }
+        if (tokens.isEmpty()) return "ganadora"
+        val labels = tokens.map(::winningSingleHitLabel)
+        return when (labels.size) {
+            1 -> labels.single()
+            2 -> "${labels[0]} y ${labels[1]}"
+            else -> labels.dropLast(1).joinToString(", ") + " y " + labels.last()
+        }
+    }
+
+    private fun winningSingleHitLabel(raw: String): String {
         return when (raw.trim().lowercase(Locale.US)) {
             "1" -> "primera"
             "2" -> "segunda"
@@ -3727,7 +3802,7 @@ internal fun resolveResultRowLayout(row: ResultShareRow): ResultRowLayout {
     }
 
     private fun playTypeLabel(playType: String): String {
-        return when (playType.uppercase(Locale.getDefault())) {
+        return when (normalizePickPlayType(playType) ?: playType.uppercase(Locale.getDefault())) {
             "Q" -> "Quiniela"
             "P" -> "Pale"
             "SP" -> "Super Pale"
@@ -3739,6 +3814,52 @@ internal fun resolveResultRowLayout(row: ResultShareRow): ResultRowLayout {
             "P4BOX" -> "Pick 4 Box"
             "P4B" -> "Pick 4 Back Pair"
             else -> playType
+        }
+    }
+
+    private fun playTypeShortLabel(playType: String): String {
+        return when (normalizePickPlayType(playType)) {
+            "P3", "P3BOX", "P4", "P4BOX" -> normalizePickPlayType(playType).orEmpty()
+            else -> when (playType.trim().uppercase(Locale.US).replace(" ", "_").replace("-", "_")) {
+                "Q", "QUINIELA" -> "Q"
+                "P", "PALE" -> "P"
+                "T", "TRIPLETA" -> "T"
+                "SP", "SUPER_PALE", "SUPERPALE" -> "SP"
+                else -> playType.uppercase(Locale.US).ifBlank { "-" }
+            }
+        }
+    }
+
+    internal fun resolveOfficialTicketShareSpacing(
+        totalPlayCount: Int,
+        groupCount: Int,
+        maxGroupPlayCount: Int,
+        compactOfficialVisual: Boolean,
+    ): OfficialTicketShareSpacing {
+        val density = resolveOfficialTicketBitmapDensity(
+            totalPlayCount = totalPlayCount,
+            groupCount = groupCount,
+            maxGroupPlayCount = maxGroupPlayCount,
+            forceCompact = compactOfficialVisual,
+        )
+        return OfficialTicketShareSpacing(
+            columnGapPx = when {
+                groupCount > 1 && !density.compact -> 28f
+                groupCount > 1 -> 32f
+                else -> 24f
+            },
+            rowGapPx = if (density.compact) 6f else 10f,
+            showRowDividers = false,
+        )
+    }
+
+    private fun normalizePickPlayType(playType: String): String? {
+        return when (playType.uppercase(Locale.US).replace(" ", "_").replace("-", "_")) {
+            "P3", "P3S", "PICK3", "PICK_3", "PICK3_STRAIGHT", "PICK_3_STRAIGHT" -> "P3"
+            "P3BOX", "P3_BOX", "PICK3_BOX", "PICK_3_BOX" -> "P3BOX"
+            "P4", "P4S", "PICK4", "PICK_4", "PICK4_STRAIGHT", "PICK_4_STRAIGHT" -> "P4"
+            "P4BOX", "P4_BOX", "PICK4_BOX", "PICK_4_BOX" -> "P4BOX"
+            else -> null
         }
     }
 
@@ -3822,6 +3943,7 @@ internal fun resolveResultRowLayout(row: ResultShareRow): ResultRowLayout {
         outline: Int,
         navy: Int,
         muted: Int,
+        polished: Boolean = false,
     ) {
         val qrBitmap = buildQrBitmap(JSONObject().apply {
             put("version", payload.version)
@@ -3840,7 +3962,9 @@ internal fun resolveResultRowLayout(row: ResultShareRow): ResultRowLayout {
                 }
             })
         }.toString(), size)
-        val fill = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.parseColor("#F8FAFC") }
+        val fill = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = Color.parseColor(if (polished) "#FFFFFF" else "#F8FAFC")
+        }
         val stroke = Paint(Paint.ANTI_ALIAS_FLAG).apply {
             style = Paint.Style.STROKE
             strokeWidth = 3f
@@ -3855,16 +3979,29 @@ internal fun resolveResultRowLayout(row: ResultShareRow): ResultRowLayout {
             color = muted
             textSize = 24f
         }
-        val verificationWidth = 920f
-        val box = RectF(left, top, left + verificationWidth, top + size + 120f)
-        canvas.drawRoundRect(box, 24f, 24f, fill)
-        canvas.drawRoundRect(box, 24f, 24f, stroke)
+        val verificationWidth = if (polished) 1088f else 920f
+        val verificationHeight = if (polished) {
+            if (payload.securityCode.isNotBlank()) 344f else 304f
+        } else {
+            size + 120f
+        }
+        val box = RectF(left, top, left + verificationWidth, top + verificationHeight)
+        val radius = if (polished) 22f else 24f
+        canvas.drawRoundRect(box, radius, radius, fill)
+        canvas.drawRoundRect(box, radius, radius, stroke)
         canvas.drawBitmap(qrBitmap, left + 24f, top + 24f, null)
         canvas.drawText("VERIFICACION", left + size + 68f, top + 64f, body)
         canvas.drawText("Ticket: ${payload.id.sanitizeTicketId()}", left + size + 68f, top + 114f, small)
         canvas.drawText("Fecha: ${payload.date}", left + size + 68f, top + 154f, small)
         canvas.drawText("Total: ${formatMoney(payload.total)}", left + size + 68f, top + 194f, small)
-        canvas.drawText("Loterias: ${payload.lots.ifBlank { "N/A" }}", left + size + 68f, top + 234f, small)
+        drawTextFitted(
+            canvas,
+            "Loterias: ${payload.lots.ifBlank { "N/A" }}",
+            left + size + 68f,
+            top + 234f,
+            small,
+            verificationWidth - size - 112f,
+        )
         canvas.drawText("Jugadas: ${payload.plays.size}", left + size + 68f, top + 274f, small)
         payload.securityCode.takeIf { it.isNotBlank() }?.let {
             body.color = Color.parseColor("#92400E")

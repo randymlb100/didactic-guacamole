@@ -86,6 +86,7 @@ class StaticExportTemplateRepository : ExportTemplateRepository {
             "Cajero" to sellerLabel,
         )
         val grouped = ticket.plays.groupBy { it.lotteryName.orEmpty().ifBlank { "Lotería" } }
+        val showLotterySubtotals = grouped.size > 1
         val body = grouped.entries.joinToString("") { (lotteryName, plays) ->
             val lotteryTotal = plays.sumOf { it.amount }
             """
@@ -100,7 +101,7 @@ class StaticExportTemplateRepository : ExportTemplateRepository {
                   <div class="ticket-row-main">
                     <div class="ticket-number">${escapeHtml(play.number)}</div>
                     <div class="ticket-play-meta">
-                      <div class="ticket-type">${escapeHtml(play.playType)}</div>
+                      <div class="ticket-type">${escapeHtml(officialPlayTypeShortLabel(play.playType))}</div>
                       <div class="ticket-play-label">Jugada</div>
                     </div>
                   </div>
@@ -108,10 +109,18 @@ class StaticExportTemplateRepository : ExportTemplateRepository {
                 </div>
                 """.trimIndent()
               }}
-              <div class="ticket-lot-total">
-                <span>Monto lotería</span>
-                <strong>$ ${formatMoney(lotteryTotal)}</strong>
-              </div>
+              ${
+                if (showLotterySubtotals) {
+                    """
+                    <div class="ticket-lot-total">
+                      <span>Subtotal</span>
+                      <strong>$ ${formatMoney(lotteryTotal)}</strong>
+                    </div>
+                    """.trimIndent()
+                } else {
+                    ""
+                }
+              }
             </div>
             """.trimIndent()
         }
@@ -138,7 +147,7 @@ class StaticExportTemplateRepository : ExportTemplateRepository {
                   ${group.details.joinToString("") { detail ->
                     """
                     <div class="ticket-winner-row">
-                      <span>${escapeHtml(detail.playType)} ${escapeHtml(com.lotterynet.pro.core.model.formatPlayDisplayNumber(detail.playedNumber, detail.playType))}</span>
+                      <span>${escapeHtml(officialPlayTypeShortLabel(detail.playType))} ${escapeHtml(com.lotterynet.pro.core.model.formatPlayDisplayNumber(detail.playedNumber, detail.playType))}</span>
                       <small>${escapeHtml(winningHitLabel(detail.hitPosition))} · Apostado $ ${formatMoney(detail.amount)}</small>
                       <b>$ ${formatMoney(detail.payoutAmount)}</b>
                     </div>
@@ -368,6 +377,33 @@ class StaticExportTemplateRepository : ExportTemplateRepository {
         return com.lotterynet.pro.core.format.formatWholeAmount(amount)
     }
 
+    private fun officialPlayTypeShortLabel(playType: String): String {
+        return when (normalizePickPlayType(playType)) {
+            "P3", "P3BOX", "P4", "P4BOX" -> normalizePickPlayType(playType).orEmpty()
+            else -> when (playType.trim().uppercase(java.util.Locale.US)) {
+                "Q" -> "Q"
+                "P" -> "P"
+                "T" -> "T"
+                "SP" -> "SP"
+                "QUINIELA" -> "Q"
+                "PALE" -> "P"
+                "TRIPLETA" -> "T"
+                "SUPER_PALE", "SUPERPALE" -> "SP"
+                else -> playType.uppercase(java.util.Locale.US).ifBlank { "-" }
+            }
+        }
+    }
+
+    private fun normalizePickPlayType(playType: String): String? {
+        return when (playType.uppercase(java.util.Locale.US).replace(" ", "_").replace("-", "_")) {
+            "P3", "P3S", "PICK3", "PICK_3", "PICK3_STRAIGHT", "PICK_3_STRAIGHT" -> "P3"
+            "P3BOX", "P3_BOX", "PICK3_BOX", "PICK_3_BOX" -> "P3BOX"
+            "P4", "P4S", "PICK4", "PICK_4", "PICK4_STRAIGHT", "PICK_4_STRAIGHT" -> "P4"
+            "P4BOX", "P4_BOX", "PICK4_BOX", "PICK_4_BOX" -> "P4BOX"
+            else -> null
+        }
+    }
+
     private fun resolveSellerLabel(ticket: TicketRecord): String {
         return ticket.sellerUser?.takeIf { it.isNotBlank() }
             ?: ticket.adminUser?.takeIf { it.isNotBlank() }
@@ -384,6 +420,20 @@ class StaticExportTemplateRepository : ExportTemplateRepository {
     }
 
     private fun winningHitLabel(raw: String): String {
+        val tokens = raw
+            .split(',', '|')
+            .map { it.trim() }
+            .filter { it.isNotBlank() }
+        if (tokens.isEmpty()) return "ganadora"
+        val labels = tokens.map(::winningSingleHitLabel)
+        return when (labels.size) {
+            1 -> labels.single()
+            2 -> "${labels[0]} y ${labels[1]}"
+            else -> labels.dropLast(1).joinToString(", ") + " y " + labels.last()
+        }
+    }
+
+    private fun winningSingleHitLabel(raw: String): String {
         return when (raw.trim().lowercase(java.util.Locale.US)) {
             "1" -> "primera"
             "2" -> "segunda"

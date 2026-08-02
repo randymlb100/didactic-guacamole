@@ -1,5 +1,6 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
+import { bumpTicketDeltaResponseVersion } from "../_shared/lotterynet-admin.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -28,8 +29,38 @@ function clean(value: unknown): string {
   return String(value ?? "").trim();
 }
 
+function validIdentity(value: unknown): string {
+  const identity = clean(value);
+  return identity && !["null", "undefined"].includes(identity.toLowerCase()) ? identity : "";
+}
+
 function lower(value: unknown): string {
   return clean(value).toLowerCase();
+}
+
+function createTicketErrorStatus(error: unknown): number {
+  const message = lower(
+    error instanceof Error
+      ? error.message
+      : typeof error === "object" && error !== null && "message" in error
+        ? (error as { message?: unknown }).message
+        : error,
+  );
+  if (
+    message.includes("numero lleno") ||
+    message.includes("número lleno") ||
+    message.includes("limite agotado") ||
+    message.includes("límite agotado") ||
+    message.includes("limite personal agotado") ||
+    message.includes("límite personal agotado") ||
+    message.includes("pool agotado") ||
+    message.includes("limite administrativo agotado") ||
+    message.includes("límite administrativo agotado") ||
+    message.includes("disponible")
+  ) {
+    return 409;
+  }
+  return 500;
 }
 
 function bearerToken(req: Request): string {
@@ -69,7 +100,10 @@ function accountMatches(account: Record<string, unknown>, value: string): boolea
   ].some((candidate) => lower(candidate) === needle);
 }
 
-async function authenticatedActor(req: Request, actorKey: string): Promise<{ ok: boolean; message?: string }> {
+async function authenticatedActor(
+  req: Request,
+  actorKey: string,
+): Promise<{ ok: boolean; message?: string; role?: string; account?: Record<string, unknown> }> {
   const token = bearerToken(req);
   if (!token) return { ok: false, message: "Sesion del servidor requerida." };
 
@@ -77,6 +111,7 @@ async function authenticatedActor(req: Request, actorKey: string): Promise<{ ok:
   if (error || !data.user) return { ok: false, message: "Sesion del servidor invalida." };
 
   const metadata = data.user.app_metadata ?? {};
+  const metadataRole = lower(metadata.role ?? metadata.legacy_role ?? metadata.user_role);
   const metadataMatches = [metadata.legacy_id, metadata.username, metadata.user, metadata.admin_id, metadata.admin_user]
     .some((candidate) => lower(candidate) === lower(actorKey));
 
@@ -95,7 +130,7 @@ async function authenticatedActor(req: Request, actorKey: string): Promise<{ ok:
         .some((candidate) => accountMatches(account, clean(candidate)))
     );
   if (!actor) {
-    return metadataMatches ? { ok: true } : { ok: false, message: "Usuario no existe en servidor." };
+    return metadataMatches ? { ok: true, role: metadataRole } : { ok: false, message: "Usuario no existe en servidor." };
   }
   if (actor.activo === false || actor.active === false || actor.blocked === true || actor.disabled === true) {
     return { ok: false, message: "Usuario bloqueado." };
@@ -105,7 +140,16 @@ async function authenticatedActor(req: Request, actorKey: string): Promise<{ ok:
   if (linkedAuthUser && linkedAuthUser !== data.user.id) {
     return { ok: false, message: "Sesion no pertenece al usuario de la venta." };
   }
-  return { ok: true };
+  return {
+    ok: true,
+    role: lower(actor.role ?? actor.legacy_role ?? actor.user_role ?? metadataRole),
+    account: actor,
+  };
+}
+
+function isAdminRole(value: unknown): boolean {
+  const role = lower(value);
+  return role === "admin" || role === "admins" || role === "master" || role === "masters";
 }
 
 function sanitizeCreateTicketBody(body: Record<string, unknown>): Record<string, unknown> {
@@ -382,25 +426,42 @@ Deno.serve(async (req) => {
 
     const authActor = await authenticatedActor(req, actorKey);
     if (!authActor.ok) return json({ ok: false, message: authActor.message ?? "Usuario no autorizado." }, 403);
+    const wantsAdminLimitOverride = body.adminLimitOverride === true;
+    if (wantsAdminLimitOverride && !isAdminRole(authActor.role)) {
+      return json({ ok: false, message: "Solo admin puede autorizar limite agotado." }, 403);
+    }
 
-    const playsValidation = validateTicketPlays(body);
+    const account = authActor.account ?? {};
+    const authenticatedAdminKey = isAdminRole(authActor.role)
+      ? validIdentity(account.id ?? account.userId ?? account.user ?? account.username ?? actorKey)
+      : validIdentity(account.adminId ?? account.admin_id ?? account.adminUser ?? account.admin_user);
+    const canonicalAdminKey = validIdentity(body.adminKey ?? body.adminId ?? body.ownerKey) || authenticatedAdminKey;
+    if (!canonicalAdminKey) {
+      return json({ ok: false, message: "No se pudo identificar el administrador de la venta." }, 400);
+    }
+    const canonicalBody = {
+      ...body,
+      adminKey: canonicalAdminKey,
+      adminId: canonicalAdminKey,
+    };
+
+    const playsValidation = validateTicketPlays(canonicalBody);
     if (!playsValidation.ok) {
       return json({ ok: false, message: playsValidation.message }, 400);
     }
 
-    const adminKey = clean(body.adminKey ?? body.adminId ?? body.ownerKey);
-    if (adminKey) {
+    if (canonicalAdminKey) {
       const [systemConfig, disabledLotteryConfig] = await Promise.all([
-        fetchMasterPayload(`system_modes:${adminKey}`),
-        fetchMasterPayload(`manual_disabled_lotteries:${adminKey}`),
+        fetchMasterPayload(`system_modes:${canonicalAdminKey}`),
+        fetchMasterPayload(`manual_disabled_lotteries:${canonicalAdminKey}`),
       ]);
-      const administrativeControls = validateAdministrativeControls(body, systemConfig, disabledLotteryConfig);
+      const administrativeControls = validateAdministrativeControls(canonicalBody, systemConfig, disabledLotteryConfig);
       if (!administrativeControls.ok) {
         return json({ ok: false, message: administrativeControls.message }, administrativeControls.status ?? 409);
       }
     }
 
-    const phoneClock = validatePhoneClock(body);
+    const phoneClock = validatePhoneClock(canonicalBody);
     if (!phoneClock.ok) {
       return json({
         ok: false,
@@ -415,15 +476,25 @@ Deno.serve(async (req) => {
       }, 409);
     }
 
-    const { data, error } = await supabase.rpc("ln_create_ticket_legacy", { p_body: sanitizeCreateTicketBody(body) });
+    const rpcName = wantsAdminLimitOverride ? "ln_create_ticket_legacy_admin_limit_override" : "ln_create_ticket_legacy";
+    const { data, error } = await supabase.rpc(rpcName, { p_body: sanitizeCreateTicketBody(canonicalBody) });
     if (error) throw error;
+    await bumpTicketDeltaResponseVersion();
 
     const payload = (data ?? { ok: true }) as Record<string, unknown>;
-    return json(payload, Number(payload.status ?? 200));
+    const payloadStatus = Number(payload.status ?? 200);
+    const responseStatus = payloadStatus >= 500
+      ? Math.min(payloadStatus, createTicketErrorStatus(payload.message))
+      : payloadStatus;
+    return json(payload, responseStatus);
   } catch (error) {
     return json({
       ok: false,
-      message: error instanceof Error ? error.message : "No se pudo crear el ticket en servidor.",
-    }, 500);
+      message: error instanceof Error
+        ? error.message
+        : typeof error === "object" && error !== null && "message" in error
+          ? clean((error as { message?: unknown }).message) || "No se pudo crear el ticket en servidor."
+          : "No se pudo crear el ticket en servidor.",
+    }, createTicketErrorStatus(error));
   }
 });

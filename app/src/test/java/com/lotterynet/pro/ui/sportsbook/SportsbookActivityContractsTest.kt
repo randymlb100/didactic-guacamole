@@ -5,6 +5,10 @@ import com.lotterynet.pro.core.model.SportsbookEvent
 import com.lotterynet.pro.core.model.SportsbookMarket
 import com.lotterynet.pro.core.model.SportsbookMarketKey
 import com.lotterynet.pro.core.model.SportsbookOdd
+import com.lotterynet.pro.core.model.SportsbookTicketSaleResult
+import com.lotterynet.pro.core.model.SportsbookSelection
+import com.lotterynet.pro.core.sportsbook.SportsbookTicketSnapshot
+import com.lotterynet.pro.core.model.UserAccount
 import com.lotterynet.pro.core.sportsbook.parseSportsbookBoardSnapshot
 import com.lotterynet.pro.core.model.UserRole
 import com.lotterynet.pro.core.storage.MasterSportsbookSettings
@@ -18,6 +22,27 @@ class SportsbookActivityContractsTest {
     fun `master only sees sportsbook system controls`() {
         assertEquals(listOf("config"), resolveSportsbookTabIdsForRole(UserRole.MASTER))
         assertEquals("config", resolveSportsbookInitialTab(UserRole.MASTER))
+    }
+
+    @Test
+    fun `sportsbook access reason explains global role individual and group states`() {
+        val admin = UserAccount(id = "admin-1", user = "admin1", role = UserRole.ADMIN)
+        val cashier = UserAccount(id = "cashier-1", user = "cashier1", role = UserRole.CASHIER, adminId = admin.id)
+        val base = MasterSportsbookSettings(enabled = true, adminEnabled = true, cashierEnabled = true)
+
+        assertEquals("Activo por rol", sportsbookAccessReason(base, UserRole.ADMIN, admin))
+        assertEquals(
+            "Activo individual",
+            sportsbookAccessReason(base.copy(allowedActorKeys = setOf(admin.id)), UserRole.ADMIN, admin),
+        )
+        assertEquals(
+            "Activo por grupo",
+            sportsbookAccessReason(base.copy(cashierAdminKeys = setOf(admin.id)), UserRole.CASHIER, cashier, admin),
+        )
+        assertEquals(
+            "Bloqueado: Deportes global apagado",
+            sportsbookAccessReason(base.copy(enabled = false), UserRole.ADMIN, admin),
+        )
     }
 
     @Test
@@ -90,6 +115,29 @@ class SportsbookActivityContractsTest {
     }
 
     @Test
+    fun `sportsbook board filters by sport without touching lottery filters`() {
+        val mlb = sportsbookGame(id = "1", league = "MLB", status = "open").copy(
+            event = sportsbookGame(id = "1", league = "MLB", status = "open").event.copy(sportTitle = "Baseball"),
+        )
+        val nba = sportsbookGame(id = "2", league = "NBA", status = "open").copy(
+            event = sportsbookGame(id = "2", league = "NBA", status = "open").event.copy(sportTitle = "Basketball"),
+        )
+
+        assertEquals(listOf("Todas", "Baseball", "Basketball"), buildSportsbookSportFilterOptions(listOf(mlb, nba)).map { it.label })
+        assertEquals(listOf(mlb), filterSportsbookBoardGames(listOf(mlb, nba), "all", "open", "Baseball"))
+    }
+
+    @Test
+    fun `sportsbook exposes date and market filters`() {
+        val game = sportsbookGame(id = "1", league = "MLB", status = "open")
+        val market = SportsbookMarket("market-1", "1", SportsbookMarketKey.MONEYLINE, "Ganador", "open")
+        val withMarket = game.copy(markets = listOf(market))
+
+        assertEquals(listOf("Todas", "Hoy", "Mañana"), sportsbookDateFilterOptions().map { it.label })
+        assertEquals(listOf("Todas", "Moneyline"), buildSportsbookMarketFilterOptions(listOf(withMarket)).map { it.label })
+    }
+
+    @Test
     fun `sportsbook board parses cached team logo urls`() {
         val snapshot = parseSportsbookBoardSnapshot(
             """
@@ -146,6 +194,44 @@ class SportsbookActivityContractsTest {
         assertEquals("odd-home", homeSelection.oddsId)
         assertEquals("Away game-1 @ Home game-1", homeSelection.eventLabel)
         assertEquals(listOf("odd-away"), next.map { it.oddsId })
+    }
+
+    @Test
+    fun `newly sold sports ticket stays visible while remote list catches up`() {
+        val sale = SportsbookTicketSaleResult(
+            ticketCode = "SN-NEW",
+            status = com.lotterynet.pro.core.model.SportsbookTicketStatus.PENDING,
+            stake = 50.0,
+            decimalOdds = 1.9,
+            potentialPayout = 95.0,
+        )
+        val local = buildSportsbookTicketRecordFromSale(
+            session = com.lotterynet.pro.core.model.ActiveSession(
+                role = UserRole.CASHIER,
+                userId = "cashier-1",
+                username = "cajero",
+            ),
+            sale = sale,
+            selections = listOf(
+                SportsbookSelection(
+                    oddsId = "odd-1",
+                    eventId = "event-1",
+                    market = SportsbookMarketKey.MONEYLINE,
+                    selectionKey = "home",
+                    selectionLabel = "Home",
+                    decimalOdds = 1.9,
+                    oddsLockedAtEpochMs = 1L,
+                    eventLabel = "Away @ Home",
+                    marketTitle = "Ganador",
+                ),
+            ),
+        )
+
+        val merged = mergeSportsbookTicketSnapshot(SportsbookTicketSnapshot(), local)
+
+        assertEquals(listOf("SN-NEW"), merged.tickets.map { it.ticketCode })
+        assertEquals(1, merged.summary.totalTickets)
+        assertEquals(50.0, merged.summary.totalStake, 0.0)
     }
 
     private fun sportsbookGame(id: String, league: String, status: String): SportsbookBoardGame {

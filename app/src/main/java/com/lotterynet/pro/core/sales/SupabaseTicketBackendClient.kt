@@ -34,6 +34,7 @@ data class BackendTicketRequest(
     val lotteryName: String? = null,
     val lotteryEndpoint: String? = null,
     val phoneTimeIso: String? = null,
+    val adminLimitOverride: Boolean = false,
     val plays: List<BackendTicketPlay>,
 )
 
@@ -56,6 +57,14 @@ data class BackendReportRequest(
     val supervisorKey: String? = null,
     val from: String,
     val to: String,
+)
+
+data class BackendSaleLimitExposureRequest(
+    val ownerKey: String,
+    val dayKey: String,
+    val lotteryId: String,
+    val playType: String,
+    val number: String,
 )
 
 class SupabaseTicketBackendException(
@@ -158,7 +167,13 @@ class SupabaseTicketBackendClient(
         return edgeClient.invokeAuthenticated(reportFunctionSlug(request), buildReportPayload(request), bearerToken)
     }
 
+    fun getSaleLimitExposure(request: BackendSaleLimitExposureRequest, bearerToken: String? = null): JSONObject {
+        return edgeClient.invokeAuthenticated(saleLimitExposureFunctionSlug(), buildSaleLimitExposurePayload(request), bearerToken)
+    }
+
     internal fun createTicketFunctionSlug(): String = "create-ticket-v2"
+
+    internal fun saleLimitExposureFunctionSlug(): String = "get-sale-limit-exposure"
 
     internal fun payTicketFunctionSlug(): String = "pay-ticket"
 
@@ -201,6 +216,7 @@ class SupabaseTicketBackendClient(
             request.lotteryName?.let { put("lotteryName", it) }
             request.lotteryEndpoint?.let { put("lotteryEndpoint", it) }
             request.phoneTimeIso?.let { put("phoneTime", it) }
+            if (request.adminLimitOverride) put("adminLimitOverride", true)
             put(
                 "plays",
                 JSONArray().apply {
@@ -257,7 +273,19 @@ class SupabaseTicketBackendClient(
         }
     }
 
+    internal fun buildSaleLimitExposurePayload(request: BackendSaleLimitExposureRequest): JSONObject {
+        return JSONObject().apply {
+            put("ownerKey", request.ownerKey)
+            put("dayKey", request.dayKey)
+            put("lotteryId", request.lotteryId)
+            put("playType", request.playType)
+            put("number", request.number)
+        }
+    }
+
     internal fun createTicketEndpointPath(): String = edgeClient.functionPath(createTicketFunctionSlug())
+
+    internal fun saleLimitExposureEndpointPath(): String = edgeClient.functionPath(saleLimitExposureFunctionSlug())
 
     internal fun payTicketEndpointPath(): String = edgeClient.functionPath(payTicketFunctionSlug())
 

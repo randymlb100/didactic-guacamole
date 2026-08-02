@@ -5,6 +5,8 @@ import androidx.core.content.edit
 import com.lotterynet.pro.core.model.SportsbookFeatureConfig
 import com.lotterynet.pro.core.model.SportsbookMarketKey
 import com.lotterynet.pro.core.model.UserRole
+import com.lotterynet.pro.core.servicesgames.ServicesGamesFeatureConfig
+import com.lotterynet.pro.core.servicesgames.ServicesGamesModule
 import org.json.JSONArray
 import org.json.JSONObject
 
@@ -27,6 +29,16 @@ data class MasterSportsbookSettings(
         SportsbookMarketKey.SPREAD,
         SportsbookMarketKey.TOTAL,
     ),
+    val updatedAtEpochMs: Long = 0L,
+    val updatedBy: String = "",
+)
+
+data class MasterServicesGamesSettings(
+    val module: ServicesGamesModule,
+    val enabled: Boolean = false,
+    val allowedAdminKeys: Set<String> = emptySet(),
+    val allowedCashierKeys: Set<String> = emptySet(),
+    val cashierAdminKeys: Set<String> = emptySet(),
     val updatedAtEpochMs: Long = 0L,
     val updatedBy: String = "",
 )
@@ -63,6 +75,22 @@ class LocalMasterConfigRepository(
         return decodeMasterSportsbookSettings(prefs.getString(KEY_SPORTSBOOK_SETTINGS, null))
     }
 
+    fun getServicesGamesSettings(module: ServicesGamesModule): MasterServicesGamesSettings {
+        val key = servicesGamesRemoteKey(module)
+        return decodeMasterServicesGamesSettings(module, prefs.getString(key, null))
+    }
+
+    fun saveServicesGamesSettings(settings: MasterServicesGamesSettings): MasterServicesGamesSettings {
+        val normalized = normalizeMasterServicesGamesSettings(settings)
+        prefs.edit {
+            putString(
+                servicesGamesRemoteKey(normalized.module),
+                encodeMasterServicesGamesSettings(normalized),
+            )
+        }
+        return normalized
+    }
+
     fun saveSportsbookSettings(settings: MasterSportsbookSettings): MasterSportsbookSettings {
         val normalized = normalizeMasterSportsbookSettings(settings)
         prefs.edit { putString(KEY_SPORTSBOOK_SETTINGS, encodeMasterSportsbookSettings(normalized)) }
@@ -83,6 +111,12 @@ class LocalMasterConfigRepository(
 
             SPORTSBOOK_REMOTE_KEY -> runCatching { decodeMasterSportsbookSettings(payload) }
                 .onSuccess { saveSportsbookSettings(it) }
+
+            SERVICES_REMOTE_KEY -> runCatching { decodeMasterServicesGamesSettings(ServicesGamesModule.SERVICES, payload) }
+                .onSuccess { saveServicesGamesSettings(it) }
+
+            VIDEO_GAMES_REMOTE_KEY -> runCatching { decodeMasterServicesGamesSettings(ServicesGamesModule.VIDEO_GAMES, payload) }
+                .onSuccess { saveServicesGamesSettings(it) }
         }
     }
 
@@ -93,6 +127,8 @@ class LocalMasterConfigRepository(
             LEGACY_RLDLY_CLIENT_SECRET -> JSONObject.quote(settings.clientSecret)
             LEGACY_RLDLY_ENABLED -> if (settings.enabled) "true" else "false"
             SPORTSBOOK_REMOTE_KEY -> encodeMasterSportsbookSettings(getSportsbookSettings())
+            SERVICES_REMOTE_KEY -> encodeMasterServicesGamesSettings(getServicesGamesSettings(ServicesGamesModule.SERVICES))
+            VIDEO_GAMES_REMOTE_KEY -> encodeMasterServicesGamesSettings(getServicesGamesSettings(ServicesGamesModule.VIDEO_GAMES))
             else -> null
         }
     }
@@ -102,6 +138,8 @@ class LocalMasterConfigRepository(
         const val LEGACY_RLDLY_CLIENT_SECRET = "sys_rldly_client_secret"
         const val LEGACY_RLDLY_ENABLED = "sys_rldly_enabled"
         const val SPORTSBOOK_REMOTE_KEY = "sportsbook:global"
+        const val SERVICES_REMOTE_KEY = "services:global"
+        const val VIDEO_GAMES_REMOTE_KEY = "video_games:global"
 
         private const val PREFS_NAME = "lotterynet_master_config_v1"
         private const val KEY_RLDLY_CLIENT_ID = "reloadly_client_id"
@@ -112,6 +150,69 @@ class LocalMasterConfigRepository(
 }
 
 fun sportsbookRemoteKey(): String = LocalMasterConfigRepository.SPORTSBOOK_REMOTE_KEY
+
+fun servicesGamesRemoteKey(module: ServicesGamesModule): String {
+    return when (module) {
+        ServicesGamesModule.SERVICES -> LocalMasterConfigRepository.SERVICES_REMOTE_KEY
+        ServicesGamesModule.VIDEO_GAMES -> LocalMasterConfigRepository.VIDEO_GAMES_REMOTE_KEY
+    }
+}
+
+fun MasterServicesGamesSettings.toFeatureConfig(): ServicesGamesFeatureConfig {
+    return ServicesGamesFeatureConfig(
+        module = module,
+        enabled = enabled,
+        allowedAdminKeys = allowedAdminKeys,
+        allowedCashierKeys = allowedCashierKeys,
+        cashierAdminKeys = cashierAdminKeys,
+        updatedAtEpochMs = updatedAtEpochMs,
+        updatedBy = updatedBy,
+    )
+}
+
+fun normalizeMasterServicesGamesSettings(settings: MasterServicesGamesSettings): MasterServicesGamesSettings {
+    return settings.copy(
+        allowedAdminKeys = settings.allowedAdminKeys.map { it.trim() }.filter { it.isNotBlank() }.toSet(),
+        allowedCashierKeys = settings.allowedCashierKeys.map { it.trim() }.filter { it.isNotBlank() }.toSet(),
+        cashierAdminKeys = settings.cashierAdminKeys.map { it.trim() }.filter { it.isNotBlank() }.toSet(),
+        updatedBy = settings.updatedBy.trim(),
+    )
+}
+
+fun encodeMasterServicesGamesSettings(settings: MasterServicesGamesSettings): String {
+    val normalized = normalizeMasterServicesGamesSettings(settings)
+    return JSONObject().apply {
+        put("configured", true)
+        put("enabled", normalized.enabled)
+        put("allowedAdminKeys", JSONArray().apply { normalized.allowedAdminKeys.sorted().forEach { put(it) } })
+        put("allowedCashierKeys", JSONArray().apply { normalized.allowedCashierKeys.sorted().forEach { put(it) } })
+        put("cashierAdminKeys", JSONArray().apply { normalized.cashierAdminKeys.sorted().forEach { put(it) } })
+        put("updatedAt", normalized.updatedAtEpochMs.takeIf { it > 0L } ?: System.currentTimeMillis())
+        put("updatedBy", normalized.updatedBy)
+    }.toString()
+}
+
+fun decodeMasterServicesGamesSettings(module: ServicesGamesModule, raw: String?): MasterServicesGamesSettings {
+    if (raw.isNullOrBlank()) return MasterServicesGamesSettings(module = module)
+    return runCatching {
+        val json = JSONObject(raw)
+        if (!json.optBoolean("configured", false)) {
+            MasterServicesGamesSettings(module = module)
+        } else {
+            normalizeMasterServicesGamesSettings(
+                MasterServicesGamesSettings(
+                    module = module,
+                    enabled = json.optBoolean("enabled", false),
+                    allowedAdminKeys = json.optStringSet("allowedAdminKeys"),
+                    allowedCashierKeys = json.optStringSet("allowedCashierKeys"),
+                    cashierAdminKeys = json.optStringSet("cashierAdminKeys"),
+                    updatedAtEpochMs = json.optLong("updatedAt", 0L),
+                    updatedBy = json.optString("updatedBy"),
+                ),
+            )
+        }
+    }.getOrDefault(MasterServicesGamesSettings(module = module))
+}
 
 fun normalizeMasterSportsbookSettings(settings: MasterSportsbookSettings): MasterSportsbookSettings {
     return settings.copy(

@@ -36,11 +36,25 @@ object BluetoothThermalPrinter {
         val retryBackoffMs: Long,
     )
 
+    data class ConnectionRetryPlan(
+        val maxRounds: Int,
+        val firstRetryDelayMs: Long,
+        val maxRetryDelayMs: Long,
+    )
+
     fun timeoutPolicy(): TimeoutPolicy {
         return TimeoutPolicy(
             connectTimeoutMs = PosPerformanceBudget.BLUETOOTH_CONNECT_TIMEOUT_MS,
             writeTimeoutMs = PosPerformanceBudget.BLUETOOTH_WRITE_TIMEOUT_MS,
             retryBackoffMs = 1_500L,
+        )
+    }
+
+    fun connectionRetryPlan(): ConnectionRetryPlan {
+        return ConnectionRetryPlan(
+            maxRounds = 3,
+            firstRetryDelayMs = 900L,
+            maxRetryDelayMs = 2_000L,
         )
     }
 
@@ -83,8 +97,9 @@ object BluetoothThermalPrinter {
         }
 
         val activeSocket = AtomicReference<BluetoothSocket?>()
+        val policy = timeoutPolicy(content)
         return runPrintOperationWithTimeout(
-            policy = timeoutPolicy(content),
+            policy = policy,
             onTimeout = {
                 activeSocket.getAndSet(null)?.let { socket ->
                     runCatching { socket.close() }
@@ -92,7 +107,7 @@ object BluetoothThermalPrinter {
             },
         ) {
             if (hasScanPermission) runCatching { adapter.cancelDiscovery() }
-            connectAndWrite(device, content, activeSocket)
+            connectAndWrite(device, content, activeSocket, policy)
             PrintResult(true, "Enviado a impresora Bluetooth")
         }
     }
@@ -101,6 +116,15 @@ object BluetoothThermalPrinter {
         val lineCount = content.lineSequence().count().coerceAtLeast(1)
         val qrCount = content.lineSequence().count { it.startsWith("[[QR]]") }
         return (700L + (lineCount * 12L) + (qrCount * 800L)).coerceIn(900L, 2_500L)
+    }
+
+    internal fun resolveFinalFeedLines(content: String): Int {
+        val lineCount = content.lineSequence().count().coerceAtLeast(1)
+        val qrCount = content.lineSequence().count { it.startsWith("[[QR]]") }
+        return when {
+            qrCount > 0 || lineCount >= 100 -> 3
+            else -> 2
+        }
     }
 
     fun testConnection(
@@ -174,37 +198,61 @@ object BluetoothThermalPrinter {
         device: BluetoothDevice,
         content: String,
         activeSocket: AtomicReference<BluetoothSocket?>,
+        policy: TimeoutPolicy,
     ) {
         var lastError: Throwable? = null
-        bluetoothSocketCandidates(device).forEach { socketFactory ->
-            val socket = runCatching(socketFactory).getOrElse { error ->
-                lastError = error
-                return@forEach
+        val retryPlan = connectionRetryPlan()
+        repeat(retryPlan.maxRounds) { round ->
+            if (round > 0) {
+                runCatching { device.fetchUuidsWithSdp() }
+                Thread.sleep(resolveRetryDelayMs(round, policy, retryPlan))
             }
-            activeSocket.set(socket)
-            try {
-                socket.use { connectedSocket ->
-                    connectedSocket.connect()
-                    connectedSocket.outputStream.use { output ->
-                        output.write(escPosInit)
-                        content.lineSequence().forEach { rawLine ->
-                            writeStyledLine(output, rawLine)
-                        }
-                        output.write("\n\n\n\n\n\n".toByteArray(Charsets.UTF_8))
-                        output.flush()
-                        Thread.sleep(resolvePrinterDrainDelayMs(content))
-                    }
+            bluetoothSocketCandidates(device).forEach { socketFactory ->
+                val socket = runCatching(socketFactory).getOrElse { error ->
+                    lastError = error
+                    return@forEach
                 }
-                activeSocket.compareAndSet(socket, null)
-                return
-            } catch (error: Throwable) {
-                lastError = error
-                activeSocket.compareAndSet(socket, null)
-                runCatching { socket.close() }
-                Thread.sleep(250L)
+                activeSocket.set(socket)
+                try {
+                    socket.use { connectedSocket ->
+                        connectedSocket.connect()
+                        connectedSocket.outputStream.use { output ->
+                            output.write(escPosInit)
+                            content.lineSequence().forEach { rawLine ->
+                                writeStyledLine(output, rawLine)
+                            }
+                            writeFinalPaperFeed(output, content)
+                            output.flush()
+                            Thread.sleep(resolvePrinterDrainDelayMs(content))
+                        }
+                    }
+                    activeSocket.compareAndSet(socket, null)
+                    return
+                } catch (error: Throwable) {
+                    lastError = error
+                    activeSocket.compareAndSet(socket, null)
+                    runCatching { socket.close() }
+                    Thread.sleep(250L)
+                }
             }
         }
         throw lastError ?: IllegalStateException("No se pudo abrir la conexion Bluetooth")
+    }
+
+    private fun resolveRetryDelayMs(
+        round: Int,
+        policy: TimeoutPolicy,
+        retryPlan: ConnectionRetryPlan,
+    ): Long {
+        val base = minOf(policy.retryBackoffMs, retryPlan.firstRetryDelayMs)
+        return (base * round).coerceAtMost(retryPlan.maxRetryDelayMs)
+    }
+
+    private fun writeFinalPaperFeed(
+        output: java.io.OutputStream,
+        content: String,
+    ) {
+        output.write(byteArrayOf(0x1B, 0x64, resolveFinalFeedLines(content).toByte()))
     }
 
     private fun bluetoothSocketCandidates(device: BluetoothDevice): List<() -> BluetoothSocket> {
@@ -220,7 +268,7 @@ object BluetoothThermalPrinter {
     }
 
     private fun friendlyBluetoothFailure(error: Throwable): String {
-        val message = error.message.orEmpty()
+        val message = error.printerRootCause().message.orEmpty()
         return when {
             "BLUETOOTH_SCAN" in message -> "Falta permiso Bluetooth para detectar la impresora"
             "BLUETOOTH_CONNECT" in message -> "Falta permiso Bluetooth para conectar la impresora"

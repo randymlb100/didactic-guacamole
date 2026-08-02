@@ -49,4 +49,28 @@ class TicketDeliveryPolicyTest {
         assertTrue(pages.all { page -> page.plays.all { it.lotteryName == "Loteka" } })
         assertTrue(pages.all { page -> page.plays.size <= TicketDeliveryPolicy.MAX_PLAYS_PER_LARGE_PAGE })
     }
+
+    @Test
+    fun `ticket with two medium lotteries falls back to paged images once the estimated height is too tall`() {
+        val plays = listOf("Leidsa", "Loteria Nacional").flatMap { lottery ->
+            (1..23).map { index ->
+                PlayItem(
+                    number = index.toString().padStart(2, '0'),
+                    playType = "Q",
+                    amount = 1.0,
+                    lotteryName = lottery,
+                )
+            }
+        }
+        val ticket = TicketRecord(
+            id = "ticket-two-lotteries-46",
+            plays = plays,
+        )
+
+        val decision = TicketDeliveryPolicy.resolveDecision(ticket, estimatedHeightPx = 3_862)
+
+        assertEquals(TicketDeliveryMode.PAGED_IMAGES, decision.mode)
+        assertEquals(46, decision.playCount)
+        assertEquals(2, decision.lotteryCount)
+    }
 }

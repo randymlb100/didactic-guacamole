@@ -49,9 +49,11 @@ import com.lotterynet.pro.core.model.UserAccount
 import com.lotterynet.pro.core.model.UserRole
 import com.lotterynet.pro.core.operations.buildActorLabelLookup
 import com.lotterynet.pro.core.operations.buildUserActorLabelLookup
+import com.lotterynet.pro.core.operations.cashierDisplayLabel
 import com.lotterynet.pro.core.operations.filterCashiersForSession
 import com.lotterynet.pro.core.operations.filterTicketsForOperationalScope
 import com.lotterynet.pro.core.operations.resolveTicketActorLabel
+import com.lotterynet.pro.core.operations.sortCashierAccountsNatural
 import com.lotterynet.pro.core.sync.filterServerVisibleTickets
 import com.lotterynet.pro.ui.common.ActionTone
 import com.lotterynet.pro.ui.common.CompactActionButton
@@ -64,6 +66,7 @@ import com.lotterynet.pro.ui.common.rememberLotteryNetVisualSpec
 import com.lotterynet.pro.ui.common.resolveOverflowLayoutContract
 import com.lotterynet.pro.ui.common.warningColor
 import java.text.SimpleDateFormat
+import java.text.Normalizer
 import java.util.Calendar
 import java.util.Date
 import java.util.Locale
@@ -87,6 +90,7 @@ internal enum class TicketSummaryPeriod(val id: String, val label: String) {
     WEEK("week", "Semana"),
     QUINZA("quinza", "Quincena"),
     MONTH("month", "Mes"),
+    EXACT_DATE("date", "Fecha exacta"),
     ALL("all", "Todo"),
 }
 
@@ -307,8 +311,8 @@ internal fun filterSummaryTickets(
     toDateTime: String,
 ): List<TicketRecord> {
     val normalizedBucket = statusBucket.trim().lowercase(Locale.getDefault())
-    val normalizedLottery = lotteryName.trim().lowercase(Locale.getDefault())
-    val normalizedQuery = query.trim().lowercase(Locale.getDefault())
+    val normalizedLottery = normalizeSearchValue(lotteryName)
+    val normalizedQuery = normalizeSearchValue(query)
     val fromEpoch = parseDateFilter(fromDateTime, endOfRange = false)
     val toEpoch = parseDateFilter(toDateTime, endOfRange = true)
     return directory.tickets.filter { ticket ->
@@ -316,7 +320,7 @@ internal fun filterSummaryTickets(
             matchesStatusBucket(ticket, normalizedBucket) &&
             matchesDateRange(ticket.createdAtEpochMs, fromEpoch, toEpoch) &&
             (normalizedLottery.isBlank() || ticket.plays.any { play ->
-                play.lotteryName.orEmpty().lowercase(Locale.getDefault()) == normalizedLottery
+                normalizeSearchValue(play.lotteryName.orEmpty()) == normalizedLottery
             }) &&
             matchesTicketQuery(ticket, normalizedQuery)
     }
@@ -334,15 +338,15 @@ internal fun filterDetailRows(
     toDateTime: String,
 ): List<TicketDetailRow> {
     val normalizedType = playType.trim().lowercase(Locale.getDefault())
-    val normalizedLottery = lotteryName.trim().lowercase(Locale.getDefault())
-    val normalizedQuery = query.trim().lowercase(Locale.getDefault())
+    val normalizedLottery = normalizeSearchValue(lotteryName)
+    val normalizedQuery = normalizeSearchValue(query)
     val fromEpoch = parseDateFilter(fromDateTime, endOfRange = false)
     val toEpoch = parseDateFilter(toDateTime, endOfRange = true)
     return rows.filter { row ->
             matchesSummaryScope(row.ticket, directory, ownerScope, cashierKey) &&
             matchesDateRange(row.ticket.createdAtEpochMs, fromEpoch, toEpoch) &&
             (normalizedType.isBlank() || row.play.playType.lowercase(Locale.getDefault()) == normalizedType) &&
-            (normalizedLottery.isBlank() || row.play.lotteryName.orEmpty().lowercase(Locale.getDefault()) == normalizedLottery) &&
+            (normalizedLottery.isBlank() || normalizeSearchValue(row.play.lotteryName.orEmpty()) == normalizedLottery) &&
             matchesDetailQuery(row, normalizedQuery)
     }
 }
@@ -365,16 +369,36 @@ internal fun buildLotteryOptions(
     tickets: List<TicketRecord>,
     catalogLotteries: List<LotteryCatalogItem>,
 ): List<CompactDropdownOption> {
+    val catalogByName = catalogLotteries.associateBy { normalizeSearchValue(it.name) }
     val names = buildList {
-        addAll(catalogLotteries.map { it.name })
-        addAll(tickets.flatMap { ticket -> ticket.plays.mapNotNull { it.lotteryName?.trim() } })
+        addAll(catalogLotteries.sortedWith(compareBy({ parseTicketLotteryMinutes(it.baseDrawTime) }, { normalizeSearchValue(it.name) })).map { it.name })
+        addAll(tickets.flatMap { ticket -> ticket.plays.mapNotNull { play ->
+            play.lotteryName?.trim()?.takeIf { name ->
+                val catalog = catalogByName[normalizeSearchValue(name)]
+                val pickLabel = name.contains("pick", ignoreCase = true) ||
+                    name.startsWith("P3", ignoreCase = true) ||
+                    name.startsWith("P4", ignoreCase = true)
+                catalog != null || !pickLabel
+            }
+        } })
     }
     return listOf(CompactDropdownOption("", "Todas loterias")) +
         names
             .filter { it.isNotBlank() }
-            .distinctBy { it.lowercase(Locale.getDefault()) }
-            .sortedBy { it.lowercase(Locale.getDefault()) }
+            .distinctBy { normalizeSearchValue(it) }
+            .sortedWith(compareBy({ catalogByName[normalizeSearchValue(it)]?.let { lottery -> parseTicketLotteryMinutes(lottery.baseDrawTime) } ?: Int.MAX_VALUE }, { normalizeSearchValue(it) }))
             .map { CompactDropdownOption(it, it) }
+}
+
+private fun parseTicketLotteryMinutes(raw: String): Int {
+    val match = Regex("""(\d{1,2}):(\d{2})(?:\s*(AM|PM))?""").find(raw.trim().uppercase()) ?: return Int.MAX_VALUE
+    var hour = match.groupValues[1].toInt()
+    val minute = match.groupValues[2].toInt()
+    when (match.groupValues.getOrNull(3).orEmpty()) {
+        "AM" -> if (hour == 12) hour = 0
+        "PM" -> if (hour < 12) hour += 12
+    }
+    return hour * 60 + minute
 }
 
 internal fun buildTicketMonthOptions(): List<CompactDropdownOption> {
@@ -392,8 +416,20 @@ internal fun buildTicketMonthOptions(): List<CompactDropdownOption> {
         "Noviembre",
         "Diciembre",
     )
-    return labels.mapIndexed { index, label ->
-        CompactDropdownOption((index + 1).toString().padStart(2, '0'), label)
+    val now = santoDomingoCalendar()
+    val currentYear = now.get(Calendar.YEAR)
+    return (0..23).map { offset ->
+        val calendar = santoDomingoCalendar().apply {
+            set(Calendar.YEAR, currentYear)
+            set(Calendar.MONTH, now.get(Calendar.MONTH))
+            set(Calendar.DAY_OF_MONTH, 1)
+            add(Calendar.MONTH, -offset)
+        }
+        val month = calendar.get(Calendar.MONTH)
+        CompactDropdownOption(
+            value = "${calendar.get(Calendar.YEAR)}-${(month + 1).toString().padStart(2, '0')}",
+            label = "${labels[month]} ${calendar.get(Calendar.YEAR)}",
+        )
     }
 }
 
@@ -422,17 +458,81 @@ internal fun resolveTicketSummaryDateRange(
             startOfDay(from)
         }
         TicketSummaryPeriod.MONTH -> {
-            val selectedMonth = monthValue.toIntOrNull()?.coerceIn(1, 12) ?: (now.get(Calendar.MONTH) + 1)
-            from.set(Calendar.MONTH, selectedMonth - 1)
+            val selectedMonth = Regex("(\\d{4})-(\\d{2})").matchEntire(monthValue.trim())
+            val year = selectedMonth?.groupValues?.get(1)?.toIntOrNull() ?: now.get(Calendar.YEAR)
+            val month = selectedMonth?.groupValues?.get(2)?.toIntOrNull()?.coerceIn(1, 12)
+                ?: (now.get(Calendar.MONTH) + 1)
+            from.set(Calendar.YEAR, year)
+            from.set(Calendar.MONTH, month - 1)
             from.set(Calendar.DAY_OF_MONTH, 1)
             startOfDay(from)
             to.timeInMillis = from.timeInMillis
             to.set(Calendar.DAY_OF_MONTH, to.getActualMaximum(Calendar.DAY_OF_MONTH))
             endOfDay(to)
         }
+        TicketSummaryPeriod.EXACT_DATE -> {
+            val selectedDate = parseTicketDateKey(monthValue)
+            if (selectedDate == null) {
+                startOfDay(from)
+            } else {
+                from.timeInMillis = selectedDate.timeInMillis
+                startOfDay(from)
+                to.timeInMillis = from.timeInMillis
+                endOfDay(to)
+            }
+        }
         TicketSummaryPeriod.ALL -> return "" to ""
     }
     return formatDateTimeFilter(from.timeInMillis) to formatDateTimeFilter(to.timeInMillis)
+}
+
+internal fun parseTicketDateKey(dateKey: String): Calendar? {
+    val match = Regex("(\\d{4})-(\\d{2})-(\\d{2})").matchEntire(dateKey.trim()) ?: return null
+    val calendar = santoDomingoCalendar().apply {
+        clear()
+        set(Calendar.YEAR, match.groupValues[1].toInt())
+        set(Calendar.MONTH, match.groupValues[2].toInt() - 1)
+        set(Calendar.DAY_OF_MONTH, match.groupValues[3].toInt())
+        startOfDay(this)
+    }
+    return calendar.takeIf { it.get(Calendar.YEAR) == match.groupValues[1].toInt() &&
+        it.get(Calendar.MONTH) == match.groupValues[2].toInt() - 1 &&
+        it.get(Calendar.DAY_OF_MONTH) == match.groupValues[3].toInt() }
+}
+
+internal fun ticketDateKeyToPickerUtcMillis(dateKey: String): Long {
+    val date = parseTicketDateKey(dateKey) ?: santoDomingoCalendar()
+    return java.util.GregorianCalendar(java.util.TimeZone.getTimeZone("UTC"), Locale.US).apply {
+        set(Calendar.YEAR, date.get(Calendar.YEAR))
+        set(Calendar.MONTH, date.get(Calendar.MONTH))
+        set(Calendar.DAY_OF_MONTH, date.get(Calendar.DAY_OF_MONTH))
+        set(Calendar.HOUR_OF_DAY, 12)
+        set(Calendar.MINUTE, 0)
+        set(Calendar.SECOND, 0)
+        set(Calendar.MILLISECOND, 0)
+    }.timeInMillis
+}
+
+internal fun pickerUtcMillisToTicketDateKey(utcTimeMillis: Long): String {
+    val calendar = java.util.GregorianCalendar(java.util.TimeZone.getTimeZone("UTC"), Locale.US).apply {
+        timeInMillis = utcTimeMillis
+    }
+    return "%04d-%02d-%02d".format(
+        Locale.US,
+        calendar.get(Calendar.YEAR),
+        calendar.get(Calendar.MONTH) + 1,
+        calendar.get(Calendar.DAY_OF_MONTH),
+    )
+}
+
+internal fun todayTicketDateKey(nowEpochMs: Long = System.currentTimeMillis()): String {
+    val calendar = santoDomingoCalendar(nowEpochMs)
+    return "%04d-%02d-%02d".format(
+        Locale.US,
+        calendar.get(Calendar.YEAR),
+        calendar.get(Calendar.MONTH) + 1,
+        calendar.get(Calendar.DAY_OF_MONTH),
+    )
 }
 
 internal fun buildPlayTypeOptions(rows: List<TicketDetailRow>): List<CompactDropdownOption> {
@@ -446,9 +546,12 @@ internal fun buildPlayTypeOptions(rows: List<TicketDetailRow>): List<CompactDrop
 
 internal fun buildCashierOptions(cashiers: List<UserAccount>): List<CompactDropdownOption> {
     return listOf(CompactDropdownOption("", "Todos los cajeros")) +
-        cashiers
-            .distinctBy { "${it.id.lowercase(Locale.getDefault())}|${it.user.lowercase(Locale.getDefault())}" }
-            .sortedBy { cashierDisplayLabel(it).lowercase(Locale.getDefault()) }
+        sortCashierAccountsNatural(
+            cashiers
+                // La misma cuenta puede llegar con id técnico y username desde dos fuentes.
+                // El username es la identidad estable para el filtro visual.
+                .distinctBy { it.user.trim().lowercase(Locale.getDefault()).ifBlank { it.id.trim().lowercase(Locale.getDefault()) } },
+        )
             .map { account ->
                 CompactDropdownOption(
                     value = account.id.takeIf { it.isNotBlank() } ?: account.user,
@@ -523,7 +626,10 @@ internal fun ticketOwnerLabel(
 
 internal fun ticketLotteriesLabel(ticket: TicketRecord): String {
     return ticket.plays
-        .mapNotNull { it.lotteryName?.trim() }
+        .mapNotNull { play ->
+            play.lotteryName?.trim().takeIf { !it.isNullOrBlank() }
+                ?: play.lotteryId?.trim().takeIf { !it.isNullOrBlank() }
+        }
         .filter { it.isNotBlank() }
         .distinctBy { it.lowercase(Locale.getDefault()) }
         .joinToString(" · ")
@@ -906,7 +1012,7 @@ private fun matchesTicketQuery(ticket: TicketRecord, normalizedQuery: String): B
         add(ticket.sellerUser.orEmpty())
         add(ticketLotteriesLabel(ticket))
         add(ticketNumbersLabel(ticket))
-    }.joinToString(" ").lowercase(Locale.getDefault())
+    }.joinToString(" ").let(::normalizeSearchValue)
     return normalizedQuery in haystack
 }
 
@@ -922,7 +1028,7 @@ private fun matchesDetailQuery(row: TicketDetailRow, normalizedQuery: String): B
         add(playTypeLabel(row.play.playType))
         add(row.play.playType)
         add(row.play.number)
-    }.joinToString(" ").lowercase(Locale.getDefault())
+    }.joinToString(" ").let(::normalizeSearchValue)
     return normalizedQuery in haystack
 }
 
@@ -968,17 +1074,19 @@ private fun endOfDay(calendar: Calendar) {
     calendar.set(Calendar.MILLISECOND, 0)
 }
 
-private fun cashierDisplayLabel(account: UserAccount): String {
-    return account.displayName?.takeIf { it.isNotBlank() }
-        ?: account.user
-}
-
 private fun identityKeys(vararg values: String?): Set<String> {
     return values.mapNotNullTo(mutableSetOf()) { normalizeKey(it) }
 }
 
 private fun normalizeKey(value: String?): String? {
     return value?.trim()?.lowercase(Locale.getDefault())?.takeIf { it.isNotBlank() }
+}
+
+private fun normalizeSearchValue(value: String): String {
+    return Normalizer.normalize(value.trim(), Normalizer.Form.NFD)
+        .replace("\\p{InCombiningDiacriticalMarks}+".toRegex(), "")
+        .lowercase(Locale.getDefault())
+        .replace("\\s+".toRegex(), " ")
 }
 
 private fun equalsIgnoreCase(left: String?, right: String?): Boolean {

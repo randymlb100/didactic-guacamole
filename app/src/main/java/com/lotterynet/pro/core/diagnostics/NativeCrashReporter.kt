@@ -3,12 +3,19 @@ package com.lotterynet.pro.core.diagnostics
 import android.content.Context
 import android.util.Log
 import androidx.core.content.edit
+import com.lotterynet.pro.core.remote.SupabaseEdgeException
+import com.lotterynet.pro.core.remote.SupabaseEdgeFailureReason
 import io.sentry.Sentry
 import io.sentry.SentryLevel
 import org.json.JSONObject
 import java.io.File
+import java.io.InterruptedIOException
 import java.io.PrintWriter
 import java.io.StringWriter
+import java.net.ConnectException
+import java.net.SocketException
+import java.net.SocketTimeoutException
+import java.net.UnknownHostException
 
 data class NativeCrashReport(
     val timestampMs: Long,
@@ -104,17 +111,21 @@ class NativeCrashReporter(
         runCatching {
             latestReportFile().writeText(report)
         }
-        runCatching {
-            Sentry.withScope { scope ->
-                activityName?.let { scope.setTag("activity_name", it) }
-                source?.let { scope.setTag("native_source", it) }
-                threadName?.let { scope.setTag("thread_name", it) }
-                scope.level = if (source == "uncaught") SentryLevel.FATAL else SentryLevel.ERROR
-                scope.setExtra("native_report_json", report)
-                Sentry.captureException(throwable)
+        if (shouldCaptureNativeReportInSentry(source, throwable)) {
+            runCatching {
+                Sentry.withScope { scope ->
+                    activityName?.let { scope.setTag("activity_name", it) }
+                    source?.let { scope.setTag("native_source", it) }
+                    threadName?.let { scope.setTag("thread_name", it) }
+                    scope.level = if (source == "uncaught") SentryLevel.FATAL else SentryLevel.ERROR
+                    scope.setExtra("native_report_json", report)
+                    Sentry.captureException(throwable)
+                }
+            }.onFailure {
+                Log.w(TAG, "Sentry capture failed for native report", it)
             }
-        }.onFailure {
-            Log.w(TAG, "Sentry capture failed for native report", it)
+        } else {
+            Log.w(TAG, "Handled transient/auth native report kept local only. source=$source message=${throwable.message}")
         }
         Log.e(TAG, "Native crash recorded. source=$source activity=$activityName thread=$threadName", throwable)
     }
@@ -144,3 +155,37 @@ class NativeCrashReporter(
         private const val LATEST_REPORT_FILE = "last_native_crash.json"
     }
 }
+
+internal fun shouldCaptureNativeReportInSentry(source: String?, throwable: Throwable): Boolean {
+    if (source == "uncaught") return true
+    return !throwable.isHandledTransientNetworkOrAuthFailure()
+}
+
+private fun Throwable.isHandledTransientNetworkOrAuthFailure(): Boolean {
+    var current: Throwable? = this
+    repeat(MAX_CAUSE_DEPTH) {
+        val error = current ?: return false
+        if (error is UnknownHostException ||
+            error is InterruptedIOException ||
+            error is SocketTimeoutException ||
+            error is ConnectException ||
+            error is SocketException
+        ) {
+            return true
+        }
+        if (error is SupabaseEdgeException && error.reason == SupabaseEdgeFailureReason.AUTH_REQUIRED) {
+            return true
+        }
+        val message = error.message.orEmpty().lowercase()
+        if (message.contains("unable to resolve host") ||
+            message.contains("no address associated with hostname") ||
+            message.contains("missing supabase auth jwt for server-first operation")
+        ) {
+            return true
+        }
+        current = error.cause
+    }
+    return false
+}
+
+private const val MAX_CAUSE_DEPTH = 8

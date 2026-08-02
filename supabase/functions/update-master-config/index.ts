@@ -1,9 +1,10 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
-import { clean, corsHeaders, json, supabaseAdmin } from "../_shared/lotterynet-admin.ts";
+import { authenticatedActor, canWriteMasterConfig, clean, corsHeaders, json, supabaseAdmin } from "../_shared/lotterynet-admin.ts";
 
 function isAllowedKey(key: string): boolean {
   return /^(cashier_limits|cashier_prize_payouts|recharge_limits|admin_operational_limits|system_modes|manual_disabled_lotteries):[A-Za-z0-9_.:-]+$/.test(key) ||
     /^sportsbook:(global|actor:[A-Za-z0-9_.:-]+|admin:[A-Za-z0-9_.:-]+)$/.test(key) ||
+    /^(services|video_games):global$/.test(key) ||
     /^sys_[A-Za-z0-9_.:-]+$/.test(key);
 }
 
@@ -56,16 +57,37 @@ function normalizeSportsbookPayload(key: string, payload: Record<string, unknown
   return normalized;
 }
 
+function normalizeServicesGamesPayload(key: string, payload: Record<string, unknown>): Record<string, unknown> {
+  if (!/^(services|video_games):global$/.test(key)) return payload;
+  const normalized: Record<string, unknown> = { ...payload, configured: true };
+  if (typeof normalized.enabled !== "boolean") normalized.enabled = false;
+  for (const listKey of ["allowedAdminKeys", "allowedCashierKeys", "cashierAdminKeys"]) {
+    if (!Array.isArray(normalized[listKey])) normalized[listKey] = [];
+    normalized[listKey] = (normalized[listKey] as unknown[])
+      .filter((value): value is string => typeof value === "string")
+      .map((value) => value.trim())
+      .filter(Boolean);
+  }
+  if (typeof normalized.updatedAt !== "number") normalized.updatedAt = Date.now();
+  return normalized;
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (req.method !== "POST") return json({ ok: false, message: "Metodo no permitido." }, 405);
 
   try {
+    const auth = await authenticatedActor(req, ["admin", "master"]);
+    if (!auth.ok) return auth.response;
+
     const body = await req.json().catch(() => ({}));
     if (clean(body.action) === "probe") return json({ ok: true, version: "manual-disabled-lotteries-v2" });
     const key = clean(body.key ?? body.configKey);
     const payload = body.payload;
     if (!key || !isAllowedKey(key)) return json({ ok: false, message: "Clave de configuracion invalida." }, 400);
+    if (!canWriteMasterConfig(auth.actor, key)) {
+      return json({ ok: false, message: "No tiene permiso para modificar esta configuracion." }, 403);
+    }
     if (payload === undefined || payload === null || typeof payload !== "object") {
       return json({ ok: false, message: "Payload de configuracion requerido." }, 400);
     }
@@ -73,7 +95,10 @@ Deno.serve(async (req) => {
     const supabase = supabaseAdmin();
     const normalizedPayload = normalizeSportsbookPayload(
       key,
-      normalizeSystemModePayload(key, payload as Record<string, unknown>),
+      normalizeServicesGamesPayload(
+        key,
+        normalizeSystemModePayload(key, payload as Record<string, unknown>),
+      ),
     );
     const { error } = await supabase
       .from("lotterynet_master_state")

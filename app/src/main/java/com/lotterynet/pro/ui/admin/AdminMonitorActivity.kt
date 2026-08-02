@@ -11,18 +11,22 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.lazy.LazyColumn
@@ -30,9 +34,12 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.automirrored.rounded.ArrowForward
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.CalendarMonth
 import androidx.compose.material.icons.rounded.Download
 import androidx.compose.material.icons.rounded.ExpandMore
+import androidx.compose.material.icons.rounded.FilterList
 import androidx.compose.material.icons.rounded.Groups
+import androidx.compose.material.icons.rounded.Menu
 import androidx.compose.material.icons.rounded.PhoneAndroid
 import androidx.compose.material.icons.rounded.PointOfSale
 import androidx.compose.material.icons.rounded.Print
@@ -45,16 +52,14 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -91,6 +96,7 @@ import com.lotterynet.pro.core.model.isPaidStatus
 import com.lotterynet.pro.core.operations.filterCashiersForSession
 import com.lotterynet.pro.core.operations.filterTicketsForOperationalScope
 import com.lotterynet.pro.core.operations.buildActorLabelLookup
+import com.lotterynet.pro.core.operations.cashierDisplayLabel
 import com.lotterynet.pro.core.operations.resolveTicketActorLabel
 import com.lotterynet.pro.core.operations.sortCashierAccountsNatural
 import com.lotterynet.pro.core.storage.LocalRechargeRepository
@@ -115,8 +121,13 @@ import com.lotterynet.pro.core.sync.NativeTicketRemoteStore
 import com.lotterynet.pro.core.sync.NativeTicketSyncQueueRepository
 import com.lotterynet.pro.core.sync.NativeUsersBootstrapper
 import com.lotterynet.pro.core.sync.OperationalSyncThrottle
+import com.lotterynet.pro.core.sync.TicketRefreshGovernor
+import com.lotterynet.pro.core.sync.ticketRefreshGovernorKey
+import com.lotterynet.pro.core.sync.hydrateOperationalTicketDay
 import com.lotterynet.pro.core.sync.resolveOperationalOwnerKey
 import com.lotterynet.pro.core.sync.resolveOperationalOwnerKeys
+import com.lotterynet.pro.core.sync.resolveOperationalRealtimeOwnerKeys
+import com.lotterynet.pro.core.sync.invalidateTicketRealtimeCaches
 import com.lotterynet.pro.core.users.SupabaseUsersRemoteStore
 import com.lotterynet.pro.ui.common.CompactActionButton
 import com.lotterynet.pro.ui.common.ActionTone
@@ -127,24 +138,28 @@ import com.lotterynet.pro.ui.common.MetricStrip
 import com.lotterynet.pro.ui.common.MetricStripItem
 import com.lotterynet.pro.ui.common.NativeBottomTab
 import com.lotterynet.pro.ui.common.OperationalListHeader
+import com.lotterynet.pro.ui.common.OperationalModalSheet
 import com.lotterynet.pro.ui.common.QuickFilterChip
 import com.lotterynet.pro.ui.common.QuickFilterChips
 import com.lotterynet.pro.ui.common.CompactPanel
 import com.lotterynet.pro.ui.common.CompactSegmentedSelector
-import com.lotterynet.pro.ui.common.CompactStatusBadge
-import com.lotterynet.pro.ui.common.CompactTicketSaveSyncStatus
+import com.lotterynet.pro.ui.common.CurrentScopeDropdownCard
 import com.lotterynet.pro.ui.common.LotteryLogo
+import com.lotterynet.pro.core.catalog.LotteryAssetResolver
 import com.lotterynet.pro.ui.common.ScreenHeaderPanel
 import com.lotterynet.pro.ui.common.SectionHeader
-import com.lotterynet.pro.ui.common.TicketSaveSyncStage
+import com.lotterynet.pro.ui.common.ScopeLegendCard
+import com.lotterynet.pro.ui.common.ScopeLegendEntry
 import com.lotterynet.pro.ui.common.gainColor
 import com.lotterynet.pro.ui.common.openBottomTab
 import com.lotterynet.pro.ui.common.rememberLotteryNetVisualSpec
-import com.lotterynet.pro.ui.common.resolveTicketSaveSyncUiContract
 import com.lotterynet.pro.ui.common.warningColor
 import com.lotterynet.pro.ui.navigation.NativeDestination
 import com.lotterynet.pro.ui.navigation.redirectIfNativeDestinationBlocked
-import com.lotterynet.pro.ui.navigation.startSafeNativeDestination
+import com.lotterynet.pro.ui.finance.FinanceActivity
+import com.lotterynet.pro.ui.report.OperationalReportActivity
+import com.lotterynet.pro.ui.tickets.TicketLookupActivity
+import com.lotterynet.pro.ui.tickets.TicketSummaryActivity
 import com.lotterynet.pro.ui.sales.resolveSalesStartupSystemModeConfig
 import com.lotterynet.pro.ui.theme.LotteryNetComposeTheme
 import java.text.SimpleDateFormat
@@ -195,12 +210,12 @@ internal data class AdminMonitorExportMenuContract(
 
 internal fun resolveCashierMonitorCardVisualContract(): CashierMonitorCardVisualContract {
     return CashierMonitorCardVisualContract(
-        singleLineIdentity = true,
+        singleLineIdentity = false,
         inlineMetrics = true,
         singleStatusIndicator = true,
         stackedMetricCards = false,
-        minTouchTargetDp = 44,
-        rowPaddingVerticalDp = 6,
+        minTouchTargetDp = 64,
+        rowPaddingVerticalDp = 10,
     )
 }
 
@@ -272,9 +287,7 @@ internal fun adminMonitorActionLabels(): List<String> = listOf(
 
 internal enum class AdminMonitorRoleSegment(val label: String) {
     CASHIERS("Cajeros"),
-    MONITOR("Monitoreo"),
-    TICKETS("Tickets"),
-    REPORT("Reporte"),
+    MONITOR("Ranking"),
 }
 
 internal fun adminMonitorRoleSegmentOptions(role: UserRole): List<QuickFilterChip> {
@@ -317,7 +330,8 @@ class AdminMonitorActivity : AppCompatActivity() {
     private val syncHandler = Handler(Looper.getMainLooper())
     private val realtimeClient = LotterynetRealtimeClient()
     private val realtimeSubscriptions = mutableListOf<LotterynetRealtimeClient.SubscriptionHandle>()
-    private val remoteStampStore = NativeTicketRemoteStore()
+    private lateinit var remoteStampStore: NativeTicketRemoteStore
+    private lateinit var sessionTokenProvider: SupabaseSessionTokenProvider
     private val foregroundCatchUpPolicy = ForegroundCatchUpPolicy(
         OperationalSyncThrottle(ADMIN_MONITOR_FOREGROUND_CATCH_UP_THROTTLE_MS),
     )
@@ -332,7 +346,7 @@ class AdminMonitorActivity : AppCompatActivity() {
     private lateinit var trustedClockRepository: LocalTrustedClockRepository
     private lateinit var closePolicy: LotteryClosePolicy
     private lateinit var ticketSyncQueueRepository: NativeTicketSyncQueueRepository
-    private lateinit var dayKey: String
+    private var dayKey by mutableStateOf("")
     private lateinit var operationalSyncCoordinator: NativeOperationalSyncCoordinator
     private var rowsState by mutableStateOf<List<MonitorRow>>(emptyList())
     private var bancaSummaryState by mutableStateOf(FinanceSummary())
@@ -342,12 +356,17 @@ class AdminMonitorActivity : AppCompatActivity() {
     private var cashierSalesLimitsPayloadState by mutableStateOf("")
     private var monitorNowUtcMsState by mutableStateOf(0L)
     private var pendingSyncCountState by mutableStateOf(0)
+    private var monitorSyncStatusState by mutableStateOf("Copia local")
     private var lastRemoteUpdatedAt: String? = null
     private val monitorSyncInFlight = AtomicBoolean(false)
+    private val monitorRefreshGovernor = TicketRefreshGovernor(requestCooldownMs = ADMIN_MONITOR_REMOTE_REFRESH_DEDUP_MS)
     private val resumeSyncRunnable = Runnable { runForegroundCatchUp(force = false) }
+    private val deferredMonitorSyncRunnable = Runnable { syncMonitor(force = false) }
     private val syncPollRunnable = object : Runnable {
         override fun run() {
-            syncMonitor(force = false)
+            if (realtimeClient.shouldUsePollingFallback()) {
+                runForegroundCatchUp(force = false)
+            }
             syncHandler.postDelayed(this, resolveAdminMonitorPollIntervalMs(realtimeClient.isConfigured()))
         }
     }
@@ -358,9 +377,13 @@ class AdminMonitorActivity : AppCompatActivity() {
         if (redirectIfNativeDestinationBlocked(this, activeSession?.role, NativeDestination.ADMIN_MONITOR)) return
         session = activeSession ?: return
         usersRepository = LocalUsersRepository(this)
-        val sessionTokenProvider = SupabaseSessionTokenProvider(LocalSessionRepository(this))
+        sessionTokenProvider = SupabaseSessionTokenProvider(LocalSessionRepository(this))
         usersRemoteStore = SupabaseUsersRemoteStore(
             bearerTokenProvider = { sessionTokenProvider.freshAccessToken() },
+        )
+        remoteStampStore = NativeTicketRemoteStore(
+            bearerTokenProvider = { sessionTokenProvider.freshAccessToken() },
+            bearerTokenRefresher = { sessionTokenProvider.forceFreshAccessToken() },
         )
         usersRepository.touchSession(session)
         catalogRepository = StaticLotteryCatalogRepository()
@@ -387,7 +410,9 @@ class AdminMonitorActivity : AppCompatActivity() {
             ticketGateway = NativeTicketCloudSyncCoordinator(
                 salesRepository = salesRepository,
                 queueRepository = ticketSyncQueueRepository,
+                remoteStore = remoteStampStore,
             ),
+            remoteStampStore = remoteStampStore,
         )
         refreshMonitorData()
 
@@ -406,8 +431,13 @@ class AdminMonitorActivity : AppCompatActivity() {
                     closePolicy = closePolicy,
                     operationTerritory = normalizeMonitorTerritory(session.territory),
                     pendingSyncCount = pendingSyncCountState,
+                    syncStatusLabel = monitorSyncStatusState,
                     onBack = { finish() },
                     onRefresh = { syncMonitor(force = true) },
+                    onDaySelected = { selectedDay ->
+                        dayKey = selectedDay
+                        refreshMonitorData()
+                    },
                     onOpenCashier = { row ->
                         startActivity(Intent(this, AdminCashierDetailActivity::class.java).apply {
                             putExtra(AdminCashierDetailActivity.EXTRA_ACTOR_ID, row.userId)
@@ -467,6 +497,7 @@ class AdminMonitorActivity : AppCompatActivity() {
 
     override fun onDestroy() {
         syncHandler.removeCallbacks(resumeSyncRunnable)
+        syncHandler.removeCallbacks(deferredMonitorSyncRunnable)
         syncHandler.removeCallbacks(syncPollRunnable)
         realtimeSubscriptions.forEach { it.close() }
         realtimeSubscriptions.clear()
@@ -475,7 +506,13 @@ class AdminMonitorActivity : AppCompatActivity() {
     }
 
     private fun refreshMonitorData() {
-        rowsState = buildMonitorRows(session, usersRepository, financeRepository, dayKey)
+        rowsState = buildMonitorRows(
+            session = session,
+            usersRepository = usersRepository,
+            financeRepository = financeRepository,
+            cashierSalesLimitsPayload = cashierSalesLimitRepository.exportPayload(session.adminId ?: session.userId),
+            dayKey = dayKey,
+        )
         bancaSummaryState = financeRepository.getScopedDaySummary(dayKey, financeRepository.resolveScope(session))
         val modeConfig = resolveSalesStartupSystemModeConfig(
             session = session,
@@ -485,7 +522,7 @@ class AdminMonitorActivity : AppCompatActivity() {
         val visibleLotteries = filterMonitorLotteriesForSystemMode(
             catalogRepository.getAllLotteries(),
             modeConfig,
-        )
+        ).sortedWith(monitorLotteryDrawOrderComparator())
         val visibleLotteryIds = visibleLotteries.mapTo(linkedSetOf()) { it.id }
         monitorTicketsState = filterMonitorTicketsForLotteries(
             buildScopedMonitorTickets(
@@ -495,14 +532,18 @@ class AdminMonitorActivity : AppCompatActivity() {
             ),
             visibleLotteryIds,
         )
-        monitorWinnerTicketsState = filterMonitorTicketsForLotteries(
-            buildScopedMonitorTickets(
-                session = session,
-                usersRepository = usersRepository,
-                tickets = salesRepository.getAllTickets(),
-            ),
-            visibleLotteryIds,
-        )
+        monitorWinnerTicketsState = if (session.role == UserRole.MASTER) {
+            filterMonitorTicketsForLotteries(
+                buildScopedMonitorTickets(
+                    session = session,
+                    usersRepository = usersRepository,
+                    tickets = salesRepository.getAllTickets(),
+                ),
+                visibleLotteryIds,
+            )
+        } else {
+            emptyList()
+        }
         monitorLotteriesState = visibleLotteries
         cashierSalesLimitsPayloadState = cashierSalesLimitRepository.exportPayload(session.adminId ?: session.userId)
         monitorNowUtcMsState = trustedClockRepository.getTrustedUtcMs()
@@ -543,27 +584,59 @@ class AdminMonitorActivity : AppCompatActivity() {
     }
 
     private fun syncMonitor(force: Boolean) {
-        if (!monitorSyncInFlight.compareAndSet(false, true)) return
+        if (!monitorSyncInFlight.compareAndSet(false, true)) {
+            if (!force) scheduleDeferredMonitorSync()
+            return
+        }
+        if (shouldSkipAdminMonitorRemoteRefresh(
+                governor = monitorRefreshGovernor,
+                ownerKey = resolveOperationalOwnerKey(session),
+                dayKey = dayKey,
+                authScope = session.role.name,
+                force = force,
+            )
+        ) {
+            monitorSyncInFlight.set(false)
+            scheduleDeferredMonitorSync()
+            return
+        }
+        syncHandler.removeCallbacks(deferredMonitorSyncRunnable)
+        runOnUiThread { monitorSyncStatusState = "Actualizando…" }
         thread(name = "admin-monitor-sync") {
-            runCatching {
+            val outcome = runCatching {
                 refreshMonitorUsers(forceRemoteRefresh = force)
-                val ticketState = operationalSyncCoordinator.syncTicketsForSession(
+                val ticketState = hydrateOperationalTicketDay(
                     session = session,
-                    lastRemoteUpdatedAt = lastRemoteUpdatedAt,
-                    force = force,
+                    dayKey = dayKey,
+                    remoteStore = remoteStampStore,
+                    salesRepository = salesRepository,
                 )
                 val rechargeSync = NativeRechargeCloudSyncCoordinator(rechargeRepository)
-                resolveOperationalOwnerKeys(session).forEach { ownerKey ->
+                resolveOperationalRealtimeOwnerKeys(session).forEach { ownerKey ->
                     rechargeSync.hydrateOwner(ownerKey)
                 }
                 ticketState
             }.onSuccess { state ->
                 lastRemoteUpdatedAt = state.remoteUpdatedAt ?: lastRemoteUpdatedAt
-            }.also {
-                monitorSyncInFlight.set(false)
-                runOnUiThread { refreshMonitorData() }
+            }
+            monitorSyncInFlight.set(false)
+            runOnUiThread {
+                monitorSyncStatusState = if (outcome.isSuccess) {
+                    "Actualizado"
+                } else {
+                    "Sin conexión · copia local"
+                }
+                refreshMonitorData()
             }
         }
+    }
+
+    private fun scheduleDeferredMonitorSync() {
+        syncHandler.removeCallbacks(deferredMonitorSyncRunnable)
+        syncHandler.postDelayed(
+            deferredMonitorSyncRunnable,
+            ADMIN_MONITOR_REMOTE_REFRESH_DEDUP_MS + ADMIN_MONITOR_DEFERRED_SYNC_GRACE_MS,
+        )
     }
 
     private fun refreshMonitorUsers(forceRemoteRefresh: Boolean) {
@@ -613,9 +686,13 @@ class AdminMonitorActivity : AppCompatActivity() {
         } else if (realtimeSubscriptions.isNotEmpty()) {
             return
         }
-        resolveOperationalOwnerKeys(session).forEach { ownerKey ->
-            realtimeSubscriptions += realtimeClient.subscribe(LotterynetRealtimeSubscription.ticketOwner(ownerKey)) {
-                syncMonitor(force = true)
+        resolveOperationalRealtimeOwnerKeys(session).forEach { ownerKey ->
+            realtimeSubscriptions += realtimeClient.subscribeTicketOwnerSignals(
+                ownerKey = ownerKey,
+                bearerTokenProvider = { sessionTokenProvider.freshAccessToken() },
+            ) {
+                invalidateTicketRealtimeCaches(ownerKey)
+                syncMonitor(force = false)
             }
         }
     }
@@ -681,6 +758,10 @@ internal fun filterMonitorLotteriesForSystemMode(
     }
 }
 
+internal fun sortMonitorLotteriesByDrawOrder(lotteries: List<LotteryCatalogItem>): List<LotteryCatalogItem> {
+    return lotteries.sortedWith(monitorLotteryDrawOrderComparator())
+}
+
 internal fun filterMonitorTicketsForLotteries(
     tickets: List<TicketRecord>,
     allowedLotteryIds: Set<String>,
@@ -711,6 +792,26 @@ private fun isMonitorPickLottery(lottery: LotteryCatalogItem): Boolean {
         id.startsWith("US-P4-")
 }
 
+private fun monitorLotteryDrawOrderComparator(): Comparator<LotteryCatalogItem> {
+    return compareBy<LotteryCatalogItem>(
+        { parseMonitorLotteryMinutes(it.baseDrawTime) },
+        { it.name.lowercase(Locale.US) },
+        { it.id },
+    )
+}
+
+internal fun parseMonitorLotteryMinutes(raw: String): Int {
+    val match = Regex("""(\d{1,2}):(\d{2})(?:\s*(AM|PM))?""")
+        .find(raw.trim().uppercase(Locale.US))
+        ?: return Int.MAX_VALUE
+    var hour = match.groupValues[1].toInt()
+    val minute = match.groupValues[2].toInt()
+    val suffix = match.groupValues.getOrNull(3).orEmpty()
+    if (suffix == "AM" && hour == 12) hour = 0
+    if (suffix == "PM" && hour < 12) hour += 12
+    return hour * 60 + minute
+}
+
 @Composable
 private fun AdminMonitorRoute(
     session: ActiveSession,
@@ -725,8 +826,10 @@ private fun AdminMonitorRoute(
     closePolicy: LotteryClosePolicy,
     operationTerritory: LotteryTerritory,
     pendingSyncCount: Int,
+    syncStatusLabel: String,
     onBack: () -> Unit,
     onRefresh: () -> Unit,
+    onDaySelected: (String) -> Unit,
     onOpenCashier: (MonitorRow) -> Unit,
     onShare: (List<MonitorRow>, Boolean) -> Unit,
     onShareLottery: (String, String, String, List<LotteryNumberMonitorRow>) -> Unit,
@@ -737,6 +840,8 @@ private fun AdminMonitorRoute(
     val visual = rememberLotteryNetVisualSpec()
     val layout = remember(visual.windowMode) { resolveAdminMonitorLayout(visual.windowMode) }
     val context = androidx.compose.ui.platform.LocalContext.current
+    var showExportSheet by rememberSaveable { mutableStateOf(false) }
+    var showFilterSheet by rememberSaveable { mutableStateOf(false) }
     var filter by rememberSaveable { mutableStateOf("all") }
     var selectedLotteryId by rememberSaveable { mutableStateOf(ALL_MONITOR_LOTTERIES_ID) }
     var selectedCashierRowId by rememberSaveable { mutableStateOf(ALL_MONITOR_CASHIERS_ID) }
@@ -763,8 +868,8 @@ private fun AdminMonitorRoute(
     val monitorCashierSellerKeys = remember(rows, selectedCashierRowId, selectedCashierSellerKeys) {
         resolveMonitorCashierSellerKeys(rows, selectedCashierRowId, selectedCashierSellerKeys)
     }
-    val monitorCashierLimits = remember(cashierSalesLimitsPayload, rows, selectedCashierRowId) {
-        resolveMonitorCashierLimits(cashierSalesLimitsPayload, rows, selectedCashierRowId)
+    val monitorCashierLimits = remember(cashierSalesLimitsPayload, rows, selectedCashierRowId, session) {
+        resolveMonitorCashierLimits(cashierSalesLimitsPayload, rows, selectedCashierRowId, session)
     }
     val selectedMonitorTickets = remember(tickets, selectedCashierRowId, selectedCashierSellerKeys) {
         filterMonitorTicketsBySelectedCashier(
@@ -786,6 +891,7 @@ private fun AdminMonitorRoute(
             tickets = selectedMonitorTickets,
             lotteryId = selectedLotteryId.takeIf { it != ALL_MONITOR_LOTTERIES_ID },
             view = selectedPlayView,
+            selectedCashierId = selectedCashierRowId,
             actorLabelsByKey = actorLabelsByKey,
             cashierSellerKeys = monitorCashierSellerKeys,
             cashierLimits = monitorCashierLimits,
@@ -833,20 +939,18 @@ private fun AdminMonitorRoute(
         }.sortedByDescending { monitorPriority(it) }
     }
     val activeCount = remember(rows) { rows.count { it.presence == "Activo" } }
-    val blockedCount = remember(rows) { rows.count { it.presence == "Bloqueado" } }
+    val blockedCount = remember(rows) { rows.count { it.isBlocked } }
     val pendingCount = remember(rows) { rows.count { it.premiosPendientes > 0.0 } }
-    val syncContract = remember(pendingSyncCount) {
-        if (pendingSyncCount > 0) {
-            resolveTicketSaveSyncUiContract(
-                stage = TicketSaveSyncStage.PENDING,
-                detail = "$pendingSyncCount ticket(s) esperando servidor.",
-            )
-        } else {
-            resolveTicketSaveSyncUiContract(stage = TicketSaveSyncStage.SYNCED)
-        }
+    val syncBadgeLabel = remember(pendingSyncCount, syncStatusLabel) {
+        listOfNotNull(
+            syncStatusLabel.takeIf { it.isNotBlank() },
+            pendingSyncCount.takeIf { it > 0 }?.let { "Sync $it" },
+        ).joinToString(" · ").ifBlank { null }
     }
     if (session.role == UserRole.SUPERVISOR) {
         SupervisorPanelRoute(
+            session = session,
+            dayKey = dayKey,
             rows = rows,
             tickets = tickets,
             lotteries = lotteries,
@@ -854,16 +958,22 @@ private fun AdminMonitorRoute(
             nowUtcMs = nowUtcMs,
             closePolicy = closePolicy,
             operationTerritory = operationTerritory,
-            syncContract = syncContract,
+            syncBadgeLabel = syncBadgeLabel,
             onBack = onBack,
             onRefresh = onRefresh,
+            onDaySelected = onDaySelected,
             onOpenCashier = onOpenCashier,
             onShareLottery = onShareLottery,
+            onShare = onShare,
+            onPrint = onPrint,
+            onSave = onSave,
         )
         return
     }
     if (session.role == UserRole.ADMIN) {
         AdminCashierPanelRoute(
+            session = session,
+            dayKey = dayKey,
             rows = rows,
             tickets = tickets,
             lotteries = lotteries,
@@ -871,11 +981,15 @@ private fun AdminMonitorRoute(
             nowUtcMs = nowUtcMs,
             closePolicy = closePolicy,
             operationTerritory = operationTerritory,
-            syncContract = syncContract,
+            syncBadgeLabel = syncBadgeLabel,
             onBack = onBack,
             onRefresh = onRefresh,
+            onDaySelected = onDaySelected,
             onOpenCashier = onOpenCashier,
             onShareLottery = onShareLottery,
+            onShare = onShare,
+            onPrint = onPrint,
+            onSave = onSave,
             onSetCashierActive = onSetCashierActive,
         )
         return
@@ -915,43 +1029,33 @@ private fun AdminMonitorRoute(
                     )
                 }
                 item {
-                    CompactTicketSaveSyncStatus(contract = syncContract)
-                }
-                item {
                     CompactPanel(contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 10.dp, vertical = layout.summaryPaddingVerticalDp.dp)) {
                         SectionHeader(title = "Acciones", meta = "Exportar")
-                        CompactActionButton(
-                            "Actualizar servidor",
-                            onClick = {
-                                Toast.makeText(context, "Actualizando monitor...", Toast.LENGTH_SHORT).show()
-                                onRefresh()
-                            },
-                            icon = Icons.Rounded.Sync,
-                            modifier = Modifier.fillMaxWidth(),
-                            tone = ActionTone.Secondary,
-                        )
-                        if (layout.splitActions) {
-                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
-                                CompactActionButton("WhatsApp", onClick = { onShare(filteredRows, true) }, icon = Icons.Rounded.Whatsapp, modifier = Modifier.weight(1f), tone = ActionTone.Success)
-                                CompactActionButton("Compartir", onClick = { onShare(filteredRows, false) }, icon = Icons.Rounded.Share, modifier = Modifier.weight(1f), tone = ActionTone.Primary)
-                            }
-                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
-                                CompactActionButton("Guardar", onClick = { onSave(filteredRows) }, icon = Icons.Rounded.Download, modifier = Modifier.weight(1f), tone = ActionTone.Secondary)
-                                CompactActionButton("Impr.", onClick = { onPrint(filteredRows) }, icon = Icons.Rounded.Print, modifier = Modifier.weight(1f), tone = ActionTone.Secondary)
-                            }
-                        } else {
-                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
-                                CompactActionButton("Impr.", onClick = { onPrint(filteredRows) }, icon = Icons.Rounded.Print, modifier = Modifier.weight(1f), tone = ActionTone.Secondary)
-                                CompactActionButton("WhatsApp", onClick = { onShare(filteredRows, true) }, icon = Icons.Rounded.Whatsapp, modifier = Modifier.weight(1f), tone = ActionTone.Success)
-                                CompactActionButton("Compartir", onClick = { onShare(filteredRows, false) }, icon = Icons.Rounded.Share, modifier = Modifier.weight(1f), tone = ActionTone.Primary)
-                                CompactActionButton("Guardar", onClick = { onSave(filteredRows) }, icon = Icons.Rounded.Download, modifier = Modifier.weight(1f), tone = ActionTone.Secondary)
-                            }
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+                            CompactActionButton(
+                                "Actualizar",
+                                onClick = {
+                                    Toast.makeText(context, "Actualizando monitor...", Toast.LENGTH_SHORT).show()
+                                    onRefresh()
+                                },
+                                icon = Icons.Rounded.Sync,
+                                modifier = Modifier.weight(1f),
+                                tone = ActionTone.Secondary,
+                            )
+                            CompactActionButton(
+                                "Exportar",
+                                onClick = { showExportSheet = true },
+                                icon = Icons.Rounded.Share,
+                                modifier = Modifier.weight(1f),
+                                tone = ActionTone.Primary,
+                            )
                         }
                     }
                 }
                 item {
                     CompactPanel(contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 10.dp, vertical = layout.summaryPaddingVerticalDp.dp)) {
-                        OperationalListHeader(title = "Resumen", meta = "${rows.size} cajeros")
+                        OperationalListHeader(title = "Resumen operativo", meta = "${rows.size} cajeros")
+                        MonitorDaySelector(dayKey = dayKey, onDaySelected = onDaySelected)
                         MetricStrip(
                             items = listOf(
                                 MetricStripItem("Activos", activeCount.toString(), gainColor()),
@@ -982,12 +1086,36 @@ private fun AdminMonitorRoute(
                 }
                 item {
                     CompactPanel(alt = true) {
-                        OperationalListHeader(title = "Filtro rápido", meta = filterLabel(filter))
-                        QuickFilterChips(
-                            filters = adminMonitorFilterOptions(),
-                            selectedId = filter,
-                            onSelected = { filter = it },
-                        )
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(10.dp),
+                        ) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    "Filtros",
+                                    style = MaterialTheme.typography.labelLarge,
+                                    fontWeight = FontWeight.Bold,
+                                )
+                                Text(
+                                    filterLabel(filter),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
+                            FilterChip(
+                                selected = filter != "all",
+                                onClick = { showFilterSheet = true },
+                                label = { Text("Cambiar") },
+                                leadingIcon = {
+                                    Icon(
+                                        imageVector = Icons.Rounded.FilterList,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(18.dp),
+                                    )
+                                },
+                            )
+                        }
                     }
                 }
                 item {
@@ -1021,13 +1149,16 @@ private fun AdminMonitorRoute(
                 }
                 item {
                     CompactPanel(alt = true) {
-                        SectionHeader(title = "Selector de cajero", meta = "Ordenado por nombre")
-                        MonitorDropdown(
-                            modifier = Modifier.fillMaxWidth(),
-                            label = cashierDropdownOptions.firstOrNull { it.first == selectedCashierRowId }?.second ?: "Seleccionar cajero",
+                        CurrentScopeDropdownCard(
+                            title = "Alcance de cajeros",
+                            value = cashierDropdownOptions.firstOrNull { it.first == selectedCashierRowId }?.second
+                                ?: "Todos los cajeros",
                             selectedId = selectedCashierRowId,
                             options = cashierDropdownOptions,
                             onSelected = { selectedCashierRowId = it },
+                            subtitle = "Selecciona todos o un cajero para ver su actividad.",
+                            actionLabel = "Cajero",
+                            tone = ActionTone.IntenseBlue,
                         )
                     }
                 }
@@ -1037,10 +1168,40 @@ private fun AdminMonitorRoute(
             }
         }
     }
+    if (showExportSheet) {
+        AdminMonitorExportSheet(
+            rows = filteredRows,
+            onDismiss = { showExportSheet = false },
+            onShare = onShare,
+            onPrint = onPrint,
+            onSave = onSave,
+        )
+    }
+    if (showFilterSheet) {
+        OperationalModalSheet(
+            title = "Filtrar monitor",
+            subtitle = "Selecciona el estado de los cajeros visibles.",
+            onDismiss = { showFilterSheet = false },
+            contentScrollable = false,
+        ) {
+            CompactPanel(alt = true) {
+                QuickFilterChips(
+                    filters = adminMonitorFilterOptions(),
+                    selectedId = filter,
+                    onSelected = {
+                        filter = it
+                        showFilterSheet = false
+                    },
+                )
+            }
+        }
+    }
 }
 
 @Composable
 private fun SupervisorPanelRoute(
+    session: ActiveSession,
+    dayKey: String,
     rows: List<MonitorRow>,
     tickets: List<TicketRecord>,
     lotteries: List<LotteryCatalogItem>,
@@ -1048,11 +1209,15 @@ private fun SupervisorPanelRoute(
     nowUtcMs: Long,
     closePolicy: LotteryClosePolicy,
     operationTerritory: LotteryTerritory,
-    syncContract: com.lotterynet.pro.ui.common.TicketSaveSyncUiContract,
+    syncBadgeLabel: String?,
     onBack: () -> Unit,
     onRefresh: () -> Unit,
+    onDaySelected: (String) -> Unit,
     onOpenCashier: (MonitorRow) -> Unit,
     onShareLottery: (String, String, String, List<LotteryNumberMonitorRow>) -> Unit,
+    onShare: (List<MonitorRow>, Boolean) -> Unit,
+    onPrint: (List<MonitorRow>) -> Boolean,
+    onSave: (List<MonitorRow>) -> Boolean,
 ) {
     val visual = rememberLotteryNetVisualSpec()
     val context = androidx.compose.ui.platform.LocalContext.current
@@ -1060,7 +1225,8 @@ private fun SupervisorPanelRoute(
     var activeTab by rememberSaveable { mutableStateOf(AdminMonitorRoleSegment.CASHIERS.name) }
     var query by rememberSaveable { mutableStateOf("") }
     var filter by rememberSaveable { mutableStateOf("active") }
-    var selectedIds by rememberSaveable { mutableStateOf(emptyList<String>()) }
+    var showFilterSheet by rememberSaveable { mutableStateOf(false) }
+    var showExportSheet by rememberSaveable { mutableStateOf(false) }
     var selectedLotteryId by rememberSaveable { mutableStateOf(ALL_MONITOR_LOTTERIES_ID) }
     var selectedCashierRowId by rememberSaveable { mutableStateOf(ALL_MONITOR_CASHIERS_ID) }
     var selectedPlayViewName by rememberSaveable { mutableStateOf(LotteryMonitorPlayView.QUINIELA.name) }
@@ -1072,16 +1238,12 @@ private fun SupervisorPanelRoute(
                 row.userId.contains(query, ignoreCase = true)
             val matchesFilter = when (filter) {
                 "active" -> row.presence == "Activo"
-                "blocked" -> row.presence == "Bloqueado"
+                "blocked" -> row.isBlocked
                 "sold" -> row.ventas > 0.0 || row.tickets > 0
                 else -> true
             }
             matchesQuery && matchesFilter
         }.sortedWith(compareByDescending<MonitorRow> { it.ventas }.thenBy { it.displayName.lowercase(Locale.US) })
-    }
-    LaunchedEffect(filteredRows) {
-        val visibleIds = filteredRows.map { it.userId }.toSet()
-        selectedIds = selectedIds.filter { it in visibleIds }
     }
     val cashierDropdownOptions = remember(rows) {
         listOf(ALL_MONITOR_CASHIERS_ID to "Todos los cajeros") +
@@ -1096,8 +1258,8 @@ private fun SupervisorPanelRoute(
     val monitorCashierSellerKeys = remember(rows, selectedCashierRowId, selectedCashierSellerKeys) {
         resolveMonitorCashierSellerKeys(rows, selectedCashierRowId, selectedCashierSellerKeys)
     }
-    val monitorCashierLimits = remember(cashierSalesLimitsPayload, rows, selectedCashierRowId) {
-        resolveMonitorCashierLimits(cashierSalesLimitsPayload, rows, selectedCashierRowId)
+    val monitorCashierLimits = remember(cashierSalesLimitsPayload, rows, selectedCashierRowId, session) {
+        resolveMonitorCashierLimits(cashierSalesLimitsPayload, rows, selectedCashierRowId, session)
     }
     val selectedMonitorTickets = remember(tickets, selectedCashierRowId, selectedCashierSellerKeys) {
         filterMonitorTicketsBySelectedCashier(
@@ -1119,6 +1281,7 @@ private fun SupervisorPanelRoute(
             tickets = selectedMonitorTickets,
             lotteryId = selectedLotteryId.takeIf { it != ALL_MONITOR_LOTTERIES_ID },
             view = selectedPlayView,
+            selectedCashierId = selectedCashierRowId,
             actorLabelsByKey = actorLabelsByKey,
             cashierSellerKeys = monitorCashierSellerKeys,
             cashierLimits = monitorCashierLimits,
@@ -1162,23 +1325,29 @@ private fun SupervisorPanelRoute(
                 SupervisorPanelHeader(
                     title = "Panel Supervisor",
                     subtitle = "Mis cajeros · Monitoreo compacto",
+                    dayKey = dayKey,
                     onBack = onBack,
                     onRefresh = onRefresh,
+                    onExport = { showExportSheet = true },
+                    onDaySelected = onDaySelected,
+                    syncBadgeLabel = syncBadgeLabel,
                 )
             }
-            item { CompactTicketSaveSyncStatus(contract = syncContract) }
             item {
                 SupervisorTopTabs(
                     activeTab = activeTab,
                     onTabSelected = { activeTab = it },
-                    onTickets = { startSafeNativeDestination(context, UserRole.SUPERVISOR, NativeDestination.TICKET_SUMMARY) },
-                    onReport = { startSafeNativeDestination(context, UserRole.SUPERVISOR, NativeDestination.OPERATIONAL_REPORT) },
                 )
             }
             if (activeTab == AdminMonitorRoleSegment.MONITOR.name) {
                 item {
                     CompactPanel(alt = true) {
-                        SectionHeader(title = "Cajero", meta = "Filtro de monitoreo")
+                        SectionHeader(title = "Alcance del ranking", meta = "Todos o uno")
+                        Text(
+                            "Fecha: $dayKey · Cajero: ${cashierDropdownOptions.firstOrNull { it.first == selectedCashierRowId }?.second ?: "Todos los cajeros"} · Lotería: ${selectedLottery?.name ?: "Todas"} · Jugada: ${selectedPlayView.label}",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = visual.colors.muted,
+                        )
                         MonitorDropdown(
                             modifier = Modifier.fillMaxWidth(),
                             label = cashierDropdownOptions.firstOrNull { it.first == selectedCashierRowId }?.second ?: "Todos los cajeros",
@@ -1206,35 +1375,12 @@ private fun SupervisorPanelRoute(
                 }
             } else {
             item {
-                OutlinedTextField(
-                    value = query,
-                    onValueChange = { query = it },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true,
-                    leadingIcon = { Icon(Icons.Rounded.Search, contentDescription = null) },
-                    label = { Text("Buscar cajero") },
-                )
-            }
-            item {
-                QuickFilterChips(
-                    filters = supervisorPanelFilterOptions(),
-                    selectedId = filter,
-                    onSelected = { filter = it },
-                )
-            }
-            item {
-                SupervisorSelectionBar(
-                    selectedCount = selectedIds.size,
+                MonitorCashierToolbar(
+                    query = query,
+                    onQueryChange = { query = it },
+                    filterLabel = supervisorPanelFilterOptions().firstOrNull { it.id == filter }?.label ?: "Todos",
                     visibleCount = filteredRows.size,
-                    allVisibleSelected = filteredRows.isNotEmpty() && filteredRows.all { it.userId in selectedIds },
-                    onToggleVisible = {
-                        selectedIds = if (filteredRows.all { it.userId in selectedIds }) {
-                            emptyList()
-                        } else {
-                            filteredRows.map { it.userId }
-                        }
-                    },
-                    onClear = { selectedIds = emptyList() },
+                    onFilterClick = { showFilterSheet = true },
                 )
             }
             if (rows.isEmpty()) {
@@ -1255,14 +1401,6 @@ private fun SupervisorPanelRoute(
                 items(filteredRows, key = { it.userId }) { row ->
                     SupervisorCajeroCard(
                         row = row,
-                        selected = row.userId in selectedIds,
-                        onSelectedChange = { checked ->
-                            selectedIds = if (checked) {
-                                (selectedIds + row.userId).distinct()
-                            } else {
-                                selectedIds.filterNot { it == row.userId }
-                            }
-                        },
                         onOpen = { quickActionRow = row },
                     )
                 }
@@ -1270,10 +1408,43 @@ private fun SupervisorPanelRoute(
             }
         }
     }
+    if (showExportSheet) {
+        AdminMonitorExportSheet(
+            rows = filteredRows,
+            onDismiss = { showExportSheet = false },
+            onShare = onShare,
+            onPrint = onPrint,
+            onSave = onSave,
+        )
+    }
+    if (showFilterSheet) {
+        OperationalModalSheet(
+            title = "Filtro de cajeros",
+            subtitle = "Estado y actividad de los cajeros visibles.",
+            onDismiss = { showFilterSheet = false },
+            contentScrollable = false,
+        ) {
+            CompactPanel(alt = true) {
+                QuickFilterChips(
+                    filters = supervisorPanelFilterOptions(),
+                    selectedId = filter,
+                    onSelected = {
+                        filter = it
+                        showFilterSheet = false
+                    },
+                )
+            }
+        }
+    }
     quickActionRow?.let { row ->
         CashierQuickActionSheet(
             row = row,
             onDismiss = { quickActionRow = null },
+            onRanking = {
+                quickActionRow = null
+                selectedCashierRowId = row.userId
+                activeTab = AdminMonitorRoleSegment.MONITOR.name
+            },
             onDetail = { openScopedCashier(row, "Detalle") },
             onTickets = { openScopedCashier(row, "Tickets") },
             onReport = { openScopedCashier(row, "Reporte") },
@@ -1285,6 +1456,8 @@ private fun SupervisorPanelRoute(
 
 @Composable
 private fun AdminCashierPanelRoute(
+    session: ActiveSession,
+    dayKey: String,
     rows: List<MonitorRow>,
     tickets: List<TicketRecord>,
     lotteries: List<LotteryCatalogItem>,
@@ -1292,11 +1465,15 @@ private fun AdminCashierPanelRoute(
     nowUtcMs: Long,
     closePolicy: LotteryClosePolicy,
     operationTerritory: LotteryTerritory,
-    syncContract: com.lotterynet.pro.ui.common.TicketSaveSyncUiContract,
+    syncBadgeLabel: String?,
     onBack: () -> Unit,
     onRefresh: () -> Unit,
+    onDaySelected: (String) -> Unit,
     onOpenCashier: (MonitorRow) -> Unit,
     onShareLottery: (String, String, String, List<LotteryNumberMonitorRow>) -> Unit,
+    onShare: (List<MonitorRow>, Boolean) -> Unit,
+    onPrint: (List<MonitorRow>) -> Boolean,
+    onSave: (List<MonitorRow>) -> Boolean,
     onSetCashierActive: (List<String>, Boolean) -> Unit,
 ) {
     val visual = rememberLotteryNetVisualSpec()
@@ -1306,6 +1483,8 @@ private fun AdminCashierPanelRoute(
     var query by rememberSaveable { mutableStateOf("") }
     var filter by rememberSaveable { mutableStateOf("all") }
     var selectedIds by rememberSaveable { mutableStateOf(emptyList<String>()) }
+    var showFilterSheet by rememberSaveable { mutableStateOf(false) }
+    var showExportSheet by rememberSaveable { mutableStateOf(false) }
     var selectedLotteryId by rememberSaveable { mutableStateOf(ALL_MONITOR_LOTTERIES_ID) }
     var selectedCashierRowId by rememberSaveable { mutableStateOf(ALL_MONITOR_CASHIERS_ID) }
     var selectedPlayViewName by rememberSaveable { mutableStateOf(LotteryMonitorPlayView.QUINIELA.name) }
@@ -1317,7 +1496,7 @@ private fun AdminCashierPanelRoute(
                 row.userId.contains(query, ignoreCase = true)
             val matchesFilter = when (filter) {
                 "active" -> row.presence == "Activo"
-                "blocked" -> row.presence == "Bloqueado"
+                "blocked" -> row.isBlocked
                 "sold" -> row.ventas > 0.0 || row.tickets > 0
                 "loss" -> row.resultado < 0.0
                 "benefit" -> row.resultado > 0.0
@@ -1343,8 +1522,8 @@ private fun AdminCashierPanelRoute(
     val monitorCashierSellerKeys = remember(rows, selectedCashierRowId, selectedCashierSellerKeys) {
         resolveMonitorCashierSellerKeys(rows, selectedCashierRowId, selectedCashierSellerKeys)
     }
-    val monitorCashierLimits = remember(cashierSalesLimitsPayload, rows, selectedCashierRowId) {
-        resolveMonitorCashierLimits(cashierSalesLimitsPayload, rows, selectedCashierRowId)
+    val monitorCashierLimits = remember(cashierSalesLimitsPayload, rows, selectedCashierRowId, session) {
+        resolveMonitorCashierLimits(cashierSalesLimitsPayload, rows, selectedCashierRowId, session)
     }
     val selectedMonitorTickets = remember(tickets, selectedCashierRowId, selectedCashierSellerKeys) {
         filterMonitorTicketsBySelectedCashier(
@@ -1366,6 +1545,7 @@ private fun AdminCashierPanelRoute(
             tickets = selectedMonitorTickets,
             lotteryId = selectedLotteryId.takeIf { it != ALL_MONITOR_LOTTERIES_ID },
             view = selectedPlayView,
+            selectedCashierId = selectedCashierRowId,
             actorLabelsByKey = actorLabelsByKey,
             cashierSellerKeys = monitorCashierSellerKeys,
             cashierLimits = monitorCashierLimits,
@@ -1408,23 +1588,38 @@ private fun AdminCashierPanelRoute(
             item {
                 SupervisorPanelHeader(
                     title = "Panel Admin",
-                    subtitle = "Cajeros · Administración compacta",
+                    subtitle = "Cajeros · Estado y operación",
+                    dayKey = dayKey,
                     onBack = onBack,
                     onRefresh = onRefresh,
+                    onExport = { showExportSheet = true },
+                    onDaySelected = onDaySelected,
+                    syncBadgeLabel = syncBadgeLabel,
                 )
             }
-            item { CompactTicketSaveSyncStatus(contract = syncContract) }
             item {
-                AdminCashierTopTabs(
-                    context = context,
-                    activeTab = activeTab,
-                    onTabSelected = { activeTab = it },
-                )
+                CompactPanel(
+                    alt = true,
+                    contentPadding = PaddingValues(horizontal = 10.dp, vertical = 9.dp),
+                ) {
+                    OperationalListHeader(
+                        title = "Vista del panel",
+                        meta = if (activeTab == AdminMonitorRoleSegment.CASHIERS.name) "Mis cajeros" else "Ranking",
+                    )
+                    CompactSegmentedSelector(
+                        options = listOf(
+                            QuickFilterChip(AdminMonitorRoleSegment.CASHIERS.name, "Mis cajeros"),
+                            QuickFilterChip(AdminMonitorRoleSegment.MONITOR.name, "Ranking"),
+                        ),
+                        selectedId = activeTab,
+                        onSelected = { activeTab = it },
+                    )
+                }
             }
             if (activeTab == AdminMonitorRoleSegment.MONITOR.name) {
                 item {
                     CompactPanel(alt = true) {
-                        SectionHeader(title = "Cajero", meta = "Todos o uno")
+                        SectionHeader(title = "Alcance del ranking", meta = "Todos o uno")
                         MonitorDropdown(
                             modifier = Modifier.fillMaxWidth(),
                             label = cashierDropdownOptions.firstOrNull { it.first == selectedCashierRowId }?.second ?: "Todos los cajeros",
@@ -1451,63 +1646,93 @@ private fun AdminCashierPanelRoute(
                     )
                 }
             } else {
-            item {
-                OutlinedTextField(
-                    value = query,
-                    onValueChange = { query = it },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true,
-                    leadingIcon = { Icon(Icons.Rounded.Search, contentDescription = null) },
-                    label = { Text("Buscar cajero") },
-                )
-            }
-            item {
-                CompactSegmentedSelector(
-                    options = adminCashierPanelFilterOptions(),
-                    selectedId = filter,
-                    onSelected = { filter = it },
-                    columns = 3,
-                    modifier = Modifier.fillMaxWidth(),
-                )
-            }
-            item {
-                SupervisorSelectionBar(
-                    selectedCount = selectedIds.size,
-                    visibleCount = filteredRows.size,
-                    allVisibleSelected = filteredRows.isNotEmpty() && filteredRows.all { it.userId in selectedIds },
-                    onToggleVisible = {
-                        selectedIds = if (filteredRows.all { it.userId in selectedIds }) emptyList() else filteredRows.map { it.userId }
-                    },
-                    onClear = { selectedIds = emptyList() },
-                )
-            }
-            if (rows.isEmpty()) {
                 item {
-                    CompactPanel {
-                        Text("No hay cajeros creados", style = MaterialTheme.typography.titleSmall, color = visual.colors.ink, fontWeight = FontWeight.Bold)
-                        Text("Crea cajeros desde Usuarios para administrarlos aquí.", style = MaterialTheme.typography.bodySmall, color = visual.colors.muted)
-                    }
-                }
-            } else if (filteredRows.isEmpty()) {
-                item {
-                    CompactPanel {
-                        Text("Sin cajeros para este filtro", style = MaterialTheme.typography.titleSmall, color = visual.colors.ink, fontWeight = FontWeight.Bold)
-                        Text("Cambia búsqueda o filtro para ver otros cajeros reales.", style = MaterialTheme.typography.bodySmall, color = visual.colors.muted)
-                    }
-                }
-            } else {
-                items(filteredRows, key = { it.userId }) { row ->
-                    AdminCajeroCard(
-                        row = row,
-                        selected = row.userId in selectedIds,
-                        onSelectedChange = { checked ->
-                            selectedIds = if (checked) (selectedIds + row.userId).distinct() else selectedIds.filterNot { it == row.userId }
+                    MonitorCashierToolbar(
+                        query = query,
+                        onQueryChange = { query = it },
+                        filterLabel = adminCashierPanelFilterOptions().firstOrNull { it.id == filter }?.label ?: "Todo",
+                        visibleCount = filteredRows.size,
+                        onFilterClick = { showFilterSheet = true },
+                        onSelectVisible = {
+                            selectedIds = filteredRows.map { it.userId }
                         },
-                        onOpen = { quickActionRow = row },
-                        onActiveChange = { active -> onSetCashierActive(listOf(row.userId), active) },
                     )
                 }
+                if (selectedIds.isNotEmpty()) {
+                    item {
+                        AdminSelectionBar(
+                            selectedCount = selectedIds.size,
+                            allVisibleSelected = filteredRows.isNotEmpty() && filteredRows.all { it.userId in selectedIds },
+                            onToggleVisible = {
+                                selectedIds = if (filteredRows.all { it.userId in selectedIds }) emptyList() else filteredRows.map { it.userId }
+                            },
+                            onClear = { selectedIds = emptyList() },
+                            onActivateSelected = {
+                                onSetCashierActive(selectedIds, true)
+                                selectedIds = emptyList()
+                            },
+                            onBlockSelected = {
+                                onSetCashierActive(selectedIds, false)
+                                selectedIds = emptyList()
+                            },
+                        )
+                    }
+                }
+                if (rows.isEmpty()) {
+                    item {
+                        CompactPanel {
+                            Text("No hay cajeros creados", style = MaterialTheme.typography.titleSmall, color = visual.colors.ink, fontWeight = FontWeight.Bold)
+                            Text("Crea cajeros desde Usuarios para administrarlos aquí.", style = MaterialTheme.typography.bodySmall, color = visual.colors.muted)
+                        }
+                    }
+                } else if (filteredRows.isEmpty()) {
+                    item {
+                        CompactPanel {
+                            Text("Sin cajeros para este filtro", style = MaterialTheme.typography.titleSmall, color = visual.colors.ink, fontWeight = FontWeight.Bold)
+                            Text("Cambia búsqueda o filtro para ver otros cajeros reales.", style = MaterialTheme.typography.bodySmall, color = visual.colors.muted)
+                        }
+                    }
+                } else {
+                    items(filteredRows, key = { it.userId }) { row ->
+                        AdminCajeroCard(
+                            row = row,
+                            selected = row.userId in selectedIds,
+                            onSelectedChange = { checked ->
+                                selectedIds = if (checked) (selectedIds + row.userId).distinct() else selectedIds.filterNot { it == row.userId }
+                            },
+                            onOpen = { quickActionRow = row },
+                            onActiveChange = { active -> onSetCashierActive(listOf(row.userId), active) },
+                        )
+                    }
+                }
             }
+        }
+    }
+    if (showExportSheet) {
+        AdminMonitorExportSheet(
+            rows = filteredRows,
+            onDismiss = { showExportSheet = false },
+            onShare = onShare,
+            onPrint = onPrint,
+            onSave = onSave,
+        )
+    }
+    if (showFilterSheet) {
+        OperationalModalSheet(
+            title = "Filtro de cajeros",
+            subtitle = "Estado y actividad de los cajeros visibles.",
+            onDismiss = { showFilterSheet = false },
+            contentScrollable = false,
+        ) {
+            CompactPanel(alt = true) {
+                QuickFilterChips(
+                    filters = adminCashierPanelFilterOptions(),
+                    selectedId = filter,
+                    onSelected = {
+                        filter = it
+                        showFilterSheet = false
+                    },
+                )
             }
         }
     }
@@ -1515,6 +1740,11 @@ private fun AdminCashierPanelRoute(
         CashierQuickActionSheet(
             row = row,
             onDismiss = { quickActionRow = null },
+            onRanking = {
+                quickActionRow = null
+                selectedCashierRowId = row.userId
+                activeTab = AdminMonitorRoleSegment.MONITOR.name
+            },
             onDetail = { openScopedCashier(row, "Detalle") },
             onTickets = { openScopedCashier(row, "Tickets") },
             onReport = { openScopedCashier(row, "Reporte") },
@@ -1525,85 +1755,51 @@ private fun AdminCashierPanelRoute(
 }
 
 @Composable
-private fun AdminCashierTopTabs(
-    context: android.content.Context,
-    activeTab: String,
-    onTabSelected: (String) -> Unit,
-) {
-    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(0.dp)) {
-        CompactActionButton("Cajeros", onClick = { onTabSelected(AdminMonitorRoleSegment.CASHIERS.name) }, icon = Icons.Rounded.Groups, active = activeTab == AdminMonitorRoleSegment.CASHIERS.name, tone = if (activeTab == AdminMonitorRoleSegment.CASHIERS.name) ActionTone.IntenseBlue else ActionTone.Secondary, modifier = Modifier.weight(1f))
-        CompactActionButton("Monit.", onClick = { onTabSelected(AdminMonitorRoleSegment.MONITOR.name) }, icon = Icons.Rounded.QueryStats, active = activeTab == AdminMonitorRoleSegment.MONITOR.name, modifier = Modifier.weight(1f), tone = if (activeTab == AdminMonitorRoleSegment.MONITOR.name) ActionTone.IntenseBlue else ActionTone.Secondary)
-        CompactActionButton("Tickets", onClick = { startSafeNativeDestination(context, UserRole.ADMIN, NativeDestination.TICKET_SUMMARY) }, icon = Icons.Rounded.Download, modifier = Modifier.weight(1f), tone = ActionTone.Secondary)
-        CompactActionButton("Reporte", onClick = { startSafeNativeDestination(context, UserRole.ADMIN, NativeDestination.OPERATIONAL_REPORT) }, icon = Icons.Rounded.QueryStats, modifier = Modifier.weight(1f), tone = ActionTone.Secondary)
-    }
-}
-
-@Composable
-@OptIn(ExperimentalMaterial3Api::class)
 private fun CashierQuickActionSheet(
     row: MonitorRow,
     onDismiss: () -> Unit,
+    onRanking: () -> Unit,
     onDetail: () -> Unit,
     onTickets: () -> Unit,
     onReport: () -> Unit,
     onBalance: () -> Unit,
     onPayments: () -> Unit,
 ) {
-    val visual = rememberLotteryNetVisualSpec()
-    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-    ModalBottomSheet(
-        onDismissRequest = onDismiss,
-        sheetState = sheetState,
-        containerColor = Color.Transparent,
-        contentColor = visual.colors.ink,
-        scrimColor = Color.Black.copy(alpha = 0.54f),
-        dragHandle = null,
+    val context = androidx.compose.ui.platform.LocalContext.current
+    OperationalModalSheet(
+        title = row.displayName,
+        subtitle = "${row.username} · ${row.tickets} tickets · ${monitorResultLabel(row.resultado)} ${formatMonitorMoney(row.resultado)}",
+        onDismiss = onDismiss,
+        contentScrollable = false,
     ) {
-        Surface(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 22.dp)
-                .padding(bottom = 24.dp),
-            color = visual.colors.panel,
-            shape = RoundedCornerShape(28.dp),
-            tonalElevation = 0.dp,
-            shadowElevation = 6.dp,
-        ) {
-            Column(
-                modifier = Modifier.padding(horizontal = 22.dp, vertical = 24.dp),
-                verticalArrangement = Arrangement.spacedBy(18.dp),
-            ) {
-                Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
-                    Text(
-                        row.displayName,
-                        style = MaterialTheme.typography.headlineSmall,
-                        color = visual.colors.ink,
-                        fontWeight = FontWeight.Black,
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                    Text(
-                        "${row.username} · ${row.tickets} tickets · ${monitorResultLabel(row.resultado)} ${formatMonitorMoney(row.resultado)}",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = visual.colors.muted,
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                }
-                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    CashierQuickActionRow("Ver reporte", "Reporte filtrado de ${row.displayName}", Icons.Rounded.QueryStats, onReport)
-                    CashierQuickActionRow("Ver tickets", "Solo tickets de este cajero", Icons.Rounded.Download, onTickets)
-                    CashierQuickActionRow("Editar", "Detalle y administración del cajero", Icons.Rounded.Groups, onDetail)
-                    CashierQuickActionRow("Cuadre", "Caja y balance", Icons.Rounded.PointOfSale, onBalance)
-                    CashierQuickActionRow("Cobros", "Ganadores, pendientes y pagados", Icons.Rounded.PhoneAndroid, onPayments)
-                }
-                TextButton(
-                    onClick = onDismiss,
-                    modifier = Modifier.align(Alignment.End),
-                ) {
-                    Text("Cerrar")
-                }
-            }
+        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            CashierQuickActionRow("Ver ranking", "Números de este cajero en la fecha operativa", Icons.Rounded.QueryStats, onRanking)
+            CashierQuickActionRow("Ver reporte", "Reporte filtrado de ${row.displayName}", Icons.Rounded.QueryStats, {
+                onDismiss()
+                context.startActivity(Intent(context, OperationalReportActivity::class.java).apply {
+                    putExtra(com.lotterynet.pro.ui.report.EXTRA_REPORT_CASHIER_KEY, row.userId)
+                })
+            })
+            CashierQuickActionRow("Ver tickets", "Solo tickets de este cajero", Icons.Rounded.Download, {
+                onDismiss()
+                context.startActivity(Intent(context, TicketSummaryActivity::class.java).apply {
+                    putExtra(TicketSummaryActivity.EXTRA_CASHIER_KEY, row.userId)
+                })
+            })
+            CashierQuickActionRow("Editar", "Detalle y administración del cajero", Icons.Rounded.Groups, onDetail)
+            CashierQuickActionRow("Cuadre", "Caja y balance", Icons.Rounded.PointOfSale, {
+                onDismiss()
+                context.startActivity(Intent(context, FinanceActivity::class.java).apply {
+                    putExtra(com.lotterynet.pro.ui.finance.EXTRA_FINANCE_CASHIER_KEY, row.userId)
+                })
+            })
+            CashierQuickActionRow("Cobros", "Ganadores, pendientes y pagados", Icons.Rounded.PhoneAndroid, {
+                onDismiss()
+                context.startActivity(Intent(context, TicketLookupActivity::class.java).apply {
+                    putExtra(TicketLookupActivity.EXTRA_MODE, "pagar")
+                    putExtra(TicketLookupActivity.EXTRA_CASHIER_KEY, row.userId)
+                })
+            })
         }
     }
 }
@@ -1698,8 +1894,7 @@ private fun AdminCajeroCard(
     onOpen: () -> Unit,
     onActiveChange: (Boolean) -> Unit,
 ) {
-    val visual = rememberLotteryNetVisualSpec()
-    val active = row.presence == "Activo"
+    val active = !row.isBlocked
     val resultTone = monitorResultTone(row.resultado)
     val resultLabel = monitorResultLabel(row.resultado)
     CashierMonitorDenseCard(
@@ -1717,8 +1912,8 @@ private fun AdminCajeroCard(
 @Composable
 private fun CashierMonitorDenseCard(
     row: MonitorRow,
-    selected: Boolean,
-    onSelectedChange: (Boolean) -> Unit,
+    selected: Boolean?,
+    onSelectedChange: ((Boolean) -> Unit)?,
     onOpen: () -> Unit,
     active: Boolean,
     resultLabel: String,
@@ -1727,92 +1922,113 @@ private fun CashierMonitorDenseCard(
 ) {
     val visual = rememberLotteryNetVisualSpec()
     val cardContract = resolveCashierMonitorCardVisualContract()
-    val statusTone = if (active) gainColor() else Color(0xFFB91C1C)
-    val statusBackground by animateColorAsState(
-        targetValue = if (active) gainColor().copy(alpha = 0.045f) else Color(0xFFB91C1C).copy(alpha = 0.055f),
-        label = "cashierDenseStatusBackground",
-    )
-    CompactPanel(
+    val wideLayout = visual.windowMode in setOf(LotteryNetWindowMode.TABLET, LotteryNetWindowMode.WIDE)
+    MonitorGlassCard(
         modifier = Modifier.clickable(onClick = onOpen),
         contentPadding = androidx.compose.foundation.layout.PaddingValues(
-            horizontal = 10.dp,
-            vertical = (cardContract.rowPaddingVerticalDp + 2).dp,
+            horizontal = 12.dp,
+            vertical = cardContract.rowPaddingVerticalDp.dp,
         ),
     ) {
-        Column(
+        Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .background(statusBackground, RoundedCornerShape(8.dp))
-                .padding(horizontal = 9.dp, vertical = 8.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
+                .heightIn(min = cardContract.minTouchTargetDp.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(if (wideLayout) 12.dp else 10.dp),
         ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .heightIn(min = cardContract.minTouchTargetDp.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
+            if (selected != null && onSelectedChange != null) {
                 Checkbox(checked = selected, onCheckedChange = onSelectedChange)
-                Box(
-                    modifier = Modifier
-                        .background(Color(0xFFE8F0FF), RoundedCornerShape(16.dp))
-                        .padding(7.dp),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Icon(Icons.Rounded.Groups, contentDescription = null, tint = Color(0xFF155BD6))
-                }
-                Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                    Text(
-                        row.displayName,
-                        style = MaterialTheme.typography.titleSmall,
-                        color = visual.colors.ink,
-                        fontWeight = FontWeight.Black,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                    Text(
-                        "${row.username} · ${row.tickets} tickets",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = visual.colors.muted,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                }
-                Column(horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    CompactStatusBadge(label = if (active) "Activo" else "Bloq.", tone = statusTone)
-                    if (onActiveChange != null) {
-                        CompactToggleSwitch(
-                            checked = active,
-                            onCheckedChange = onActiveChange,
-                            enabled = true,
-                            tone = if (active) ActionTone.Success else ActionTone.Danger,
-                        )
-                    } else {
-                        Icon(
-                            Icons.AutoMirrored.Rounded.ArrowForward,
-                            contentDescription = "Ver cajero",
-                            tint = visual.colors.actionPrimary,
-                        )
-                    }
-                }
             }
-            InlineMonitorMetrics(
-                sales = formatMonitorMoney(row.ventas),
-                resultLabel = resultLabel,
-                result = formatMonitorMoney(row.resultado),
-                resultTone = resultTone,
-                pending = formatMonitorMoney(row.premiosPendientes),
-            )
+            Box(
+                modifier = Modifier
+                    .size(46.dp)
+                    .background(visual.colors.actionPrimarySurface, RoundedCornerShape(14.dp)),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    Icons.Rounded.Groups,
+                    contentDescription = null,
+                    modifier = Modifier.size(26.dp),
+                    tint = visual.colors.actionPrimary,
+                )
+            }
+            Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                Text(
+                    row.displayName,
+                    style = MaterialTheme.typography.titleMedium,
+                    color = visual.colors.ink,
+                    fontWeight = FontWeight.Black,
+                    maxLines = if (cardContract.singleLineIdentity) 1 else 2,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                Text(
+                    "${row.username} · ${if (active) "Activo" else "Bloqueado"} · ${row.tickets} tickets",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = if (active) gainColor() else MaterialTheme.colorScheme.error,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
             if (onActiveChange != null) {
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-                    Icon(
-                        Icons.AutoMirrored.Rounded.ArrowForward,
-                        contentDescription = "Ver cajero",
-                        tint = visual.colors.actionPrimary,
-                    )
-                }
+                CompactToggleSwitch(
+                    checked = active,
+                    onCheckedChange = onActiveChange,
+                    enabled = true,
+                    tone = if (active) ActionTone.Success else ActionTone.Danger,
+                )
             }
+        }
+        if (wideLayout) {
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+                CompactInlineMetric(label = "Venta", value = formatMonitorMoney(row.ventas), tone = gainColor(), modifier = Modifier.weight(1f))
+                CompactInlineMetric(label = "Caja", value = formatMonitorMoney(row.caja), tone = visual.colors.actionPrimary, modifier = Modifier.weight(1f))
+                CompactInlineMetric(label = resultLabel, value = formatMonitorMoney(row.resultado), tone = resultTone, modifier = Modifier.weight(1f))
+                CompactInlineMetric(label = "Pendiente", value = formatMonitorMoney(row.premiosPendientes), tone = warningColor(), modifier = Modifier.weight(1f))
+            }
+        } else {
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+                CompactInlineMetric(label = "Venta", value = formatMonitorMoney(row.ventas), tone = gainColor(), modifier = Modifier.weight(1f))
+                CompactInlineMetric(label = "Caja", value = formatMonitorMoney(row.caja), tone = visual.colors.actionPrimary, modifier = Modifier.weight(1f))
+            }
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+                CompactInlineMetric(label = resultLabel, value = formatMonitorMoney(row.resultado), tone = resultTone, modifier = Modifier.weight(1f))
+                CompactInlineMetric(label = "Pendiente", value = formatMonitorMoney(row.premiosPendientes), tone = warningColor(), modifier = Modifier.weight(1f))
+            }
+        }
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                "Balance ${formatMonitorMoney(row.balance)}",
+                modifier = Modifier.weight(1f),
+                style = MaterialTheme.typography.bodySmall,
+                color = visual.colors.muted,
+                fontFamily = FontFamily.Monospace,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            row.remainingLimitAmount?.let { remaining ->
+                Text(
+                    "${row.limitScopeLabel ?: "Tope"} · queda ${formatMonitorMoney(remaining)}",
+                    modifier = Modifier.weight(1f),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = if (remaining > 0.0) visual.colors.muted else MaterialTheme.colorScheme.error,
+                    fontFamily = FontFamily.Monospace,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            } ?: Text(
+                "Toca para administrar",
+                modifier = Modifier.weight(1f),
+                style = MaterialTheme.typography.labelMedium,
+                color = visual.colors.actionPrimary,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
         }
     }
 }
@@ -1840,13 +2056,14 @@ private fun CompactInlineMetric(
     modifier: Modifier = Modifier,
 ) {
     Surface(
-        modifier = modifier.heightIn(min = 44.dp),
+        modifier = modifier.heightIn(min = 56.dp),
         color = tone.copy(alpha = 0.08f),
-        shape = RoundedCornerShape(8.dp),
+        shape = RoundedCornerShape(12.dp),
+        border = BorderStroke(1.dp, tone.copy(alpha = 0.16f)),
     ) {
-        Column(modifier = Modifier.padding(horizontal = 7.dp, vertical = 5.dp), verticalArrangement = Arrangement.spacedBy(1.dp)) {
-            Text(label, style = MaterialTheme.typography.labelSmall, color = Color(0xFF64748B), maxLines = 1, overflow = TextOverflow.Ellipsis)
-            Text(value, style = MaterialTheme.typography.labelSmall, color = tone, fontWeight = FontWeight.Bold, fontFamily = FontFamily.Monospace, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        Column(modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            Text(label, style = MaterialTheme.typography.labelMedium, color = Color(0xFF64748B), maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text(value, style = MaterialTheme.typography.titleSmall, color = tone, fontWeight = FontWeight.Bold, fontFamily = FontFamily.Monospace, maxLines = 1, overflow = TextOverflow.Ellipsis)
         }
     }
 }
@@ -1861,43 +2078,282 @@ internal fun adminCashierPanelFilterOptions(): List<QuickFilterChip> = listOf(
 )
 
 @Composable
+private fun MonitorCashierToolbar(
+    query: String,
+    onQueryChange: (String) -> Unit,
+    filterLabel: String,
+    visibleCount: Int,
+    onFilterClick: () -> Unit,
+    onSelectVisible: (() -> Unit)? = null,
+) {
+    val visual = rememberLotteryNetVisualSpec()
+    CompactPanel(
+        alt = true,
+        contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 10.dp, vertical = 9.dp),
+    ) {
+        OutlinedTextField(
+            value = query,
+            onValueChange = onQueryChange,
+            modifier = Modifier.fillMaxWidth(),
+            singleLine = true,
+            leadingIcon = { Icon(Icons.Rounded.Search, contentDescription = null) },
+            label = { Text("Buscar cajero") },
+        )
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(1.dp)) {
+                Text(
+                    "$visibleCount visibles",
+                    style = MaterialTheme.typography.labelLarge,
+                    color = visual.colors.ink,
+                    fontWeight = FontWeight.Bold,
+                )
+                Text(
+                    if (query.isBlank()) "Lista completa" else "Búsqueda activa",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = visual.colors.muted,
+                )
+            }
+            Surface(
+                modifier = Modifier.heightIn(min = 44.dp),
+                onClick = onFilterClick,
+                shape = RoundedCornerShape(12.dp),
+                color = visual.colors.actionPrimarySurface,
+                contentColor = visual.colors.actionPrimary,
+                border = BorderStroke(1.dp, visual.colors.actionPrimary.copy(alpha = 0.22f)),
+            ) {
+                Row(
+                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                ) {
+                    Text(
+                        filterLabel,
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    Icon(Icons.Rounded.ExpandMore, contentDescription = null)
+                }
+            }
+            onSelectVisible?.let { selectVisible ->
+                CompactActionButton(
+                    label = "Elegir",
+                    onClick = selectVisible,
+                    enabled = visibleCount > 0,
+                    tone = ActionTone.Secondary,
+                )
+            }
+        }
+    }
+}
+
+@Composable
 private fun SupervisorPanelHeader(
     title: String,
     subtitle: String,
+    dayKey: String,
     onBack: () -> Unit,
     onRefresh: () -> Unit,
+    onExport: () -> Unit,
+    onDaySelected: (String) -> Unit,
+    syncBadgeLabel: String? = null,
 ) {
     val context = androidx.compose.ui.platform.LocalContext.current
     Surface(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(0.dp),
+        shape = RoundedCornerShape(20.dp),
         color = Color(0xFF062A57),
         contentColor = Color.White,
         tonalElevation = 0.dp,
         shadowElevation = 0.dp,
     ) {
-        Row(
+        Column(
             modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
-            Text("☰", modifier = Modifier.clickable(onClick = onBack), style = MaterialTheme.typography.headlineSmall, color = Color.White)
-            Column(modifier = Modifier.weight(1f)) {
-                Text(title, style = MaterialTheme.typography.headlineSmall, color = Color.White, fontWeight = FontWeight.Bold)
-                Text(subtitle, style = MaterialTheme.typography.bodyMedium, color = Color.White.copy(alpha = 0.82f), fontWeight = FontWeight.Bold)
-            }
-            Box(
-                modifier = Modifier
-                    .background(Color.White.copy(alpha = 0.14f), RoundedCornerShape(10.dp))
-                    .clickable {
-                        Toast.makeText(context, "Actualizando monitor...", Toast.LENGTH_SHORT).show()
-                        onRefresh()
-                    }
-                    .padding(10.dp),
-                contentAlignment = Alignment.Center,
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                Icon(Icons.Rounded.Sync, contentDescription = "Actualizar monitor", tint = Color.White)
+                Box(
+                    modifier = Modifier
+                        .heightIn(min = 44.dp)
+                        .clickable(onClick = onBack)
+                        .padding(horizontal = 8.dp, vertical = 8.dp),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(Icons.Rounded.Menu, contentDescription = "Abrir menú", tint = Color.White)
+                }
+                Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(1.dp)) {
+                    Text(title, style = MaterialTheme.typography.titleLarge, color = Color.White, fontWeight = FontWeight.Bold)
+                    Text(
+                        subtitle,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = Color.White.copy(alpha = 0.78f),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+                Box(
+                    modifier = Modifier
+                        .heightIn(min = 44.dp)
+                        .background(Color.White.copy(alpha = 0.12f), RoundedCornerShape(12.dp))
+                        .clickable(onClick = onExport)
+                        .padding(10.dp),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(Icons.Rounded.Download, contentDescription = "Exportar monitor", tint = Color.White)
+                }
+                Box(
+                    modifier = Modifier
+                        .heightIn(min = 44.dp)
+                        .background(Color.White.copy(alpha = 0.12f), RoundedCornerShape(12.dp))
+                        .clickable {
+                            Toast.makeText(context, "Actualizando monitor...", Toast.LENGTH_SHORT).show()
+                            onRefresh()
+                        }
+                        .padding(10.dp),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(Icons.Rounded.Sync, contentDescription = "Actualizar monitor", tint = Color.White)
+                }
             }
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                MonitorHeaderDateAction(
+                    dayKey = dayKey,
+                    onDaySelected = onDaySelected,
+                )
+                if (!syncBadgeLabel.isNullOrBlank()) {
+                    Text(
+                        text = syncBadgeLabel,
+                        modifier = Modifier.weight(1f),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = Color(0xFFFFB020),
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                } else {
+                    Spacer(modifier = Modifier.weight(1f))
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun MonitorHeaderDateAction(
+    dayKey: String,
+    onDaySelected: (String) -> Unit,
+) {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    Surface(
+        modifier = Modifier
+            .heightIn(min = 48.dp)
+            .clickable {
+                val selected = runCatching { LocalDate.parse(dayKey) }.getOrElse { LocalDate.now() }
+                DatePickerDialog(
+                    context,
+                    { _, year, month, day ->
+                        onDaySelected(LocalDate.of(year, month + 1, day).toString())
+                    },
+                    selected.year,
+                    selected.monthValue - 1,
+                    selected.dayOfMonth,
+                ).show()
+            },
+        color = Color.White.copy(alpha = 0.14f),
+        contentColor = Color.White,
+        shape = RoundedCornerShape(10.dp),
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 9.dp, vertical = 8.dp),
+            horizontalArrangement = Arrangement.spacedBy(5.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Icon(Icons.Rounded.CalendarMonth, contentDescription = null)
+            Text(
+                text = dayKey.drop(5).replace("-", "/"),
+                style = MaterialTheme.typography.labelMedium,
+                fontWeight = FontWeight.Bold,
+            )
+        }
+    }
+}
+
+@Composable
+private fun AdminMonitorExportSheet(
+    rows: List<MonitorRow>,
+    onDismiss: () -> Unit,
+    onShare: (List<MonitorRow>, Boolean) -> Unit,
+    onPrint: (List<MonitorRow>) -> Boolean,
+    onSave: (List<MonitorRow>) -> Boolean,
+) {
+    OperationalModalSheet(
+        title = "Exportar monitor",
+        subtitle = "${rows.size} cajero(s) visibles",
+        onDismiss = onDismiss,
+        contentScrollable = false,
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            CompactActionButton(
+                label = "WhatsApp",
+                onClick = {
+                    onDismiss()
+                    onShare(rows, true)
+                },
+                icon = Icons.Rounded.Whatsapp,
+                modifier = Modifier.weight(1f),
+                tone = ActionTone.Success,
+            )
+            CompactActionButton(
+                label = "Compartir",
+                onClick = {
+                    onDismiss()
+                    onShare(rows, false)
+                },
+                icon = Icons.Rounded.Share,
+                modifier = Modifier.weight(1f),
+                tone = ActionTone.Primary,
+            )
+        }
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            CompactActionButton(
+                label = "Guardar",
+                onClick = {
+                    onDismiss()
+                    onSave(rows)
+                },
+                icon = Icons.Rounded.Download,
+                modifier = Modifier.weight(1f),
+                tone = ActionTone.Secondary,
+            )
+            CompactActionButton(
+                label = "Imprimir",
+                onClick = {
+                    onDismiss()
+                    onPrint(rows)
+                },
+                icon = Icons.Rounded.Print,
+                modifier = Modifier.weight(1f),
+                tone = ActionTone.Secondary,
+            )
         }
     }
 }
@@ -1906,31 +2362,46 @@ private fun SupervisorPanelHeader(
 private fun SupervisorTopTabs(
     activeTab: String,
     onTabSelected: (String) -> Unit,
-    onTickets: () -> Unit,
-    onReport: () -> Unit,
 ) {
     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(0.dp)) {
         CompactActionButton("Mis cajeros", onClick = { onTabSelected(AdminMonitorRoleSegment.CASHIERS.name) }, icon = Icons.Rounded.Groups, active = activeTab == AdminMonitorRoleSegment.CASHIERS.name, tone = if (activeTab == AdminMonitorRoleSegment.CASHIERS.name) ActionTone.IntenseBlue else ActionTone.Secondary, modifier = Modifier.weight(1f))
-        CompactActionButton("Monitoreo", onClick = { onTabSelected(AdminMonitorRoleSegment.MONITOR.name) }, icon = Icons.Rounded.QueryStats, active = activeTab == AdminMonitorRoleSegment.MONITOR.name, modifier = Modifier.weight(1f), tone = if (activeTab == AdminMonitorRoleSegment.MONITOR.name) ActionTone.IntenseBlue else ActionTone.Secondary)
-        CompactActionButton("Tickets", onClick = onTickets, icon = Icons.Rounded.Download, modifier = Modifier.weight(1f), tone = ActionTone.Secondary)
-        CompactActionButton("Reporte", onClick = onReport, icon = Icons.Rounded.QueryStats, modifier = Modifier.weight(1f), tone = ActionTone.Secondary)
+        CompactActionButton("Ranking", onClick = { onTabSelected(AdminMonitorRoleSegment.MONITOR.name) }, icon = Icons.Rounded.QueryStats, active = activeTab == AdminMonitorRoleSegment.MONITOR.name, modifier = Modifier.weight(1f), tone = if (activeTab == AdminMonitorRoleSegment.MONITOR.name) ActionTone.IntenseBlue else ActionTone.Secondary)
     }
 }
 
 @Composable
-private fun SupervisorSelectionBar(
+private fun AdminSelectionBar(
     selectedCount: Int,
-    visibleCount: Int,
     allVisibleSelected: Boolean,
     onToggleVisible: () -> Unit,
     onClear: () -> Unit,
+    onActivateSelected: () -> Unit,
+    onBlockSelected: () -> Unit,
 ) {
     CompactPanel(contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 10.dp, vertical = 8.dp)) {
         Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             Checkbox(checked = allVisibleSelected, onCheckedChange = { onToggleVisible() })
             Text("$selectedCount seleccionados", modifier = Modifier.weight(1f), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
-            CompactActionButton("Visibles", onClick = onToggleVisible, icon = Icons.Rounded.Groups, tone = ActionTone.Secondary, enabled = visibleCount > 0)
             CompactActionButton("Limpiar", onClick = onClear, tone = ActionTone.Secondary, enabled = selectedCount > 0)
+        }
+        if (selectedCount > 0) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                CompactActionButton(
+                    label = "Activar",
+                    onClick = onActivateSelected,
+                    modifier = Modifier.weight(1f),
+                    tone = ActionTone.Success,
+                )
+                CompactActionButton(
+                    label = "Bloquear",
+                    onClick = onBlockSelected,
+                    modifier = Modifier.weight(1f),
+                    tone = ActionTone.Danger,
+                )
+            }
         }
     }
 }
@@ -1938,18 +2409,16 @@ private fun SupervisorSelectionBar(
 @Composable
 private fun SupervisorCajeroCard(
     row: MonitorRow,
-    selected: Boolean,
-    onSelectedChange: (Boolean) -> Unit,
     onOpen: () -> Unit,
 ) {
     val visual = rememberLotteryNetVisualSpec()
-    val active = row.presence == "Activo"
+    val active = !row.isBlocked
     val resultTone = monitorResultTone(row.resultado)
     val resultLabel = monitorResultLabel(row.resultado)
     CashierMonitorDenseCard(
         row = row,
-        selected = selected,
-        onSelectedChange = onSelectedChange,
+        selected = null,
+        onSelectedChange = null,
         onOpen = onOpen,
         active = active,
         resultLabel = resultLabel,
@@ -1991,7 +2460,7 @@ private fun MonitorRowCard(
 ) {
     val visual = rememberLotteryNetVisualSpec()
     val compact = layout.compactCards
-    CompactPanel(contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 10.dp, vertical = layout.rowPaddingVerticalDp.dp)) {
+    MonitorGlassCard(contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 10.dp, vertical = layout.rowPaddingVerticalDp.dp)) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -2000,26 +2469,18 @@ private fun MonitorRowCard(
             verticalAlignment = Alignment.Top,
         ) {
             Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Text(
-                        row.displayName,
-                        style = if (compact) MaterialTheme.typography.titleSmall else MaterialTheme.typography.titleMedium,
-                        color = visual.colors.ink,
-                        fontWeight = FontWeight.Bold,
-                    )
-                    CompactStatusBadge(
-                        label = row.presence,
-                        tone = if (row.presence == "Activo") gainColor() else visual.colors.neutral,
-                    )
-                }
                 Text(
-                    "${row.username} · ${row.lastSeenLabel}",
+                    row.displayName,
+                    style = if (compact) MaterialTheme.typography.titleSmall else MaterialTheme.typography.titleMedium,
+                    color = visual.colors.ink,
+                    fontWeight = FontWeight.Bold,
+                )
+                Text(
+                    row.username,
                     style = MaterialTheme.typography.bodySmall,
                     color = visual.colors.muted,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
                 )
                 Row(horizontalArrangement = Arrangement.spacedBy(if (compact) 5.dp else 8.dp), modifier = Modifier.fillMaxWidth()) {
                     MonitorStat(modifier = Modifier.weight(1f), icon = Icons.Rounded.PointOfSale, label = "Ventas", value = formatMonitorMoney(row.ventas), layout = layout)
@@ -2032,10 +2493,6 @@ private fun MonitorRowCard(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    CompactStatusBadge(
-                        label = monitorResultLabel(row.resultado),
-                        tone = resultTone,
-                    )
                     Text(
                         formatMonitorMoney(row.resultado),
                         style = MaterialTheme.typography.bodySmall,
@@ -2046,18 +2503,12 @@ private fun MonitorRowCard(
                 }
                 if (compact) {
                     Text(
-                        "Tickets ${row.tickets} · Premios ${formatMonitorMoney(row.premiosPendientes)} · Bal. ${formatMonitorMoney(row.balance)}",
+                        "Tickets ${row.tickets} · Pend. ${formatMonitorMoney(row.premiosPendientes)} · Bal. ${formatMonitorMoney(row.balance)}",
                         style = MaterialTheme.typography.bodySmall,
                         color = visual.colors.muted,
                         fontFamily = FontFamily.Monospace,
                     )
                 } else {
-                    Text(
-                        "Activos ${row.activos} · Ganadores ${row.ganadores} · Pagados ${row.pagados}",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = visual.colors.ink,
-                        fontFamily = FontFamily.Monospace,
-                    )
                     Text(
                         "Tickets ${row.tickets} · Pendientes ${formatMonitorMoney(row.premiosPendientes)} · Balance ${formatMonitorMoney(row.balance)}",
                         style = MaterialTheme.typography.bodySmall,
@@ -2079,8 +2530,18 @@ private fun MonitorStat(
     layout: AdminMonitorLayoutContract,
 ) {
     val visual = rememberLotteryNetVisualSpec()
-    CompactPanel(modifier = modifier, alt = true, contentPadding = androidx.compose.foundation.layout.PaddingValues(layout.statPaddingDp.dp)) {
-        Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
+    Surface(
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(18.dp),
+        color = visual.colors.panel.copy(alpha = 0.58f),
+        border = BorderStroke(1.dp, visual.colors.border.copy(alpha = 0.6f)),
+        tonalElevation = 0.dp,
+        shadowElevation = 0.dp,
+    ) {
+        Column(
+            modifier = Modifier.padding(layout.statPaddingDp.dp),
+            verticalArrangement = Arrangement.spacedBy(3.dp),
+        ) {
             Icon(icon, contentDescription = null, tint = visual.colors.neutral)
             Text(label, style = MaterialTheme.typography.labelMedium, color = visual.colors.muted)
             Text(
@@ -2091,6 +2552,29 @@ private fun MonitorStat(
                 fontWeight = FontWeight.Bold,
             )
         }
+    }
+}
+
+@Composable
+private fun MonitorGlassCard(
+    modifier: Modifier = Modifier,
+    contentPadding: androidx.compose.foundation.layout.PaddingValues = androidx.compose.foundation.layout.PaddingValues(horizontal = 12.dp, vertical = 10.dp),
+    content: @Composable ColumnScope.() -> Unit,
+) {
+    val visual = rememberLotteryNetVisualSpec()
+    Surface(
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        color = visual.colors.panel,
+        border = BorderStroke(1.dp, visual.colors.border.copy(alpha = 0.75f)),
+        tonalElevation = 0.dp,
+        shadowElevation = 0.dp,
+    ) {
+        Column(
+            modifier = Modifier.padding(contentPadding),
+            verticalArrangement = Arrangement.spacedBy(visual.sizes.panelContentGap),
+            content = content,
+        )
     }
 }
 
@@ -2123,30 +2607,32 @@ private fun LotteryMonitorPanel(
     }
     CompactPanel {
         OperationalListHeader(title = "Lotería", meta = status)
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-            if (selectedLottery != null) {
-                LotteryLogo(
-                    assetPath = selectedLottery.logoAssetPath,
-                    fallback = selectedLottery.name,
-                    modifier = Modifier.weight(0.18f),
-                    fillBounds = true,
-                )
+        val lotteryAssetResolver = remember { LotteryAssetResolver() }
+        val lotteryLogoPaths = remember(lotteries) {
+            lotteries.associate { lottery ->
+                lottery.id to lotteryAssetResolver.resolveLogoAssetPath(lottery)
             }
+        }
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
             MonitorDropdown(
                 modifier = Modifier.weight(1f),
                 label = selectedLottery?.name ?: "Todas",
                 selectedId = selectedLottery?.id ?: ALL_MONITOR_LOTTERIES_ID,
                 options = listOf<Pair<String, String>>(ALL_MONITOR_LOTTERIES_ID to "Todas") + lotteries.map { it.id to it.name },
+                optionLogoAssetPaths = lotteryLogoPaths,
                 onSelected = onLotterySelected,
             )
         }
         Spacer(Modifier.padding(top = 2.dp))
-        CompactSegmentedSelector(
-            options = playViews.map { QuickFilterChip(it.name, it.label) },
+        CurrentScopeDropdownCard(
+            title = "Vista de números",
+            value = selectedView.label,
             selectedId = selectedView.name,
+            options = playViews.map { it.name to it.label },
             onSelected = { id -> playViews.firstOrNull { it.name == id }?.let(onViewSelected) },
-            columns = if (playViews.size <= 2) 2 else 3,
-            modifier = Modifier.fillMaxWidth(),
+            subtitle = "Cambia entre quiniela, pale, tripleta y picks sin saturar la vista.",
+            actionLabel = "Vista",
+            tone = ActionTone.Purple,
         )
         val visibleRows = remember(rows) { resolveLotteryMonitorVisibleRows(rows) }
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
@@ -2168,8 +2654,27 @@ private fun LotteryMonitorPanel(
             }
         }
         Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
-            visibleRows.visibleRows.forEach { row ->
-                LotteryNumberMonitorRowItem(row = row)
+            if (visibleRows.visibleRows.isEmpty()) {
+                CompactPanel(
+                    alt = true,
+                    contentPadding = androidx.compose.foundation.layout.PaddingValues(12.dp),
+                ) {
+                    Text(
+                        "Sin ranking para este periodo",
+                        style = MaterialTheme.typography.titleSmall,
+                        color = visual.colors.ink,
+                        fontWeight = FontWeight.Bold,
+                    )
+                    Text(
+                        "Cuando haya jugadas para este alcance aparecerán aquí.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = visual.colors.muted,
+                    )
+                }
+            } else {
+                visibleRows.visibleRows.forEach { row ->
+                    LotteryNumberMonitorRowItem(row = row)
+                }
             }
             if (visibleRows.hiddenCount > 0) {
                 Text(
@@ -2209,6 +2714,7 @@ private fun MonitorDropdown(
     label: String,
     selectedId: String? = null,
     options: List<Pair<String, String>>,
+    optionLogoAssetPaths: Map<String, String?> = emptyMap(),
     onSelected: (String) -> Unit,
     maxMenuHeightDp: Int = 430,
 ) {
@@ -2242,7 +2748,17 @@ private fun MonitorDropdown(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(7.dp),
                 ) {
-                    Icon(Icons.Rounded.Groups, contentDescription = null, tint = visual.colors.actionPrimary, modifier = Modifier.heightIn(max = 18.dp))
+                    val selectedLogoPath = selectedId?.let(optionLogoAssetPaths::get)
+                    if (selectedLogoPath != null) {
+                        LotteryLogo(
+                            assetPath = selectedLogoPath,
+                            fallback = label,
+                            modifier = Modifier.size(30.dp),
+                            fillBounds = true,
+                        )
+                    } else {
+                        Icon(Icons.Rounded.Groups, contentDescription = null, tint = visual.colors.actionPrimary, modifier = Modifier.heightIn(max = 18.dp))
+                    }
                     Text(label, style = MaterialTheme.typography.bodyMedium, color = visual.colors.ink, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 }
                 Icon(
@@ -2264,6 +2780,7 @@ private fun MonitorDropdown(
                 ) {
                     options.forEach { option ->
                         val selected = selectedId == option.first
+                        val optionLogoPath = optionLogoAssetPaths[option.first]
                         DropdownMenuItem(
                             text = {
                                 Row(
@@ -2277,14 +2794,23 @@ private fun MonitorDropdown(
                                     verticalAlignment = Alignment.CenterVertically,
                                     horizontalArrangement = Arrangement.spacedBy(9.dp),
                                 ) {
-                                    Box(
-                                        modifier = Modifier
-                                            .background(
-                                                if (selected) visual.colors.actionPrimary else visual.colors.border,
-                                                RoundedCornerShape(50),
-                                            )
-                                            .padding(4.dp),
-                                    )
+                                    if (optionLogoPath != null) {
+                                        LotteryLogo(
+                                            assetPath = optionLogoPath,
+                                            fallback = option.second,
+                                            modifier = Modifier.size(32.dp),
+                                            fillBounds = true,
+                                        )
+                                    } else {
+                                        Box(
+                                            modifier = Modifier
+                                                .background(
+                                                    if (selected) visual.colors.actionPrimary else visual.colors.border,
+                                                    RoundedCornerShape(50),
+                                                )
+                                                .padding(4.dp),
+                                        )
+                                    }
                                     Text(
                                         option.second,
                                         fontWeight = if (selected) FontWeight.Black else FontWeight.Bold,
@@ -2310,29 +2836,61 @@ private fun MonitorDropdown(
 @Composable
 private fun LotteryNumberMonitorRowItem(row: LotteryNumberMonitorRow) {
     val visual = rememberLotteryNetVisualSpec()
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(visual.colors.panel, RoundedCornerShape(8.dp))
-            .padding(horizontal = 10.dp, vertical = 7.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically,
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp),
+        color = visual.colors.panel.copy(alpha = 0.6f),
+        border = BorderStroke(1.dp, visual.colors.border.copy(alpha = 0.5f)),
+        tonalElevation = 0.dp,
+        shadowElevation = 0.dp,
     ) {
-        Column(modifier = Modifier.weight(1f)) {
-            Text(row.displayNumber, style = MaterialTheme.typography.titleSmall, color = visual.colors.ink, fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold)
-            val limitLine = row.remainingAmount?.let { remaining ->
-                "Cajeros ${formatMonitorMoney(row.cashierAmount)} · queda ${formatMonitorMoney(remaining)}"
+        Row(
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(row.displayNumber, style = MaterialTheme.typography.titleLarge, color = visual.colors.ink, fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Black)
+                Text(
+                    "${row.playsCount} jugada(s) · ${row.actors.joinToString(", ").ifBlank { "sin cajero" }}",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = visual.colors.muted,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
             }
-            Text(
-                limitLine ?: "${row.playsCount} jugada(s) · ${row.actors.joinToString(", ").ifBlank { "sin cajero" }}",
-                style = MaterialTheme.typography.bodySmall,
-                color = visual.colors.muted,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
+            Text(formatMonitorMoney(row.amount), style = MaterialTheme.typography.headlineSmall, color = gainColor(), fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold)
         }
-        Text(formatMonitorMoney(row.amount), style = MaterialTheme.typography.titleSmall, color = gainColor(), fontFamily = FontFamily.Monospace)
     }
+}
+
+@Composable
+private fun MonitorDaySelector(
+    dayKey: String,
+    onDaySelected: (String) -> Unit,
+) {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val visual = rememberLotteryNetVisualSpec()
+    CompactActionButton(
+        label = "Fecha operativa: $dayKey",
+        onClick = {
+            val selected = runCatching { LocalDate.parse(dayKey) }.getOrElse { LocalDate.now() }
+            DatePickerDialog(
+                context,
+                { _, year, month, day -> onDaySelected(LocalDate.of(year, month + 1, day).toString()) },
+                selected.year,
+                selected.monthValue - 1,
+                selected.dayOfMonth,
+            ).show()
+        },
+        modifier = Modifier.fillMaxWidth(),
+        tone = ActionTone.Secondary,
+    )
+    Text(
+        "Filtra ventas, caja y cajeros de esta fecha. El calendario de ganadores permanece independiente.",
+        style = MaterialTheme.typography.labelMedium,
+        color = visual.colors.muted,
+    )
 }
 
 @Composable
@@ -2462,6 +3020,7 @@ private data class MonitorRow(
     val username: String,
     val displayName: String,
     val presence: String,
+    val isBlocked: Boolean = false,
     val lastSeenLabel: String,
     val tickets: Int,
     val activos: Int,
@@ -2473,6 +3032,9 @@ private data class MonitorRow(
     val premiosPendientes: Double,
     val resultado: Double,
     val balance: Double,
+    val limitAmount: Double? = null,
+    val remainingLimitAmount: Double? = null,
+    val limitScopeLabel: String? = null,
 )
 
 private fun buildMonitorActorLabelsByKey(rows: List<MonitorRow>): Map<String, String> {
@@ -2503,6 +3065,7 @@ internal data class LotteryNumberMonitorRow(
     val cashierAmount: Double = amount,
     val limitAmount: Double? = null,
     val remainingAmount: Double? = null,
+    val limitScopeLabel: String? = null,
 )
 
 internal data class LotteryMonitorVisibleRowsContract(
@@ -2535,6 +3098,7 @@ internal fun buildLotteryMonitorRows(
     tickets: List<TicketRecord>,
     lotteryId: String?,
     view: LotteryMonitorPlayView,
+    selectedCashierId: String = ALL_MONITOR_CASHIERS_ID,
     actorLabelsByKey: Map<String, String> = emptyMap(),
     cashierSellerKeys: Set<String> = emptySet(),
     cashierLimits: CashierSalesLimitInputs? = null,
@@ -2553,7 +3117,7 @@ internal fun buildLotteryMonitorRows(
             val bucket = buckets.getOrPut(key) { MutableLotteryMonitorBucket(displayNumber = key) }
             bucket.amount += play.amount
             bucket.playsCount += 1
-            bucket.playTypes += play.playType.trim().uppercase(Locale.US)
+            bucket.playTypes += normalizeLotteryMonitorPlayType(play.playType)
             if (ticketCountsAgainstCashierLimit(ticket, cashierSellerKeys)) {
                 bucket.cashierAmount += play.amount
             }
@@ -2572,6 +3136,11 @@ internal fun buildLotteryMonitorRows(
                 cashierAmount = bucket.cashierAmount,
                 limitAmount = limitAmount,
                 remainingAmount = limitAmount?.let { (it - bucket.cashierAmount).coerceAtLeast(0.0) },
+                limitScopeLabel = when {
+                    selectedCashierId.isNotBlank() && selectedCashierId != ALL_MONITOR_CASHIERS_ID -> "Tope del cajero"
+                    lotteryId == null -> "Tope global"
+                    else -> "Tope de la lotería"
+                },
             )
         }
         .sortedWith(compareByDescending<LotteryNumberMonitorRow> { it.amount }.thenBy { it.displayNumber })
@@ -2607,7 +3176,7 @@ internal fun lotteryMonitorPlayMatchesView(
     playType: String,
     view: LotteryMonitorPlayView,
 ): Boolean {
-    val normalized = playType.trim().uppercase(Locale.US)
+    val normalized = normalizeLotteryMonitorPlayType(playType)
     return when (view) {
         LotteryMonitorPlayView.QUINIELA,
         LotteryMonitorPlayView.PALE,
@@ -2615,6 +3184,20 @@ internal fun lotteryMonitorPlayMatchesView(
         LotteryMonitorPlayView.SUPER_PALE -> normalized == view.playType
         LotteryMonitorPlayView.PICK_3 -> normalized in PICK_3_MONITOR_TYPES
         LotteryMonitorPlayView.PICK_4 -> normalized in PICK_4_MONITOR_TYPES
+    }
+}
+
+internal fun normalizeLotteryMonitorPlayType(playType: String): String {
+    return when (playType.trim().uppercase(Locale.US).replace(" ", "_")) {
+        "Q", "QUINIELA" -> "Q"
+        "P", "PALE", "PALÉ" -> "P"
+        "T", "TRIPLETA" -> "T"
+        "SP", "SUPER_PALE", "SUPERPALE", "SUPER_PALÉ" -> "SP"
+        "PICK3", "PICK_3", "P3STRAIGHT", "P3_STRAIGHT" -> "P3"
+        "PICK3BOX", "PICK_3_BOX", "P3_BOX" -> "P3BOX"
+        "PICK4", "PICK_4", "P4STRAIGHT", "P4_STRAIGHT" -> "P4"
+        "PICK4BOX", "PICK_4_BOX", "P4_BOX" -> "P4BOX"
+        else -> playType.trim().uppercase(Locale.US).replace(" ", "_")
     }
 }
 
@@ -2738,10 +3321,37 @@ private fun resolveMonitorCashierLimits(
     payload: String,
     rows: List<MonitorRow>,
     selectedCashierId: String,
-): CashierSalesLimitInputs {
-    val selectedUsername = rows.firstOrNull { it.userId == selectedCashierId }?.username
-    return decodeCashierUserSalesLimitInputs(payload, selectedUsername)
-        ?: decodeCashierSalesLimitInputs(payload)
+    session: ActiveSession,
+): CashierSalesLimitInputs? {
+    if (selectedCashierId.isBlank() || selectedCashierId == ALL_MONITOR_CASHIERS_ID) {
+        return decodeCashierSalesLimitInputs(payload)
+    }
+    val selectedRow = rows.firstOrNull { it.userId == selectedCashierId } ?: return null
+    val selectedKeys = listOf(selectedRow.userId, selectedRow.username, selectedRow.displayName)
+    decodeCashierUserSalesLimitInputs(payload, selectedKeys)?.let { return it }
+    if (selectedRow.isCurrentSession(session)) {
+        decodeMonitorAdminSelfLimits(payload)?.let { return it }
+    }
+    return decodeCashierSalesLimitInputs(payload)
+}
+
+private fun MonitorRow.isCurrentSession(session: ActiveSession): Boolean {
+    val sessionKeys = setOfNotNull(
+        session.userId.takeIf { it.isNotBlank() },
+        session.username.takeIf { it.isNotBlank() },
+        session.adminId?.takeIf { it.isNotBlank() },
+        session.adminUser?.takeIf { it.isNotBlank() },
+    )
+    if (sessionKeys.isEmpty()) return false
+    return listOf(userId, username, displayName).any { it.isNotBlank() && it in sessionKeys }
+}
+
+private fun decodeMonitorAdminSelfLimits(payload: String): CashierSalesLimitInputs? {
+    val root = payload
+        .takeIf { it.isNotBlank() }
+        ?.let { runCatching { org.json.JSONObject(it) }.getOrNull() }
+        ?: return null
+    return decodeCashierSalesLimitInputs(root.optJSONObject("adminSelf"))
 }
 
 private fun ticketCountsAgainstCashierLimit(ticket: TicketRecord, cashierSellerKeys: Set<String>): Boolean {
@@ -2810,17 +3420,22 @@ private fun buildMonitorRows(
     session: ActiveSession,
     usersRepository: LocalUsersRepository,
     financeRepository: LocalFinanceRepository,
+    cashierSalesLimitsPayload: String,
     dayKey: String,
 ): List<MonitorRow> {
     if (session.role != UserRole.ADMIN && session.role != UserRole.SUPERVISOR && session.role != UserRole.MASTER) return emptyList()
     return sortCashierAccountsNatural(filterCashiersForSession(session, usersRepository.getCashiers()))
         .map { cashier ->
             val summary = financeRepository.getActorSummary(dayKey, cashier.id, cashier.user).summary
+            val limitResolution = resolveMonitorCashierLimitForRow(cashierSalesLimitsPayload, cashier, session)
+            val dayLimitAmount = limitResolution?.inputs?.daySale?.takeIf { it > 0.0 }
+            val remainingLimitAmount = dayLimitAmount?.let { (it - summary.ventas).coerceAtLeast(0.0) }
             MonitorRow(
                 userId = cashier.id,
                 username = cashier.user,
-                displayName = cashier.displayName ?: cashier.user,
+                displayName = cashierDisplayLabel(cashier),
                 presence = resolvePresence(cashier, summary.ticketsCount, summary.recargas),
+                isBlocked = !cashier.active,
                 lastSeenLabel = cashier.lastSeenAtEpochMs?.let(::formatPresenceStamp) ?: "sin actividad marcada",
                 tickets = summary.ticketsCount,
                 activos = summary.activos,
@@ -2832,6 +3447,9 @@ private fun buildMonitorRows(
                 premiosPendientes = summary.premiosPendientes,
                 resultado = resolveOperationalReportNet(summary),
                 balance = cashier.balance,
+                limitAmount = dayLimitAmount,
+                remainingLimitAmount = remainingLimitAmount,
+                limitScopeLabel = limitResolution?.scopeLabel,
             )
         }
 }
@@ -2842,6 +3460,36 @@ private fun buildScopedMonitorTickets(
     tickets: List<TicketRecord>,
 ): List<TicketRecord> {
     return filterScopedMonitorTickets(session, usersRepository.getCashiers(), tickets)
+}
+
+private data class MonitorCashierLimitResolution(
+    val inputs: CashierSalesLimitInputs,
+    val scopeLabel: String,
+)
+
+private fun resolveMonitorCashierLimitForRow(
+    payload: String,
+    cashier: UserAccount,
+    session: ActiveSession,
+): MonitorCashierLimitResolution? {
+    val userKeys = listOfNotNull(cashier.id.takeIf { it.isNotBlank() }, cashier.user.takeIf { it.isNotBlank() })
+    decodeCashierUserSalesLimitInputs(payload, userKeys)?.let { return MonitorCashierLimitResolution(it, "Tope por cajero") }
+    if (cashier.isCurrentSession(session)) {
+        decodeMonitorAdminSelfLimits(payload)?.let { return MonitorCashierLimitResolution(it, "Tope propio") }
+    }
+    val defaults = decodeCashierSalesLimitInputs(payload)
+    return MonitorCashierLimitResolution(defaults, "Tope global")
+}
+
+private fun UserAccount.isCurrentSession(session: ActiveSession): Boolean {
+    val sessionKeys = setOfNotNull(
+        session.userId.takeIf { it.isNotBlank() },
+        session.username.takeIf { it.isNotBlank() },
+        session.adminId?.takeIf { it.isNotBlank() },
+        session.adminUser?.takeIf { it.isNotBlank() },
+    )
+    if (sessionKeys.isEmpty()) return false
+    return listOf(id, user, displayName ?: "", adminId ?: "", adminUser ?: "").any { it.isNotBlank() && it in sessionKeys }
 }
 
 internal fun filterScopedMonitorTickets(
@@ -2897,6 +3545,8 @@ private const val ADMIN_MONITOR_POLL_MS = 60_000L
 private const val ADMIN_MONITOR_REALTIME_FALLBACK_POLL_MS = 300_000L
 private const val ADMIN_MONITOR_RESUME_SYNC_DELAY_MS = 100L
 private const val ADMIN_MONITOR_FOREGROUND_CATCH_UP_THROTTLE_MS = 10_000L
+private const val ADMIN_MONITOR_REMOTE_REFRESH_DEDUP_MS = 15_000L
+private const val ADMIN_MONITOR_DEFERRED_SYNC_GRACE_MS = 250L
 
 internal fun resolveAdminMonitorPollIntervalMs(realtimeEnabled: Boolean): Long {
     return if (realtimeEnabled) ADMIN_MONITOR_REALTIME_FALLBACK_POLL_MS else ADMIN_MONITOR_POLL_MS
@@ -2926,6 +3576,25 @@ internal fun resolveAdminMonitorForegroundCatchUpInput(
         realtimeConnected = !realtimeConfigured || hasRealtimeSubscription,
         nowMs = nowEpochMs,
         force = force,
+    )
+}
+
+internal fun shouldSkipAdminMonitorRemoteRefresh(
+    governor: TicketRefreshGovernor,
+    ownerKey: String,
+    dayKey: String,
+    authScope: String,
+    force: Boolean,
+    nowEpochMs: Long = System.currentTimeMillis(),
+): Boolean {
+    if (force) return false
+    return governor.shouldReuse(
+        ticketRefreshGovernorKey(
+            ownerKey = ownerKey,
+            requestType = "monitor-sync:$dayKey",
+            authScope = authScope,
+        ),
+        nowMs = nowEpochMs,
     )
 }
 private const val ALL_MONITOR_LOTTERIES_ID = "__all__"
@@ -2996,7 +3665,7 @@ internal fun buildLotteryMonitorShareText(
 
 private fun monitorPriority(row: MonitorRow): Int {
     return when {
-        row.presence == "Bloqueado" -> 400
+        row.isBlocked -> 400
         row.premiosPendientes > 0.0 -> 300
         row.presence == "Activo" && (row.ventas > 0.0 || row.recargas > 0.0) -> 200
         row.presence == "Activo" -> 100
@@ -3012,7 +3681,6 @@ private fun monitorCashierStableComparator(): Comparator<MonitorRow> {
     return compareBy<MonitorRow>(
         { monitorCashierNumber(it.username) },
         { monitorCashierNumber(it.userId) },
-        { monitorCashierNumber(it.displayName) },
         { it.username.lowercase(Locale.US) },
         { it.userId.lowercase(Locale.US) },
         { it.displayName.lowercase(Locale.US) },

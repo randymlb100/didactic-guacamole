@@ -101,13 +101,9 @@ function roleOf(account) {
 }
 
 async function fetchUsersPayload() {
-  const result = await requestJson(
-    "users-state fetch",
-    "GET",
-    `${SUPABASE_URL}/rest/v1/lotterynet_users_state?scope=eq.global&select=payload`,
-  );
+  const result = await edge("lotterynet-users-state", { action: "fetch" });
   if (!result.ok) throw new Error(`No se pudo leer usuarios: ${result.text}`);
-  return result.json?.[0]?.payload ?? {};
+  return result.json?.payload ?? {};
 }
 
 async function login(username, password) {
@@ -152,7 +148,7 @@ async function getDelta(ownerKey, token) {
 }
 
 async function getList(ownerKey, token) {
-  return edge("get-ticket-list", { ownerKey, dayKey: fakeDayKey, action: "fetch", limit: 500 }, token);
+  return edge("get-ticket-list", { ownerKey, fromDate: fakeIsoDate, toDate: fakeIsoDate, action: "fetch", limit: 500 }, token);
 }
 
 async function deleteTicket(ticket) {

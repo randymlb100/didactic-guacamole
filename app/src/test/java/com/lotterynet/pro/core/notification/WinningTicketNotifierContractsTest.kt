@@ -126,4 +126,36 @@ class WinningTicketNotifierContractsTest {
         assertFalse(WinningTicketNotifier.isPendingWinningTicket(TicketRecord(id = "void", status = "voided", totalPrize = 850.0)))
         assertFalse(WinningTicketNotifier.isPendingWinningTicket(TicketRecord(id = "invalid", status = "invalid", totalPrize = 850.0)))
     }
+
+    @Test
+    fun `prize amount without confirmed winner status does not notify`() {
+        assertFalse(
+            WinningTicketNotifier.isPendingWinningTicket(
+                TicketRecord(id = "active", status = "active", totalPrize = 850.0),
+            ),
+        )
+    }
+
+    @Test
+    fun `winner status without positive prize does not notify`() {
+        assertFalse(
+            WinningTicketNotifier.isPendingWinningTicket(
+                TicketRecord(id = "zero", status = "winner", totalPrize = 0.0),
+            ),
+        )
+    }
+
+    @Test
+    fun `server winner aliases with positive prize notify`() {
+        assertTrue(
+            WinningTicketNotifier.isPendingWinningTicket(
+                TicketRecord(id = "winner", status = "ganador", totalPrize = 850.0),
+            ),
+        )
+        assertTrue(
+            WinningTicketNotifier.isPendingWinningTicket(
+                TicketRecord(id = "pending", status = "pending_winner", totalPrize = 850.0),
+            ),
+        )
+    }
 }

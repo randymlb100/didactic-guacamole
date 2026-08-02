@@ -2,18 +2,31 @@ package com.lotterynet.pro.ui.recharge
 
 import com.lotterynet.pro.ui.common.LotteryNetWindowMode
 import com.lotterynet.pro.core.model.ActiveSession
+import com.lotterynet.pro.core.model.RechargeRecord
 import com.lotterynet.pro.core.model.UserAccount
 import com.lotterynet.pro.core.model.UserRole
 import com.lotterynet.pro.core.remote.SupabaseEdgeException
 import com.lotterynet.pro.core.storage.RechargeLimitSettings
 import java.io.File
+import kotlinx.coroutines.DelicateCoroutinesApi
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.json.JSONObject
+import kotlinx.coroutines.newSingleThreadContext
+import kotlinx.coroutines.runBlocking
 
 class RecargasUiContractsTest {
+    @Test
+    fun `cashier recharge header hides master fund amounts`() {
+        assertEquals(null, rechargeFundDisplayText(UserRole.CASHIER, assigned = 10_000.0, available = 8_500.0))
+        assertEquals(
+            "Queda $8,500 de $10,000 asignado por Master",
+            rechargeFundDisplayText(UserRole.ADMIN, assigned = 10_000.0, available = 8_500.0),
+        )
+    }
 
     @Test
     fun `phone recargas merges status into header and reduces quick rows`() {
@@ -258,6 +271,77 @@ class RecargasUiContractsTest {
     }
 
     @Test
+    fun `recharge validation refreshes only for balance or block warnings`() {
+        assertTrue(shouldRefreshRechargeBalanceValidation("Saldo de recargas agotado para admin01."))
+        assertTrue(shouldRefreshRechargeBalanceValidation("Recargas bloqueadas por Master para admin01."))
+        assertTrue(shouldRefreshRechargeBalanceValidation("Saldo insuficiente. Disponible: $1,000"))
+        assertFalse(shouldRefreshRechargeBalanceValidation("Tope global de recarga: $5,000"))
+        assertFalse(shouldRefreshRechargeBalanceValidation(null))
+    }
+
+    @Test
+    fun `fresh recharge state prefers remote payload before resolving local balance`() {
+        var refreshCalls = 0
+        var cacheCalls = 0
+        val result = refreshRechargeBalanceState(
+            refreshUsersPayload = {
+                refreshCalls += 1
+                """{"admins":[{"id":"ADM-1","recargasEnabled":true,"recargasAssignedBalance":10000,"recargasBalance":8500}],"cajeros":[]}"""
+            },
+            cacheUsersPayload = { cacheCalls += 1 },
+            resolveState = {
+                RechargeBalanceState(
+                    enabled = true,
+                    ownerAccountId = "ADM-1",
+                    ownerLabel = "admin01",
+                    assignedBalance = 10_000.0,
+                    availableBalance = 8_500.0,
+                    cashierTxLimit = null,
+                    blockedByMaster = false,
+                )
+            },
+        )
+
+        assertEquals(1, refreshCalls)
+        assertEquals(1, cacheCalls)
+        assertTrue(result.enabled)
+        assertEquals(8_500.0, result.availableBalance, 0.0)
+    }
+
+    @Test
+    @OptIn(ExperimentalCoroutinesApi::class, DelicateCoroutinesApi::class)
+    fun `recharge balance refresh runs on the provided background dispatcher`() = runBlocking {
+        val worker = newSingleThreadContext("recharge-io-test")
+        try {
+            var refreshThreadName: String? = null
+            val result = refreshRechargeBalanceStateOffMain(
+                dispatcher = worker,
+                refreshUsersPayload = {
+                    refreshThreadName = Thread.currentThread().name
+                    """{"admins":[{"id":"ADM-1","recargasEnabled":true,"recargasAssignedBalance":10000,"recargasBalance":8500}],"cajeros":[]}"""
+                },
+                cacheUsersPayload = {},
+                resolveState = {
+                    RechargeBalanceState(
+                        enabled = true,
+                        ownerAccountId = "ADM-1",
+                        ownerLabel = "admin01",
+                        assignedBalance = 10_000.0,
+                        availableBalance = 8_500.0,
+                        cashierTxLimit = null,
+                        blockedByMaster = false,
+                    )
+                },
+            )
+
+            assertTrue(refreshThreadName?.startsWith("recharge-io-test") == true)
+            assertTrue(result.enabled)
+        } finally {
+            worker.close()
+        }
+    }
+
+    @Test
     fun `recharge fund discount consumes ninety five percent while sale keeps full amount`() {
         val admin = UserAccount(
             id = "ADM-1",
@@ -451,5 +535,45 @@ class RecargasUiContractsTest {
 
         assertEquals("Saldo insuficiente", resolveRechargeSaleErrorMessage(error))
         assertEquals("Error procesando recarga", resolveRechargeSaleErrorMessage(IllegalStateException()))
+    }
+
+    @Test
+    fun `recharge history label shows cashier and admin names`() {
+        val record = buildRechargeSaleRecord(
+            provider = rechargeProviderContracts().first { it.id == "altice" },
+            mode = RechargeSellMode.RECARGA,
+            phone = "829-252-3956",
+            amount = 30.0,
+            userId = "CAJ-1",
+            userName = "Caja 1",
+            adminId = "ADM-1",
+            adminUser = "Admin 01",
+            now = 1_777_985_481_330,
+            id = "rec-history",
+            status = "completed",
+            providerReference = "RR-7788",
+        )
+
+        assertEquals("Caja 1", rechargeHistoryOperatorLabel(record, UserRole.ADMIN))
+        assertEquals("Caja 1", rechargeHistoryOperatorLabel(record, UserRole.CASHIER))
+        assertEquals("Cajero: Caja 1 · Admin: Admin 01", rechargeHistoryOperatorLabel(record, UserRole.MASTER))
+    }
+
+    @Test
+    fun `recharge history prefers admin configured cashier display name over id`() {
+        val record = RechargeRecord(
+            id = "r-2",
+            userId = "banca01",
+            userName = "banca01",
+            adminUser = "admin01",
+        )
+        assertEquals(
+            "Caja Principal",
+            rechargeHistoryOperatorLabel(
+                record,
+                UserRole.ADMIN,
+                mapOf("banca01" to "Caja Principal"),
+            ),
+        )
     }
 }

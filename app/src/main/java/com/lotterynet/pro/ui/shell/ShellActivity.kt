@@ -3,13 +3,17 @@ package com.lotterynet.pro.ui.shell
 import android.Manifest
 import android.app.Activity
 import android.content.Intent
+import android.content.SharedPreferences
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.compose.setContent
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -38,6 +42,7 @@ import androidx.compose.material.icons.rounded.AdminPanelSettings
 import androidx.compose.material.icons.rounded.Analytics
 import androidx.compose.material.icons.rounded.ExpandLess
 import androidx.compose.material.icons.rounded.ExpandMore
+import androidx.compose.material.icons.rounded.Extension
 import androidx.compose.material.icons.rounded.Groups
 import androidx.compose.material.icons.rounded.ManageAccounts
 import androidx.compose.material.icons.rounded.MonitorHeart
@@ -66,6 +71,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -74,6 +80,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -85,26 +93,30 @@ import android.content.ContextWrapper
 import com.lotterynet.pro.ui.admin.AdminAuditActivity
 import com.lotterynet.pro.ui.admin.AdminConfigActivity
 import com.lotterynet.pro.ui.admin.AdminLimitsActivity
-import com.lotterynet.pro.core.finance.LocalFinanceRepository
+import com.lotterynet.pro.core.auth.SupabaseSessionTokenProvider
 import com.lotterynet.pro.core.format.formatWholeMoney
 import com.lotterynet.pro.core.model.ActiveSession
 import com.lotterynet.pro.core.model.TicketRecord
 import com.lotterynet.pro.core.model.UserRole
-import com.lotterynet.pro.core.operations.filterCashiersForSession
-import com.lotterynet.pro.core.operations.filterTicketsForOperationalScope
 import com.lotterynet.pro.core.storage.LocalRechargeRepository
 import com.lotterynet.pro.core.storage.LocalMasterConfigRepository
 import com.lotterynet.pro.core.storage.LocalSalesRepository
 import com.lotterynet.pro.core.storage.LocalSessionRepository
 import com.lotterynet.pro.core.storage.LocalPosModeRepository
 import com.lotterynet.pro.core.storage.LocalUsersRepository
+import com.lotterynet.pro.core.storage.RechargeStorageKeys
+import com.lotterynet.pro.core.storage.SalesStorageKeys
 import com.lotterynet.pro.core.storage.decodeMasterSportsbookSettings
 import com.lotterynet.pro.core.storage.sportsbookRemoteKey
+import com.lotterynet.pro.core.storage.decodeMasterServicesGamesSettings
+import com.lotterynet.pro.core.storage.servicesGamesRemoteKey
 import com.lotterynet.pro.core.storage.toFeatureConfig
+import com.lotterynet.pro.core.servicesgames.ServicesGamesModule
 import com.lotterynet.pro.core.master.SupabaseMasterConfigRemoteStore
+import com.lotterynet.pro.core.realtime.LotterynetRealtimeClient
+import com.lotterynet.pro.core.sync.LotteryNetCatchUpScheduler
+import com.lotterynet.pro.core.update.LOTTERYNET_OTA_ENABLED
 import com.lotterynet.pro.core.sync.NativeRechargeCloudSyncCoordinator
-import com.lotterynet.pro.core.sync.NativeTicketCloudSyncCoordinator
-import com.lotterynet.pro.core.sync.NativeTicketSyncQueueRepository
 import com.lotterynet.pro.core.update.OtaCheckResult
 import com.lotterynet.pro.core.update.UpdateRepository
 import com.lotterynet.pro.ui.admin.AdminMonitorActivity
@@ -112,7 +124,9 @@ import com.lotterynet.pro.ui.finance.FinanceActivity
 import com.lotterynet.pro.ui.login.LoginActivity
 import com.lotterynet.pro.ui.master.MasterCreateBankActivity
 import com.lotterynet.pro.ui.master.MasterDashboardActivity
+import com.lotterynet.pro.ui.master.MasterServicesGamesActivity
 import com.lotterynet.pro.ui.navigation.NativeDestination
+import com.lotterynet.pro.ui.navigation.safeNativeDestinationIntent
 import com.lotterynet.pro.ui.navigation.startSafeNativeDestination
 import com.lotterynet.pro.ui.printer.PrinterActivity
 import com.lotterynet.pro.ui.report.OperationalReportActivity
@@ -150,6 +164,8 @@ import java.util.Date
 import java.util.Locale
 import java.util.TimeZone
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -164,6 +180,7 @@ class ShellActivity : AppCompatActivity() {
     ) { }
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        installSplashScreen()
         super.onCreate(savedInstanceState)
         sessionRepository = LocalSessionRepository(this)
         pendingNativeLoginUser = intent?.getStringExtra("native_login_user")
@@ -185,25 +202,57 @@ class ShellActivity : AppCompatActivity() {
             session = session,
             settingsRepository = sportsbookSettingsRepository,
         )
+        val initialServicesAccessVisible = resolveServicesGamesAccessVisible(
+            session = session,
+            settingsRepository = sportsbookSettingsRepository,
+            module = ServicesGamesModule.SERVICES,
+        )
+        val initialVideoGamesAccessVisible = resolveServicesGamesAccessVisible(
+            session = session,
+            settingsRepository = sportsbookSettingsRepository,
+            module = ServicesGamesModule.VIDEO_GAMES,
+        )
         setContent {
             com.lotterynet.pro.ui.theme.LotteryNetComposeTheme {
+                LaunchedEffect(Unit) {
+                    withFrameNanos { }
+                    reportFullyDrawn()
+                }
                 var sportsbookAccessVisible by remember(session.userId) {
                     mutableStateOf(initialSportsbookAccessVisible)
                 }
-                var dashboardSnapshot by remember(session.userId, dayKey) {
-                    mutableStateOf(ShellDashboardSnapshot.empty())
+                var servicesAccessVisible by remember(session.userId) { mutableStateOf(initialServicesAccessVisible) }
+                var videoGamesAccessVisible by remember(session.userId) { mutableStateOf(initialVideoGamesAccessVisible) }
+                val dashboardViewModel: ShellDashboardViewModel = viewModel()
+                val dashboardUiState by dashboardViewModel.state.collectAsStateWithLifecycle()
+                val dashboardStateKey = remember(session.userId, session.username, session.role, dayKey) {
+                    buildShellDashboardStateKey(session, dayKey)
                 }
-                var dashboardRefreshTick by remember(session.userId, dayKey) {
-                    mutableStateOf(0L)
+                val dashboardSnapshot = if (shouldLoadShellBusinessSnapshot(session.role)) {
+                    dashboardUiState.snapshot ?: ShellDashboardSnapshot.empty()
+                } else {
+                    ShellDashboardSnapshot.empty()
+                }
+                val requestDashboardRefresh = {
+                    dashboardViewModel.refresh(dashboardStateKey) {
+                        withContext(Dispatchers.IO) {
+                            buildShellDashboardSnapshot(applicationContext, session, dayKey)
+                        }
+                    }
                 }
                 val lifecycleOwner = LocalLifecycleOwner.current
                 DisposableEffect(lifecycleOwner, session.userId, dayKey) {
+                    var hasSeenResume = false
                     val observer = LifecycleEventObserver { _, event ->
                         if (
                             event == Lifecycle.Event.ON_RESUME &&
                             shouldRefreshShellDashboardOnResume(session.role)
                         ) {
-                            dashboardRefreshTick = System.currentTimeMillis()
+                            if (hasSeenResume) {
+                                requestDashboardRefresh()
+                            } else {
+                                hasSeenResume = true
+                            }
                         }
                     }
                     lifecycleOwner.lifecycle.addObserver(observer)
@@ -211,13 +260,67 @@ class ShellActivity : AppCompatActivity() {
                         lifecycleOwner.lifecycle.removeObserver(observer)
                     }
                 }
-                LaunchedEffect(session.userId, dayKey, dashboardRefreshTick) {
-                    dashboardSnapshot = if (shouldLoadShellBusinessSnapshot(session.role)) {
-                        withContext(Dispatchers.IO) {
-                            buildShellDashboardSnapshot(session, dayKey)
+                DisposableEffect(session.userId, session.adminId, session.username, session.banca, dayKey) {
+                    val ownerKey = session.adminId?.takeIf { it.isNotBlank() }
+                        ?: session.adminUser?.takeIf { it.isNotBlank() }
+                        ?: session.username
+                    val tokenProvider = SupabaseSessionTokenProvider(LocalSessionRepository(applicationContext))
+                    val realtimeClient = LotterynetRealtimeClient()
+                    val mainHandler = Handler(Looper.getMainLooper())
+                    val subscriptions = buildList {
+                        addAll(
+                            realtimeClient.subscribeTicketOwnerSignals(
+                                ownerKey = ownerKey,
+                                bearerTokenProvider = { tokenProvider.freshAccessToken() },
+                            ) {
+                                mainHandler.post { requestDashboardRefresh() }
+                            },
+                        )
+                        addAll(
+                            realtimeClient.subscribeResultsSignals(
+                                dateKey = dayKey,
+                                bearerTokenProvider = { tokenProvider.freshAccessToken() },
+                            ) {
+                                mainHandler.post { requestDashboardRefresh() }
+                            },
+                        )
+                    }
+                    onDispose {
+                        subscriptions.forEach { handle -> handle.close() }
+                    }
+                }
+                DisposableEffect(session.userId, session.role, dayKey) {
+                    if (!shouldLoadShellBusinessSnapshot(session.role)) {
+                        return@DisposableEffect onDispose { }
+                    }
+                    val handler = Handler(Looper.getMainLooper())
+                    val salesPrefs = getSharedPreferences(SalesStorageKeys.PREFS_NAME, Context.MODE_PRIVATE)
+                    val rechargePrefs = getSharedPreferences(RechargeStorageKeys.PREFS_NAME, Context.MODE_PRIVATE)
+                    var pendingRefresh: Runnable? = null
+                    val listener = SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
+                        if (key == null || !isShellDashboardBusinessStorageKey(key)) {
+                            return@OnSharedPreferenceChangeListener
                         }
-                    } else {
-                        ShellDashboardSnapshot.empty()
+                        pendingRefresh?.let(handler::removeCallbacks)
+                        val refresh = Runnable { requestDashboardRefresh() }
+                        pendingRefresh = refresh
+                        handler.postDelayed(refresh, SHELL_DASHBOARD_LOCAL_STORAGE_REFRESH_DELAY_MS)
+                    }
+                    salesPrefs.registerOnSharedPreferenceChangeListener(listener)
+                    rechargePrefs.registerOnSharedPreferenceChangeListener(listener)
+                    onDispose {
+                        pendingRefresh?.let(handler::removeCallbacks)
+                        salesPrefs.unregisterOnSharedPreferenceChangeListener(listener)
+                        rechargePrefs.unregisterOnSharedPreferenceChangeListener(listener)
+                    }
+                }
+                LaunchedEffect(dashboardStateKey, session.role) {
+                    if (shouldLoadShellBusinessSnapshot(session.role)) {
+                        dashboardViewModel.ensureLoaded(dashboardStateKey) {
+                            withContext(Dispatchers.IO) {
+                                buildShellDashboardSnapshot(applicationContext, session, dayKey)
+                            }
+                        }
                     }
                 }
                 LaunchedEffect(session.userId, session.username) {
@@ -226,28 +329,52 @@ class ShellActivity : AppCompatActivity() {
                     }
                 }
                 LaunchedEffect(session.userId, session.role) {
-                    val remoteSettings = withContext(Dispatchers.IO) {
-                        runCatching {
-                            SupabaseMasterConfigRemoteStore()
-                                .fetchValue(sportsbookRemoteKey())
-                                ?.toString()
-                                ?.let(::decodeMasterSportsbookSettings)
-                        }.getOrNull()
+                    coroutineScope {
+                        val remoteStore = SupabaseMasterConfigRemoteStore()
+                        val sportsbookRemote = async(Dispatchers.IO) {
+                            runCatching {
+                                remoteStore.fetchValue(sportsbookRemoteKey())
+                                    ?.toString()
+                                    ?.let(::decodeMasterSportsbookSettings)
+                            }.getOrNull()
+                        }
+                        val servicesGamesRemote = ServicesGamesModule.entries.map { module ->
+                            module to async(Dispatchers.IO) {
+                                runCatching {
+                                    remoteStore.fetchValue(servicesGamesRemoteKey(module))
+                                        ?.toString()
+                                        ?.let { raw -> decodeMasterServicesGamesSettings(module, raw) }
+                                }.getOrNull()
+                            }
+                        }
+                        sportsbookRemote.await()?.let { remoteSettings ->
+                            sportsbookSettingsRepository.saveSportsbookSettings(remoteSettings)
+                        }
+                        servicesGamesRemote.forEach { (module, deferred) ->
+                            deferred.await()?.let { remoteSettings ->
+                                sportsbookSettingsRepository.saveServicesGamesSettings(remoteSettings)
+                            }
+                        }
                     }
-                    if (remoteSettings != null) {
-                        sportsbookSettingsRepository.saveSportsbookSettings(remoteSettings)
-                        sportsbookAccessVisible = resolveSportsbookAccessVisible(
-                            session = session,
-                            settingsRepository = sportsbookSettingsRepository,
-                        )
-                    }
+                    sportsbookAccessVisible = resolveSportsbookAccessVisible(
+                        session = session,
+                        settingsRepository = sportsbookSettingsRepository,
+                    )
+                    servicesAccessVisible = resolveServicesGamesAccessVisible(
+                        session,
+                        sportsbookSettingsRepository,
+                        ServicesGamesModule.SERVICES,
+                    )
+                    videoGamesAccessVisible = resolveServicesGamesAccessVisible(
+                        session,
+                        sportsbookSettingsRepository,
+                        ServicesGamesModule.VIDEO_GAMES,
+                    )
                 }
                 LaunchedEffect(session.adminId, session.banca) {
                     val ownerKey = session.adminId?.takeIf { it.isNotBlank() } ?: return@LaunchedEffect
                     delay(350)
-                    hydrateShellDataAfterFirstFrame(ownerKey, session.banca) {
-                        dashboardRefreshTick = System.currentTimeMillis()
-                    }
+                    hydrateShellDataAfterFirstFrame(ownerKey, session.banca)
                 }
                 ShellRoute(
                     session = session,
@@ -259,6 +386,8 @@ class ShellActivity : AppCompatActivity() {
                     assignedCashiersCount = dashboardSnapshot.assignedCashiersCount,
                     rechargeAccessVisible = rechargeAccessVisible,
                     sportsbookAccessVisible = sportsbookAccessVisible,
+                    servicesAccessVisible = servicesAccessVisible,
+                    videoGamesAccessVisible = videoGamesAccessVisible,
                     onOpenNativeSales = {
                         openSafeSales(this, session.role)
                     },
@@ -270,6 +399,18 @@ class ShellActivity : AppCompatActivity() {
                     },
                     onOpenNativeSportsbook = {
                         startSafeNativeDestination(this, session.role, NativeDestination.SPORTSBOOK)
+                    },
+                    onOpenNativeServices = {
+                        startActivity(safeNativeDestinationIntent(this, session.role, NativeDestination.SERVICES_GAMES).putExtra(
+                            com.lotterynet.pro.ui.servicesgames.ServicesGamesActivity.EXTRA_MODULE,
+                            ServicesGamesModule.SERVICES.wireValue,
+                        ))
+                    },
+                    onOpenNativeVideoGames = {
+                        startActivity(safeNativeDestinationIntent(this, session.role, NativeDestination.SERVICES_GAMES).putExtra(
+                            com.lotterynet.pro.ui.servicesgames.ServicesGamesActivity.EXTRA_MODULE,
+                            ServicesGamesModule.VIDEO_GAMES.wireValue,
+                        ))
                     },
                     onOpenTicketSummary = {
                         startSafeNativeDestination(this, session.role, NativeDestination.TICKET_SUMMARY)
@@ -323,6 +464,9 @@ class ShellActivity : AppCompatActivity() {
                     onOpenNativeMasterDashboard = {
                         startSafeNativeDestination(this, session.role, NativeDestination.MASTER_DASHBOARD)
                     },
+                    onOpenNativeServicesGames = {
+                        startSafeNativeDestination(this, session.role, NativeDestination.MASTER_SERVICES_GAMES)
+                    },
                     onOpenNativeMasterCreate = {
                         startSafeNativeDestination(this, session.role, NativeDestination.MASTER_CREATE_BANK)
                     },
@@ -342,67 +486,11 @@ class ShellActivity : AppCompatActivity() {
         onTicketsHydrated: () -> Unit = {},
     ) {
         val appContext = applicationContext
-        thread(name = "shell-ticket-hydrate") {
-            NativeTicketCloudSyncCoordinator(
-                salesRepository = LocalSalesRepository(appContext),
-                queueRepository = NativeTicketSyncQueueRepository(appContext),
-            ).hydrateOwner(ownerKey, banca)
-            runOnUiThread(onTicketsHydrated)
-        }
+        LotteryNetCatchUpScheduler.enqueueImmediate(appContext, forceTickets = true)
+        runOnUiThread(onTicketsHydrated)
         thread(name = "shell-recharge-hydrate") {
             NativeRechargeCloudSyncCoordinator(LocalRechargeRepository(appContext)).hydrateOwner(ownerKey)
         }
-    }
-
-    private fun buildShellDashboardSnapshot(
-        session: ActiveSession,
-        dayKey: String,
-    ): ShellDashboardSnapshot {
-        val salesRepositoryForShell = LocalSalesRepository(this)
-        val usersRepositoryForShell = LocalUsersRepository(this)
-        val financeRepository = LocalFinanceRepository(
-            salesRepository = salesRepositoryForShell,
-            rechargeRepository = LocalRechargeRepository(this),
-            usersRepository = usersRepositoryForShell,
-        )
-        val financeSummary = financeRepository.getScopedDaySummary(
-            dayKey = dayKey,
-            scope = financeRepository.resolveScope(session),
-        )
-        val scopedTodayTickets = filterTicketsForOperationalScope(
-            session = session,
-            tickets = salesRepositoryForShell.getTicketsForDay(dayKey),
-            cashiers = usersRepositoryForShell.getCashiers(),
-        )
-        val assignedCashiersCount = if (session.role == UserRole.SUPERVISOR) {
-            filterCashiersForSession(session, usersRepositoryForShell.getCashiers()).count { it.active }
-        } else {
-            0
-        }
-        val recentTickets = scopedTodayTickets
-            .sortedByDescending { it.createdAtEpochMs }
-            .take(6)
-        val visibleSalesTotal = if (session.role == UserRole.CASHIER) {
-            scopedTodayTickets.filterNot { it.status.equals("voided", true) || it.status.equals("invalid", true) }.sumOf { it.total }
-        } else {
-            financeSummary.ventas
-        }
-        val visiblePendingTotal = if (session.role == UserRole.CASHIER) {
-            scopedTodayTickets.filter { it.status.equals("winner", true) }.sumOf { it.totalPrize.coerceAtLeast(0.0) }
-        } else {
-            financeSummary.premiosPendientes
-        }
-        return ShellDashboardSnapshot(
-            recentTickets = recentTickets,
-            salesTotal = visibleSalesTotal,
-            cashTotal = resolveShellCashTotalForRole(
-                role = session.role,
-                visibleSalesTotal = visibleSalesTotal,
-                scopedCajaDisponible = financeSummary.cajaDisponible,
-            ),
-            pendingTotal = visiblePendingTotal,
-            assignedCashiersCount = assignedCashiersCount,
-        )
     }
 
     private fun openLoginAndFinish() {
@@ -502,10 +590,13 @@ internal fun resolveShellButtonRoutes(
     rechargeVisible: Boolean = true,
     sportsbookVisible: Boolean = false,
     manualPosModeEnabled: Boolean = false,
+    servicesVisible: Boolean = false,
+    videoGamesVisible: Boolean = false,
 ): List<ShellButtonRoute> {
     if (role == UserRole.MASTER) {
         return listOf(
             ShellButtonRoute("Panel master", MasterDashboardActivity::class.java.name),
+            ShellButtonRoute("Servicios y juegos", MasterServicesGamesActivity::class.java.name),
             ShellButtonRoute("Finanzas", FinanceActivity::class.java.name),
             ShellButtonRoute("Deportes", SportsbookActivity::class.java.name),
             ShellButtonRoute("Crear banca", MasterCreateBankActivity::class.java.name),
@@ -533,6 +624,12 @@ internal fun resolveShellButtonRoutes(
         }
         if (sportsbookVisible) {
             add(ShellButtonRoute("Deportes", SportsbookActivity::class.java.name))
+        }
+        if (servicesVisible) {
+            add(ShellButtonRoute("Servicios", com.lotterynet.pro.ui.servicesgames.ServicesGamesActivity::class.java.name))
+        }
+        if (videoGamesVisible) {
+            add(ShellButtonRoute("Videojuegos", com.lotterynet.pro.ui.servicesgames.ServicesGamesActivity::class.java.name))
         }
         add(ShellButtonRoute("Repetir ticket", TicketLookupActivity::class.java.name, lookupMode = "duplicar"))
         add(ShellButtonRoute("Cuadre", FinanceActivity::class.java.name))
@@ -593,12 +690,44 @@ internal fun shouldRefreshShellDashboardOnResume(role: UserRole): Boolean {
     return shouldLoadShellBusinessSnapshot(role)
 }
 
+// Debounce just enough to batch sync bursts without making genuine changes feel slow.
+internal const val SHELL_DASHBOARD_LOCAL_STORAGE_REFRESH_DELAY_MS = 500L
+
+internal fun isShellDashboardBusinessStorageKey(key: String): Boolean {
+    return isShellDashboardTicketStorageKey(key) || isShellDashboardRechargeStorageKey(key)
+}
+
+internal fun isShellDashboardTicketStorageKey(key: String): Boolean {
+    return key.startsWith(SalesStorageKeys.TICKETS_PREFIX) ||
+        key == SalesStorageKeys.DELETED_TICKETS_KEY ||
+        key == SalesStorageKeys.DELETED_TICKET_REFS_KEY
+}
+
+internal fun isShellDashboardRechargeStorageKey(key: String): Boolean {
+    return key.startsWith(RechargeStorageKeys.RECHARGES_PREFIX)
+}
+
 internal fun resolveSportsbookAccessVisible(
     session: ActiveSession,
     settingsRepository: LocalMasterConfigRepository,
 ): Boolean {
     if (session.role == UserRole.MASTER) return true
     return settingsRepository.getSportsbookSettings()
+        .toFeatureConfig()
+        .canOpen(
+            role = session.role,
+            actorKey = session.userId.ifBlank { session.username },
+            adminKey = session.adminId ?: session.adminUser,
+        )
+}
+
+internal fun resolveServicesGamesAccessVisible(
+    session: ActiveSession,
+    settingsRepository: LocalMasterConfigRepository,
+    module: ServicesGamesModule,
+): Boolean {
+    if (session.role == UserRole.MASTER) return true
+    return settingsRepository.getServicesGamesSettings(module)
         .toFeatureConfig()
         .canOpen(
             role = session.role,
@@ -745,6 +874,7 @@ internal fun resolveStartupRuntimePermissions(sdkInt: Int): List<String> {
         add(Manifest.permission.CAMERA)
         if (sdkInt >= Build.VERSION_CODES.S) {
             add(Manifest.permission.BLUETOOTH_CONNECT)
+            add(Manifest.permission.BLUETOOTH_SCAN)
         }
         if (sdkInt >= Build.VERSION_CODES.TIRAMISU) {
             add(Manifest.permission.POST_NOTIFICATIONS)
@@ -755,7 +885,10 @@ internal fun resolveStartupRuntimePermissions(sdkInt: Int): List<String> {
 internal fun resolvePermissionStatusMessage(missingPermissions: List<String>): String {
     if (missingPermissions.isEmpty()) return "Listo para imprimir y escanear"
     val labels = buildList {
-        if (missingPermissions.contains(Manifest.permission.BLUETOOTH_CONNECT)) {
+        if (
+            missingPermissions.contains(Manifest.permission.BLUETOOTH_CONNECT) ||
+            missingPermissions.contains(Manifest.permission.BLUETOOTH_SCAN)
+        ) {
             add("Permiso Bluetooth pendiente")
         }
         if (missingPermissions.contains(Manifest.permission.CAMERA)) {
@@ -779,10 +912,14 @@ private fun ShellRoute(
     assignedCashiersCount: Int,
     rechargeAccessVisible: Boolean,
     sportsbookAccessVisible: Boolean,
+    servicesAccessVisible: Boolean,
+    videoGamesAccessVisible: Boolean,
     onOpenNativeSales: () -> Unit,
     onOpenNativeResults: () -> Unit,
     onOpenNativeRecharge: () -> Unit,
     onOpenNativeSportsbook: () -> Unit,
+    onOpenNativeServices: () -> Unit,
+    onOpenNativeVideoGames: () -> Unit,
     onOpenTicketSummary: () -> Unit,
     onOpenTicketDetail: () -> Unit,
     onOpenTicketLookup: (String) -> Unit,
@@ -798,6 +935,7 @@ private fun ShellRoute(
     onOpenNativeFinance: () -> Unit,
     onOpenNativeReport: () -> Unit,
     onOpenNativeMasterDashboard: () -> Unit,
+    onOpenNativeServicesGames: () -> Unit,
     onOpenNativeMasterCreate: () -> Unit,
     onLogout: () -> Unit,
 ) {
@@ -805,7 +943,11 @@ private fun ShellRoute(
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
     var checkingSystemUpdate by rememberSaveable { mutableStateOf(false) }
-    val onCheckSystemUpdate = {
+    val onCheckSystemUpdate = updateCheck@{
+        if (!LOTTERYNET_OTA_ENABLED) {
+            Toast.makeText(context, "Actualizacion OTA desactivada", Toast.LENGTH_SHORT).show()
+            return@updateCheck
+        }
         if (!checkingSystemUpdate) {
             checkingSystemUpdate = true
             Toast.makeText(context, "Revisando actualizacion...", Toast.LENGTH_SHORT).show()
@@ -892,6 +1034,7 @@ private fun ShellRoute(
                                     meta = "Principal",
                                     actions = listOf(
                                         ShellMenuAction("Panel master", "Bancas y estado", Icons.Rounded.AdminPanelSettings, onOpenNativeMasterDashboard, active = true),
+                                        ShellMenuAction("Servicios y juegos", "Permisos y catálogo", Icons.Rounded.Extension, onOpenNativeServicesGames, accent = Color(0xFF7C3AED)),
                                         ShellMenuAction("Finanzas", "Caja global", Icons.Rounded.Analytics, onOpenNativeFinance, accent = Color(0xFF2563EB)),
                                         ShellMenuAction("Deportes", "Control separado", Icons.Rounded.SportsSoccer, onOpenNativeSportsbook, accent = Color(0xFF16A34A)),
                                         ShellMenuAction("Crear banca", "Alta y credenciales", Icons.Rounded.ManageAccounts, onOpenNativeMasterCreate),
@@ -940,12 +1083,16 @@ private fun ShellRoute(
                             assignedCashiersCount = assignedCashiersCount,
                             rechargeAccessVisible = rechargeAccessVisible,
                             sportsbookAccessVisible = sportsbookAccessVisible,
+                            servicesAccessVisible = servicesAccessVisible,
+                            videoGamesAccessVisible = videoGamesAccessVisible,
                             onOpenNativeSales = onOpenNativeSales,
                             onOpenTicketSummary = onOpenTicketSummary,
                             onOpenTicketLookup = onOpenTicketLookup,
                             onOpenNativeResults = onOpenNativeResults,
                             onOpenNativeRecharge = onOpenNativeRecharge,
                             onOpenNativeSportsbook = onOpenNativeSportsbook,
+                            onOpenNativeServices = onOpenNativeServices,
+                            onOpenNativeVideoGames = onOpenNativeVideoGames,
                             onOpenNativeFinance = onOpenNativeFinance,
                             onOpenNativeReport = onOpenNativeReport,
                             onOpenNativeUsers = onOpenNativeUsers,
@@ -977,12 +1124,16 @@ private fun ShellDrawerStyleMenu(
     assignedCashiersCount: Int,
     rechargeAccessVisible: Boolean,
     sportsbookAccessVisible: Boolean,
+    servicesAccessVisible: Boolean,
+    videoGamesAccessVisible: Boolean,
     onOpenNativeSales: () -> Unit,
     onOpenTicketSummary: () -> Unit,
     onOpenTicketLookup: (String) -> Unit,
     onOpenNativeResults: () -> Unit,
     onOpenNativeRecharge: () -> Unit,
     onOpenNativeSportsbook: () -> Unit,
+    onOpenNativeServices: () -> Unit,
+    onOpenNativeVideoGames: () -> Unit,
     onOpenNativeFinance: () -> Unit,
     onOpenNativeReport: () -> Unit,
     onOpenNativeUsers: () -> Unit,
@@ -1054,6 +1205,12 @@ private fun ShellDrawerStyleMenu(
                         }
                         if (sportsbookAccessVisible) {
                             add(ShellMenuAction("Deportes", "Apuestas separadas", Icons.Rounded.SportsSoccer, onOpenNativeSportsbook, accent = Color(0xFF16A34A)))
+                        }
+                        if (servicesAccessVisible) {
+                            add(ShellMenuAction("Servicios", "Facturas y operaciones", Icons.Rounded.Extension, onOpenNativeServices, accent = Color(0xFF7C3AED)))
+                        }
+                        if (videoGamesAccessVisible) {
+                            add(ShellMenuAction("Videojuegos", "Catálogo del proveedor", Icons.Rounded.Extension, onOpenNativeVideoGames, accent = Color(0xFFDB2777)))
                         }
                         add(ShellMenuAction("Repetir ticket", "Duplicar ticket anterior", Icons.Rounded.Sell, { onOpenTicketLookup("duplicar") }, accent = Color(0xFFD8B4FE)))
                     },

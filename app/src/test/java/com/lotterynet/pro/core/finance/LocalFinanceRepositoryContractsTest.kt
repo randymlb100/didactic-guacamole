@@ -1,9 +1,11 @@
 package com.lotterynet.pro.core.finance
 
+import com.lotterynet.pro.core.model.ActiveSession
 import com.lotterynet.pro.core.model.TicketRecord
 import com.lotterynet.pro.core.model.UserRole
 import com.lotterynet.pro.core.model.RechargeRecord
 import com.lotterynet.pro.core.model.UserAccount
+import com.lotterynet.pro.core.repository.UsersRepository
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -12,18 +14,18 @@ import org.junit.Test
 class LocalFinanceRepositoryContractsTest {
 
     @Test
-    fun `week preset resolves rolling seven day range`() {
+    fun `week preset resolves operational monday to sunday range`() {
         val range = resolveFinanceRange(
             preset = FinancePeriodPreset.WEEK,
             anchorDayKey = "2026-04-22",
         )
 
-        assertEquals("2026-04-16", range.fromDayKey)
-        assertEquals("2026-04-22", range.toDayKey)
+        assertEquals("2026-04-20", range.fromDayKey)
+        assertEquals("2026-04-26", range.toDayKey)
     }
 
     @Test
-    fun `week preset on sunday still includes previous friday sales`() {
+    fun `week preset on sunday keeps the same operational week`() {
         val range = resolveFinanceRange(
             preset = FinancePeriodPreset.WEEK,
             anchorDayKey = "2026-05-03",
@@ -152,6 +154,14 @@ class LocalFinanceRepositoryContractsTest {
     }
 
     @Test
+    fun `cobro winner projection excludes normal sales and keeps paid winners`() {
+        assertTrue(isFinanceWinnerTicket(TicketRecord(id = "pending", status = "ganador", totalPrize = 80.0)))
+        assertTrue(isFinanceWinnerTicket(TicketRecord(id = "paid", status = "pagado", totalPrize = 80.0)))
+        assertFalse(isFinanceWinnerTicket(TicketRecord(id = "sale", status = "active", totalPrize = 0.0)))
+        assertFalse(isFinanceWinnerTicket(TicketRecord(id = "voided", status = "anulado", totalPrize = 80.0)))
+    }
+
+    @Test
     fun `pending winner is reserved from cashbox before payout`() {
         val summary = FinanceSummary(
             ventas = 1000.0,
@@ -258,6 +268,74 @@ class LocalFinanceRepositoryContractsTest {
         assertEquals(500.0, summary.premiosPagados, 0.0)
         assertEquals(300.0, summary.premiosPendientes, 0.0)
         assertEquals(-760.0, summary.cajaDisponible, 0.0)
+    }
+
+    @Test
+    fun `cashier scope does not inherit legacy admin rows without seller identity`() {
+        val cashier = UserAccount(
+            id = "CAJ-1",
+            user = "cajero01",
+            role = UserRole.CASHIER,
+            displayName = "Caja 01",
+            adminId = "ADM-1",
+            adminUser = "admin01",
+        )
+        val legacyAdminRow = TicketRecord(
+            id = "legacy-admin-row",
+            adminId = "ADM-1",
+            adminUser = "admin01",
+            role = UserRole.ADMIN,
+        )
+
+        assertFalse(
+            matchesFinanceActorTicket(
+                legacyAdminRow,
+                cashier.id,
+                cashier.displayName,
+                cashier,
+            ),
+        )
+    }
+
+    @Test
+    fun `cashier report identity resolves technical session id through local account aliases`() {
+        val cashier = UserAccount(
+            id = "CAJ-21",
+            user = "bancay21",
+            role = UserRole.CASHIER,
+            displayName = "Banca 21",
+            authUserId = "auth-user-21",
+            adminId = "ADM-1",
+            adminUser = "admin01",
+        )
+        val identity = resolveFinanceSessionActorIdentity(
+            session = ActiveSession(
+                role = UserRole.CASHIER,
+                userId = "technical-session-id",
+                username = "bancay21",
+                adminId = "ADM-1",
+                adminUser = "admin01",
+            ),
+            usersRepository = object : UsersRepository {
+                override fun getAdmins(): List<UserAccount> = emptyList()
+                override fun getCashiers(): List<UserAccount> = listOf(cashier)
+                override fun findByIdOrUser(idOrUser: String): UserAccount? {
+                    return listOf(cashier).firstOrNull { account ->
+                        account.id.equals(idOrUser, ignoreCase = true) ||
+                            account.user.equals(idOrUser, ignoreCase = true) ||
+                            account.displayName?.equals(idOrUser, ignoreCase = true) == true ||
+                            account.authUserId?.equals(idOrUser, ignoreCase = true) == true
+                    }
+                }
+                override fun saveUsers(admins: List<UserAccount>, cashiers: List<UserAccount>) = Unit
+            },
+        )
+        val saleByUser = TicketRecord(id = "sale-user", sellerUser = "bancay21", role = UserRole.CASHIER)
+        val saleById = TicketRecord(id = "sale-id", sellerId = "CAJ-21", role = UserRole.CASHIER)
+
+        assertEquals("CAJ-21", identity.actorKey)
+        assertTrue(matchesFinanceActorTicket(saleByUser, identity.actorKey, identity.actorDisplay, identity.actorAccount))
+        assertTrue(matchesFinanceActorTicket(saleById, identity.actorKey, identity.actorDisplay, identity.actorAccount))
     }
 
     @Test

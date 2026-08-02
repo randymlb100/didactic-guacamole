@@ -13,8 +13,8 @@ data class LotterynetRealtimeSubscription(
     }
 
     companion object {
-        fun usersGlobal(): LotterynetRealtimeSubscription = LotterynetRealtimeSubscription(
-            channelName = "users-global",
+        fun usersState(): LotterynetRealtimeSubscription = LotterynetRealtimeSubscription(
+            channelName = "users-state",
             schema = "public",
             table = "lotterynet_users_state",
             filter = "scope=eq.global",
@@ -53,5 +53,9 @@ data class LotterynetRealtimeSubscription(
         )
 
         fun resultsSignal(dateKey: String): LotterynetRealtimeSubscription = resultsDraws(dateKey)
+
+        fun ticketOwnerBroadcastTopic(ownerKey: String): String = "ln:tickets:owner:${ownerKey.lowercase()}"
+
+        fun resultsBroadcastTopic(dateKey: String): String = "ln:results:${dateKey.lowercase()}"
     }
 }

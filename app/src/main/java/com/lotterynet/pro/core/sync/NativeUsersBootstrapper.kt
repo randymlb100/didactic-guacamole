@@ -1,5 +1,7 @@
 package com.lotterynet.pro.core.sync
 
+import com.lotterynet.pro.core.remote.SupabaseEdgeException
+import com.lotterynet.pro.core.remote.presentSupabaseTransportMessage
 import com.lotterynet.pro.core.storage.LocalUsersRepository
 import com.lotterynet.pro.core.users.clearUsersPayloadMemoryCache
 import com.lotterynet.pro.core.users.SupabaseUsersRemoteStore
@@ -48,7 +50,7 @@ class NativeUsersBootstrapper(
             BootstrapResult(
                 ok = false,
                 source = "remote",
-                message = error.message ?: "No se pudo sincronizar usuarios.",
+                message = presentBootstrapError(error),
             )
         }
     }
@@ -70,3 +72,8 @@ data class BootstrapResult(
     val cashierCount: Int = 0,
     val message: String? = null,
 )
+
+internal fun presentBootstrapError(error: Throwable): String {
+    return (error as? SupabaseEdgeException)?.userMessage
+        ?: presentSupabaseTransportMessage(error)
+}

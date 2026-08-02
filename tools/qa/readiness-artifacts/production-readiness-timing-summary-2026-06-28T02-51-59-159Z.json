@@ -1,0 +1,386 @@
+{
+  "ok": true,
+  "warningCount": 0,
+  "runId": "readiness1782615119158",
+  "checkedAt": "2026-06-28T02:52:10.190Z",
+  "supabaseUrl": "https://unhoulkujbtsypccpirc.supabase.co",
+  "loops": 1,
+  "writeProbe": false,
+  "appProbe": false,
+  "todayDayKey": "27-06-2026",
+  "qaDayKey": "22-04-2026",
+  "timings": {
+    "users-state edge fetch": {
+      "calls": 1,
+      "minMs": 661,
+      "p50Ms": 661,
+      "p95Ms": 661,
+      "maxMs": 661
+    },
+    "login podero02": {
+      "calls": 1,
+      "minMs": 1577,
+      "p50Ms": 1577,
+      "p95Ms": 1577,
+      "maxMs": 1577
+    },
+    "login bancae01": {
+      "calls": 1,
+      "minMs": 1130,
+      "p50Ms": 1130,
+      "p95Ms": 1130,
+      "maxMs": 1130
+    },
+    "login bancae02": {
+      "calls": 1,
+      "minMs": 1557,
+      "p50Ms": 1557,
+      "p95Ms": 1557,
+      "maxMs": 1557
+    },
+    "users-state anonymous upsert blocked": {
+      "calls": 1,
+      "minMs": 285,
+      "p50Ms": 285,
+      "p95Ms": 285,
+      "maxMs": 285
+    },
+    "users-state edge fetch loop": {
+      "calls": 1,
+      "minMs": 437,
+      "p50Ms": 437,
+      "p95Ms": 437,
+      "maxMs": 437
+    },
+    "master system_modes fetch loop": {
+      "calls": 1,
+      "minMs": 334,
+      "p50Ms": 334,
+      "p95Ms": 334,
+      "maxMs": 334
+    },
+    "master cashier_limits fetch loop": {
+      "calls": 1,
+      "minMs": 360,
+      "p50Ms": 360,
+      "p95Ms": 360,
+      "maxMs": 360
+    },
+    "master disabled lotteries fetch loop": {
+      "calls": 1,
+      "minMs": 356,
+      "p50Ms": 356,
+      "p95Ms": 356,
+      "maxMs": 356
+    },
+    "results status edge loop": {
+      "calls": 1,
+      "minMs": 437,
+      "p50Ms": 437,
+      "p95Ms": 437,
+      "maxMs": 437
+    },
+    "results full edge loop": {
+      "calls": 1,
+      "minMs": 333,
+      "p50Ms": 333,
+      "p95Ms": 333,
+      "maxMs": 333
+    },
+    "ticket updated-at anonymous loop": {
+      "calls": 1,
+      "minMs": 279,
+      "p50Ms": 279,
+      "p95Ms": 279,
+      "maxMs": 279
+    },
+    "ticket delta admin loop": {
+      "calls": 1,
+      "minMs": 764,
+      "p50Ms": 764,
+      "p95Ms": 764,
+      "maxMs": 764
+    },
+    "ticket list admin loop": {
+      "calls": 1,
+      "minMs": 195,
+      "p50Ms": 195,
+      "p95Ms": 195,
+      "maxMs": 195
+    },
+    "ticket summary admin loop": {
+      "calls": 1,
+      "minMs": 520,
+      "p50Ms": 520,
+      "p95Ms": 520,
+      "maxMs": 520
+    },
+    "admin report loop": {
+      "calls": 1,
+      "minMs": 474,
+      "p50Ms": 474,
+      "p95Ms": 474,
+      "maxMs": 474
+    },
+    "cashier report loop": {
+      "calls": 1,
+      "minMs": 692,
+      "p50Ms": 692,
+      "p95Ms": 692,
+      "maxMs": 692
+    },
+    "ticket delta cashier2 loop": {
+      "calls": 1,
+      "minMs": 619,
+      "p50Ms": 619,
+      "p95Ms": 619,
+      "maxMs": 619
+    }
+  },
+  "checks": [
+    {
+      "ok": true,
+      "label": "archivo privado de credenciales disponible",
+      "data": {
+        "path": "C:/Users/Randy Cordero/Documents/LotteryNet-Secrets/[redacted]"
+      }
+    },
+    {
+      "ok": true,
+      "label": "credenciales de prueba legibles",
+      "data": {
+        "count": 36
+      }
+    },
+    {
+      "ok": true,
+      "label": "usuarios base admin/cajero existen en servidor",
+      "data": {
+        "adminId": "ADM-C5FFB0",
+        "adminUser": "podero02",
+        "cashierId": "CAJ-E4A14B",
+        "cashierUser": "bancae01",
+        "cashier2": true,
+        "supervisor": "sup886344"
+      }
+    },
+    {
+      "ok": true,
+      "label": "credenciales admin/cajero disponibles",
+      "data": {
+        "admin": true,
+        "cashier1": true,
+        "cashier2": true,
+        "supervisor": false
+      }
+    },
+    {
+      "ok": true,
+      "label": "login real admin/cajero OK",
+      "data": {
+        "adminStatus": 200,
+        "cashierStatus": 200,
+        "cashier2Ok": true,
+        "supervisorOk": null
+      }
+    },
+    {
+      "ok": true,
+      "label": "IDs y aliases base son resolubles",
+      "data": {
+        "adminKeys": [
+          "ADM-C5FFB0",
+          "podero02",
+          "podero02"
+        ],
+        "cashierKeys": [
+          "CAJ-E4A14B",
+          "bancae01",
+          "bancae01",
+          "ADM-C5FFB0",
+          "podero02"
+        ]
+      }
+    },
+    {
+      "ok": true,
+      "label": "probe REST directo omitido para lotterynet_users_state",
+      "data": {
+        "env": "LOTTERYNET_SECURITY_PROBES=1"
+      }
+    },
+    {
+      "ok": true,
+      "label": "probe REST directo omitido para lotterynet_kv",
+      "data": {
+        "env": "LOTTERYNET_SECURITY_PROBES=1"
+      }
+    },
+    {
+      "ok": true,
+      "label": "probe REST directo omitido para tickets",
+      "data": {
+        "env": "LOTTERYNET_SECURITY_PROBES=1"
+      }
+    },
+    {
+      "ok": true,
+      "label": "probe REST directo omitido para result_draws",
+      "data": {
+        "env": "LOTTERYNET_SECURITY_PROBES=1"
+      }
+    },
+    {
+      "ok": true,
+      "label": "users-state upsert anonimo bloqueado",
+      "data": {
+        "status": 401,
+        "message": "Sesion invalida."
+      }
+    },
+    {
+      "ok": true,
+      "label": "prueba de escritura omitida por configuracion",
+      "data": {
+        "env": "LOTTERYNET_READINESS_WRITE=1"
+      }
+    },
+    {
+      "ok": true,
+      "label": "prueba ADB omitida por configuracion",
+      "data": {
+        "env": "LOTTERYNET_READINESS_APP=0"
+      }
+    }
+  ],
+  "warnings": [],
+  "httpEvents": [
+    {
+      "label": "users-state edge fetch",
+      "status": 200,
+      "ok": true,
+      "elapsedMs": 661,
+      "message": ""
+    },
+    {
+      "label": "login podero02",
+      "status": 200,
+      "ok": true,
+      "elapsedMs": 1577,
+      "message": ""
+    },
+    {
+      "label": "login bancae01",
+      "status": 200,
+      "ok": true,
+      "elapsedMs": 1130,
+      "message": ""
+    },
+    {
+      "label": "login bancae02",
+      "status": 200,
+      "ok": true,
+      "elapsedMs": 1557,
+      "message": ""
+    },
+    {
+      "label": "users-state anonymous upsert blocked",
+      "status": 401,
+      "ok": false,
+      "elapsedMs": 285,
+      "message": "Sesion invalida."
+    },
+    {
+      "label": "users-state edge fetch loop",
+      "status": 200,
+      "ok": true,
+      "elapsedMs": 437,
+      "message": ""
+    },
+    {
+      "label": "master system_modes fetch loop",
+      "status": 200,
+      "ok": true,
+      "elapsedMs": 334,
+      "message": ""
+    },
+    {
+      "label": "master cashier_limits fetch loop",
+      "status": 200,
+      "ok": true,
+      "elapsedMs": 360,
+      "message": ""
+    },
+    {
+      "label": "master disabled lotteries fetch loop",
+      "status": 200,
+      "ok": true,
+      "elapsedMs": 356,
+      "message": ""
+    },
+    {
+      "label": "results status edge loop",
+      "status": 200,
+      "ok": true,
+      "elapsedMs": 437,
+      "message": ""
+    },
+    {
+      "label": "results full edge loop",
+      "status": 200,
+      "ok": true,
+      "elapsedMs": 333,
+      "message": ""
+    },
+    {
+      "label": "ticket updated-at anonymous loop",
+      "status": 200,
+      "ok": true,
+      "elapsedMs": 279,
+      "message": ""
+    },
+    {
+      "label": "ticket delta admin loop",
+      "status": 200,
+      "ok": true,
+      "elapsedMs": 764,
+      "message": ""
+    },
+    {
+      "label": "ticket list admin loop",
+      "status": 503,
+      "ok": false,
+      "elapsedMs": 195,
+      "message": "Historial remoto completo pausado temporalmente. Se conserva el cache local."
+    },
+    {
+      "label": "ticket summary admin loop",
+      "status": 200,
+      "ok": true,
+      "elapsedMs": 520,
+      "message": ""
+    },
+    {
+      "label": "admin report loop",
+      "status": 200,
+      "ok": true,
+      "elapsedMs": 474,
+      "message": ""
+    },
+    {
+      "label": "cashier report loop",
+      "status": 200,
+      "ok": true,
+      "elapsedMs": 692,
+      "message": ""
+    },
+    {
+      "label": "ticket delta cashier2 loop",
+      "status": 200,
+      "ok": true,
+      "elapsedMs": 619,
+      "message": ""
+    }
+  ],
+  "logFile": "/C:/Users/Randy Cordero/Desktop/lotterynet_android/tools/qa/readiness-artifacts/production-readiness-timing-2026-06-28T02-51-59-159Z.log"
+}

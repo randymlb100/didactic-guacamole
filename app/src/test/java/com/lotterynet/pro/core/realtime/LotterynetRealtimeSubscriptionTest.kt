@@ -8,13 +8,15 @@ class LotterynetRealtimeSubscriptionTest {
     @Test
     fun `realtime module exposes required logical channels`() {
         val names = listOf(
-            LotterynetRealtimeSubscription.usersGlobal().channelName,
+            LotterynetRealtimeSubscription.usersState().channelName,
             LotterynetRealtimeSubscription.masterKey("owner").channelName,
             LotterynetRealtimeSubscription.ticketOwner("admin-1").channelName,
             LotterynetRealtimeSubscription.resultsDraws("13-05-2026").channelName,
         )
-        assertTrue(names.contains("users-global"))
+        assertTrue(names.contains("users-state"))
         assertTrue(names.contains("tickets-admin-1"))
+        assertEquals("lotterynet_users_state", LotterynetRealtimeSubscription.usersState().table)
+        assertEquals("scope=eq.global", LotterynetRealtimeSubscription.usersState().filter)
     }
 
     @Test

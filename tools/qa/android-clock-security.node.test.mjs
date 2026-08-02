@@ -95,12 +95,9 @@ function dominicanDay() {
 }
 
 async function fetchUsersPayload() {
-  const result = await requestJson(
-    "GET",
-    `${SUPABASE_URL}/rest/v1/lotterynet_users_state?scope=eq.global&select=payload`,
-  );
+  const result = await edge("lotterynet-users-state", { action: "fetch" });
   assert.equal(result.ok, true, `No se pudo leer usuarios: ${result.text}`);
-  return result.json?.[0]?.payload ?? {};
+  return result.json?.payload ?? {};
 }
 
 async function login(username, password) {

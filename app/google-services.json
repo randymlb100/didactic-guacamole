@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "933320186555",
+    "project_id": "lotterynetpro",
+    "storage_bucket": "lotterynetpro.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:933320186555:android:be2db6f8b4617a0c6b679e",
+        "android_client_info": {
+          "package_name": "com.lotterynet.pro"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD1gwxNCfrPWOvR8hrA0WhfdH-ou3UwnL8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

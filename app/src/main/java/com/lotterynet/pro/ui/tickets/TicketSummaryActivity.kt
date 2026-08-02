@@ -1,11 +1,14 @@
 package com.lotterynet.pro.ui.tickets
 
+import android.content.Context
 import android.content.Intent
+import android.content.SharedPreferences
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.widget.Toast
 import androidx.activity.compose.setContent
+import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -24,12 +27,23 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ReceiptLong
 import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.material.icons.rounded.Tune
+import androidx.compose.material.icons.rounded.Event
+import androidx.compose.material.icons.rounded.Search
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DatePicker
+import androidx.compose.material3.DatePickerDialog
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -46,11 +60,14 @@ import com.lotterynet.pro.core.model.ActiveSession
 import com.lotterynet.pro.core.model.TicketRecord
 import com.lotterynet.pro.core.model.UserAccount
 import com.lotterynet.pro.core.model.dominicanDayKey
+import com.lotterynet.pro.core.auth.SupabaseSessionTokenProvider
 import com.lotterynet.pro.core.realtime.LotterynetRealtimeClient
-import com.lotterynet.pro.core.realtime.LotterynetRealtimeSubscription
+import com.lotterynet.pro.core.realtime.LotterynetRealtimeOrchestrator
 import com.lotterynet.pro.core.storage.LocalSalesRepository
+import com.lotterynet.pro.core.storage.LocalAdminLotteryConfigRepository
 import com.lotterynet.pro.core.storage.LocalSessionRepository
 import com.lotterynet.pro.core.storage.LocalUsersRepository
+import com.lotterynet.pro.core.storage.SalesStorageKeys
 import com.lotterynet.pro.core.catalog.StaticLotteryCatalogRepository
 import com.lotterynet.pro.core.sync.NativeOperationalSyncCoordinator
 import com.lotterynet.pro.core.sync.NativeTicketCloudSyncCoordinator
@@ -60,8 +77,12 @@ import com.lotterynet.pro.core.sync.ForegroundCatchUpInput
 import com.lotterynet.pro.core.sync.ForegroundCatchUpPolicy
 import com.lotterynet.pro.core.sync.matchesNativeTicketSyncOwner
 import com.lotterynet.pro.core.sync.OperationalSyncThrottle
+import com.lotterynet.pro.core.sync.TicketRefreshGovernor
+import com.lotterynet.pro.core.sync.ticketRefreshGovernorKey
 import com.lotterynet.pro.core.sync.resolveOperationalOwnerKey
 import com.lotterynet.pro.core.sync.resolveOperationalOwnerKeys
+import com.lotterynet.pro.core.sync.resolveOperationalRealtimeOwnerKeys
+import com.lotterynet.pro.core.sync.invalidateTicketRealtimeCaches
 import com.lotterynet.pro.ui.common.ActionTone
 import com.lotterynet.pro.ui.common.AppTopBar
 import com.lotterynet.pro.ui.common.BottomNavBar
@@ -71,9 +92,10 @@ import com.lotterynet.pro.ui.common.CompactPanel
 import com.lotterynet.pro.ui.common.CompactStatusBadge
 import com.lotterynet.pro.ui.common.CompactTicketSaveSyncStatus
 import com.lotterynet.pro.ui.common.NativeBottomTab
+import com.lotterynet.pro.ui.common.OperationalModalSheet
 import com.lotterynet.pro.ui.common.ScreenChromeSpec
-import com.lotterynet.pro.ui.common.SearchBox
 import com.lotterynet.pro.ui.common.TicketSaveSyncStage
+import com.lotterynet.pro.ui.common.QuickFilterChip
 import com.lotterynet.pro.ui.common.openBottomTab
 import com.lotterynet.pro.ui.common.rememberLotteryNetVisualSpec
 import com.lotterynet.pro.ui.common.resolveTicketSaveSyncUiContract
@@ -177,6 +199,65 @@ internal fun resolveTicketSummaryRefreshUi(
     )
 }
 
+internal fun shouldShowTicketSummarySyncBanner(
+    pendingSyncCount: Int,
+    isRefreshing: Boolean,
+): Boolean {
+    return isRefreshing && pendingSyncCount > 0
+}
+
+internal fun shouldUseFullTicketHydrationForAutomaticCatchUp(
+    hasTodayTickets: Boolean,
+    lastRemoteUpdatedAt: String?,
+    lastDeltaCursor: String?,
+): Boolean {
+    return !hasTodayTickets && lastRemoteUpdatedAt.isNullOrBlank() && lastDeltaCursor.isNullOrBlank()
+}
+
+internal fun shouldHydrateVisibleTicketsAfterOperationalSync(
+    showRefreshing: Boolean,
+    shouldForce: Boolean,
+): Boolean {
+    return showRefreshing || shouldForce
+}
+
+internal fun shouldFlushPendingTicketsBeforeHydration(
+    allowPendingFlush: Boolean,
+    pendingSyncCount: Int,
+): Boolean {
+    return allowPendingFlush && pendingSyncCount > 0
+}
+
+internal fun shouldContinuePendingTicketFlush(
+    passIndex: Int,
+    pendingSyncCount: Int,
+    previousPendingSyncCount: Int?,
+    maxPasses: Int,
+): Boolean {
+    if (pendingSyncCount <= 0) return false
+    if (passIndex >= maxPasses) return false
+    return previousPendingSyncCount == null || pendingSyncCount < previousPendingSyncCount
+}
+
+internal fun shouldSkipTicketSummaryRemoteRefresh(
+    governor: TicketRefreshGovernor,
+    ownerKey: String,
+    requestType: String,
+    authScope: String,
+    force: Boolean,
+    nowEpochMs: Long = System.currentTimeMillis(),
+): Boolean {
+    if (force) return false
+    return governor.shouldReuse(
+        ticketRefreshGovernorKey(
+            ownerKey = ownerKey,
+            requestType = requestType,
+            authScope = authScope,
+        ),
+        nowMs = nowEpochMs,
+    )
+}
+
 internal fun countPendingTicketSyncForSession(
     pendingTickets: List<JSONObject>,
     session: ActiveSession,
@@ -186,6 +267,18 @@ internal fun countPendingTicketSyncForSession(
     return pendingTickets.count { json ->
         ownerKeys.any { ownerKey -> matchesNativeTicketSyncOwner(json, ownerKey) }
     }
+}
+
+internal fun resolveTicketSummarySyncMessage(
+    pendingSyncCount: Int,
+    currentMessage: String,
+): String {
+    if (pendingSyncCount > 0) return currentMessage
+    val normalized = currentMessage.lowercase(Locale.getDefault())
+    val wasPendingMessage = normalized.contains("pendiente de sync") ||
+        normalized.contains("esperando servidor") ||
+        normalized.contains("ticket guardado en el celular")
+    return if (wasPendingMessage) "Tickets sincronizados con servidor." else currentMessage
 }
 
 internal fun resolveTicketSummaryForegroundCatchUpInput(
@@ -216,19 +309,38 @@ internal fun resolveTicketSummaryForegroundCatchUpInput(
 }
 
 class TicketSummaryActivity : AppCompatActivity() {
+    private val ticketSummaryViewModel by viewModels<TicketSummaryViewModel>()
     private val syncHandler = Handler(Looper.getMainLooper())
     private val realtimeClient = LotterynetRealtimeClient()
+    private val realtimeOrchestrator = LotterynetRealtimeOrchestrator(
+        onTicketOwnerChanged = { ownerKey ->
+            invalidateTicketRealtimeCaches(ownerKey)
+            runForegroundCatchUp(force = false, freshRemoteStamp = true)
+        },
+    )
     private val realtimeSubscriptions = mutableListOf<LotterynetRealtimeClient.SubscriptionHandle>()
     private lateinit var session: ActiveSession
     private lateinit var salesRepository: LocalSalesRepository
     private lateinit var usersRepository: LocalUsersRepository
     private val catalogRepository = StaticLotteryCatalogRepository()
-    private val remoteStampStore = NativeTicketRemoteStore()
+    private lateinit var remoteStampStore: NativeTicketRemoteStore
     private val foregroundCatchUpPolicy = ForegroundCatchUpPolicy(
         OperationalSyncThrottle(TICKET_SUMMARY_FOREGROUND_CATCH_UP_THROTTLE_MS),
     )
     private lateinit var operationalSyncCoordinator: NativeOperationalSyncCoordinator
     private lateinit var ticketSyncQueueRepository: NativeTicketSyncQueueRepository
+    private lateinit var salesPrefs: SharedPreferences
+    private val summaryRefreshGovernor = TicketRefreshGovernor(requestCooldownMs = TICKET_SUMMARY_REMOTE_REFRESH_DEDUP_MS)
+    private val ticketStorageListener = SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
+        if (key == null || !isTicketStorageKey(key)) return@OnSharedPreferenceChangeListener
+        syncHandler.removeCallbacks(localTicketStorageRefreshRunnable)
+        syncHandler.postDelayed(localTicketStorageRefreshRunnable, TICKET_SUMMARY_LOCAL_STORAGE_REFRESH_DELAY_MS)
+    }
+    private val localTicketStorageRefreshRunnable = Runnable {
+        if (::salesRepository.isInitialized && ::usersRepository.isInitialized) {
+            refreshTicketData(todayFirst = false)
+        }
+    }
 
     private var ticketsState by mutableStateOf<List<TicketRecord>>(emptyList())
     private var cashiersState by mutableStateOf<List<UserAccount>>(emptyList())
@@ -236,12 +348,23 @@ class TicketSummaryActivity : AppCompatActivity() {
     private var isRefreshingTicketsState by mutableStateOf(false)
     private var pendingSyncCountState by mutableStateOf(0)
     private var lastRemoteUpdatedAt: String? = null
+    private var lastTicketDeltaCursor: String? = null
+    private var currentSummaryPeriodId: String = TicketSummaryPeriod.TODAY.id
+    private var currentSummaryMonthValue: String = todayMonthValue()
     private val summarySyncInFlight = AtomicBoolean(false)
     private val resumeSyncRunnable = Runnable { runForegroundCatchUp(force = false) }
     private val syncPollRunnable = object : Runnable {
         override fun run() {
-            syncOperationalTickets(force = shouldForceTicketSummaryLivePoll())
-            syncHandler.postDelayed(this, resolveTicketSummaryPollIntervalMs(realtimeClient.isConfigured()))
+            if (realtimeClient.shouldUsePollingFallback()) {
+                syncOperationalTickets(force = shouldForceTicketSummaryLivePoll())
+            }
+            syncHandler.postDelayed(
+                this,
+                resolveTicketSummaryPollIntervalMs(
+                    realtimeEnabled = realtimeClient.isConfigured(),
+                    realtimeConnected = realtimeSubscriptions.isNotEmpty(),
+                ),
+            )
         }
     }
 
@@ -253,32 +376,56 @@ class TicketSummaryActivity : AppCompatActivity() {
         }
         session = checkNotNull(activeSession)
         salesRepository = LocalSalesRepository(this)
+        salesPrefs = getSharedPreferences(SalesStorageKeys.PREFS_NAME, Context.MODE_PRIVATE)
+        salesPrefs.registerOnSharedPreferenceChangeListener(ticketStorageListener)
         usersRepository = LocalUsersRepository(this)
         ticketSyncQueueRepository = NativeTicketSyncQueueRepository(this)
+        val sessionTokenProvider = SupabaseSessionTokenProvider(LocalSessionRepository(this))
+        remoteStampStore = NativeTicketRemoteStore(
+            bearerTokenProvider = { sessionTokenProvider.freshAccessToken() },
+            bearerTokenRefresher = { sessionTokenProvider.forceFreshAccessToken() },
+        )
         operationalSyncCoordinator = NativeOperationalSyncCoordinator(
             ticketGateway = NativeTicketCloudSyncCoordinator(
                 salesRepository = salesRepository,
                 queueRepository = ticketSyncQueueRepository,
+                remoteStore = remoteStampStore,
             ),
+            remoteStampStore = remoteStampStore,
         )
         usersRepository.touchSession(session)
         refreshTicketData(todayFirst = true)
+        val ticketCatalogLotteries = catalogRepository.getAllLotteries().filter { lottery ->
+            val config = LocalAdminLotteryConfigRepository(this).getSystemModeConfig()
+            config.pickModeEnabled || (
+                !lottery.playCapabilities.supportsStraight &&
+                    !lottery.playCapabilities.supportsBox &&
+                    !lottery.type.contains("pick", ignoreCase = true)
+            )
+        }
 
         setContent {
+            val screenState by ticketSummaryViewModel.state.collectAsState()
             LotteryNetComposeTheme {
                 TicketSummaryRoute(
                     session = session,
-                    tickets = ticketsState,
-                    cashiers = cashiersState,
-                    catalogLotteries = catalogRepository.getAllLotteries(),
+                    tickets = screenState.tickets,
+                    cashiers = screenState.cashiers,
+                    catalogLotteries = ticketCatalogLotteries,
                     initialFilters = resolveTicketSummaryInitialFilters(
                         ownerScopeRaw = intent?.getStringExtra(EXTRA_OWNER_SCOPE),
                         cashierKeyRaw = intent?.getStringExtra(EXTRA_CASHIER_KEY),
                     ),
-                    syncMessage = syncMessageState,
-                    isRefreshing = isRefreshingTicketsState,
-                    pendingSyncCount = pendingSyncCountState,
+                    syncMessage = screenState.syncMessage,
+                    isRefreshing = screenState.isRefreshing,
+                    pendingSyncCount = screenState.pendingSyncCount,
                     onRefresh = { syncOperationalTickets(force = true, showRefreshing = true) },
+                    onPeriodLoadRequested = { periodId, monthValue ->
+                        loadVisibleTicketPeriod(periodId, monthValue)
+                    },
+                    onStatusBucketRefresh = {
+                        syncOperationalTickets(force = true, showRefreshing = false)
+                    },
                     onOpenTicket = { ticket, action ->
                         val resolution = resolveTicketOpenRequest(
                             requestedTicket = ticket,
@@ -309,7 +456,15 @@ class TicketSummaryActivity : AppCompatActivity() {
             TICKET_SUMMARY_STARTUP_SYNC_DELAY_MS,
         )
         subscribeRealtime(reset = false)
-        syncHandler.postDelayed(syncPollRunnable, resolveTicketSummaryPollIntervalMs(realtimeClient.isConfigured()))
+        if (realtimeClient.isConfigured() || shouldStartTicketSummaryFallbackPoll(realtimeClient.isConfigured())) {
+            syncHandler.postDelayed(
+                syncPollRunnable,
+                resolveTicketSummaryPollIntervalMs(
+                    realtimeEnabled = realtimeClient.isConfigured(),
+                    realtimeConnected = realtimeSubscriptions.isNotEmpty(),
+                ),
+            )
+        }
     }
 
     companion object {
@@ -320,7 +475,7 @@ class TicketSummaryActivity : AppCompatActivity() {
     override fun onResume() {
         super.onResume()
         if (::salesRepository.isInitialized) {
-            refreshTicketData()
+            refreshTicketData(todayFirst = false)
             syncHandler.removeCallbacks(resumeSyncRunnable)
             syncHandler.postDelayed(resumeSyncRunnable, TICKET_SUMMARY_RESUME_SYNC_DELAY_MS)
         }
@@ -329,6 +484,10 @@ class TicketSummaryActivity : AppCompatActivity() {
     override fun onDestroy() {
         syncHandler.removeCallbacks(resumeSyncRunnable)
         syncHandler.removeCallbacks(syncPollRunnable)
+        syncHandler.removeCallbacks(localTicketStorageRefreshRunnable)
+        if (::salesPrefs.isInitialized) {
+            salesPrefs.unregisterOnSharedPreferenceChangeListener(ticketStorageListener)
+        }
         realtimeSubscriptions.forEach { it.close() }
         realtimeSubscriptions.clear()
         realtimeClient.shutdown()
@@ -339,20 +498,23 @@ class TicketSummaryActivity : AppCompatActivity() {
         ticketsState = if (todayFirst) {
             salesRepository.getTicketsForDay(resolveTicketSummaryLocalLoadPlan().firstFrameDayKey)
         } else {
-            salesRepository.getAllTickets()
+            loadTicketsForSummaryPeriod(currentSummaryPeriodId, currentSummaryMonthValue)
         }
         cashiersState = usersRepository.getCashiers()
-        pendingSyncCountState = if (::ticketSyncQueueRepository.isInitialized) {
-            countPendingTicketSyncForSession(ticketSyncQueueRepository.peekAll(), session)
-        } else {
-            0
-        }
+        pendingSyncCountState = currentPendingTicketSyncCount()
+        syncMessageState = resolveTicketSummarySyncMessage(pendingSyncCountState, syncMessageState)
+        ticketSummaryViewModel.showLocal(
+            tickets = ticketsState,
+            cashiers = cashiersState,
+            pendingSyncCount = pendingSyncCountState,
+            message = syncMessageState,
+        )
     }
 
     private fun refreshFullTicketDataInBackground() {
         if (!::salesRepository.isInitialized || !::usersRepository.isInitialized) return
         thread(name = "ticket-summary-local-full-refresh") {
-            val nextTickets = salesRepository.getAllTickets()
+            val nextTickets = loadTicketsForSummaryPeriod(currentSummaryPeriodId, currentSummaryMonthValue)
             val nextCashiers = usersRepository.getCashiers()
             val nextPendingCount = if (::ticketSyncQueueRepository.isInitialized) {
                 countPendingTicketSyncForSession(ticketSyncQueueRepository.peekAll(), session)
@@ -363,6 +525,13 @@ class TicketSummaryActivity : AppCompatActivity() {
                 ticketsState = nextTickets
                 cashiersState = nextCashiers
                 pendingSyncCountState = nextPendingCount
+                syncMessageState = resolveTicketSummarySyncMessage(nextPendingCount, syncMessageState)
+                ticketSummaryViewModel.showLocal(
+                    tickets = nextTickets,
+                    cashiers = nextCashiers,
+                    pendingSyncCount = nextPendingCount,
+                    message = syncMessageState,
+                )
             }
         }
     }
@@ -370,28 +539,62 @@ class TicketSummaryActivity : AppCompatActivity() {
     private fun syncOperationalTickets(
         force: Boolean,
         showRefreshing: Boolean = false,
-        allowPendingFlush: Boolean = force || showRefreshing,
+        allowPendingFlush: Boolean = true,
     ) {
         if (!::operationalSyncCoordinator.isInitialized) return
-        refreshTicketData()
-        val shouldForce = force || (allowPendingFlush && pendingSyncCountState > 0)
+        refreshTicketData(todayFirst = false)
+        val freshPendingSyncCount = currentPendingTicketSyncCount()
+        pendingSyncCountState = freshPendingSyncCount
+        val shouldFlushPending = shouldFlushPendingTicketsBeforeHydration(
+            allowPendingFlush = allowPendingFlush,
+            pendingSyncCount = freshPendingSyncCount,
+        )
+        val shouldForce = force || shouldFlushPending
         if (!summarySyncInFlight.compareAndSet(false, true)) return
         if (showRefreshing) {
             syncMessageState = "Refrescando servidor..."
             isRefreshingTicketsState = true
+            ticketSummaryViewModel.showCatchingUp(syncMessageState)
         }
         thread(name = "ticket-summary-sync") {
             var nextMessage: String? = null
             var shouldApplyMessage = false
+            var refreshedTickets: List<TicketRecord>? = null
             try {
                 runCatching {
-                    operationalSyncCoordinator.syncTicketsForSession(
-                        session = session,
-                        lastRemoteUpdatedAt = lastRemoteUpdatedAt,
-                        force = shouldForce,
-                    )
+                    if (shouldFlushPending) {
+                        flushPendingTicketsForSession(session)
+                    } else if (!shouldForce && !showRefreshing) {
+                        if (shouldUseFullTicketHydrationForAutomaticCatchUp(
+                                hasTodayTickets = salesRepository.getTicketsForDay(dominicanDayKey(System.currentTimeMillis())).isNotEmpty(),
+                                lastRemoteUpdatedAt = lastRemoteUpdatedAt,
+                                lastDeltaCursor = lastTicketDeltaCursor,
+                            )
+                        ) {
+                            operationalSyncCoordinator.syncTicketsForSession(
+                                session = session,
+                                lastRemoteUpdatedAt = lastRemoteUpdatedAt,
+                                force = true,
+                            )
+                        } else {
+                            fetchTicketDeltaFast()
+                        }
+                    } else {
+                        operationalSyncCoordinator.syncTicketsForSession(
+                            session = session,
+                            lastRemoteUpdatedAt = lastRemoteUpdatedAt,
+                            force = shouldForce,
+                        )
+                    }
                 }.onSuccess { state ->
                     lastRemoteUpdatedAt = state.remoteUpdatedAt ?: lastRemoteUpdatedAt
+                    val shouldHydrateVisibleTickets = shouldHydrateVisibleTicketsAfterOperationalSync(
+                        showRefreshing = showRefreshing,
+                        shouldForce = shouldForce,
+                    )
+                    if (state.ok && shouldHydrateVisibleTickets) {
+                        refreshedTickets = runCatching { hydrateVisibleTicketsForSession() }.getOrNull()
+                    }
                     if (showRefreshing || state.status != com.lotterynet.pro.core.sync.NativeOperationalSyncStatus.UP_TO_DATE) {
                         nextMessage = state.message
                         shouldApplyMessage = true
@@ -402,29 +605,194 @@ class TicketSummaryActivity : AppCompatActivity() {
                 }
             } finally {
                 runOnUiThread {
-                    refreshTicketData()
+                    val nextTickets = refreshedTickets ?: loadTicketsForSummaryPeriod(
+                        currentSummaryPeriodId,
+                        currentSummaryMonthValue,
+                    )
+                    ticketsState = nextTickets
+                    cashiersState = usersRepository.getCashiers()
+                    pendingSyncCountState = currentPendingTicketSyncCount()
+                    syncMessageState = resolveTicketSummarySyncMessage(pendingSyncCountState, syncMessageState)
                     if (shouldApplyMessage && !nextMessage.isNullOrBlank()) {
                         syncMessageState = nextMessage.orEmpty()
+                        syncMessageState = resolveTicketSummarySyncMessage(pendingSyncCountState, syncMessageState)
                     }
                     isRefreshingTicketsState = false
+                    if (shouldApplyMessage && !nextMessage.isNullOrBlank()) {
+                        ticketSummaryViewModel.showFresh(
+                            tickets = ticketsState,
+                            cashiers = cashiersState,
+                            pendingSyncCount = pendingSyncCountState,
+                            remoteUpdatedAt = lastRemoteUpdatedAt,
+                            message = syncMessageState,
+                        )
+                    } else {
+                        ticketSummaryViewModel.showLocal(
+                            tickets = ticketsState,
+                            cashiers = cashiersState,
+                            pendingSyncCount = pendingSyncCountState,
+                            message = syncMessageState,
+                        )
+                    }
                     summarySyncInFlight.set(false)
+                    if (!showRefreshing) {
+                        refreshFullTicketDataInBackground()
+                    }
                 }
             }
         }
     }
 
-    private fun runForegroundCatchUp(force: Boolean) {
-        if (!::operationalSyncCoordinator.isInitialized || !::salesRepository.isInitialized) return
-        refreshTicketData()
-        val ownerKeys = resolveOperationalOwnerKeys(session)
-        if (ownerKeys.isEmpty()) return
-        thread(name = "ticket-summary-foreground-catch-up") {
-            val remoteStamps = ownerKeys.mapNotNull { ownerKey ->
-                runCatching { remoteStampStore.fetchUpdatedAtFresh(ownerKey) }.getOrNull()
+    private fun hydrateVisibleTicketsForSession(): List<TicketRecord> {
+        val (fromDate, toDate) = resolveTicketSummaryDateRange(
+            currentSummaryPeriodId,
+            currentSummaryMonthValue,
+        )
+        val ownerKeys = resolveOperationalRealtimeOwnerKeys(session).ifEmpty { listOf(resolveOperationalOwnerKey(session)) }
+        val remoteTickets = ownerKeys
+            .flatMap { ownerKey ->
+                runCatching {
+                    remoteStampStore.fetchSnapshot(
+                        ownerKey = ownerKey,
+                        fromDate = fromDate,
+                        toDate = toDate,
+                        limit = TICKET_SUMMARY_PERIOD_FETCH_LIMIT,
+                    ).tickets
+                }.getOrDefault(emptyList())
             }
-            val remoteUpdatedAt = remoteStamps.asSequence()
-                .firstOrNull { stamp -> !stamp.equals(lastRemoteUpdatedAt.orEmpty(), ignoreCase = true) }
-                ?: remoteStamps.firstOrNull()
+            .distinctBy { ticket ->
+                ticket.serial?.trim()?.lowercase(Locale.US)?.takeIf { it.isNotBlank() }
+                    ?: ticket.id.trim().lowercase(Locale.US)
+            }
+        if (remoteTickets.isNotEmpty()) {
+            salesRepository.mergeImportedTickets(remoteTickets)
+        }
+        return loadTicketsForSummaryPeriod(currentSummaryPeriodId, currentSummaryMonthValue)
+    }
+
+    private fun hydrateTicketPeriodInBackground(periodId: String, monthValue: String) {
+        val (fromDate, toDate) = resolveTicketSummaryDateRange(periodId, monthValue)
+        if (fromDate.isBlank() || toDate.isBlank()) return
+        val ownerKeys = resolveOperationalRealtimeOwnerKeys(session).ifEmpty { listOf(resolveOperationalOwnerKey(session)) }
+        if (shouldSkipTicketSummaryRemoteRefresh(
+                governor = summaryRefreshGovernor,
+                ownerKey = resolveOperationalOwnerKey(session),
+                requestType = "period-hydrate:$periodId:$monthValue",
+                authScope = session.role.name,
+                force = false,
+            )
+        ) return
+        thread(name = "ticket-summary-period-hydration") {
+            val remoteTickets = ownerKeys
+                .flatMap { ownerKey ->
+                    runCatching {
+                        remoteStampStore.fetchSnapshot(
+                            ownerKey = ownerKey,
+                            fromDate = fromDate,
+                            toDate = toDate,
+                            limit = TICKET_SUMMARY_PERIOD_FETCH_LIMIT,
+                        ).tickets
+                    }.getOrDefault(emptyList())
+                }
+                .distinctBy { ticket ->
+                    ticket.serial?.trim()?.lowercase(Locale.US)?.takeIf { it.isNotBlank() }
+                        ?: ticket.id.trim().lowercase(Locale.US)
+                }
+            if (remoteTickets.isNotEmpty()) {
+                salesRepository.mergeImportedTickets(remoteTickets)
+            }
+            runOnUiThread {
+                if (currentSummaryPeriodId != periodId || currentSummaryMonthValue != monthValue) return@runOnUiThread
+                refreshTicketData(todayFirst = false)
+            }
+        }
+    }
+
+    private fun loadVisibleTicketPeriod(periodId: String, monthValue: String) {
+        currentSummaryPeriodId = periodId
+        currentSummaryMonthValue = monthValue
+        if (!::salesRepository.isInitialized || !::usersRepository.isInitialized) return
+        refreshTicketData(todayFirst = false)
+        hydrateTicketPeriodInBackground(periodId, monthValue)
+    }
+
+    private fun loadTicketsForSummaryPeriod(periodId: String, monthValue: String): List<TicketRecord> {
+        val dayKeys = resolveTicketSummaryLocalDayKeys(
+            availableDayKeys = salesRepository.getAvailableDayKeys(),
+            periodId = periodId,
+            monthValue = monthValue,
+        )
+        return dayKeys
+            .flatMap { dayKey -> salesRepository.getTicketsForDay(dayKey) }
+            .sortedByDescending { it.createdAtEpochMs }
+    }
+
+    private fun flushPendingTicketsForSession(session: ActiveSession): com.lotterynet.pro.core.sync.NativeOperationalSyncState {
+        val ownerKeys = resolveOperationalRealtimeOwnerKeys(session).ifEmpty { listOf(resolveOperationalOwnerKey(session)) }
+        var lastState: com.lotterynet.pro.core.sync.NativeOperationalSyncState? = null
+        var previousPendingCount: Int? = null
+        var pendingCount = countPendingTicketSyncForSession(
+            pendingTickets = ticketSyncQueueRepository.peekAll(),
+            session = session,
+        )
+        var passIndex = 0
+        while (shouldContinuePendingTicketFlush(
+                passIndex = passIndex,
+                pendingSyncCount = pendingCount,
+                previousPendingSyncCount = previousPendingCount,
+                maxPasses = MAX_PENDING_FLUSH_PASSES,
+            )
+        ) {
+            ownerKeys.forEach { ownerKey ->
+                lastState = operationalSyncCoordinator.flushOwner(
+                    ownerKey = ownerKey,
+                    banca = session.banca,
+                )
+            }
+            previousPendingCount = pendingCount
+            pendingCount = countPendingTicketSyncForSession(
+                pendingTickets = ticketSyncQueueRepository.peekAll(),
+                session = session,
+            )
+            passIndex += 1
+        }
+        return lastState ?: operationalSyncCoordinator.syncTicketsForSession(
+            session = session,
+            lastRemoteUpdatedAt = lastRemoteUpdatedAt,
+            force = true,
+        )
+    }
+
+    private fun currentPendingTicketSyncCount(): Int {
+        return if (::ticketSyncQueueRepository.isInitialized) {
+            countPendingTicketSyncForSession(ticketSyncQueueRepository.peekAll(), session)
+        } else {
+            0
+        }
+    }
+
+    private fun runForegroundCatchUp(force: Boolean, freshRemoteStamp: Boolean = false) {
+        if (!::operationalSyncCoordinator.isInitialized || !::salesRepository.isInitialized) return
+        refreshTicketData(todayFirst = false)
+        val ownerKeys = resolveOperationalRealtimeOwnerKeys(session)
+        if (ownerKeys.isEmpty()) return
+        val primaryOwnerKey = resolveOperationalOwnerKey(session)
+        if (shouldSkipTicketSummaryRemoteRefresh(
+                governor = summaryRefreshGovernor,
+                ownerKey = primaryOwnerKey,
+                requestType = "foreground-catch-up",
+                authScope = session.role.name,
+                force = force,
+            )
+        ) return
+        thread(name = "ticket-summary-foreground-catch-up") {
+            val remoteUpdatedAt = runCatching {
+                if (force || freshRemoteStamp) {
+                    remoteStampStore.fetchUpdatedAtFresh(primaryOwnerKey, forceFresh = force || freshRemoteStamp)
+                } else {
+                    remoteStampStore.fetchUpdatedAt(primaryOwnerKey)
+                }
+            }.getOrNull()
             val decision = foregroundCatchUpPolicy.decide(
                 resolveTicketSummaryForegroundCatchUpInput(
                     session = session,
@@ -446,7 +814,7 @@ class TicketSummaryActivity : AppCompatActivity() {
                     syncOperationalTickets(
                         force = force,
                         showRefreshing = false,
-                        allowPendingFlush = false,
+                        allowPendingFlush = true,
                     )
                 }
             } else if (remoteUpdatedAt != null) {
@@ -463,12 +831,102 @@ class TicketSummaryActivity : AppCompatActivity() {
         } else if (realtimeSubscriptions.isNotEmpty()) {
             return
         }
-        resolveOperationalOwnerKeys(session).forEach { ownerKey ->
-            realtimeSubscriptions += realtimeClient.subscribe(LotterynetRealtimeSubscription.ticketOwner(ownerKey)) {
-                runForegroundCatchUp(force = false)
-            }
+        val tokenProvider = SupabaseSessionTokenProvider(LocalSessionRepository(this))
+        resolveOperationalRealtimeOwnerKeys(session).forEach { ownerKey ->
+            realtimeSubscriptions += realtimeClient.subscribeTicketOwnerSignals(
+                ownerKey = ownerKey,
+                bearerTokenProvider = { tokenProvider.freshAccessToken() },
+                onEvent = realtimeOrchestrator::onEvent,
+            )
         }
     }
+
+    private fun fetchTicketDeltaFast(): com.lotterynet.pro.core.sync.NativeOperationalSyncState {
+        val ownerKey = resolveOperationalOwnerKey(session)
+        if (ownerKey.isBlank()) {
+            return com.lotterynet.pro.core.sync.NativeOperationalSyncState(
+                ok = false,
+                status = com.lotterynet.pro.core.sync.NativeOperationalSyncStatus.ERROR,
+                ownerKey = ownerKey,
+                message = "No hay admin/banca para sincronizar.",
+            )
+        }
+        val (tickets, cursor) = remoteStampStore.fetchDeltaTickets(
+            ownerKey = ownerKey,
+            sinceCursor = lastTicketDeltaCursor ?: lastRemoteUpdatedAt,
+            limit = TICKET_SUMMARY_DELTA_LIMIT,
+            includeItems = true,
+        )
+        if (tickets.isNotEmpty()) {
+            salesRepository.mergeImportedTickets(tickets)
+        }
+        lastTicketDeltaCursor = cursor ?: lastTicketDeltaCursor
+        return com.lotterynet.pro.core.sync.NativeOperationalSyncState(
+            ok = true,
+            status = if (tickets.isNotEmpty()) {
+                com.lotterynet.pro.core.sync.NativeOperationalSyncStatus.SYNCED
+            } else {
+                com.lotterynet.pro.core.sync.NativeOperationalSyncStatus.UP_TO_DATE
+            },
+            ownerKey = ownerKey,
+            message = if (tickets.isNotEmpty()) "Tickets actualizados rapido." else "Datos al dia.",
+            pulledCount = tickets.size,
+            remoteUpdatedAt = cursor ?: lastRemoteUpdatedAt,
+        )
+    }
+}
+
+internal const val TICKET_SUMMARY_DELTA_LIMIT = 80
+internal const val TICKET_SUMMARY_PERIOD_FETCH_LIMIT = 1000
+private const val TICKET_SUMMARY_LOCAL_STORAGE_REFRESH_DELAY_MS = 120L
+private const val TICKET_SUMMARY_REMOTE_REFRESH_DEDUP_MS = 15_000L
+
+private fun isTicketStorageKey(key: String): Boolean {
+    return key.startsWith(SalesStorageKeys.TICKETS_PREFIX) ||
+        key == SalesStorageKeys.DELETED_TICKETS_KEY ||
+        key == SalesStorageKeys.DELETED_TICKET_REFS_KEY
+}
+
+internal fun resolveTicketSummaryLocalDayKeys(
+    availableDayKeys: List<String>,
+    periodId: String,
+    monthValue: String,
+    nowEpochMs: Long = System.currentTimeMillis(),
+): List<String> {
+    val period = TicketSummaryPeriod.entries.firstOrNull { it.id == periodId } ?: TicketSummaryPeriod.TODAY
+    val available = availableDayKeys.toSet()
+    fun relativeDayKeys(daysBackInclusive: Int): List<String> {
+        val calendar = java.util.Calendar.getInstance(
+            java.util.TimeZone.getTimeZone("America/Santo_Domingo"),
+            Locale.US,
+        ).apply { timeInMillis = nowEpochMs }
+        return (0..daysBackInclusive).map { offset ->
+            calendar.timeInMillis = nowEpochMs
+            calendar.add(java.util.Calendar.DAY_OF_YEAR, -offset)
+            dominicanDayKey(calendar.timeInMillis)
+        }
+    }
+    return when (period) {
+        TicketSummaryPeriod.TODAY -> listOf(dominicanDayKey(nowEpochMs))
+        TicketSummaryPeriod.YESTERDAY -> relativeDayKeys(1).drop(1)
+        TicketSummaryPeriod.WEEK -> relativeDayKeys(6)
+        TicketSummaryPeriod.QUINZA -> relativeDayKeys(14)
+        TicketSummaryPeriod.MONTH -> {
+            val calendar = java.util.Calendar.getInstance(
+                java.util.TimeZone.getTimeZone("America/Santo_Domingo"),
+                Locale.US,
+            ).apply { timeInMillis = nowEpochMs }
+            val monthMatch = Regex("(\\d{4})-(\\d{2})").matchEntire(monthValue.trim())
+            val year = monthMatch?.groupValues?.get(1)?.toIntOrNull() ?: calendar.get(java.util.Calendar.YEAR)
+            val month = monthMatch?.groupValues?.get(2)?.toIntOrNull()?.coerceIn(1, 12)
+                ?: (calendar.get(java.util.Calendar.MONTH) + 1)
+            val prefix = "$year-${month.toString().padStart(2, '0')}-"
+            availableDayKeys.filter { it.startsWith(prefix) }.sortedDescending()
+        }
+        TicketSummaryPeriod.EXACT_DATE -> listOf(monthValue).filter { it.matches(Regex("\\d{4}-\\d{2}-\\d{2}")) }
+        TicketSummaryPeriod.ALL -> availableDayKeys.sortedDescending()
+    }
+        .filter { it in available || period == TicketSummaryPeriod.TODAY || period == TicketSummaryPeriod.YESTERDAY }
 }
 
 @Composable
@@ -482,6 +940,8 @@ private fun TicketSummaryRoute(
     isRefreshing: Boolean,
     pendingSyncCount: Int,
     onRefresh: () -> Unit,
+    onPeriodLoadRequested: (String, String) -> Unit,
+    onStatusBucketRefresh: () -> Unit,
     onOpenTicket: (TicketRecord, TicketSummaryPrimaryAction) -> Unit,
 ) {
     val context = LocalContext.current
@@ -496,20 +956,29 @@ private fun TicketSummaryRoute(
 
     var periodFilter by rememberSaveable { mutableStateOf(TicketSummaryPeriod.TODAY.id) }
     var monthFilter by rememberSaveable { mutableStateOf(todayMonthValue()) }
+    var dateFilter by rememberSaveable { mutableStateOf(todayTicketDateKey()) }
     var statusBucket by rememberSaveable { mutableStateOf(TicketStatusBucket.ALL.id) }
     var ownerScope by rememberSaveable { mutableStateOf(initialFilters.ownerScope.name) }
     var selectedCashierKey by rememberSaveable { mutableStateOf(initialFilters.cashierKey) }
     var lotteryFilter by rememberSaveable { mutableStateOf("") }
     var query by rememberSaveable { mutableStateOf("") }
 
+    LaunchedEffect(periodFilter, monthFilter, dateFilter) {
+        onPeriodLoadRequested(
+            periodFilter,
+            if (periodFilter == TicketSummaryPeriod.EXACT_DATE.id) dateFilter else monthFilter,
+        )
+    }
+
     val ownerScopeValue = TicketOwnerScope.valueOf(ownerScope)
-    val (fromDateTime, toDateTime) = remember(periodFilter, monthFilter) {
-        resolveTicketSummaryDateRange(periodFilter, monthFilter)
+    val activeDateFilter = if (periodFilter == TicketSummaryPeriod.EXACT_DATE.id) dateFilter else monthFilter
+    val (fromDateTime, toDateTime) = remember(periodFilter, activeDateFilter) {
+        resolveTicketSummaryDateRange(periodFilter, activeDateFilter)
     }
     val filteredTickets = remember(
         directory,
         periodFilter,
-        monthFilter,
+        activeDateFilter,
         statusBucket,
         ownerScopeValue,
         selectedCashierKey,
@@ -570,7 +1039,7 @@ private fun TicketSummaryRoute(
                         ),
                         onOpenMenu = { com.lotterynet.pro.ui.common.openShellMenu(context) },
                     )
-                    if (pendingSyncCount > 0 || isRefreshing) {
+                    if (shouldShowTicketSummarySyncBanner(pendingSyncCount, isRefreshing)) {
                         Spacer(modifier = Modifier.height(4.dp))
                         CompactTicketSaveSyncStatus(contract = syncContract)
                     }
@@ -589,12 +1058,17 @@ private fun TicketSummaryRoute(
                         lotteryOptions = lotteryOptions,
                         periodFilter = periodFilter,
                         monthFilter = monthFilter,
+                        dateFilter = dateFilter,
                         monthOptions = monthOptions,
                         syncMessage = syncMessage,
                         isRefreshing = isRefreshing,
                         onPeriodChange = { periodFilter = it },
                         onMonthChange = { monthFilter = it },
-                        onStatusBucketChange = { statusBucket = it },
+                        onDateChange = { dateFilter = it },
+                        onStatusBucketChange = {
+                            statusBucket = it
+                            onStatusBucketRefresh()
+                        },
                         onOwnerScopeChange = { scope ->
                             ownerScope = scope.name
                             if (scope != TicketOwnerScope.CASHIER) {
@@ -615,7 +1089,11 @@ private fun TicketSummaryRoute(
                             verticalArrangement = Arrangement.spacedBy(layout.listSpacingDp.dp),
                             contentPadding = PaddingValues(bottom = visual.sizes.screenPaddingV),
                         ) {
-                            items(filteredTickets, key = { it.id }) { ticket ->
+                            items(
+                                items = filteredTickets,
+                                key = { it.id },
+                                contentType = { "ticket-summary-row" },
+                            ) { ticket ->
                                 val primaryAction = resolveTicketSummaryPrimaryAction(ticket)
                                 TicketSummaryRow(
                                     ticket = ticket,
@@ -631,21 +1109,63 @@ private fun TicketSummaryRoute(
     }
 }
 
-internal const val TICKET_SUMMARY_POLL_MS = 60_000L
-internal const val TICKET_SUMMARY_REALTIME_FALLBACK_POLL_MS = 120_000L
-internal const val TICKET_SUMMARY_STARTUP_SYNC_DELAY_MS = 500L
-internal const val TICKET_SUMMARY_RESUME_SYNC_DELAY_MS = 1_500L
-internal const val TICKET_SUMMARY_FOREGROUND_CATCH_UP_THROTTLE_MS = 45_000L
+internal const val TICKET_SUMMARY_POLL_MS = 300_000L
+internal const val TICKET_SUMMARY_REALTIME_FALLBACK_POLL_MS = 60_000L
+internal const val TICKET_SUMMARY_STARTUP_SYNC_DELAY_MS = 120L
+internal const val TICKET_SUMMARY_RESUME_SYNC_DELAY_MS = 250L
+internal const val TICKET_SUMMARY_FOREGROUND_CATCH_UP_THROTTLE_MS = 20_000L
+internal const val MAX_PENDING_FLUSH_PASSES = 5
 
 internal fun shouldForceTicketSummaryLivePoll(): Boolean = false
 
-internal fun resolveTicketSummaryPollIntervalMs(realtimeEnabled: Boolean): Long {
-    return if (realtimeEnabled) TICKET_SUMMARY_REALTIME_FALLBACK_POLL_MS else TICKET_SUMMARY_POLL_MS
+internal fun shouldStartTicketSummaryFallbackPoll(realtimeEnabled: Boolean): Boolean = !realtimeEnabled
+
+internal fun resolveTicketSummaryPollIntervalMs(
+    realtimeEnabled: Boolean,
+    realtimeConnected: Boolean = realtimeEnabled,
+): Long {
+    return if (realtimeEnabled && realtimeConnected) {
+        TICKET_SUMMARY_POLL_MS
+    } else {
+        TICKET_SUMMARY_REALTIME_FALLBACK_POLL_MS
+    }
 }
 
 private fun todayMonthValue(): String {
     val calendar = java.util.Calendar.getInstance(java.util.TimeZone.getTimeZone("America/Santo_Domingo"), Locale.US)
-    return (calendar.get(java.util.Calendar.MONTH) + 1).toString().padStart(2, '0')
+    return "${calendar.get(java.util.Calendar.YEAR)}-${(calendar.get(java.util.Calendar.MONTH) + 1).toString().padStart(2, '0')}"
+}
+
+private fun ticketSummaryFilterSummary(
+    periodFilter: String,
+    monthFilter: String,
+    dateFilter: String,
+    statusBucket: String,
+    ownerScope: TicketOwnerScope,
+    selectedCashierKey: String,
+    cashierOptions: List<CompactDropdownOption>,
+    lotteryFilter: String,
+    lotteryOptions: List<CompactDropdownOption>,
+    query: String,
+): String {
+    val periodLabel = TicketSummaryPeriod.entries.firstOrNull { it.id == periodFilter }?.label ?: periodFilter
+    val statusLabel = TicketStatusBucket.entries.firstOrNull { it.id == statusBucket }?.label ?: statusBucket
+    val cashierLabel = cashierOptions.firstOrNull { it.value == selectedCashierKey }?.label
+    val lotteryLabel = lotteryOptions.firstOrNull { it.value == lotteryFilter }?.label
+    return buildList {
+        add(
+            when (periodFilter) {
+                TicketSummaryPeriod.EXACT_DATE.id -> "Fecha: $dateFilter"
+                TicketSummaryPeriod.MONTH.id -> "Mes: $monthFilter"
+                else -> "Periodo: $periodLabel"
+            },
+        )
+        add("Estado: $statusLabel")
+        if (ownerScope != TicketOwnerScope.ALL) add("Vista: ${ownerScope.label}")
+        if (!cashierLabel.isNullOrBlank() && selectedCashierKey.isNotBlank()) add(cashierLabel)
+        if (!lotteryLabel.isNullOrBlank() && lotteryFilter.isNotBlank()) add(lotteryLabel)
+        if (query.isNotBlank()) add("Busca: ${query.take(24)}")
+    }.joinToString(" · ")
 }
 
 @Composable
@@ -660,6 +1180,7 @@ private fun TicketSummaryHeader(
     lotteryOptions: List<CompactDropdownOption>,
     periodFilter: String,
     monthFilter: String,
+    dateFilter: String,
     monthOptions: List<CompactDropdownOption>,
     query: String,
     visibleTotal: Double,
@@ -672,23 +1193,123 @@ private fun TicketSummaryHeader(
     onLotteryFilterChange: (String) -> Unit,
     onPeriodChange: (String) -> Unit,
     onMonthChange: (String) -> Unit,
+    onDateChange: (String) -> Unit,
     onQueryChange: (String) -> Unit,
     onRefresh: () -> Unit,
 ) {
     val visual = rememberLotteryNetVisualSpec()
     val layout = remember(visual.windowMode) { resolveTicketCollectionLayout(visual.windowMode) }
-    val refreshAction = remember { resolveTicketSummaryRefreshAction() }
     val refreshUi = remember(isRefreshing, syncMessage) { resolveTicketSummaryRefreshUi(isRefreshing, syncMessage) }
-    var secondaryFiltersExpanded by rememberSaveable { mutableStateOf(!layout.collapseSecondarySummaryFilters) }
-    val secondaryFilterActive = monthFilter != todayMonthValue() ||
+    var showFilterSheet by rememberSaveable { mutableStateOf(false) }
+    val secondaryFilterActive = (periodFilter == TicketSummaryPeriod.EXACT_DATE.id && dateFilter != todayTicketDateKey()) ||
+        (periodFilter != TicketSummaryPeriod.EXACT_DATE.id && monthFilter != todayMonthValue()) ||
+        statusBucket != TicketStatusBucket.ALL.id ||
         lotteryFilter.isNotBlank() ||
         ownerScope != TicketOwnerScope.ALL ||
-        selectedCashierKey.isNotBlank()
-    val showSecondaryFilters = !layout.collapseSecondarySummaryFilters || secondaryFiltersExpanded
+        selectedCashierKey.isNotBlank() ||
+        query.isNotBlank()
+    val filterSummary = remember(
+        periodFilter,
+        monthFilter,
+        statusBucket,
+        ownerScope,
+        selectedCashierKey,
+        cashierOptions,
+        lotteryFilter,
+        lotteryOptions,
+        query,
+        dateFilter,
+    ) {
+        ticketSummaryFilterSummary(
+            periodFilter = periodFilter,
+            monthFilter = monthFilter,
+            dateFilter = dateFilter,
+            statusBucket = statusBucket,
+            ownerScope = ownerScope,
+            selectedCashierKey = selectedCashierKey,
+            cashierOptions = cashierOptions,
+            lotteryFilter = lotteryFilter,
+            lotteryOptions = lotteryOptions,
+            query = query,
+        )
+    }
+    if (showFilterSheet) {
+        OperationalModalSheet(
+            title = "Filtros de tickets",
+            subtitle = "Periodo, estado, cajero y búsqueda.",
+            onDismiss = { showFilterSheet = false },
+        ) {
+            TicketSummaryFilterSheet(
+                periodFilter = periodFilter,
+                monthFilter = monthFilter,
+                dateFilter = dateFilter,
+                statusBucket = statusBucket,
+                ownerScope = ownerScope,
+                canFilterOwner = canFilterOwner,
+                selectedCashierKey = selectedCashierKey,
+                cashierOptions = cashierOptions,
+                lotteryFilter = lotteryFilter,
+                lotteryOptions = lotteryOptions,
+                monthOptions = monthOptions,
+                query = query,
+                onPeriodChange = onPeriodChange,
+                onMonthChange = onMonthChange,
+                onDateChange = onDateChange,
+                onStatusBucketChange = onStatusBucketChange,
+                onOwnerScopeChange = onOwnerScopeChange,
+                onCashierChange = onCashierChange,
+                onLotteryFilterChange = onLotteryFilterChange,
+                onQueryChange = onQueryChange,
+                onClear = {
+                    onPeriodChange(TicketSummaryPeriod.TODAY.id)
+                    onMonthChange(todayMonthValue())
+                    onDateChange(todayTicketDateKey())
+                    onStatusBucketChange(TicketStatusBucket.ALL.id)
+                    onLotteryFilterChange("")
+                    onQueryChange("")
+                    onOwnerScopeChange(TicketOwnerScope.ALL)
+                    onCashierChange("")
+                },
+                onClose = { showFilterSheet = false },
+            )
+        }
+    }
     CompactPanel(
         alt = true,
         contentPadding = PaddingValues(horizontal = 9.dp, vertical = layout.headerPaddingVerticalDp.dp),
     ) {
+        var showSearch by rememberSaveable { mutableStateOf(query.isNotBlank()) }
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            FilterChip(
+                selected = showSearch || query.isNotBlank(),
+                onClick = { showSearch = !showSearch },
+                label = { Text("Buscar") },
+                leadingIcon = { androidx.compose.material3.Icon(Icons.Rounded.Search, contentDescription = null) },
+                modifier = Modifier.weight(1f),
+            )
+            FilterChip(
+                selected = secondaryFilterActive,
+                onClick = { showFilterSheet = true },
+                label = { Text("Filtros") },
+                leadingIcon = { androidx.compose.material3.Icon(Icons.Rounded.Tune, contentDescription = null) },
+                modifier = Modifier.weight(1f),
+            )
+        }
+        AnimatedVisibility(visible = showSearch) {
+            com.lotterynet.pro.ui.common.SearchBox(
+                value = query,
+                onValueChange = onQueryChange,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 6.dp),
+                placeholder = "Buscar por número, cajero o estado",
+                minHeight = 44.dp,
+            )
+        }
+        Spacer(modifier = Modifier.height(6.dp))
         Text(
             text = "$visibleCount tickets · visible ${formatTicketMoney(visibleTotal)} · activos ${formatTicketMoney(activeTotal)}",
             style = MaterialTheme.typography.labelLarge,
@@ -728,17 +1349,86 @@ private fun TicketSummaryHeader(
                 enabled = refreshUi.buttonEnabled,
                 modifier = Modifier.weight(1f),
             )
-            CompactActionButton(
-                label = if (showSecondaryFilters) "Menos" else "Filtros",
-                onClick = { secondaryFiltersExpanded = !secondaryFiltersExpanded },
-                active = secondaryFilterActive || showSecondaryFilters,
-                icon = Icons.Rounded.Tune,
-                modifier = Modifier.weight(1f),
-            )
             if (!refreshUi.showStatus) {
                 Spacer(modifier = Modifier.weight(1f))
             }
         }
+        Text(
+            text = filterSummary,
+            style = MaterialTheme.typography.labelSmall,
+            color = visual.colors.muted,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis,
+        )
+        if (secondaryFilterActive) {
+            CompactStatusBadge(
+                label = "Filtros activos",
+                tone = visual.colors.actionPrimary,
+            )
+        }
+    }
+}
+
+@Composable
+@OptIn(ExperimentalMaterial3Api::class)
+private fun TicketSummaryFilterSheet(
+    periodFilter: String,
+    monthFilter: String,
+    dateFilter: String,
+    statusBucket: String,
+    ownerScope: TicketOwnerScope,
+    canFilterOwner: Boolean,
+    selectedCashierKey: String,
+    cashierOptions: List<CompactDropdownOption>,
+    lotteryFilter: String,
+    lotteryOptions: List<CompactDropdownOption>,
+    monthOptions: List<CompactDropdownOption>,
+    query: String,
+    onPeriodChange: (String) -> Unit,
+    onMonthChange: (String) -> Unit,
+    onDateChange: (String) -> Unit,
+    onStatusBucketChange: (String) -> Unit,
+    onOwnerScopeChange: (TicketOwnerScope) -> Unit,
+    onCashierChange: (String) -> Unit,
+    onLotteryFilterChange: (String) -> Unit,
+    onQueryChange: (String) -> Unit,
+    onClear: () -> Unit,
+    onClose: () -> Unit,
+) {
+    val visual = rememberLotteryNetVisualSpec()
+    val layout = remember(visual.windowMode) { resolveTicketCollectionLayout(visual.windowMode) }
+    var datePickerVisible by rememberSaveable { mutableStateOf(false) }
+    if (datePickerVisible) {
+        val pickerState = rememberDatePickerState(
+            initialSelectedDateMillis = ticketDateKeyToPickerUtcMillis(dateFilter),
+        )
+        DatePickerDialog(
+            onDismissRequest = { datePickerVisible = false },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        pickerState.selectedDateMillis?.let { onDateChange(pickerUtcMillisToTicketDateKey(it)) }
+                        onPeriodChange(TicketSummaryPeriod.EXACT_DATE.id)
+                        datePickerVisible = false
+                    },
+                    enabled = pickerState.selectedDateMillis != null,
+                ) { Text("Aplicar") }
+            },
+            dismissButton = {
+                TextButton(onClick = { datePickerVisible = false }) { Text("Cancelar") }
+            },
+        ) {
+            DatePicker(state = pickerState, showModeToggle = false)
+        }
+    }
+    Column(
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        Text(
+            text = "Tiempo y estado",
+            style = MaterialTheme.typography.titleSmall,
+            color = visual.colors.ink,
+        )
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(layout.filterRowSpacingDp.dp),
@@ -758,11 +1448,19 @@ private fun TicketSummaryHeader(
                 modifier = Modifier.weight(1f),
             )
         }
-        if (showSecondaryFilters) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(layout.filterRowSpacingDp.dp),
-            ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(layout.filterRowSpacingDp.dp),
+        ) {
+            if (periodFilter == TicketSummaryPeriod.EXACT_DATE.id) {
+                CompactActionButton(
+                    label = "Fecha: $dateFilter",
+                    onClick = { datePickerVisible = true },
+                    icon = Icons.Rounded.Event,
+                    modifier = Modifier.weight(1f),
+                    tone = ActionTone.Secondary,
+                )
+            } else {
                 CompactFilterDropdown(
                     label = "Mes",
                     selectedValue = monthFilter,
@@ -770,23 +1468,21 @@ private fun TicketSummaryHeader(
                     onValueSelected = onMonthChange,
                     modifier = Modifier.weight(1f),
                 )
-                CompactFilterDropdown(
-                    label = "Loteria",
-                    selectedValue = lotteryFilter,
-                    options = lotteryOptions,
-                    onValueSelected = onLotteryFilterChange,
-                    modifier = Modifier.weight(1f),
-                )
             }
+            CompactFilterDropdown(
+                label = "Seleccionar lotería",
+                selectedValue = lotteryFilter,
+                options = lotteryOptions,
+                onValueSelected = onLotteryFilterChange,
+                modifier = Modifier.weight(1f),
+            )
         }
-        SearchBox(
-            value = query,
-            onValueChange = onQueryChange,
-            modifier = Modifier.fillMaxWidth(),
-            placeholder = "Buscar ticket",
-            minHeight = 44.dp,
-        )
-        if (canFilterOwner && showSecondaryFilters) {
+        if (canFilterOwner) {
+            Text(
+                text = "Responsable",
+                style = MaterialTheme.typography.labelMedium,
+                color = visual.colors.muted,
+            )
             TicketOwnerScopeRow(
                 ownerScope = ownerScope,
                 onOwnerScopeChange = onOwnerScopeChange,
@@ -806,6 +1502,25 @@ private fun TicketSummaryHeader(
                     color = visual.colors.muted,
                 )
             }
+        }
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 18.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            CompactActionButton(
+                label = "Limpiar",
+                onClick = onClear,
+                tone = ActionTone.Secondary,
+                modifier = Modifier.weight(1f),
+            )
+            CompactActionButton(
+                label = "Cerrar",
+                onClick = onClose,
+                tone = ActionTone.Primary,
+                modifier = Modifier.weight(1f),
+            )
         }
     }
 }

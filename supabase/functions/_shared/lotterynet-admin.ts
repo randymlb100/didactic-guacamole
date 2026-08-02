@@ -19,6 +19,37 @@ export type CanonicalOwnerScope = {
   cashierKeys: string[];
 };
 
+type CachedUsersState = {
+  cachedAtMs: number;
+  payload: JsonRecord;
+};
+
+type CachedAuthUser = {
+  cachedAtMs: number;
+  userId: string;
+  metadata: JsonRecord;
+};
+
+type CachedAuthenticatedActor = {
+  cachedAtMs: number;
+  actor: AuthenticatedActor;
+};
+
+const USERS_STATE_CACHE_KEY = "edge:lotterynet_users_state:global:v1";
+const USERS_STATE_VERSION_KEY = "edge:lotterynet_users_state:version:v1";
+const USERS_STATE_CACHE_TTL_MS = 30_000;
+const USERS_STATE_VERSION_TTL_SECONDS = 60 * 60 * 24 * 30;
+const usersStateMemoryCache = new Map<string, CachedUsersState>();
+const usersStateInflight = new Map<string, Promise<JsonRecord>>();
+const AUTH_USER_CACHE_TTL_MS = 30_000;
+const authUserMemoryCache = new Map<string, CachedAuthUser>();
+const authUserInflight = new Map<string, Promise<CachedAuthUser>>();
+const AUTH_ACTOR_CACHE_TTL_MS = 30_000;
+const authActorMemoryCache = new Map<string, CachedAuthenticatedActor>();
+const authActorInflight = new Map<string, Promise<AuthenticatedActor>>();
+const TICKET_DELTA_RESPONSE_VERSION_KEY = "edge:get-ticket-delta:version:v1";
+const TICKET_DELTA_RESPONSE_VERSION_TTL_SECONDS = 60 * 60 * 24 * 30;
+
 export const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-lotterynet-admin-secret, x-lotterynet-results-secret",
@@ -270,84 +301,247 @@ export function bearerToken(req: Request): string {
   return header.replace(/^Bearer\s+/i, "").trim();
 }
 
+async function sha256Hex(value: string): Promise<string> {
+  const bytes = new TextEncoder().encode(value);
+  const hash = await crypto.subtle.digest("SHA-256", bytes);
+  return Array.from(new Uint8Array(hash), (byte) => byte.toString(16).padStart(2, "0")).join("");
+}
+
+async function authUserCacheKey(token: string): Promise<string> {
+  return `edge:auth_user:${await sha256Hex(token)}`;
+}
+
+async function authActorCacheKey(token: string, usersStateVersion: string): Promise<string> {
+  return `edge:auth_actor:${usersStateVersion}:${await sha256Hex(token)}`;
+}
+
+function ticketDeltaResponseVersionFallback(): string {
+  return "0";
+}
+
+function isFresh(cachedAtMs: number, ttlMs: number): boolean {
+  return Date.now() - cachedAtMs <= ttlMs;
+}
+
+async function readCachedAuthUser(token: string): Promise<CachedAuthUser> {
+  const cacheKey = await authUserCacheKey(token);
+  const now = Date.now();
+  const memoryCached = authUserMemoryCache.get(cacheKey);
+  if (memoryCached && now - memoryCached.cachedAtMs <= AUTH_USER_CACHE_TTL_MS) {
+    return memoryCached;
+  }
+
+  const inflight = authUserInflight.get(cacheKey);
+  if (inflight) return inflight;
+
+  const fetchPromise = (async () => {
+    const redisCached = await redisGetJson<CachedAuthUser>(cacheKey);
+    if (
+      redisCached &&
+      typeof redisCached === "object" &&
+      typeof redisCached.cachedAtMs === "number" &&
+      typeof redisCached.userId === "string" &&
+      redisCached.metadata &&
+      typeof redisCached.metadata === "object"
+    ) {
+      if (Date.now() - redisCached.cachedAtMs <= AUTH_USER_CACHE_TTL_MS) {
+        authUserMemoryCache.set(cacheKey, redisCached);
+        return redisCached;
+      }
+    }
+
+    const { data, error } = await supabaseAdmin().auth.getUser(token);
+    if (error || !data.user) {
+      throw new Error("Sesion invalida.");
+    }
+
+    const cachedValue: CachedAuthUser = {
+      cachedAtMs: Date.now(),
+      userId: data.user.id,
+      metadata: asRecord(data.user.app_metadata),
+    };
+    authUserMemoryCache.set(cacheKey, cachedValue);
+    await redisSetJson(cacheKey, cachedValue, Math.ceil(AUTH_USER_CACHE_TTL_MS / 1000));
+    return cachedValue;
+  })();
+
+  authUserInflight.set(cacheKey, fetchPromise);
+  try {
+    return await fetchPromise;
+  } finally {
+    authUserInflight.delete(cacheKey);
+  }
+}
+
 export async function requireAdminJwt(req: Request): Promise<Response | null> {
   const auth = await authenticatedActor(req, ["admin", "master"]);
   if (!auth.ok) return auth.response;
   return null;
 }
 
+async function readCachedAuthenticatedActor(req: Request): Promise<AuthenticatedActor> {
+  const token = bearerToken(req);
+  if (!token) throw new Error("Sesion requerida.");
+
+  const stateVersion = await readLotterynetUsersStateVersion();
+  const cacheKey = await authActorCacheKey(token, stateVersion);
+  const memoryCached = authActorMemoryCache.get(cacheKey);
+  if (memoryCached && isFresh(memoryCached.cachedAtMs, AUTH_ACTOR_CACHE_TTL_MS)) {
+    return memoryCached.actor;
+  }
+
+  const inflight = authActorInflight.get(cacheKey);
+  if (inflight) return inflight;
+
+  const fetchPromise = (async () => {
+    const redisCached = await redisGetJson<CachedAuthenticatedActor>(cacheKey);
+    if (
+      redisCached &&
+      typeof redisCached === "object" &&
+      typeof redisCached.cachedAtMs === "number" &&
+      redisCached.actor &&
+      typeof redisCached.actor === "object" &&
+      isFresh(redisCached.cachedAtMs, AUTH_ACTOR_CACHE_TTL_MS)
+    ) {
+      authActorMemoryCache.set(cacheKey, redisCached);
+      return redisCached.actor;
+    }
+
+    const { data, error } = await supabaseAdmin().auth.getUser(token);
+    if (error || !data.user) throw new Error("Sesion invalida.");
+
+    const metadata = asRecord(data.user.app_metadata);
+    const role = normalizeRole(metadata.role);
+    const payload = await readLotterynetUsersPayload();
+    const accounts = flattenLotterynetAccounts(payload);
+    const account = accounts.find((candidate) =>
+      sameText(candidate.authUserId, data.user.id) || sameText(candidate.auth_user_id, data.user.id)
+    ) ?? accounts.find((candidate) => accountMatchesAny(candidate, metadataIdentityKeys(metadata))) ?? null;
+
+    if (account) {
+      if (isBlockedAccount(account)) {
+        throw new Error("Usuario bloqueado.");
+      }
+      const linkedAuthUser = clean(account.authUserId ?? account.auth_user_id);
+      if (linkedAuthUser && linkedAuthUser !== data.user.id) {
+        throw new Error("Sesion no pertenece al usuario.");
+      }
+    }
+
+    const actor: AuthenticatedActor = {
+      userId: data.user.id,
+      role,
+      metadata,
+      account,
+      accounts,
+      identityKeys: uniqueKeys([
+        data.user.id,
+        ...metadataIdentityKeys(metadata),
+        ...accountIdentityKeys(account),
+      ]),
+      ownerKeys: uniqueKeys([
+        ...metadataIdentityKeys(metadata),
+        ...accountOwnerKeys(account),
+        ...accountIdentityKeys(account).filter(() => role === "admin" || role === "master"),
+      ]),
+    };
+
+    const cachedValue: CachedAuthenticatedActor = { cachedAtMs: Date.now(), actor };
+    authActorMemoryCache.set(cacheKey, cachedValue);
+    await redisSetJson(cacheKey, cachedValue, Math.ceil(AUTH_ACTOR_CACHE_TTL_MS / 1000));
+    return actor;
+  })();
+
+  authActorInflight.set(cacheKey, fetchPromise);
+  try {
+    return await fetchPromise;
+  } finally {
+    authActorInflight.delete(cacheKey);
+  }
+}
+
 export async function readLotterynetUsersPayload(): Promise<JsonRecord> {
-  const { data, error } = await supabaseAdmin()
-    .from("lotterynet_users_state")
-    .select("payload")
-    .eq("scope", "global")
-    .maybeSingle();
-  if (error) throw error;
-  return asRecord(data?.payload);
+  const stateVersion = await readLotterynetUsersStateVersion();
+  const cacheKey = `${USERS_STATE_CACHE_KEY}:${stateVersion}`;
+  const now = Date.now();
+  const memoryCached = usersStateMemoryCache.get(cacheKey);
+  if (memoryCached && now - memoryCached.cachedAtMs <= USERS_STATE_CACHE_TTL_MS) {
+    return memoryCached.payload;
+  }
+
+  const inflight = usersStateInflight.get(cacheKey);
+  if (inflight) return inflight;
+
+  const fetchPromise = (async () => {
+    const redisCached = await redisGetJson<CachedUsersState>(cacheKey);
+    if (redisCached && typeof redisCached === "object" && redisCached.payload && typeof redisCached.cachedAtMs === "number") {
+      if (Date.now() - redisCached.cachedAtMs <= USERS_STATE_CACHE_TTL_MS) {
+        usersStateMemoryCache.set(cacheKey, redisCached);
+        return redisCached.payload;
+      }
+    }
+
+    const { data, error } = await supabaseAdmin()
+      .from("lotterynet_users_state")
+      .select("payload")
+      .eq("scope", "global")
+      .maybeSingle();
+    if (error) throw error;
+
+    const payload = asRecord(data?.payload);
+    const cachedValue: CachedUsersState = { cachedAtMs: Date.now(), payload };
+    usersStateMemoryCache.set(cacheKey, cachedValue);
+    await redisSetJson(cacheKey, cachedValue, Math.ceil(USERS_STATE_CACHE_TTL_MS / 1000));
+    return payload;
+  })();
+
+  usersStateInflight.set(cacheKey, fetchPromise);
+  try {
+    return await fetchPromise;
+  } finally {
+    usersStateInflight.delete(cacheKey);
+  }
 }
 
 export async function authenticatedActor(
   req: Request,
   allowedRoles?: string[],
 ): Promise<{ ok: true; actor: AuthenticatedActor } | { ok: false; response: Response }> {
-  const token = bearerToken(req);
-  if (!token) return { ok: false, response: json({ ok: false, message: "Sesion requerida." }, 401) };
-
-  const { data, error } = await supabaseAdmin().auth.getUser(token);
-  if (error || !data.user) return { ok: false, response: json({ ok: false, message: "Sesion invalida." }, 401) };
-
-  const metadata = asRecord(data.user.app_metadata);
-  const role = normalizeRole(metadata.role);
-  if (allowedRoles && !allowedRoles.map(normalizeRole).includes(role)) {
-    return { ok: false, response: json({ ok: false, message: "Admin role required." }, 403) };
-  }
-
-  let accounts: JsonRecord[] = [];
-  let account: JsonRecord | null = null;
   try {
-    const payload = await readLotterynetUsersPayload();
-    accounts = flattenLotterynetAccounts(payload);
-    account = accounts.find((candidate) =>
-      sameText(candidate.authUserId, data.user.id) || sameText(candidate.auth_user_id, data.user.id)
-    ) ?? accounts.find((candidate) => accountMatchesAny(candidate, metadataIdentityKeys(metadata))) ?? null;
+    const actor = await readCachedAuthenticatedActor(req);
+    if (allowedRoles && !allowedRoles.map(normalizeRole).includes(actor.role)) {
+      return { ok: false, response: json({ ok: false, message: "Admin role required." }, 403) };
+    }
+    return { ok: true, actor };
   } catch {
-    accounts = [];
-    account = null;
+    const token = bearerToken(req);
+    if (!token) return { ok: false, response: json({ ok: false, message: "Sesion requerida." }, 401) };
+    return { ok: false, response: json({ ok: false, message: "Sesion invalida." }, 401) };
   }
+}
 
-  if (account) {
-    if (isBlockedAccount(account)) {
-      return { ok: false, response: json({ ok: false, message: "Usuario bloqueado." }, 403) };
-    }
-    const linkedAuthUser = clean(account.authUserId ?? account.auth_user_id);
-    if (linkedAuthUser && linkedAuthUser !== data.user.id) {
-      return { ok: false, response: json({ ok: false, message: "Sesion no pertenece al usuario." }, 403) };
-    }
-  }
+export async function readTicketDeltaResponseVersion(): Promise<string> {
+  const value = await redisGetJson<unknown>(TICKET_DELTA_RESPONSE_VERSION_KEY);
+  const version = clean(value);
+  return version || ticketDeltaResponseVersionFallback();
+}
 
-  const identityKeys = uniqueKeys([
-    data.user.id,
-    ...metadataIdentityKeys(metadata),
-    ...accountIdentityKeys(account),
-  ]);
-  const ownerKeys = uniqueKeys([
-    ...metadataIdentityKeys(metadata),
-    ...accountOwnerKeys(account),
-    ...accountIdentityKeys(account).filter(() => role === "admin" || role === "master"),
-  ]);
+export async function bumpTicketDeltaResponseVersion(): Promise<string> {
+  const version = String(Date.now());
+  await redisSetJson(TICKET_DELTA_RESPONSE_VERSION_KEY, version, TICKET_DELTA_RESPONSE_VERSION_TTL_SECONDS);
+  return version;
+}
 
-  return {
-    ok: true,
-    actor: {
-      userId: data.user.id,
-      role,
-      metadata,
-      account,
-      accounts,
-      identityKeys,
-      ownerKeys,
-    },
-  };
+export async function readLotterynetUsersStateVersion(): Promise<string> {
+  const value = await redisGetJson<unknown>(USERS_STATE_VERSION_KEY);
+  const version = clean(value);
+  return version || "0";
+}
+
+export async function bumpLotterynetUsersStateVersion(): Promise<string> {
+  const version = String(Date.now());
+  await redisSetJson(USERS_STATE_VERSION_KEY, version, USERS_STATE_VERSION_TTL_SECONDS);
+  return version;
 }
 
 export function canAccessOwner(actor: AuthenticatedActor, ownerKey: unknown): boolean {
@@ -375,7 +569,9 @@ export function canAccessOwner(actor: AuthenticatedActor, ownerKey: unknown): bo
 }
 
 export function masterConfigScope(key: string): { kind: "global" | "admin"; ownerKey?: string } | null {
-  if (/^sys_[A-Za-z0-9_.:-]+$/.test(key) || key === "sportsbook:global") return { kind: "global" };
+  if (/^sys_[A-Za-z0-9_.:-]+$/.test(key) || key === "sportsbook:global" || /^(services|video_games):global$/.test(key)) {
+    return { kind: "global" };
+  }
 
   const prefixed = /^(cashier_limits|cashier_prize_payouts|recharge_limits|admin_operational_limits|system_modes|manual_disabled_lotteries):(.+)$/.exec(key);
   if (prefixed) return { kind: "admin", ownerKey: prefixed[2] };

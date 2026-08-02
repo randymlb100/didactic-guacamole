@@ -3,8 +3,12 @@ package com.lotterynet.pro
 import android.app.Activity
 import android.app.Application
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.util.Log
+import android.view.Choreographer
 import com.lotterynet.pro.core.diagnostics.NativeCrashReporter
+import com.lotterynet.pro.core.sync.LotteryNetCatchUpScheduler
 import com.lotterynet.pro.core.update.UpdateManager
 import io.sentry.SentryLevel
 import io.sentry.SentryOptions
@@ -15,14 +19,12 @@ class LotteryNetApp : Application() {
     @Volatile
     private var currentActivityName: String? = null
     private lateinit var updateManager: UpdateManager
+    private val mainHandler = Handler(Looper.getMainLooper())
+    private var deferredStartupScheduled = false
+    private var deferredStartupInitialized = false
 
     override fun onCreate() {
         super.onCreate()
-        runCatching { bootstrapSentry() }
-            .onFailure { error ->
-                Log.e("LotteryNetSentry", "Sentry bootstrap failed", error)
-                NativeCrashReporter(this).recordHandled("LotteryNetApp.bootstrapSentry", error)
-            }
         runCatching { registerSafeLifecycleCallbacks() }
             .onFailure { error ->
                 Log.e("LotteryNetApp", "Lifecycle callback registration failed", error)
@@ -55,6 +57,11 @@ class LotteryNetApp : Application() {
 
                 override fun onActivityResumed(activity: Activity) {
                     currentActivityName = activity::class.java.simpleName
+                    if (deferredStartupInitialized) {
+                        LotteryNetCatchUpScheduler.enqueueImmediate(activity.applicationContext)
+                    } else {
+                        scheduleDeferredStartupAfterFirstFrame()
+                    }
                     runCatching {
                         Sentry.configureScope { scope ->
                             scope.setTag("current_activity", currentActivityName.orEmpty())
@@ -77,6 +84,30 @@ class LotteryNetApp : Application() {
                 }
             },
         )
+    }
+
+    private fun scheduleDeferredStartupAfterFirstFrame() {
+        if (deferredStartupScheduled || deferredStartupInitialized) return
+        deferredStartupScheduled = true
+        Choreographer.getInstance().postFrameCallback {
+            mainHandler.post { initializeDeferredStartup() }
+        }
+    }
+
+    private fun initializeDeferredStartup() {
+        if (deferredStartupInitialized) return
+        deferredStartupInitialized = true
+        runCatching { bootstrapSentry() }
+            .onFailure { error ->
+                Log.e("LotteryNetSentry", "Sentry bootstrap failed", error)
+                NativeCrashReporter(this).recordHandled("LotteryNetApp.bootstrapSentry", error)
+            }
+        runCatching { LotteryNetCatchUpScheduler.schedulePeriodic(this) }
+            .onFailure { error ->
+                Log.e("LotteryNetApp", "Catch-up periodic schedule failed", error)
+                NativeCrashReporter(this).recordHandled("LotteryNetApp.catchUpSchedule", error)
+            }
+        LotteryNetCatchUpScheduler.enqueueImmediate(this)
     }
 
     private fun bootstrapSentry() {

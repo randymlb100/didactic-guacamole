@@ -5,6 +5,7 @@ import android.graphics.BitmapFactory
 import android.net.Uri
 import android.os.Bundle
 import android.widget.Toast
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.compose.setContent
@@ -13,19 +14,23 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.ArrowForward
+import androidx.compose.material.icons.rounded.Clear
 import androidx.compose.material.icons.rounded.Lock
 import androidx.compose.material.icons.rounded.LockOpen
 import androidx.compose.material.icons.rounded.ManageAccounts
@@ -33,15 +38,17 @@ import androidx.compose.material.icons.rounded.PhoneAndroid
 import androidx.compose.material.icons.rounded.Print
 import androidx.compose.material.icons.rounded.QueryStats
 import androidx.compose.material.icons.rounded.Save
+import androidx.compose.material.icons.rounded.Sync
 import androidx.compose.material.icons.rounded.Tune
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Checkbox
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.ListItem
+import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -73,6 +80,7 @@ import com.lotterynet.pro.core.model.LotteryResult
 import com.lotterynet.pro.core.model.LotteryTerritory
 import com.lotterynet.pro.core.model.ThermalPrinterPrefs
 import com.lotterynet.pro.core.model.UserRole
+import com.lotterynet.pro.core.auth.SupabaseSessionTokenProvider
 import com.lotterynet.pro.core.results.PickResultIdentityResolver
 import com.lotterynet.pro.core.results.normalizeResultDateKey
 import com.lotterynet.pro.core.master.SupabaseMasterConfigRemoteStore
@@ -95,9 +103,11 @@ import com.lotterynet.pro.core.storage.systemModeRemoteKey
 import com.lotterynet.pro.core.storage.LocalUsersRepository
 import com.lotterynet.pro.core.sync.NativeOperationalSyncCoordinator
 import com.lotterynet.pro.core.sync.NativeTicketCloudSyncCoordinator
+import com.lotterynet.pro.core.sync.NativeTicketRemoteStore
 import com.lotterynet.pro.core.sync.NativeTicketSyncQueueRepository
 import com.lotterynet.pro.core.sync.SyncGovernor
 import com.lotterynet.pro.core.sync.resolveOperationalOwnerKey
+import com.lotterynet.pro.core.sync.resolveOperationalOwnerKeys
 import com.lotterynet.pro.ui.common.CompactActionButton
 import com.lotterynet.pro.ui.common.ActionTone
 import com.lotterynet.pro.ui.common.BottomNavBar
@@ -112,11 +122,13 @@ import com.lotterynet.pro.ui.common.MetricStrip
 import com.lotterynet.pro.ui.common.MetricStripItem
 import com.lotterynet.pro.ui.common.NativeBottomTab
 import com.lotterynet.pro.ui.common.LotteryLogo
+import com.lotterynet.pro.ui.common.DangerConfirmSheet
 import com.lotterynet.pro.ui.common.OperationalListHeader
+import com.lotterynet.pro.ui.common.OperationalModalSheet
 import com.lotterynet.pro.ui.common.OperationalSettingRow
 import com.lotterynet.pro.ui.common.QuickFilterChip
+import com.lotterynet.pro.ui.sales.formatLotteryClock12
 import com.lotterynet.pro.ui.common.ScreenHeaderPanel
-import com.lotterynet.pro.ui.common.SectionHeader
 import com.lotterynet.pro.ui.common.openBottomTab
 import com.lotterynet.pro.ui.common.rememberLotteryNetVisualSpec
 import com.lotterynet.pro.ui.navigation.NativeDestination
@@ -180,13 +192,25 @@ class AdminConfigActivity : AppCompatActivity() {
         val brandingRepository = LocalBrandingRepository(this)
         val adminLotteryRepository = LocalAdminLotteryConfigRepository(this)
         val salesRepository = LocalSalesRepository(this)
+        val sessionTokenProvider = SupabaseSessionTokenProvider(LocalSessionRepository(this))
+        val ticketRemoteStore = NativeTicketRemoteStore(
+            bearerTokenProvider = { sessionTokenProvider.freshAccessToken() },
+            bearerTokenRefresher = { sessionTokenProvider.forceFreshAccessToken() },
+        )
         val ticketSync = NativeOperationalSyncCoordinator(
-            NativeTicketCloudSyncCoordinator(salesRepository, NativeTicketSyncQueueRepository(this)),
+            NativeTicketCloudSyncCoordinator(
+                salesRepository,
+                NativeTicketSyncQueueRepository(this),
+                remoteStore = ticketRemoteStore,
+            ),
+            remoteStampStore = ticketRemoteStore,
         )
         val trustedClockRepository = LocalTrustedClockRepository(this)
         val catalogRepository = StaticLotteryCatalogRepository()
         val calendarRule = catalogRepository.getCalendarRule()
-        val brandingRemoteStore = SupabaseMasterConfigRemoteStore()
+        val brandingRemoteStore = SupabaseMasterConfigRemoteStore(
+            bearerTokenProvider = { sessionTokenProvider.freshAccessToken() },
+        )
         val holidayRepository = StaticHolidayCalendarRepository(
             dominicanLotteryIds = calendarRule.dominicanLotteryIds,
             americanLotteryIds = calendarRule.americanLotteryIds,
@@ -203,21 +227,19 @@ class AdminConfigActivity : AppCompatActivity() {
         val territory = normalizeTerritory(session.territory)
         val lotteries = catalogRepository.getAllLotteries()
         val ownerKey = resolveOperationalOwnerKey(session)
+        val ownerKeys = resolveOperationalOwnerKeys(session).ifEmpty { listOf(ownerKey) }
         val localSystemModeConfig = adminLotteryRepository.getSystemModeConfig()
-        val serverSystemModeConfig = runCatching {
-            brandingRemoteStore.fetchValue(systemModeRemoteKey(ownerKey))
-                ?.toString()
-                ?.let(::decodeAdminSystemModeConfig)
-        }.getOrNull()
+        val serverSystemModeConfig = firstAdminConfigRemoteValue(ownerKeys) { key ->
+            brandingRemoteStore.fetchValue(systemModeRemoteKey(key))
+        }?.toString()?.let(::decodeAdminSystemModeConfig)
         val systemModeConfig = resolveInitialAdminSystemModeConfig(
             localConfig = localSystemModeConfig,
             serverConfig = serverSystemModeConfig,
         ).also(adminLotteryRepository::saveSystemModeConfig)
-        val initialManualDisabledLotteryIds = runCatching {
-            brandingRemoteStore.fetchValue(manualDisabledLotteriesRemoteKey(ownerKey))
-                ?.toString()
-                ?.let(adminLotteryRepository::cacheManualDisabledLotteryConfig)
-        }.getOrNull() ?: adminLotteryRepository.getManualDisabledLotteryIds()
+        val initialManualDisabledLotteryIds = firstAdminConfigRemoteValue(ownerKeys) { key ->
+            brandingRemoteStore.fetchValue(manualDisabledLotteriesRemoteKey(key))
+        }?.toString()?.let(adminLotteryRepository::cacheManualDisabledLotteryConfig)
+            ?: adminLotteryRepository.getManualDisabledLotteryIds()
         LocalUsersRepository(this).touchSession(session)
         setContent {
             LotteryNetComposeTheme {
@@ -247,6 +269,7 @@ class AdminConfigActivity : AppCompatActivity() {
                         syncSystemModeConfigToServer(
                             remoteStore = brandingRemoteStore,
                             session = session,
+                            ownerKeys = ownerKeys,
                             config = config,
                             onDone = onDone,
                         )
@@ -286,6 +309,13 @@ class AdminConfigActivity : AppCompatActivity() {
                             ticketSync.flushOwnerLocalSnapshot(resolveOperationalOwnerKey(session), session.banca)
                         }
                         count
+                    },
+                    onDisableAllLotteries = { visibleLotteries ->
+                        visibleLotteries.fold(emptySet<String>()) { _, lottery ->
+                            adminLotteryRepository.setLotteryDisabled(lottery.id, true, permanent = false)
+                        }.also {
+                            syncManualDisabledLotteriesToServer(brandingRemoteStore, ownerKey, adminLotteryRepository)
+                        }
                     },
                     onEnableAvailableLotteries = {
                         adminLotteryRepository.clearManualDisabledLotteryIds().also {
@@ -353,20 +383,40 @@ class AdminConfigActivity : AppCompatActivity() {
     private fun syncSystemModeConfigToServer(
         remoteStore: SupabaseMasterConfigRemoteStore,
         session: ActiveSession,
+        ownerKeys: List<String>,
         config: AdminSystemModeConfig,
         onDone: (Boolean) -> Unit,
     ) {
-        val ownerKey = session.adminId?.takeIf { it.isNotBlank() }
-            ?: session.userId.takeIf { it.isNotBlank() }
-            ?: session.banca.orEmpty().ifBlank { "default" }
+        val syncKeys = resolveAdminSystemModeSyncKeys(session, ownerKeys)
         thread(name = "system-mode-sync") {
             val ok = runCatching {
-                remoteStore.upsertJsonValue("system_modes:$ownerKey", encodeAdminSystemModeConfig(config))
-            }.isSuccess
+                val payload = encodeAdminSystemModeConfig(config)
+                syncKeys.forEach { ownerKey ->
+                    remoteStore.upsertJsonValue(systemModeRemoteKey(ownerKey), payload)
+                }
+            }.isSuccess && syncKeys.isNotEmpty()
             runOnUiThread { onDone(ok) }
         }
     }
 
+}
+
+internal fun resolveAdminSystemModeSyncKeys(session: ActiveSession, ownerKeys: List<String>): List<String> {
+    val legacyOwnerKey = session.adminId?.takeIf { it.isNotBlank() }
+        ?: session.userId.takeIf { it.isNotBlank() }
+        ?: session.banca.orEmpty().ifBlank { "default" }
+    return (ownerKeys + legacyOwnerKey)
+        .map { it.trim() }
+        .filter { it.isNotBlank() }
+        .distinctBy { it.lowercase() }
+}
+
+private fun firstAdminConfigRemoteValue(ownerKeys: List<String>, fetch: (String) -> Any?): Any? {
+    ownerKeys.forEach { ownerKey ->
+        val value = runCatching { fetch(ownerKey) }.getOrNull()
+        if (value != null) return value
+    }
+    return null
 }
 
 private fun syncManualDisabledLotteriesToServer(
@@ -390,14 +440,128 @@ internal fun adminConfigOperationShortcutTitles(): List<String> = listOf("Cajero
 
 internal fun adminConfigOperationShortcutDescriptions(): List<String> = listOf("Bloqueo y límites. Premios se ajusta en Cajeros.")
 
-internal fun adminConfigSectionTitles(): List<String> = listOf(
-    "Ajustes rápidos",
-    "Operación",
-    "Caja",
-    "Bloqueo de lotería",
-    "Control de venta",
-    "Sistema",
+internal fun adminConfigAreaActionText(area: String): String = when (area) {
+    "sale" -> "Activa modos de venta y POS. Afecta la experiencia de admin y cajeros."
+    "blocks" -> "Bloquea loterías o jugadas. No borra límites ni tickets existentes."
+    "cash" -> "Organiza cajeros, logo, impresora y comprobantes."
+    "system" -> "Revisa sincronización y estado remoto. No modifica ventas por sí solo."
+    else -> "Selecciona una categoría para ver y guardar sus opciones."
+}
+
+internal fun adminLotteryBlockActionLabels(): List<String> = listOf(
+    "Bloquear una lotería",
+    "Bloquear todas las loterías",
 )
+
+internal fun resolveAdminLotteryScheduleText(lottery: LotteryCatalogItem): String {
+    return "${lottery.type} · sorteo ${formatLotteryClock12(lottery.baseDrawTime)} · cierra ${formatLotteryClock12(lottery.baseCloseTime)}"
+}
+
+internal fun adminConfigSectionTitles(): List<String> = listOf(
+    "Centro de ajustes",
+    "Venta y POS",
+    "Loterías y jugadas",
+    "Caja y tickets",
+    "Servidor y sincronización",
+)
+
+private enum class AdminConfigArea(
+    val id: String,
+    val title: String,
+    val subtitle: String,
+) {
+    SALE("sale", "Venta y POS", "Modos de venta, jugadas y pantalla POS."),
+    BLOCKS("blocks", "Loterías y jugadas", "Bloqueos, calendario y tipos de jugada."),
+    CASH("cash", "Caja y tickets", "Cajeros, logo, impresora y comprobantes."),
+    SYSTEM("system", "Servidor y sincronización", "Estado remoto, sincronización y sistema."),
+}
+
+private const val ALL_ADMIN_CONFIG_GROUP = "ALL"
+
+private fun adminConfigGroupFilterOptions(): List<QuickFilterChip> = listOf(
+    QuickFilterChip(ALL_ADMIN_CONFIG_GROUP, "Todas"),
+    QuickFilterChip("OPERACIÓN", "Operación"),
+    QuickFilterChip("CAJA", "Caja"),
+    QuickFilterChip("SISTEMA", "Sistema"),
+)
+
+private fun resolveAdminConfigArea(areaId: String): AdminConfigArea {
+    return AdminConfigArea.values().firstOrNull { it.id == areaId } ?: AdminConfigArea.SALE
+}
+
+internal fun adminConfigSystemHubCardTitles(): List<String> = AdminConfigArea.values().map { it.title }
+
+internal fun adminConfigDestinationIds(): List<String> = AdminConfigArea.values().map { it.id }
+
+internal fun adminConfigAreaGroup(areaId: String): String = when (resolveAdminConfigArea(areaId)) {
+    AdminConfigArea.SALE, AdminConfigArea.BLOCKS -> "OPERACIÓN"
+    AdminConfigArea.CASH -> "CAJA"
+    AdminConfigArea.SYSTEM -> "SISTEMA"
+}
+
+internal fun filterAdminConfigAreaTitles(query: String): List<String> {
+    val normalized = query.trim().lowercase()
+    val tokens = normalized.split(Regex("\\s+")).filter { it.isNotBlank() }
+    return AdminConfigArea.values()
+        .filter { area ->
+            tokens.isEmpty() || tokens.all { token ->
+                listOf(area.title, area.subtitle).any { text ->
+                    val normalizedText = text.lowercase()
+                    val words = normalizedText
+                        .split(Regex("[^\\p{L}\\p{N}]+"))
+                        .filter { it.isNotBlank() }
+                    words.any { it == token } || (token.length >= 4 && normalizedText.contains(token))
+                }
+            }
+        }
+        .map { it.title }
+}
+
+internal data class AdminConfigInteractionContract(
+    val usesSummaryCards: Boolean,
+    val usesSwitchForBooleanSetting: Boolean,
+    val usesSegmentedChoicesForModes: Boolean,
+    val usesBottomSheetForSecondarySelection: Boolean,
+)
+
+internal fun adminConfigInteractionContract(): AdminConfigInteractionContract {
+    return AdminConfigInteractionContract(
+        usesSummaryCards = true,
+        usesSwitchForBooleanSetting = true,
+        usesSegmentedChoicesForModes = true,
+        usesBottomSheetForSecondarySelection = true,
+    )
+}
+
+internal data class AdminSettingsNavigationContract(
+    val usesOverviewAndDetail: Boolean,
+    val systemBackReturnsToOverview: Boolean,
+    val groupsDestinations: Boolean,
+    val preservesBusinessCallbacks: Boolean,
+)
+
+internal fun adminSettingsNavigationContract(): AdminSettingsNavigationContract {
+    return AdminSettingsNavigationContract(
+        usesOverviewAndDetail = true,
+        systemBackReturnsToOverview = true,
+        groupsDestinations = true,
+        preservesBusinessCallbacks = true,
+    )
+}
+
+internal data class AdminBlockControlLayoutContract(
+    val stacksDestructiveActions: Boolean,
+    val showsSelectedDuration: Boolean,
+    val keepsLotteryActionBelowIdentity: Boolean,
+)
+
+internal fun adminBlockControlLayoutContract(): AdminBlockControlLayoutContract {
+    return AdminBlockControlLayoutContract(
+        stacksDestructiveActions = true,
+        showsSelectedDuration = true,
+        keepsLotteryActionBelowIdentity = true,
+    )
+}
 
 internal data class AdminManualResultDateSelectorContract(
     val optionCount: Int,
@@ -415,7 +579,7 @@ internal fun resolveAdminManualResultDateSelectorContract(optionCount: Int): Adm
     )
 }
 
-internal fun adminSystemGroupedSectionTitles(): List<String> = listOf("Operación", "Cajeros", "Servidor")
+internal fun adminSystemGroupedSectionTitles(): List<String> = listOf("Pantalla", "Admin", "Cajeros", "Sync y servidor")
 
 internal data class AdminSaleTypeBlockOption(
     val id: String,
@@ -474,6 +638,22 @@ internal fun applyAdminModeSegment(config: AdminSystemModeConfig, mode: String):
             else -> config.copy(lotteryModeEnabled = true, pickModeEnabled = false)
         },
     )
+}
+
+internal fun adminConfigModeLabel(mode: String): String {
+    return when (mode) {
+        "pick" -> "Solo Pick"
+        "both" -> "Lotería + Pick"
+        else -> "Solo Lotería"
+    }
+}
+
+internal fun adminConfigModeShortLabel(mode: String): String {
+    return when (mode) {
+        "pick" -> "Pick"
+        "both" -> "L+P"
+        else -> "Lot."
+    }
 }
 
 internal fun applyCashierDefaultModeSegment(config: AdminSystemModeConfig, mode: String): AdminSystemModeConfig {
@@ -537,6 +717,12 @@ internal data class AdminSystemModeRow(
     val label: String,
     val enabled: Boolean,
     val available: Boolean = true,
+)
+
+private data class PendingSystemModeChange(
+    val title: String,
+    val message: String,
+    val nextConfig: AdminSystemModeConfig,
 )
 
 internal fun adminSystemModeRows(
@@ -656,6 +842,7 @@ private fun AdminConfigRoute(
     onHasLotteryDrawPassed: (LotteryCatalogItem) -> Boolean,
     onSetLotteryDisabled: (String, Boolean, Boolean) -> Set<String>,
     onResolveBlockedLotteryTickets: (String, BlockedLotteryTicketAction) -> Int,
+    onDisableAllLotteries: (List<LotteryCatalogItem>) -> Set<String>,
     onEnableAvailableLotteries: () -> Set<String>,
     onOpenPrinter: () -> Unit,
     onOpenUsers: () -> Unit,
@@ -667,6 +854,9 @@ private fun AdminConfigRoute(
     var statusMessage by rememberSaveable { mutableStateOf("Configuración operativa local para banca, usuarios y loterías.") }
     var brandingSyncStatus by rememberSaveable { mutableStateOf("Guardado local") }
     var systemSyncStatus by rememberSaveable { mutableStateOf("Guardado local") }
+    var selectedConfigAreaId by rememberSaveable { mutableStateOf<String?>(null) }
+    var settingsSearchQuery by rememberSaveable { mutableStateOf("") }
+    var selectedConfigGroupName by rememberSaveable { mutableStateOf(ALL_ADMIN_CONFIG_GROUP) }
     var pendingBlockedLottery by remember { mutableStateOf<LotteryCatalogItem?>(null) }
     var pendingBlockedTicketCount by rememberSaveable { mutableStateOf(0) }
     var pendingBlockedLotteryPassed by rememberSaveable { mutableStateOf(false) }
@@ -689,6 +879,10 @@ private fun AdminConfigRoute(
         }
     }
 
+    BackHandler(enabled = selectedConfigAreaId != null) {
+        selectedConfigAreaId = null
+    }
+
     pendingBlockedLottery?.let { lottery ->
         val prompt = resolveManualLotteryBlockPrompt(
             lotteryName = lottery.name,
@@ -697,72 +891,76 @@ private fun AdminConfigRoute(
             dayKey = todayDayKey,
         )
         val durationLabel = if (pendingBlockedLotteryPermanent) "siempre" else "hasta mañana"
-        AlertDialog(
-            onDismissRequest = { pendingBlockedLottery = null },
-            title = { Text(prompt.title) },
-            text = {
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text(
-                        prompt.body,
-                        style = MaterialTheme.typography.bodyMedium,
-                    )
-                    Text(
-                        "Admin, elige duración del bloqueo: $durationLabel.",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = visual.colors.muted,
-                    )
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        TextButton(onClick = { pendingBlockedLotteryPermanent = false }) {
-                            Text("Hasta mañana")
-                        }
-                        TextButton(onClick = { pendingBlockedLotteryPermanent = true }) {
-                            Text("Siempre")
-                        }
-                    }
-                    TextButton(
-                        onClick = {
-                            manualDisabledLotteryIds = onSetLotteryDisabled(lottery.id, true, pendingBlockedLotteryPermanent)
-                            statusMessage = "${lottery.name} bloqueada $durationLabel."
-                            pendingBlockedLottery = null
-                        },
-                        modifier = Modifier.fillMaxWidth(),
-                    ) { Text("Bloquear sin tocar tickets") }
-                    TextButton(
-                        onClick = {
-                            manualDisabledLotteryIds = onSetLotteryDisabled(lottery.id, true, pendingBlockedLotteryPermanent)
-                            val count = onResolveBlockedLotteryTickets(lottery.id, BlockedLotteryTicketAction.VOID)
-                            statusMessage = "${lottery.name} bloqueada $durationLabel. $count ticket(s) anulados."
-                            pendingBlockedLottery = null
-                        },
-                        modifier = Modifier.fillMaxWidth(),
-                    ) { Text("Anular tickets") }
-                    TextButton(
-                        onClick = {
-                            manualDisabledLotteryIds = onSetLotteryDisabled(lottery.id, true, pendingBlockedLotteryPermanent)
-                            val count = onResolveBlockedLotteryTickets(lottery.id, BlockedLotteryTicketAction.DELETE)
-                            statusMessage = "${lottery.name} bloqueada $durationLabel. $count ticket(s) borrados."
-                            pendingBlockedLottery = null
-                        },
-                        modifier = Modifier.fillMaxWidth(),
-                    ) { Text("Borrar tickets") }
-                    TextButton(
-                        onClick = {
-                            manualDisabledLotteryIds = onSetLotteryDisabled(lottery.id, true, pendingBlockedLotteryPermanent)
-                            val count = onResolveBlockedLotteryTickets(lottery.id, BlockedLotteryTicketAction.MOVE_NEXT_DAY)
-                            statusMessage = "${lottery.name} bloqueada $durationLabel. $count ticket(s) pasados al siguiente día."
-                            pendingBlockedLottery = null
-                        },
-                        modifier = Modifier.fillMaxWidth(),
-                    ) { Text("Pasar al siguiente día") }
-                }
-            },
-            confirmButton = {},
-            dismissButton = {
-                TextButton(onClick = { pendingBlockedLottery = null }) {
-                    Text("Cancelar")
-                }
-            },
-        )
+        OperationalModalSheet(
+            title = prompt.title,
+            subtitle = "El bloqueo afecta la venta; los tickets solo cambian si eliges una acción explícita.",
+            onDismiss = { pendingBlockedLottery = null },
+        ) {
+            Text(
+                prompt.body,
+                style = MaterialTheme.typography.bodyMedium,
+                color = visual.colors.ink,
+            )
+            OperationalListHeader(title = "Duración", meta = durationLabel.replaceFirstChar(Char::uppercase))
+            CompactSegmentedSelector(
+                options = listOf(
+                    QuickFilterChip("day", "Hasta mañana"),
+                    QuickFilterChip("permanent", "Siempre"),
+                ),
+                selectedId = if (pendingBlockedLotteryPermanent) "permanent" else "day",
+                onSelected = { pendingBlockedLotteryPermanent = it == "permanent" },
+                columns = 2,
+                modifier = Modifier.fillMaxWidth(),
+            )
+            OperationalListHeader(title = "Acción sobre tickets", meta = "$pendingBlockedTicketCount encontrados")
+            CompactActionButton(
+                label = "Solo bloquear la lotería",
+                onClick = {
+                    manualDisabledLotteryIds = onSetLotteryDisabled(lottery.id, true, pendingBlockedLotteryPermanent)
+                    statusMessage = "${lottery.name} bloqueada $durationLabel."
+                    pendingBlockedLottery = null
+                },
+                modifier = Modifier.fillMaxWidth(),
+                icon = Icons.Rounded.Lock,
+                tone = ActionTone.Warning,
+            )
+            CompactActionButton(
+                label = "Bloquear y anular tickets",
+                onClick = {
+                    manualDisabledLotteryIds = onSetLotteryDisabled(lottery.id, true, pendingBlockedLotteryPermanent)
+                    val count = onResolveBlockedLotteryTickets(lottery.id, BlockedLotteryTicketAction.VOID)
+                    statusMessage = "${lottery.name} bloqueada $durationLabel. $count ticket(s) anulados."
+                    pendingBlockedLottery = null
+                },
+                modifier = Modifier.fillMaxWidth(),
+                icon = Icons.Rounded.Lock,
+                tone = ActionTone.Warning,
+            )
+            CompactActionButton(
+                label = "Bloquear y borrar tickets",
+                onClick = {
+                    manualDisabledLotteryIds = onSetLotteryDisabled(lottery.id, true, pendingBlockedLotteryPermanent)
+                    val count = onResolveBlockedLotteryTickets(lottery.id, BlockedLotteryTicketAction.DELETE)
+                    statusMessage = "${lottery.name} bloqueada $durationLabel. $count ticket(s) borrados."
+                    pendingBlockedLottery = null
+                },
+                modifier = Modifier.fillMaxWidth(),
+                icon = Icons.Rounded.Lock,
+                tone = ActionTone.Danger,
+            )
+            CompactActionButton(
+                label = "Mover tickets al día siguiente",
+                onClick = {
+                    manualDisabledLotteryIds = onSetLotteryDisabled(lottery.id, true, pendingBlockedLotteryPermanent)
+                    val count = onResolveBlockedLotteryTickets(lottery.id, BlockedLotteryTicketAction.MOVE_NEXT_DAY)
+                    statusMessage = "${lottery.name} bloqueada $durationLabel. $count ticket(s) pasados al siguiente día."
+                    pendingBlockedLottery = null
+                },
+                modifier = Modifier.fillMaxWidth(),
+                icon = Icons.AutoMirrored.Rounded.ArrowForward,
+                tone = ActionTone.Primary,
+            )
+        }
     }
 
     Scaffold(
@@ -791,138 +989,477 @@ private fun AdminConfigRoute(
             contentPadding = androidx.compose.foundation.layout.PaddingValues(bottom = visual.sizes.screenPaddingV),
         ) {
             item {
+                val selectedArea = selectedConfigAreaId?.let(::resolveAdminConfigArea)
                 ScreenHeaderPanel(
-                    title = "Configuración",
-                    subtitle = "${session.banca ?: "LotteryNet"} · ${session.username}",
-                    onBack = onBack,
-                    badgeLabel = "Admin",
+                    title = selectedArea?.title ?: "Configuración",
+                    subtitle = if (selectedArea == null) {
+                        "${session.banca ?: "LotteryNet"} · ${session.username}"
+                    } else {
+                        "Configuración operativa · ${session.banca ?: "LotteryNet"}"
+                    },
+                    onBack = { if (selectedArea == null) onBack() else selectedConfigAreaId = null },
+                    badgeLabel = if (selectedArea == null) "Admin" else "Ajuste",
                     badgeTone = MaterialTheme.colorScheme.primary,
                 )
             }
-            item {
-                CompactPanel {
-                    OperationalListHeader(title = "Ajustes rápidos", meta = "Orden operativo")
-                    Text(
-                        statusMessage,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = visual.colors.muted,
-                    )
-                    MetricStrip(
-                        items = listOf(
-                            MetricStripItem("Loterías", lotteries.size.toString(), visual.colors.ink),
-                            MetricStripItem("Manual", manualDisabledLotteryIds.size.toString(), if (manualDisabledLotteryIds.isNotEmpty()) MaterialTheme.colorScheme.error else visual.colors.neutral),
-                            MetricStripItem("Calendario", initialCalendarDisabledLotteryIds.size.toString(), visual.colors.neutral),
-                        ),
-                    )
-                }
-            }
-            item {
-                CompactPanel {
-                    OperationalListHeader(title = "Operación", meta = "Lo que afecta venta")
-                    ConfigShortcut("Cajeros", adminConfigOperationShortcutDescriptions().first(), Icons.Rounded.ManageAccounts, onOpenUsers)
-                    ConfigShortcut("Loterías", "Bloquear o habilitar sorteos abajo.", Icons.Rounded.LockOpen, null)
-                }
-            }
-            item {
-                CompactPanel {
-                    OperationalListHeader(title = "Caja", meta = "Salidas y tickets")
-                    BancaLogoSetting(
-                        bancaName = session.banca ?: session.username,
-                        branding = branding,
-                        onSelectLogo = { logoPicker.launch(arrayOf("image/*")) },
-                        onClearLogo = {
-                            branding = onClearBancaLogo()
-                            brandingSyncStatus = "Guardado local"
-                            statusMessage = "Logo de banca quitado localmente."
-                            onSyncBranding(branding) { ok ->
-                                brandingSyncStatus = if (ok) "Sincronizado" else "Pendiente"
-                                statusMessage = if (ok) "Cambio de logo sincronizado." else "Cambio local pendiente de sync."
-                            }
-                            Toast.makeText(context, "Logo quitado", Toast.LENGTH_SHORT).show()
-                        },
-                    )
-                    CompactStatusBadge(brandingSyncStatus, tone = visual.colors.tickets)
-                    adminConfigCajaShortcutTitles().forEach { title ->
-                        ConfigShortcut(title, "Bluetooth y ajustes.", Icons.Rounded.Print, onOpenPrinter)
-                    }
-                }
-            }
-            item {
-                LotteryBlockControlSection(
-                    lotteries = lotteries,
-                    systemModeConfig = systemModeConfig,
-                    manualDisabledLotteryIds = manualDisabledLotteryIds,
-                    calendarDisabledLotteryIds = initialCalendarDisabledLotteryIds,
-                    onEnableAvailableLotteries = {
-                        manualDisabledLotteryIds = onEnableAvailableLotteries()
-                        statusMessage = "Se habilitaron las loterías con sorteo disponible hoy."
-                        Toast.makeText(context, "Loterías habilitadas", Toast.LENGTH_SHORT).show()
-                    },
-                    onToggleManualDisabled = { lottery, disabled ->
-                        if (disabled) {
-                            val affected = onCountLotteryTickets(lottery.id)
-                            pendingBlockedTicketCount = affected
-                            pendingBlockedLotteryPassed = onHasLotteryDrawPassed(lottery)
-                            pendingBlockedLotteryPermanent = false
-                            pendingBlockedLottery = lottery
-                        } else {
-                            manualDisabledLotteryIds = onSetLotteryDisabled(lottery.id, false, false)
-                            statusMessage = "${lottery.name} volvió a estar disponible."
-                            Toast.makeText(context, statusMessage, Toast.LENGTH_SHORT).show()
-                        }
-                    },
-                )
-            }
-            item {
-                CompactPanel {
-                    OperationalListHeader(title = "Control de venta", meta = "Aplica a todos")
-                    SaleTypeBlockControlSection(
-                        config = systemModeConfig,
-                        onChange = { next ->
-                            val saved = onSaveSystemModeConfig(next)
-                            systemModeConfig = saved
-                            systemSyncStatus = "Enviando"
-                            statusMessage = "Guardando bloqueo de jugadas..."
-                            onSyncSystemModeConfig(saved) { ok ->
-                                systemSyncStatus = if (ok) "Sincronizado" else "Pendiente"
-                                statusMessage = if (ok) "Bloqueo de jugadas sincronizado." else "Bloqueo local pendiente de sync."
-                            }
-                        },
-                    )
-                }
-            }
-            item {
-                CompactPanel {
-                    OperationalListHeader(title = "Sistema", meta = "Modo y servidor")
-                    SystemModeConfigSection(
+            if (selectedConfigAreaId == null) {
+                item {
+                    SystemConfigurationHub(
+                        statusMessage = statusMessage,
                         config = systemModeConfig,
                         role = session.role,
-                        syncStatus = systemSyncStatus,
-                        onChange = { next ->
-                            val saved = onSaveSystemModeConfig(next)
-                            systemModeConfig = saved
-                            val commit = resolveSystemModeSelectionCommitMessage(serverSyncStarted = true)
-                            systemSyncStatus = commit.syncStatus
-                            statusMessage = commit.statusMessage
-                            onSyncSystemModeConfig(saved) { ok ->
-                                systemSyncStatus = if (ok) "Sincronizado" else "Pendiente"
-                                statusMessage = if (ok) "Modo de sistema sincronizado." else "Modo local pendiente de sync."
-                            }
-                        },
-                        onSaveServer = {
-                            systemSyncStatus = "Enviando"
-                            statusMessage = "Guardando modo de sistema en servidor..."
-                            onSyncSystemModeConfig(systemModeConfig) { ok ->
-                                systemSyncStatus = if (ok) "Sincronizado" else "Pendiente"
-                                statusMessage = if (ok) "Modo de sistema sincronizado." else "Modo local pendiente de sync."
-                            }
-                        },
+                        lotteryCount = lotteries.size,
+                        manualBlockedCount = manualDisabledLotteryIds.size,
+                        calendarBlockedCount = initialCalendarDisabledLotteryIds.size,
+                        brandingSyncStatus = brandingSyncStatus,
+                        systemSyncStatus = systemSyncStatus,
+                        onAreaSelected = { selectedConfigAreaId = resolveAdminConfigArea(it).id },
+                        searchQuery = settingsSearchQuery,
+                        onSearchQueryChange = { query -> settingsSearchQuery = query },
+                        selectedGroup = selectedConfigGroupName,
+                        onGroupChange = { selectedConfigGroupName = it },
                     )
+                }
+            } else {
+                item {
+                    AdminConfigAreaContextCard(resolveAdminConfigArea(selectedConfigAreaId!!))
+                }
+            }
+            if (selectedConfigAreaId != null) when (resolveAdminConfigArea(selectedConfigAreaId!!)) {
+                AdminConfigArea.SALE -> item {
+                    CompactPanel {
+                        OperationalListHeader(title = "Modo de venta", meta = "Admin, cajeros y sync")
+                        Text(
+                            "Define qué experiencias y modos de jugada estarán disponibles para admin y cajeros.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = visual.colors.muted,
+                        )
+                        SystemModeConfigSection(
+                            config = systemModeConfig,
+                            role = session.role,
+                            syncStatus = systemSyncStatus,
+                            onChange = { next ->
+                                val saved = onSaveSystemModeConfig(next)
+                                systemModeConfig = saved
+                                val commit = resolveSystemModeSelectionCommitMessage(serverSyncStarted = true)
+                                systemSyncStatus = commit.syncStatus
+                                statusMessage = commit.statusMessage
+                                onSyncSystemModeConfig(saved) { ok ->
+                                    systemSyncStatus = if (ok) "Sincronizado" else "Pendiente"
+                                    statusMessage = if (ok) "Modo de sistema sincronizado." else "Modo local pendiente de sync."
+                                }
+                            },
+                            onSaveServer = {
+                                systemSyncStatus = "Enviando"
+                                statusMessage = "Guardando modo de sistema en servidor..."
+                                onSyncSystemModeConfig(systemModeConfig) { ok ->
+                                    systemSyncStatus = if (ok) "Sincronizado" else "Pendiente"
+                                    statusMessage = if (ok) "Modo de sistema sincronizado." else "Modo local pendiente de sync."
+                                }
+                            },
+                        )
+                    }
+                }
+                AdminConfigArea.BLOCKS -> {
+                    item {
+                        LotteryBlockControlSection(
+                            lotteries = lotteries,
+                            systemModeConfig = systemModeConfig,
+                            manualDisabledLotteryIds = manualDisabledLotteryIds,
+                            calendarDisabledLotteryIds = initialCalendarDisabledLotteryIds,
+                            onEnableAvailableLotteries = {
+                                manualDisabledLotteryIds = onEnableAvailableLotteries()
+                                statusMessage = "Se habilitaron las loterías con sorteo disponible hoy."
+                                Toast.makeText(context, "Loterías habilitadas", Toast.LENGTH_SHORT).show()
+                            },
+                            onDisableAllLotteries = { visibleLotteries ->
+                                manualDisabledLotteryIds = onDisableAllLotteries(visibleLotteries)
+                                statusMessage = "Se bloquearon ${visibleLotteries.size} loterías visibles."
+                                Toast.makeText(context, statusMessage, Toast.LENGTH_SHORT).show()
+                                manualDisabledLotteryIds
+                            },
+                            onToggleManualDisabled = { lottery, disabled ->
+                                if (disabled) {
+                                    val affected = onCountLotteryTickets(lottery.id)
+                                    pendingBlockedTicketCount = affected
+                                    pendingBlockedLotteryPassed = onHasLotteryDrawPassed(lottery)
+                                    pendingBlockedLotteryPermanent = false
+                                    pendingBlockedLottery = lottery
+                                } else {
+                                    manualDisabledLotteryIds = onSetLotteryDisabled(lottery.id, false, false)
+                                    statusMessage = "${lottery.name} volvió a estar disponible."
+                                    Toast.makeText(context, statusMessage, Toast.LENGTH_SHORT).show()
+                                }
+                            },
+                        )
+                    }
+                    item {
+                        CompactPanel {
+                            OperationalListHeader(title = "Bloqueo de jugadas", meta = "Aplica a todos")
+                            Text(
+                                "Los bloqueos afectan la disponibilidad de venta y no eliminan la configuración de límites.",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = visual.colors.muted,
+                            )
+                            CompactStatusBadge(systemSyncStatus, tone = visual.colors.admin)
+                            SaleTypeBlockControlSection(
+                                config = systemModeConfig,
+                                onChange = { next ->
+                                    val saved = onSaveSystemModeConfig(next)
+                                    systemModeConfig = saved
+                                    systemSyncStatus = "Enviando"
+                                    statusMessage = "Guardando bloqueo de jugadas..."
+                                    onSyncSystemModeConfig(saved) { ok ->
+                                        systemSyncStatus = if (ok) "Sincronizado" else "Pendiente"
+                                        statusMessage = if (ok) "Bloqueo de jugadas sincronizado." else "Bloqueo local pendiente de sync."
+                                    }
+                                },
+                            )
+                        }
+                    }
+                }
+                AdminConfigArea.CASH -> {
+                    item {
+                        CompactPanel {
+                            OperationalListHeader(title = "Accesos operativos", meta = "Lo que afecta venta")
+                            Text(
+                                "Administra accesos relacionados con cajeros sin mezclarlo con la configuración de loterías.",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = visual.colors.muted,
+                            )
+                            ConfigShortcut("Cajeros", adminConfigOperationShortcutDescriptions().first(), Icons.Rounded.ManageAccounts, onOpenUsers)
+                        }
+                    }
+                    item {
+                        CompactPanel {
+                            OperationalListHeader(title = "Caja", meta = "Salidas y tickets")
+                            Text(
+                                "Logo, impresora y tickets pertenecen a la operación de caja.",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = visual.colors.muted,
+                            )
+                            BancaLogoSetting(
+                                bancaName = session.banca ?: session.username,
+                                branding = branding,
+                                onSelectLogo = { logoPicker.launch(arrayOf("image/*")) },
+                                onClearLogo = {
+                                    branding = onClearBancaLogo()
+                                    brandingSyncStatus = "Guardado local"
+                                    statusMessage = "Logo de banca quitado localmente."
+                                    onSyncBranding(branding) { ok ->
+                                        brandingSyncStatus = if (ok) "Sincronizado" else "Pendiente"
+                                        statusMessage = if (ok) "Cambio de logo sincronizado." else "Cambio local pendiente de sync."
+                                    }
+                                    Toast.makeText(context, "Logo quitado", Toast.LENGTH_SHORT).show()
+                                },
+                            )
+                            CompactStatusBadge(brandingSyncStatus, tone = visual.colors.tickets)
+                            adminConfigCajaShortcutTitles().forEach { title ->
+                                ConfigShortcut(title, "Bluetooth y ajustes.", Icons.Rounded.Print, onOpenPrinter)
+                            }
+                        }
+                    }
+                }
+                AdminConfigArea.SYSTEM -> item {
+                    CompactPanel {
+                        OperationalListHeader(title = "Estado del sistema", meta = "Diagnóstico")
+                        Text(
+                            "Consulta el estado de la configuración local y su sincronización. Las acciones de guardado permanecen dentro de cada categoría.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = visual.colors.muted,
+                        )
+                        OperationalSettingRow(
+                            title = "Configuración de venta",
+                            subtitle = "Modo admin, cajeros y POS Lite",
+                            meta = systemSyncStatus,
+                            icon = Icons.Rounded.Tune,
+                            tone = visual.colors.sale,
+                            onClick = { selectedConfigAreaId = AdminConfigArea.SALE.id },
+                        )
+                        OperationalSettingRow(
+                            title = "Sincronización de ajustes",
+                            subtitle = statusMessage,
+                            meta = systemSyncStatus,
+                            icon = Icons.Rounded.Sync,
+                            tone = visual.colors.admin,
+                            onClick = null,
+                        )
+                        OperationalSettingRow(
+                            title = "Branding y caja",
+                            subtitle = "Logo, impresora y tickets",
+                            meta = brandingSyncStatus,
+                            icon = Icons.Rounded.Print,
+                            tone = visual.colors.printer,
+                            onClick = { selectedConfigAreaId = AdminConfigArea.CASH.id },
+                        )
+                    }
                 }
             }
         }
     }
 }
+}
+
+@Composable
+private fun AdminConfigAreaContextCard(area: AdminConfigArea) {
+    val visual = rememberLotteryNetVisualSpec()
+    CompactPanel(
+        alt = true,
+        contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 12.dp, vertical = 10.dp),
+    ) {
+        OperationalListHeader(
+            title = area.title,
+            meta = adminConfigAreaGroup(area.id),
+        )
+        Text(
+            area.subtitle,
+            style = MaterialTheme.typography.titleSmall,
+            color = visual.colors.ink,
+            fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+        )
+        Text(
+            adminConfigAreaActionText(area.id),
+            style = MaterialTheme.typography.bodySmall,
+            color = visual.colors.muted,
+        )
+    }
+}
+
+@Composable
+private fun SystemConfigurationHub(
+    statusMessage: String,
+    config: AdminSystemModeConfig,
+    role: UserRole,
+    lotteryCount: Int,
+    manualBlockedCount: Int,
+    calendarBlockedCount: Int,
+    brandingSyncStatus: String,
+    systemSyncStatus: String,
+    onAreaSelected: (String) -> Unit,
+    searchQuery: String,
+    onSearchQueryChange: (String) -> Unit,
+    selectedGroup: String,
+    onGroupChange: (String) -> Unit,
+) {
+    val visual = rememberLotteryNetVisualSpec()
+    val adminMode = resolveAdminModeSegment(config)
+    val cashierMode = resolveCashierDefaultModeSegment(config)
+    val blockedPlayCount = config.blockedSalePlays.size
+    val matchingAreas = filterAdminConfigAreaTitles(searchQuery)
+        .mapNotNull { title -> AdminConfigArea.values().firstOrNull { it.title == title } }
+        .filter { selectedGroup == ALL_ADMIN_CONFIG_GROUP || adminConfigAreaGroup(it.id) == selectedGroup }
+    val hasActiveFilters = searchQuery.isNotBlank() || selectedGroup != ALL_ADMIN_CONFIG_GROUP
+    Column(verticalArrangement = Arrangement.spacedBy(visual.sizes.sectionGap)) {
+        CompactPanel {
+            OperationalListHeader(title = "Centro de ajustes", meta = "Configuración operativa")
+            Text(
+                "Abre una categoría para ver solo sus controles. Cada sección conserva su guardado actual.",
+                style = MaterialTheme.typography.bodySmall,
+                color = visual.colors.muted,
+            )
+            OutlinedTextField(
+                value = searchQuery,
+                onValueChange = onSearchQueryChange,
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true,
+                label = { Text("Buscar ajustes") },
+                placeholder = { Text("Ej. POS, impresora, bloqueos") },
+                trailingIcon = if (searchQuery.isBlank()) null else {
+                    {
+                        androidx.compose.material3.IconButton(
+                            onClick = { onSearchQueryChange("") },
+                        ) {
+                            Icon(Icons.Rounded.Clear, contentDescription = "Limpiar búsqueda")
+                        }
+                    }
+                },
+            )
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .horizontalScroll(rememberScrollState()),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                adminConfigGroupFilterOptions().forEach { option ->
+                    FilterChip(
+                        selected = selectedGroup == option.id,
+                        onClick = { onGroupChange(option.id) },
+                        label = { Text(option.label) },
+                    )
+                }
+            }
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween,
+            ) {
+                Text(
+                    text = "${matchingAreas.size} ${if (matchingAreas.size == 1) "categoría" else "categorías"}",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = visual.colors.muted,
+                )
+                if (hasActiveFilters) {
+                    TextButton(
+                        onClick = {
+                            onSearchQueryChange("")
+                            onGroupChange(ALL_ADMIN_CONFIG_GROUP)
+                        },
+                    ) {
+                        Text("Limpiar filtros")
+                    }
+                }
+            }
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+            MetricStrip(
+                items = listOf(
+                    MetricStripItem("Venta", adminConfigModeShortLabel(adminMode), visual.colors.sale),
+                    MetricStripItem("Bloq.", (manualBlockedCount + blockedPlayCount).toString(), if (manualBlockedCount + blockedPlayCount > 0) MaterialTheme.colorScheme.error else visual.colors.gain),
+                    MetricStripItem("Loterías", lotteryCount.toString(), visual.colors.ink),
+                ),
+            )
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+                CompactStatusBadge("Perfil ${adminConfigRoleLabel(role)}", tone = visual.colors.admin)
+                CompactStatusBadge(systemSyncStatus, tone = visual.colors.admin)
+            }
+            Text(
+                statusMessage,
+                style = MaterialTheme.typography.bodySmall,
+                color = visual.colors.muted,
+            )
+        }
+        if (matchingAreas.isEmpty()) {
+            CompactPanel(alt = true) {
+                OperationalListHeader(title = "Sin resultados", meta = "Prueba otra palabra")
+                Text(
+                    "No hay una categoría que coincida con tu búsqueda.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = visual.colors.muted,
+                )
+            }
+        } else {
+            matchingAreas.groupBy { adminConfigAreaGroup(it.id) }.forEach { (group, areas) ->
+                CompactPanel {
+                    OperationalListHeader(
+                        title = group.lowercase().replaceFirstChar(Char::uppercase),
+                        meta = "${areas.size} ${if (areas.size == 1) "opción" else "opciones"}",
+                    )
+                    areas.forEach { area ->
+                        AdminConfigCategoryCard(
+                            area = area,
+                            meta = when (area) {
+                                AdminConfigArea.SALE -> "Admin ${adminConfigModeLabel(adminMode)}"
+                                AdminConfigArea.BLOCKS -> "${manualBlockedCount + blockedPlayCount} activos"
+                                AdminConfigArea.CASH -> brandingSyncStatus
+                                AdminConfigArea.SYSTEM -> systemSyncStatus
+                            },
+                            onClick = { onAreaSelected(area.id) },
+                        )
+                    }
+                }
+            }
+        }
+        CompactPanel(
+            alt = true,
+            contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 12.dp, vertical = 10.dp),
+        ) {
+            Text(
+                text = "Calendario: $calendarBlockedCount sin sorteo hoy · Cajeros: ${adminConfigModeLabel(cashierMode)}",
+                style = MaterialTheme.typography.labelSmall,
+                color = visual.colors.muted,
+                fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+            )
+        }
+    }
+}
+
+@Composable
+private fun AdminConfigCategoryCard(
+    area: AdminConfigArea,
+    meta: String,
+    onClick: () -> Unit,
+) {
+    val visual = rememberLotteryNetVisualSpec()
+    val compact = visual.windowMode == com.lotterynet.pro.ui.common.LotteryNetWindowMode.POS_TIGHT
+    val tone = when (area) {
+        AdminConfigArea.SALE -> visual.colors.sale
+        AdminConfigArea.BLOCKS -> if (meta.startsWith("0")) visual.colors.gain else MaterialTheme.colorScheme.error
+        AdminConfigArea.CASH -> visual.colors.printer
+        AdminConfigArea.SYSTEM -> visual.colors.admin
+    }
+    val icon = when (area) {
+        AdminConfigArea.SALE -> Icons.Rounded.Tune
+        AdminConfigArea.BLOCKS -> Icons.Rounded.Lock
+        AdminConfigArea.CASH -> Icons.Rounded.Print
+        AdminConfigArea.SYSTEM -> Icons.Rounded.Sync
+    }
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick),
+        shape = RoundedCornerShape(visual.sizes.panelRadius),
+        color = MaterialTheme.colorScheme.surfaceContainerLow,
+        tonalElevation = 2.dp,
+    ) {
+        ListItem(
+            modifier = Modifier.padding(
+                horizontal = if (compact) 10.dp else 14.dp,
+                vertical = if (compact) 8.dp else 10.dp,
+            ),
+            headlineContent = {
+                Text(
+                    area.title,
+                    style = if (compact) MaterialTheme.typography.titleSmall else MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onSurface,
+                )
+            },
+            supportingContent = {
+                Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                    Text(
+                        area.subtitle,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = if (compact) 1 else 2,
+                        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                    )
+                    Text(meta, style = MaterialTheme.typography.labelMedium, color = tone)
+                }
+            },
+            leadingContent = {
+                Surface(
+                    modifier = Modifier.size(if (compact) 38.dp else 44.dp),
+                    shape = RoundedCornerShape(if (compact) 12.dp else 14.dp),
+                    color = tone.copy(alpha = 0.14f),
+                ) {
+                    Icon(
+                        icon,
+                        contentDescription = null,
+                        tint = tone,
+                        modifier = Modifier.padding(if (compact) 9.dp else 11.dp),
+                    )
+                }
+            },
+            trailingContent = {
+                Icon(
+                    Icons.AutoMirrored.Rounded.ArrowForward,
+                    contentDescription = "Abrir ${area.title}",
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            },
+            colors = ListItemDefaults.colors(
+                containerColor = androidx.compose.ui.graphics.Color.Transparent,
+            ),
+        )
+    }
+}
+
+private fun adminConfigRoleLabel(role: UserRole): String {
+    return when (role) {
+        UserRole.MASTER -> "master"
+        UserRole.ADMIN -> "admin"
+        UserRole.SUPERVISOR -> "supervisor"
+        UserRole.CASHIER -> "cajero"
+        UserRole.UNKNOWN -> "sin rol"
+    }
 }
 
 @Composable
@@ -1052,6 +1589,7 @@ private fun SaleTypeBlockControlSection(
     onChange: (AdminSystemModeConfig) -> Unit,
 ) {
     val visual = rememberLotteryNetVisualSpec()
+    var showBlockSheet by rememberSaveable { mutableStateOf(false) }
     var selectedType by rememberSaveable { mutableStateOf("Q") }
     var numberInput by rememberSaveable { mutableStateOf("") }
     val selectedOption = adminSaleTypeBlockOptions().firstOrNull { it.id == selectedType } ?: adminSaleTypeBlockOptions().first()
@@ -1068,32 +1606,9 @@ private fun SaleTypeBlockControlSection(
             MetricStripItem("Estado", if (blocked.isEmpty()) "Libre" else "Activo", if (blocked.isEmpty()) visual.colors.gain else MaterialTheme.colorScheme.error),
         ),
     )
-    CompactSegmentedSelector(
-        options = adminSaleTypeBlockOptions().map { QuickFilterChip(it.id, it.title) },
-        selectedId = selectedType,
-        onSelected = {
-            selectedType = it
-            numberInput = ""
-        },
-        columns = 2,
-        modifier = Modifier.fillMaxWidth(),
-    )
-    CompactTextInput(
-        label = selectedOption.title,
-        value = numberInput,
-        onValueChange = { numberInput = it.filter(Char::isDigit).take(6) },
-        placeholder = selectedOption.subtitle,
-        keyboardType = KeyboardType.Number,
-    )
     CompactActionButton(
         label = "Bloquear jugada",
-        onClick = {
-            candidate?.let {
-                onChange(addBlockedSalePlay(config, it.playType, it.number))
-                numberInput = ""
-            }
-        },
-        enabled = candidate != null,
+        onClick = { showBlockSheet = true },
         modifier = Modifier.fillMaxWidth(),
         icon = Icons.Rounded.Lock,
         tone = ActionTone.Danger,
@@ -1114,6 +1629,49 @@ private fun SaleTypeBlockControlSection(
             }
         }
     }
+    if (showBlockSheet) {
+        AdminConfigModalSheet(
+            title = "Bloquear jugada",
+            subtitle = "Elige el tipo y escribe el número exacto. Esto aplica a admin y cajeros.",
+            onDismiss = { showBlockSheet = false },
+        ) {
+            CompactSegmentedSelector(
+                options = adminSaleTypeBlockOptions().map { QuickFilterChip(it.id, it.title) },
+                selectedId = selectedType,
+                onSelected = {
+                    selectedType = it
+                    numberInput = ""
+                },
+                columns = 2,
+                modifier = Modifier.fillMaxWidth(),
+            )
+            CompactTextInput(
+                label = selectedOption.title,
+                value = numberInput,
+                onValueChange = { numberInput = it.filter(Char::isDigit).take(6) },
+                placeholder = selectedOption.subtitle,
+                keyboardType = KeyboardType.Number,
+            )
+            CompactStatusBadge(
+                label = candidate?.let { blockedSalePlayLabel(it) } ?: "Completa el número para activar",
+                tone = if (candidate != null) MaterialTheme.colorScheme.error else visual.colors.neutral,
+            )
+            CompactActionButton(
+                label = "Confirmar bloqueo",
+                onClick = {
+                    candidate?.let {
+                        onChange(addBlockedSalePlay(config, it.playType, it.number))
+                        numberInput = ""
+                        showBlockSheet = false
+                    }
+                },
+                enabled = candidate != null,
+                modifier = Modifier.fillMaxWidth(),
+                icon = Icons.Rounded.Lock,
+                tone = ActionTone.Danger,
+            )
+        }
+    }
 }
 
 @Composable
@@ -1125,24 +1683,39 @@ private fun SystemModeConfigSection(
     onSaveServer: () -> Unit,
 ) {
     val visual = rememberLotteryNetVisualSpec()
+    var pendingChange by remember { mutableStateOf<PendingSystemModeChange?>(null) }
     val modeOptions = listOf(
         QuickFilterChip("lottery", "Lotería"),
         QuickFilterChip("pick", "Pick"),
         QuickFilterChip("both", "Lotería + Pick"),
     )
+    val adminMode = resolveAdminModeSegment(config)
+    val cashierMode = resolveCashierDefaultModeSegment(config)
     Text(
-        "Activa funciones por banca. Cajero usa Solo Lotería por defecto; puedes cambiarlo a Solo Pick o Lotería + Pick.",
+        "Define qué aparece en Venta para admin y cuál modo reciben los cajeros al entrar. No cambia límites, comisiones ni premios.",
         style = MaterialTheme.typography.bodySmall,
         color = visual.colors.ink,
         fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
     )
-    if (syncStatus.equals("Enviando", ignoreCase = true)) {
-        CompactLoadingState(label = "Guardando modo de sistema...")
-    } else {
-        CompactStatusBadge(syncStatus, tone = visual.colors.admin)
-    }
+    MetricStrip(
+        items = listOf(
+            MetricStripItem("Admin", adminConfigModeShortLabel(adminMode), visual.colors.admin),
+            MetricStripItem("Cajero", adminConfigModeShortLabel(cashierMode), visual.colors.sale),
+            MetricStripItem("Pantalla", if (config.posLiteEnabled) "Lite" else "Normal", visual.colors.neutral),
+        ),
+    )
+    CompactStatusBadge(
+        label = when (role) {
+            UserRole.MASTER -> "Perfil master"
+            UserRole.ADMIN -> "Perfil admin"
+            UserRole.SUPERVISOR -> "Perfil supervisor"
+            UserRole.CASHIER -> "Perfil cajero"
+            UserRole.UNKNOWN -> "Perfil sin rol"
+        },
+        tone = visual.colors.admin,
+    )
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        OperationalListHeader(title = "Operación", meta = "Modo disponible para admin")
+        OperationalListHeader(title = "Pantalla", meta = "Equipos pequeños")
         CompactSwitchRow(
             title = "Modo POS Lite",
             subtitle = "Compacta pantallas operativas en equipos pequeños.",
@@ -1150,30 +1723,69 @@ private fun SystemModeConfigSection(
             onCheckedChange = { onChange(normalizeAdminSystemModeConfig(config.copy(posLiteEnabled = it))) },
             tone = ActionTone.Primary,
         )
+
+        OperationalListHeader(title = "Admin", meta = "Modo disponible")
         CompactSegmentedSelector(
             options = modeOptions,
-            selectedId = resolveAdminModeSegment(config),
-            onSelected = { onChange(applyAdminModeSegment(config, it)) },
+            selectedId = adminMode,
+            onSelected = { mode ->
+                val next = applyAdminModeSegment(config, mode)
+                if (next != config) {
+                    val label = modeOptions.firstOrNull { it.id == mode }?.label ?: mode
+                    pendingChange = PendingSystemModeChange(
+                        title = "Cambiar modo admin",
+                        message = "El admin venderá en modo $label. Confirma solo si este cambio corresponde a la operación actual.",
+                        nextConfig = next,
+                    )
+                }
+            },
             columns = 3,
             modifier = Modifier.fillMaxWidth(),
         )
 
-        OperationalListHeader(title = "Cajeros", meta = "Modo por defecto al entrar")
+        OperationalListHeader(title = "Cajeros", meta = "Modo por defecto")
         CompactSegmentedSelector(
             options = modeOptions,
-            selectedId = resolveCashierDefaultModeSegment(config),
-            onSelected = { onChange(applyCashierDefaultModeSegment(config, it)) },
+            selectedId = cashierMode,
+            onSelected = { mode ->
+                val next = applyCashierDefaultModeSegment(config, mode)
+                if (next != config) {
+                    val label = modeOptions.firstOrNull { it.id == mode }?.label ?: mode
+                    pendingChange = PendingSystemModeChange(
+                        title = "Cambiar modo cajero",
+                        message = "Los cajeros entrarán por defecto en modo $label. Confirma para evitar cambiar el flujo de venta por accidente.",
+                        nextConfig = next,
+                    )
+                }
+            },
             columns = 3,
             modifier = Modifier.fillMaxWidth(),
         )
 
-        OperationalListHeader(title = "Servidor", meta = "Auto al tocar modo")
+        OperationalListHeader(title = "Sync y servidor", meta = "Guardar configuración")
+        if (syncStatus.equals("Enviando", ignoreCase = true)) {
+            CompactLoadingState(label = "Guardando modo de venta...")
+        } else {
+            CompactStatusBadge(syncStatus, tone = visual.colors.admin)
+        }
         CompactActionButton(
             label = adminSystemModeSaveButtonLabel(),
             onClick = onSaveServer,
             modifier = Modifier.fillMaxWidth(),
             icon = Icons.Rounded.Save,
             tone = ActionTone.Primary,
+        )
+    }
+    pendingChange?.let { change ->
+        DangerConfirmSheet(
+            title = change.title,
+            message = change.message,
+            confirmLabel = "Aplicar cambio",
+            onConfirm = {
+                onChange(change.nextConfig)
+                pendingChange = null
+            },
+            onDismiss = { pendingChange = null },
         )
     }
 }
@@ -1185,21 +1797,31 @@ private fun LotteryBlockControlSection(
     manualDisabledLotteryIds: Set<String>,
     calendarDisabledLotteryIds: Set<String>,
     onEnableAvailableLotteries: () -> Unit,
+    onDisableAllLotteries: (List<LotteryCatalogItem>) -> Set<String>,
     onToggleManualDisabled: (LotteryCatalogItem, Boolean) -> Unit,
 ) {
     val visual = rememberLotteryNetVisualSpec()
-    var expanded by rememberSaveable { mutableStateOf(false) }
+    var showLotterySheet by rememberSaveable { mutableStateOf(false) }
+    var showDisableAllConfirm by rememberSaveable { mutableStateOf(false) }
+    var lotteryQuery by rememberSaveable { mutableStateOf("") }
     var selectedLotteryId by rememberSaveable { mutableStateOf("") }
     val options = remember(lotteries, systemModeConfig) {
         filterAdminLotteryBlockOptions(lotteries, query = "", config = systemModeConfig)
     }
+    val filteredOptions = remember(lotteries, systemModeConfig, lotteryQuery) {
+        filterAdminLotteryBlockOptions(lotteries, query = lotteryQuery, config = systemModeConfig)
+    }
     val selectedLottery = remember(options, selectedLotteryId) {
         resolveAdminLotteryBlockSelection(options, selectedLotteryId)
     }
+    val blockableLotteries = remember(options, manualDisabledLotteryIds, calendarDisabledLotteryIds) {
+        options.filter { lottery -> lottery.id !in manualDisabledLotteryIds && lottery.id !in calendarDisabledLotteryIds }
+    }
+    val blockLabels = remember { adminLotteryBlockActionLabels() }
     val openCount = options.count { it.id !in manualDisabledLotteryIds && it.id !in calendarDisabledLotteryIds }
 
     CompactPanel {
-        OperationalListHeader(title = "Bloqueo de lotería", meta = "Buscar y cambiar estado")
+        OperationalListHeader(title = "Bloqueo de loterías", meta = "Una o todas a la vez")
         MetricStrip(
             items = listOf(
                 MetricStripItem("Abiertas", openCount.toString(), visual.colors.gain),
@@ -1208,45 +1830,30 @@ private fun LotteryBlockControlSection(
             ),
         )
         CompactActionButton(
+            label = blockLabels.first(),
+            onClick = {
+                lotteryQuery = ""
+                showLotterySheet = true
+            },
+            modifier = Modifier.fillMaxWidth(),
+            icon = Icons.Rounded.Tune,
+            tone = ActionTone.Primary,
+        )
+        CompactActionButton(
+            label = blockLabels.last(),
+            onClick = { showDisableAllConfirm = true },
+            modifier = Modifier.fillMaxWidth(),
+            icon = Icons.Rounded.Lock,
+            tone = ActionTone.Danger,
+            enabled = blockableLotteries.isNotEmpty(),
+        )
+        CompactActionButton(
             label = "Habilitar disponibles hoy",
             onClick = onEnableAvailableLotteries,
             modifier = Modifier.fillMaxWidth(),
             icon = Icons.Rounded.LockOpen,
             tone = ActionTone.Success,
         )
-        Box(modifier = Modifier.fillMaxWidth()) {
-            CompactActionButton(
-                label = selectedLottery?.name ?: "Elegir lotería",
-                onClick = { expanded = true },
-                modifier = Modifier.fillMaxWidth(),
-                icon = Icons.Rounded.Tune,
-                tone = ActionTone.Primary,
-            )
-            DropdownMenu(
-                expanded = expanded && options.isNotEmpty(),
-                onDismissRequest = { expanded = false },
-                modifier = Modifier.fillMaxWidth(0.92f),
-            ) {
-                options.forEach { lottery ->
-                    DropdownMenuItem(
-                        text = {
-                            Column {
-                                Text(lottery.name, style = MaterialTheme.typography.titleSmall)
-                                Text(
-                            "ID ${lottery.id} · ${lottery.type} · ${lottery.baseDrawTime}",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = visual.colors.muted,
-                                )
-                            }
-                        },
-                        onClick = {
-                            selectedLotteryId = lottery.id
-                            expanded = false
-                        },
-                    )
-                }
-            }
-        }
         selectedLottery?.let { lottery ->
             LotteryAvailabilityRow(
                 lottery = lottery,
@@ -1258,7 +1865,7 @@ private fun LotteryBlockControlSection(
                 label = "Limpiar selección",
                 onClick = {
                     selectedLotteryId = ""
-                    expanded = false
+                    showLotterySheet = false
                 },
                 modifier = Modifier.fillMaxWidth(),
                 tone = ActionTone.Secondary,
@@ -1280,6 +1887,149 @@ private fun LotteryBlockControlSection(
                 fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
             )
         }
+    }
+    if (showDisableAllConfirm) {
+        DangerConfirmSheet(
+            title = "Bloquear todas las loterías",
+            message = if (blockableLotteries.isEmpty()) {
+                "No hay loterías activas para bloquear en esta vista."
+            } else {
+                "Se bloquearán ${blockableLotteries.size} loterías visibles en esta sección. Podrás reabrirlas una por una después."
+            },
+            confirmLabel = "Bloquear todas",
+            onConfirm = {
+                if (blockableLotteries.isNotEmpty()) {
+                    onDisableAllLotteries(blockableLotteries)
+                }
+                showDisableAllConfirm = false
+            },
+            onDismiss = { showDisableAllConfirm = false },
+        )
+    }
+    if (showLotterySheet) {
+        AdminConfigModalSheet(
+            title = "Elegir lotería",
+            subtitle = "Busca por nombre, tipo o ID. La selección no cambia nada hasta que toques bloquear o habilitar.",
+            onDismiss = { showLotterySheet = false },
+        ) {
+            CompactTextInput(
+                label = "Buscar",
+                value = lotteryQuery,
+                onValueChange = { lotteryQuery = it.take(60) },
+                placeholder = "Ej: Anguilla, Pick 3, 19",
+                leadingIcon = Icons.Rounded.Tune,
+            )
+            MetricStrip(
+                items = listOf(
+                    MetricStripItem("Coincidencias", filteredOptions.size.toString(), visual.colors.admin),
+                    MetricStripItem("Bloq.", manualDisabledLotteryIds.size.toString(), if (manualDisabledLotteryIds.isNotEmpty()) MaterialTheme.colorScheme.error else visual.colors.neutral),
+                ),
+            )
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(max = 380.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                if (filteredOptions.isEmpty()) {
+                    item {
+                        Text(
+                            "No hay loterías con ese filtro.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = visual.colors.muted,
+                        )
+                    }
+                }
+                items(filteredOptions.size, key = { index -> filteredOptions[index].id }) { index ->
+                    val lottery = filteredOptions[index]
+                    LotteryPickerRow(
+                        lottery = lottery,
+                        selected = lottery.id == selectedLotteryId,
+                        isCalendarDisabled = lottery.id in calendarDisabledLotteryIds,
+                        isManualDisabled = lottery.id in manualDisabledLotteryIds,
+                        onClick = {
+                            selectedLotteryId = lottery.id
+                            showLotterySheet = false
+                        },
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun AdminConfigModalSheet(
+    title: String,
+    subtitle: String,
+    onDismiss: () -> Unit,
+    content: @Composable () -> Unit,
+) {
+    OperationalModalSheet(
+        title = title,
+        subtitle = subtitle,
+        onDismiss = onDismiss,
+        contentScrollable = false,
+    ) {
+        content()
+    }
+}
+
+@Composable
+private fun LotteryPickerRow(
+    lottery: LotteryCatalogItem,
+    selected: Boolean,
+    isCalendarDisabled: Boolean,
+    isManualDisabled: Boolean,
+    onClick: () -> Unit,
+) {
+    val visual = rememberLotteryNetVisualSpec()
+    val status = when {
+        isCalendarDisabled -> "Sin sorteo"
+        isManualDisabled -> "Bloqueada"
+        else -> "Activa"
+    }
+    val tone = when {
+        isCalendarDisabled || isManualDisabled -> MaterialTheme.colorScheme.error
+        selected -> visual.colors.admin
+        else -> visual.colors.gain
+    }
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(visual.colors.panelAlt, RoundedCornerShape(visual.sizes.panelRadius))
+            .clickable(onClick = onClick)
+            .padding(horizontal = 10.dp, vertical = 9.dp),
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        LotteryLogo(
+            assetPath = lottery.logoAssetPath,
+            fallback = lottery.name,
+            modifier = Modifier.size(38.dp),
+            tintColor = visual.colors.panel,
+        )
+        Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            Text(
+                lottery.name,
+                style = MaterialTheme.typography.titleSmall,
+                color = visual.colors.ink,
+                fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+                maxLines = 1,
+                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+            )
+            Text(
+                "ID ${lottery.id} · ${resolveAdminLotteryScheduleText(lottery)}",
+                style = MaterialTheme.typography.bodySmall,
+                color = visual.colors.muted,
+                maxLines = 1,
+                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+            )
+        }
+        CompactStatusBadge(
+            label = if (selected) "Elegida" else status,
+            tone = tone,
+        )
     }
 }
 
@@ -1315,49 +2065,55 @@ private fun LotteryAvailabilityRow(
     } else {
         visual.colors.gain
     }
-    Row(
+    Column(
         modifier = Modifier
             .fillMaxWidth()
             .background(visual.colors.panelAlt, RoundedCornerShape(visual.sizes.panelRadius))
             .padding(horizontal = 8.dp, vertical = 7.dp),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-        verticalAlignment = Alignment.CenterVertically,
+        verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        LotteryLogo(
-            assetPath = lottery.logoAssetPath,
-            fallback = lottery.name,
-            modifier = Modifier.size(42.dp),
-            tintColor = visual.colors.panel,
-        )
-        Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-            Text(
-                lottery.name,
-                style = MaterialTheme.typography.titleSmall,
-                color = visual.colors.ink,
-                fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
-                maxLines = 1,
-                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            LotteryLogo(
+                assetPath = lottery.logoAssetPath,
+                fallback = lottery.name,
+                modifier = Modifier.size(42.dp),
+                tintColor = visual.colors.panel,
             )
-            Text(
-                "${lottery.type} · sorteo ${lottery.baseDrawTime}",
-                style = MaterialTheme.typography.bodySmall,
-                color = visual.colors.muted,
-                fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
-                maxLines = 1,
-                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
-            )
-            Text(
-                stateLabel,
-                style = MaterialTheme.typography.bodySmall,
-                color = stateTone,
-                fontFamily = FontFamily.Monospace,
-                fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
-            )
+            Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                Text(
+                    lottery.name,
+                    style = MaterialTheme.typography.titleSmall,
+                    color = visual.colors.ink,
+                    fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+                    maxLines = 1,
+                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                )
+                Text(
+                    resolveAdminLotteryScheduleText(lottery),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = visual.colors.muted,
+                    fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+                    maxLines = 2,
+                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                )
+                Text(
+                    stateLabel,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = stateTone,
+                    fontFamily = FontFamily.Monospace,
+                    fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+                )
+            }
         }
         if (!isCalendarDisabled) {
             CompactActionButton(
                 label = if (isManualDisabled) "Habilitar" else "Bloquear",
                 onClick = { onToggleManualDisabled(!isManualDisabled) },
+                modifier = Modifier.fillMaxWidth(),
                 icon = if (isManualDisabled) Icons.Rounded.LockOpen else Icons.Rounded.Lock,
                 tone = if (isManualDisabled) ActionTone.Success else ActionTone.Danger,
             )

@@ -10,7 +10,9 @@ import com.lotterynet.pro.core.model.TicketRecord
 import com.lotterynet.pro.core.model.UserRole
 import com.lotterynet.pro.core.repository.SalesRepository
 import com.lotterynet.pro.core.storage.SalesStorageKeys
+import com.lotterynet.pro.core.format.formatWholeAmount
 import org.json.JSONObject
+import java.util.Locale
 
 class SaleExposureEngine(
     private val context: Context,
@@ -41,36 +43,99 @@ class SaleExposureEngine(
         stagedRows: List<SaleStagedRow>,
     ): String? {
         val cashierLimits = getCashierLimits(session)
+        val poolLimits = getPoolLimits(session)
         val actorDaySold = getActorSoldTodayTotal(dayKey, session)
         val stagedTotal = stagedRows.sumOf { it.amount }
         if (session?.role == UserRole.CASHIER || session?.role == UserRole.ADMIN) {
             if (cashierLimits.daySale > 0.0 && actorDaySold + stagedTotal + amount > cashierLimits.daySale) {
                 return "Tope diario del cajero alcanzado"
             }
-            val bucket = resolveSaleExposureLimitBucket(play.playType, play.normalizedNumber)
-            val typeLimit = cashierLimits.typeLimitFor(bucket.playType)
-            if (typeLimit > 0.0) {
-                val sold = getGlobalLimitExposure(dayKey, resolveExposureOwnerKey(session), bucket, resolveExposureCashierKeys(session))
+            val limitErrors = mutableListOf<String>()
+            for (lottery in lotteries) {
+                val bucket = resolveSaleExposureLimitBucket(play.playType, play.normalizedNumber, lottery.id)
                 val pending = calculateGlobalStagedExposure(stagedRows, bucket)
-                if (sold + pending + amount > typeLimit) {
-                    return "Tope global de cajero · ${bucket.displayLabel()}"
+                val ownLimit = cashierLimits.typeLimitFor(bucket.playType)
+                if (ownLimit > 0.0) {
+                    val soldOwn = getGlobalLimitExposure(
+                        dayKey = dayKey,
+                        ownerKey = resolveExposureOwnerKey(session),
+                        ownerKeys = resolveExposureOwnerKeys(session),
+                        bucket = bucket,
+                        cashierKeys = resolveExposureCashierKeys(session),
+                        cashierPoolOnly = false,
+                    )
+                    if (soldOwn + pending + amount > ownLimit) {
+                        limitErrors += buildLimitViolationMessage(
+                            scope = "Límite",
+                            lotteryName = lottery.name,
+                            bucket = bucket,
+                            limit = ownLimit,
+                            sold = soldOwn,
+                            pending = pending,
+                        )
+                    }
+                }
+                if (session?.role == UserRole.CASHIER) {
+                    val poolLimit = poolLimits.typeLimitFor(bucket.playType)
+                    if (poolLimit > 0.0) {
+                        val soldPool = getGlobalLimitExposure(
+                            dayKey = dayKey,
+                            ownerKey = resolveExposureOwnerKey(session),
+                            ownerKeys = resolveExposureOwnerKeys(session),
+                            bucket = bucket,
+                            cashierKeys = emptySet(),
+                            cashierPoolOnly = true,
+                        )
+                        if (soldPool + pending + amount > poolLimit) {
+                            limitErrors += buildLimitViolationMessage(
+                                scope = "Límite de pool",
+                                lotteryName = lottery.name,
+                                bucket = bucket,
+                                limit = poolLimit,
+                                sold = soldPool,
+                                pending = pending,
+                            )
+                        }
+                    }
                 }
             }
+            return limitErrors.distinct().joinToString(" · ").takeIf { it.isNotBlank() }
         }
         return null
+    }
+
+    private fun buildLimitViolationMessage(
+        scope: String,
+        lotteryName: String,
+        bucket: SaleExposureLimitBucket,
+        limit: Double,
+        sold: Double,
+        pending: Double,
+    ): String {
+        val available = (limit - sold - pending).coerceAtLeast(0.0)
+        val location = "$lotteryName · ${bucket.displayLabel()}"
+        return if (available <= 0.0) {
+            "$scope agotado · $location"
+        } else {
+            "$scope: quedan ${formatWholeAmount(available)} · $location"
+        }
     }
 
     private fun getGlobalLimitExposure(
         dayKey: String,
         ownerKey: String,
+        ownerKeys: Set<String>,
         bucket: SaleExposureLimitBucket,
         cashierKeys: Set<String>,
+        cashierPoolOnly: Boolean,
     ): Double {
         return calculateGlobalLimitExposure(
             tickets = salesRepository.getTicketsForDay(dayKey),
             ownerKey = ownerKey,
+            ownerKeys = ownerKeys,
             bucket = bucket,
             cashierKeys = cashierKeys,
+            cashierPoolOnly = cashierPoolOnly,
         )
     }
 
@@ -86,6 +151,14 @@ class SaleExposureEngine(
         return decodeCashierLimitsForSession(raw, session)
     }
 
+    private fun getPoolLimits(session: ActiveSession?): CashierLimits {
+        val ownerId = session?.adminId ?: session?.userId ?: return CashierLimits()
+        val prefs = context.getSharedPreferences(SalesStorageKeys.PREFS_NAME, Context.MODE_PRIVATE)
+        val raw = prefs.getString(SalesStorageKeys.CASHIER_LIMITS_PREFIX + ownerId, null)
+            ?: return CashierLimits()
+        return decodeCashierPoolLimitsForSession(raw)
+    }
+
 }
 
 internal fun decodeCashierLimitsForSession(raw: String?, session: ActiveSession?): CashierLimits {
@@ -93,7 +166,7 @@ internal fun decodeCashierLimitsForSession(raw: String?, session: ActiveSession?
     return runCatching {
         val json = raw?.takeIf { it.isNotBlank() }?.let(::JSONObject) ?: JSONObject()
         val defaults = json.optJSONObject("defaults") ?: JSONObject()
-        val row = json.optJSONObject("byUser")?.optJSONObject(session?.username.orEmpty())
+        val row = resolveCashierLimitRowForSession(json.optJSONObject("byUser"), session)
         val adminSelf = json.optJSONObject("adminSelf")
         if (role == UserRole.ADMIN) {
             val adminLimitRow = when {
@@ -107,6 +180,46 @@ internal fun decodeCashierLimitsForSession(raw: String?, session: ActiveSession?
         val base = decodeCashierLimitRow(defaults, CashierLimits())
         decodeCashierLimitRow(row, base)
     }.getOrDefault(if (role == UserRole.ADMIN) CashierLimits.noLimit() else CashierLimits())
+}
+
+internal fun decodeCashierPoolLimitsForSession(raw: String?): CashierLimits {
+    return runCatching {
+        val json = raw?.takeIf { it.isNotBlank() }?.let(::JSONObject) ?: JSONObject()
+        val pool = json.optJSONObject("pool")
+        decodeCashierLimitRow(pool, CashierLimits())
+    }.getOrDefault(CashierLimits())
+}
+
+private fun resolveCashierLimitRowForSession(
+    byUser: JSONObject?,
+    session: ActiveSession?,
+): JSONObject? {
+    byUser ?: return null
+    val keys = resolveCashierLimitLookupKeys(session)
+    if (keys.isEmpty()) return null
+    keys.forEach { key ->
+        byUser.optJSONObject(key)?.let { return it }
+    }
+    val normalizedKeys = keys.map { it.lowercase(Locale.US) }.toSet()
+    val iterator = byUser.keys()
+    while (iterator.hasNext()) {
+        val key = iterator.next()
+        if (key.trim().lowercase(Locale.US) in normalizedKeys) {
+            byUser.optJSONObject(key)?.let { return it }
+        }
+    }
+    return null
+}
+
+private fun resolveCashierLimitLookupKeys(session: ActiveSession?): List<String> {
+    if (session == null) return emptyList()
+    return listOfNotNull(
+        session.username.takeIf { it.isNotBlank() },
+        session.userId.takeIf { it.isNotBlank() },
+        session.adminId?.takeIf { it.isNotBlank() },
+        session.adminUser?.takeIf { it.isNotBlank() },
+        session.authUserId?.takeIf { it.isNotBlank() },
+    ).distinct()
 }
 
 private fun JSONObject?.hasPositiveSaleLimit(): Boolean {
@@ -149,6 +262,16 @@ internal fun resolveExposureOwnerKey(session: ActiveSession?): String {
         ?: session?.username.orEmpty()
 }
 
+internal fun resolveExposureOwnerKeys(session: ActiveSession?): Set<String> {
+    if (session == null) return emptySet()
+    return setOfNotNull(
+        session.adminId?.takeIf { it.isNotBlank() },
+        session.adminUser?.takeIf { it.isNotBlank() },
+        session.userId.takeIf { it.isNotBlank() },
+        session.username.takeIf { it.isNotBlank() },
+    )
+}
+
 internal fun resolveExposureCashierKeys(session: ActiveSession?): Set<String> {
     if (session?.role != UserRole.CASHIER && session?.role != UserRole.ADMIN) return emptySet()
     return setOfNotNull(
@@ -157,23 +280,31 @@ internal fun resolveExposureCashierKeys(session: ActiveSession?): Set<String> {
     )
 }
 
+internal fun resolvePlayLimitCashierKeys(session: ActiveSession?): Set<String> {
+    return if (session?.role == UserRole.ADMIN) resolveExposureCashierKeys(session) else emptySet()
+}
+
 internal fun calculateGlobalLimitExposure(
     tickets: List<TicketRecord>,
     ownerKey: String,
     bucket: SaleExposureLimitBucket,
     cashierKeys: Set<String> = emptySet(),
+    cashierPoolOnly: Boolean = false,
+    ownerKeys: Set<String> = emptySet(),
 ): Double {
+    val resolvedOwnerKeys = normalizeExposureKeys(ownerKeys + ownerKey)
     return tickets
         .asSequence()
         .filter { ticket ->
-            matchesExposureOwner(ticket, ownerKey) &&
+            matchesExposureOwner(ticket, resolvedOwnerKeys) &&
                 matchesExposureCashier(ticket, cashierKeys) &&
+                matchesExposureCashierPool(ticket, cashierPoolOnly) &&
                 !isExposureVoidStatus(ticket.status)
         }
         .sumOf { ticket ->
             ticket.plays.sumOf { play ->
-                val playBucket = resolveSaleExposureLimitBucket(play.playType, play.number)
-                if (playBucket == bucket) play.amount else 0.0
+                val playBucket = resolveSaleExposureLimitBucket(play.playType, play.number, play.lotteryId)
+                if (playBucket.matchesLimitBucket(bucket)) play.amount else 0.0
             }
         }
 }
@@ -183,8 +314,8 @@ internal fun calculateGlobalStagedExposure(
     bucket: SaleExposureLimitBucket,
 ): Double {
     return stagedRows.sumOf { row ->
-        val rowBucket = resolveSaleExposureLimitBucket(row.playType, row.number)
-        if (rowBucket == bucket) row.amount else 0.0
+        val rowBucket = resolveSaleExposureLimitBucket(row.playType, row.number, row.lotteryId)
+        if (rowBucket.matchesLimitBucket(bucket)) row.amount else 0.0
     }
 }
 
@@ -207,10 +338,10 @@ private fun matchesSalesActorTicketForDailyLimit(ticket: TicketRecord, actorKey:
     return ticket.adminId == actorKey || ticket.adminUser == actorKey
 }
 
-private fun matchesExposureOwner(ticket: TicketRecord, ownerKey: String): Boolean {
-    if (ownerKey.isBlank()) return true
-    return ticket.adminId.equals(ownerKey, ignoreCase = true) ||
-        ticket.adminUser.equals(ownerKey, ignoreCase = true)
+private fun matchesExposureOwner(ticket: TicketRecord, ownerKeys: Set<String>): Boolean {
+    if (ownerKeys.isEmpty()) return true
+    return normalizeExposureKey(ticket.adminId) in ownerKeys ||
+        normalizeExposureKey(ticket.adminUser) in ownerKeys
 }
 
 private fun matchesExposureCashier(ticket: TicketRecord, cashierKeys: Set<String>): Boolean {
@@ -218,6 +349,23 @@ private fun matchesExposureCashier(ticket: TicketRecord, cashierKeys: Set<String
     return cashierKeys.any { key ->
         ticket.sellerId.equals(key, ignoreCase = true) ||
             ticket.sellerUser.equals(key, ignoreCase = true)
+    }
+}
+
+private fun matchesExposureCashierPool(ticket: TicketRecord, enabled: Boolean): Boolean {
+    if (!enabled) return true
+    if (ticket.role == UserRole.CASHIER) return true
+    val sellerKeys = listOfNotNull(
+        ticket.sellerId?.takeIf { it.isNotBlank() },
+        ticket.sellerUser?.takeIf { it.isNotBlank() },
+    )
+    if (sellerKeys.isEmpty()) return false
+    val adminKeys = listOfNotNull(
+        ticket.adminId?.takeIf { it.isNotBlank() },
+        ticket.adminUser?.takeIf { it.isNotBlank() },
+    )
+    return sellerKeys.none { seller ->
+        adminKeys.any { admin -> seller.equals(admin, ignoreCase = true) }
     }
 }
 
@@ -270,11 +418,13 @@ data class CashierLimits(
 data class SaleExposureLimitBucket(
     val playType: String,
     val number: String,
+    val lotteryId: String = "",
 )
 
 data class SaleLimitRemainingRow(
     val playType: String,
     val number: String,
+    val lotteryId: String = "",
     val limit: Double,
     val sold: Double,
     val pending: Double,
@@ -282,7 +432,7 @@ data class SaleLimitRemainingRow(
     val remaining: Double
         get() = (limit - sold - pending).coerceAtLeast(0.0)
     val overLimit: Boolean
-        get() = limit > 0.0 && sold + pending > limit
+        get() = limit > 0.0 && sold + pending >= limit
     val label: String
         get() = listOf(playType, number).filter { it.isNotBlank() }.joinToString(" ")
 }
@@ -294,10 +444,11 @@ fun resolveSaleLimitRemainingRows(
     ownerKey: String,
     cashierKeys: Set<String>,
     limits: CashierLimits,
+    ownerKeys: Set<String> = emptySet(),
 ): List<SaleLimitRemainingRow> {
     if (role != UserRole.CASHIER && role != UserRole.ADMIN) return emptyList()
     return stagedRows
-        .map { row -> resolveSaleExposureLimitBucket(row.playType, row.number) }
+        .map { row -> resolveSaleExposureLimitBucket(row.playType, row.number, row.lotteryId) }
         .distinct()
         .mapNotNull { bucket ->
             val limit = limits.typeLimitFor(bucket.playType)
@@ -305,20 +456,49 @@ fun resolveSaleLimitRemainingRows(
             SaleLimitRemainingRow(
                 playType = bucket.playType,
                 number = bucket.number,
+                lotteryId = bucket.lotteryId,
                 limit = limit,
                 sold = calculateGlobalLimitExposure(
                     tickets = tickets,
                     ownerKey = ownerKey,
                     bucket = bucket,
-                    cashierKeys = cashierKeys,
+                    cashierKeys = saleLimitExposureCashierKeys(role, cashierKeys),
+                    cashierPoolOnly = saleLimitExposureCashierPoolOnly(role),
+                    ownerKeys = ownerKeys,
                 ),
                 pending = calculateGlobalStagedExposure(stagedRows, bucket),
             )
         }
-        .sortedWith(compareBy<SaleLimitRemainingRow> { it.playType }.thenBy { it.number })
+        .sortedWith(compareBy<SaleLimitRemainingRow> { it.playType }.thenBy { it.number }.thenBy { it.lotteryId })
 }
 
-fun resolveSaleExposureLimitBucket(playType: String, number: String): SaleExposureLimitBucket {
+internal fun calculateSaleLimitSoldExposureForRole(
+    role: UserRole,
+    tickets: List<TicketRecord>,
+    ownerKey: String,
+    ownerKeys: Set<String>,
+    bucket: SaleExposureLimitBucket,
+    cashierKeys: Set<String>,
+): Double {
+    return calculateGlobalLimitExposure(
+        tickets = tickets,
+        ownerKey = ownerKey,
+        ownerKeys = ownerKeys,
+        bucket = bucket,
+        cashierKeys = saleLimitExposureCashierKeys(role, cashierKeys),
+        cashierPoolOnly = saleLimitExposureCashierPoolOnly(role),
+    )
+}
+
+private fun saleLimitExposureCashierKeys(role: UserRole, cashierKeys: Set<String>): Set<String> {
+    return if (role == UserRole.ADMIN) cashierKeys else emptySet()
+}
+
+private fun saleLimitExposureCashierPoolOnly(role: UserRole): Boolean {
+    return role == UserRole.CASHIER
+}
+
+fun resolveSaleExposureLimitBucket(playType: String, number: String, lotteryId: String? = null): SaleExposureLimitBucket {
     val normalizedType = playType.uppercase()
     val digits = number.filter(Char::isDigit)
     val bucketNumber = when (normalizedType) {
@@ -328,9 +508,23 @@ fun resolveSaleExposureLimitBucket(playType: String, number: String): SaleExposu
         "P3BOX", "P3B", "P4BOX", "P4B" -> digits.toCharArray().sorted().joinToString("")
         else -> number
     }
-    return SaleExposureLimitBucket(normalizedType, bucketNumber)
+    return SaleExposureLimitBucket(normalizedType, bucketNumber, lotteryId.orEmpty())
 }
 
 private fun SaleExposureLimitBucket.displayLabel(): String {
-    return number.ifBlank { playType }
+    return if (number.isBlank()) playType else "Nº $number"
+}
+
+private fun SaleExposureLimitBucket.matchesLimitBucket(target: SaleExposureLimitBucket): Boolean {
+    return playType == target.playType &&
+        number == target.number &&
+        (target.lotteryId.isBlank() || lotteryId == target.lotteryId)
+}
+
+private fun normalizeExposureKeys(values: Iterable<String?>): Set<String> {
+    return values.mapNotNullTo(mutableSetOf()) { normalizeExposureKey(it) }
+}
+
+private fun normalizeExposureKey(value: String?): String? {
+    return value?.trim()?.lowercase(java.util.Locale.US)?.takeIf { it.isNotBlank() }
 }

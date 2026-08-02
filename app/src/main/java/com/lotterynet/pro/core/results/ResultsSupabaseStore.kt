@@ -16,10 +16,17 @@ class ResultsSupabaseStore(
     private val expectedResultIds: Set<String> = emptySet(),
     private val expectedResultIdsForDate: ((String) -> Set<String>)? = null,
     private val catalogRepository: StaticLotteryCatalogRepository = StaticLotteryCatalogRepository(),
+    bearerTokenProvider: (() -> String?)? = null,
 ) : ResultsRemoteStore {
+    private val resolvedRemoteStore = if (bearerTokenProvider == null) {
+        remoteStore
+    } else {
+        SupabaseResultsRemoteStore(bearerTokenProvider = bearerTokenProvider)
+    }
+
     override fun fetchResultsForDate(date: String, forceLive: Boolean): List<LotteryResult> {
         try {
-            val value = remoteStore.fetchResultsPayload(
+            val value = resolvedRemoteStore.fetchResultsPayload(
                 date = date,
                 expectedResultIds = expectedResultIdsForDate?.invoke(date) ?: expectedResultIds,
                 forceLive = forceLive,

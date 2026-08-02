@@ -52,6 +52,31 @@ class SupabaseTicketBackendClientTest {
     }
 
     @Test
+    fun `buildCreateTicketPayload sends admin limit override only when approved`() {
+        val client = SupabaseTicketBackendClient(
+            baseUrl = "https://example.supabase.co",
+            apiKey = "test-key",
+        )
+
+        val payload = client.buildCreateTicketPayload(
+            BackendTicketRequest(
+                clientRequestId = "ticket-admin-override",
+                adminKey = "ADM-1",
+                actorKey = "cnicola01",
+                actorRole = "admin",
+                cashierKey = "CAJ-21",
+                drawDate = "2026-06-07",
+                adminLimitOverride = true,
+                plays = listOf(
+                    BackendTicketPlay("Q", "13", 1.0, lotteryId = "29", lotteryName = "Anguilla 8AM"),
+                ),
+            ),
+        )
+
+        assertTrue(payload.getBoolean("adminLimitOverride"))
+    }
+
+    @Test
     fun `buildCreateTicketPayload rejects empty ticket plays`() {
         val client = SupabaseTicketBackendClient(
             baseUrl = "https://example.supabase.co",
@@ -121,6 +146,31 @@ class SupabaseTicketBackendClientTest {
 
         assertTrue(error is IllegalArgumentException)
         assertTrue(error?.message.orEmpty().contains("incompleta"))
+    }
+
+    @Test
+    fun `buildSaleLimitExposurePayload sends shared limit lookup fields`() {
+        val client = SupabaseTicketBackendClient(
+            baseUrl = "https://example.supabase.co",
+            apiKey = "test-key",
+        )
+
+        val payload = client.buildSaleLimitExposurePayload(
+            BackendSaleLimitExposureRequest(
+                ownerKey = "ADM-163C38",
+                dayKey = "07-06-2026",
+                lotteryId = "29",
+                playType = "Q",
+                number = "12",
+            ),
+        )
+
+        assertEquals("ADM-163C38", payload.getString("ownerKey"))
+        assertEquals("07-06-2026", payload.getString("dayKey"))
+        assertEquals("29", payload.getString("lotteryId"))
+        assertEquals("Q", payload.getString("playType"))
+        assertEquals("12", payload.getString("number"))
+        assertEquals("functions/v1/get-sale-limit-exposure", client.saleLimitExposureEndpointPath())
     }
 
     @Test

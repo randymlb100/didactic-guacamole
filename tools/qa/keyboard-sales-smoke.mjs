@@ -119,14 +119,10 @@ function findAccount(payload, username) {
   );
 }
 
-async function fetchUsersPayload() {
-  const result = await requestJson(
-    "users-state fetch",
-    "GET",
-    `${SUPABASE_URL}/rest/v1/lotterynet_users_state?scope=eq.global&select=payload`,
-  );
+async function fetchUsersPayload(token = API_KEY) {
+  const result = await edge("lotterynet-users-state", { action: "fetch" }, token);
   if (!result.ok) throw new Error(`No se pudo leer usuarios: ${redact(result.text)}`);
-  return result.json?.[0]?.payload ?? {};
+  return result.json?.payload ?? {};
 }
 
 async function login(username, password) {
@@ -237,7 +233,11 @@ async function main() {
   log("Inicio keyboard sales smoke", { runId, fakeIsoDate, fakeDayKey, credentialSource: String(CREDENTIAL_FILE) });
 
   const credentials = parseCredentials(await readFile(CREDENTIAL_FILE, "utf8"));
-  const usersPayload = await fetchUsersPayload();
+  const bootstrapCredential = credentials.find((entry) => lower(entry.username) === adminUsername);
+  if (!bootstrapCredential) throw new Error("Falta credencial podero02 para leer el estado protegido de usuarios.");
+  const bootstrapSession = await login(bootstrapCredential.username, bootstrapCredential.password);
+  if (!bootstrapSession.ok) throw new Error("No se pudo autenticar podero02 para leer usuarios.");
+  const usersPayload = await fetchUsersPayload(bootstrapSession.token);
   const admin = findAccount(usersPayload, adminUsername);
   const cashierEntries = credentials
     .filter((entry) => lower(entry.username).startsWith(cashierPrefix))

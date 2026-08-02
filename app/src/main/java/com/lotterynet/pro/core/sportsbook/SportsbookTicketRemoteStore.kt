@@ -20,6 +20,7 @@ class SportsbookTicketRemoteStore(
     private val baseUrl: String = SupabaseConfig.URL,
     private val apiKey: String = SupabaseConfig.KEY,
     private val edgeClient: SupabaseEdgeClient = SupabaseEdgeClient(baseUrl, apiKey),
+    private val bearerTokenProvider: (() -> String?)? = null,
 ) {
     fun createTicket(
         session: ActiveSession,
@@ -29,7 +30,7 @@ class SportsbookTicketRemoteStore(
         val response = edgeClient.invokeAuthenticated(
             "create-sports-ticket",
             buildSportsbookTicketPayload(session, draft, clientRequestId),
-            session.authAccessToken,
+            freshBearerToken(session),
         )
         if (!response.optBoolean("ok", false)) {
             error(response.optString("message").ifBlank { "No se pudo vender el ticket deportivo." })
@@ -45,7 +46,7 @@ class SportsbookTicketRemoteStore(
         val response = edgeClient.invokeAuthenticated(
             "get-sports-tickets",
             buildSportsbookTicketListPayload(session, status, limit),
-            session.authAccessToken,
+            freshBearerToken(session),
         )
         if (!response.optBoolean("ok", false)) {
             error(response.optString("message").ifBlank { "No se pudo leer tickets deportivos." })
@@ -60,7 +61,7 @@ class SportsbookTicketRemoteStore(
         val response = edgeClient.invokeAuthenticated(
             "pay-sports-ticket",
             buildSportsbookPayTicketPayload(session, ticketId),
-            session.authAccessToken,
+            freshBearerToken(session),
         )
         if (!response.optBoolean("ok", false)) {
             error(response.optString("message").ifBlank { "No se pudo pagar el ticket deportivo." })
@@ -78,13 +79,18 @@ class SportsbookTicketRemoteStore(
         val response = edgeClient.invokeAuthenticated(
             "settle-sports-ticket",
             buildSportsbookSettlementPayload(session, ticketId, nextStatus, reason),
-            session.authAccessToken,
+            freshBearerToken(session),
         )
         if (!response.optBoolean("ok", false)) {
             error(response.optString("message").ifBlank { "No se pudo liquidar el ticket deportivo." })
         }
         return parseSportsbookTicketRecord(response.optJSONObject("ticket") ?: JSONObject())
             ?: error("Servidor no devolvio el ticket deportivo liquidado.")
+    }
+
+    private fun freshBearerToken(session: ActiveSession): String? {
+        return bearerTokenProvider?.invoke()?.takeIf { it.isNotBlank() }
+            ?: session.authAccessToken
     }
 }
 

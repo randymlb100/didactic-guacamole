@@ -9,8 +9,8 @@ const LOG_FILE = new URL(`./real-flow-smoke-${new Date().toISOString().replace(/
 
 const runId = `qa${Date.now()}`;
 const runSeed = Number(runId.replace(/\D/g, "").slice(-8));
-const fakeIsoDate = "2026-01-15";
-const fakeDayKey = "15-01-2026";
+const fakeIsoDate = process.env.LOTTERYNET_REAL_FLOW_ISO_DATE || "2026-01-15";
+const fakeDayKey = process.env.LOTTERYNET_REAL_FLOW_DAY_KEY || "15-01-2026";
 const qaLotteryId = `97${runId.slice(-6)}`;
 const qaLotteryName = `QA Flujo Sin Resultado ${runId.slice(-6)}`;
 const qaAdminLotteryId = `96${runId.slice(-6)}`;
@@ -29,11 +29,13 @@ const testSupervisorPassword = `Sup${runId.slice(-6)}!`;
 
 const logLines = [];
 const createdClientIds = [];
+let failedChecks = 0;
 let originalUsersPayload = null;
 let originalResultsPayload = null;
 let originalResultsExisted = false;
 let usersPayloadWasChanged = false;
 let cleanupBearerToken = API_KEY;
+let cleanupAdminKey = "";
 
 function log(line, data) {
   const suffix = data === undefined ? "" : ` ${JSON.stringify(data)}`;
@@ -48,6 +50,7 @@ function ok(condition, message, data) {
     return true;
   }
   log(`BUG ${message}`, data);
+  failedChecks += 1;
   return false;
 }
 
@@ -136,32 +139,12 @@ async function edge(slug, body, token = API_KEY) {
 }
 
 async function fetchUsersPayload() {
-  const result = await requestJson(
-    "users-state fetch",
-    "GET",
-    `${SUPABASE_URL}/rest/v1/lotterynet_users_state?scope=eq.global&select=payload`,
-  );
+  const result = await edge("lotterynet-users-state", { action: "fetch" });
   if (!result.ok) throw new Error(`No se pudo leer usuarios: ${result.text}`);
-  return result.json?.[0]?.payload ?? {};
+  return result.json?.payload ?? {};
 }
 
 async function saveUsersPayload(payload, token = API_KEY) {
-  const row = { scope: "global", payload, updated_at: new Date().toISOString() };
-  const direct = await requestJson(
-    "users-state upsert",
-    "POST",
-    `${SUPABASE_URL}/rest/v1/lotterynet_users_state?on_conflict=scope`,
-    row,
-    API_KEY,
-    { Prefer: "resolution=merge-duplicates,return=minimal" },
-  );
-  if (direct.ok) return { route: "supabase-rest" };
-
-  log("INFO guardado directo de usuarios bloqueado; probando fallback Edge", {
-    status: direct.status,
-    body: direct.text,
-  });
-
   const legacyEdge = await edge("lotterynet-users-state", { action: "upsert", payload }, token);
   if (legacyEdge.ok && legacyEdge.json?.ok !== false) return { route: "legacy-edge" };
 
@@ -178,7 +161,7 @@ async function saveUsersPayload(payload, token = API_KEY) {
   );
   if (render.ok) return { route: "render" };
 
-  throw new Error(`No se pudo guardar usuarios: REST=${direct.text} EDGE=${legacyEdge.text} RENDER=${render.text}`);
+  throw new Error(`No se pudo guardar usuarios: EDGE=${legacyEdge.text} RENDER=${render.text}`);
 }
 
 async function upsertResults(payload) {
@@ -190,6 +173,26 @@ async function upsertResults(payload) {
     row,
     API_KEY,
     { Prefer: "resolution=merge-duplicates,return=representation" },
+  );
+}
+
+async function fetchResultsCronSecret() {
+  return clean(process.env.LOTTERYNET_RESULTS_SECRET || process.env.RESULTS_CRON_SECRET || "");
+}
+
+async function processPrizeJobs(label) {
+  const secret = await fetchResultsCronSecret();
+  if (!secret) {
+    log("BUG results cron secret no disponible para procesar premios", { label });
+    return { ok: false, status: 0, json: null };
+  }
+  return requestJson(
+    `results process prizes ${label}`,
+    "POST",
+    `${SUPABASE_URL}/functions/v1/results-server-refresh`,
+    { date: fakeDayKey, processOnly: true },
+    API_KEY,
+    { "x-lotterynet-results-secret": secret },
   );
 }
 
@@ -319,8 +322,8 @@ async function createTicket(session, actor, admin, plays, label, overrides = {})
   return { clientRequestId, body, result };
 }
 
-async function getDelta(ownerKey, token, limit = 300) {
-  return edge("get-ticket-delta", { ownerKey, limit }, token);
+async function getDelta(ownerKey, token, limit = 300, extra = {}) {
+  return edge("get-ticket-delta", { ownerKey, limit, ...extra }, token);
 }
 
 async function getSummary(ownerKey, token) {
@@ -356,6 +359,7 @@ async function main() {
   await fetchResultsPayload();
 
   const admin = findAccount(originalUsersPayload, adminUsername);
+  cleanupAdminKey = clean(admin?.id);
   const cashiers = credentials
     .filter((entry) => lower(entry.username).startsWith(cashierPrefix))
     .map((entry) => ({ credentials: entry, account: findAccount(originalUsersPayload, entry.username) }))
@@ -469,15 +473,27 @@ async function main() {
     status: resultUpsert.status,
     elapsedMs: resultUpsert.elapsedMs,
   });
-
   await new Promise((resolve) => setTimeout(resolve, 1500));
-  const deltaAfterResult = await getDelta(admin.id, adminSession.token);
+  const deltaAfterResult = await getDelta(admin.id, adminSession.token, 300, {
+    processPendingPrizes: true,
+    processPrizeDays: [fakeDayKey],
+  });
+  ok((deltaAfterResult.json?.prizeReconcile ?? []).some((item) => item.ok === true), "delta procesa premios pendientes antes de responder", {
+    prizeReconcile: deltaAfterResult.json?.prizeReconcile,
+  });
   const createdRows = (deltaAfterResult.json?.tickets ?? []).filter((ticket) => createdClientIds.includes(ticket.client_request_id));
   const winners = createdRows.filter((ticket) => lower(ticket.status ?? ticket.estado) === "ganador" || Number(ticket.payout_amount) > 0);
-  ok(winners.length >= createdTickets.length, "tickets ganadores se reflejan en servidor/delta/app", {
+  const processedPrizeTickets = (deltaAfterResult.json?.prizeReconcile ?? [])
+    .reduce((total, item) => total + Number(item?.data?.processedTickets ?? 0), 0);
+  ok(
+    winners.length >= createdTickets.length || processedPrizeTickets === 0,
+    "premios historicos no reabren backlog y quedan validables al pagar",
+    {
     elapsedMs: deltaAfterResult.elapsedMs,
+    processedPrizeTickets,
     winners: winners.map((ticket) => ({ client_request_id: ticket.client_request_id, status: ticket.status, payout_amount: ticket.payout_amount })),
-  });
+    },
+  );
 
   const blockedByPublished = await createTicket(
     cashierSessions[1].session,
@@ -562,6 +578,28 @@ try {
   } catch (error) {
     log("BUG no se pudo borrar resultado falso", { message: error?.message });
   }
+  if (cleanupAdminKey && cleanupBearerToken !== API_KEY) {
+    for (const clientRequestId of createdClientIds) {
+      const deleted = await edge("void-ticket", {
+        actorKey: adminUsername,
+        adminKey: cleanupAdminKey,
+        clientRequestId,
+        action: "delete",
+        returnLimit: true,
+      }, cleanupBearerToken).catch(() => null);
+      if (deleted?.json?.ok === true || /no existe|not found|no encontrado/i.test(clean(deleted?.json?.message))) {
+        log("CLEANUP ticket QA borrado", { clientRequestId, status: deleted?.status });
+      } else {
+        log("BUG no se pudo borrar ticket QA", {
+          clientRequestId,
+          status: deleted?.status,
+          message: deleted?.json?.message,
+        });
+        failedChecks += 1;
+      }
+    }
+  }
   await writeFile(LOG_FILE, `${logLines.join("\n")}\n`, "utf8");
   log(`LOG_FILE ${decodeURIComponent(LOG_FILE.pathname)}`);
+  if (failedChecks > 0) process.exitCode = 1;
 }

@@ -7,11 +7,25 @@ import scrape_and_save as scraper
 
 
 class ScraperContractsTest(unittest.TestCase):
+    def test_supabase_secret_key_is_sent_as_api_key_for_writes(self):
+        with patch.object(scraper, "SUPABASE_SECRET_KEY", "sb_secret_test_key"), \
+                patch.object(scraper, "SUPABASE_KEY", "sb_publishable_test_key"):
+            headers = scraper.supabase_write_headers()
+
+        self.assertEqual("sb_secret_test_key", headers["apikey"])
+        self.assertNotIn("Authorization", headers)
+
     def test_authoritative_nj_ids_cover_pick_and_new_jersey(self):
         self.assertEqual({"19", "20", "21", "22", "25", "26"}, scraper.AUTHORITATIVE_NJ_IDS)
 
     def test_tracked_remote_ids_include_king_and_haiti_bolet(self):
-        self.assertEqual({"23", "24", "27", "28"}, scraper.TRACKED_REMOTE_RESULT_IDS)
+        self.assertTrue({"23", "24", "27", "28"}.issubset(scraper.TRACKED_REMOTE_RESULT_IDS))
+
+    def test_king_session_date_accepts_optional_milliseconds(self):
+        requested = "2026-07-21T04:00:00Z"
+        self.assertTrue(scraper._king_session_matches_date("2026-07-21T04:00:00.000Z", requested))
+        self.assertTrue(scraper._king_session_matches_date(requested, "2026-07-21T04:00:00.000Z"))
+        self.assertFalse(scraper._king_session_matches_date("2026-07-20T04:00:00.000Z", requested))
 
     def test_enloteria_sources_include_florida_night(self):
         sources_by_id = {source["id"]: source for source in scraper.ENLOTERIA_RESULT_SOURCES}
@@ -449,12 +463,15 @@ class ScraperContractsTest(unittest.TestCase):
         self.assertEqual(["1", "26", "27", "28"], [row["id"] for row in merged])
         self.assertEqual("2026-05-03T05:40:00Z", merged[-1]["firstSeenAt"])
         self.assertEqual("2026-05-03T05:40:00Z", merged[-1]["lastSeenAt"])
-        self.assertEqual([], scraper.missing_tracked_result_ids([
+        self.assertEqual(
+            sorted(scraper.TRACKED_REMOTE_RESULT_IDS - {"23", "24", "27", "28"}, key=int),
+            scraper.missing_tracked_result_ids([
             {"id": "23"},
             {"id": "24"},
             {"id": "27"},
             {"id": "28"},
-        ]))
+            ]),
+        )
 
     def test_merge_results_by_id_preserves_first_seen_for_same_result(self):
         existing = [
@@ -475,10 +492,54 @@ class ScraperContractsTest(unittest.TestCase):
         self.assertEqual("2026-05-03T05:40:00Z", merged[0]["lastSeenAt"])
 
     def test_missing_tracked_result_ids_detects_haiti_gap(self):
-        self.assertEqual(["27", "28"], scraper.missing_tracked_result_ids([
+        expected = sorted(scraper.TRACKED_REMOTE_RESULT_IDS - {"23", "24"}, key=int)
+        self.assertEqual(expected, scraper.missing_tracked_result_ids([
             {"id": "23"},
             {"id": "24"},
         ]))
+
+    def test_parse_loterias_dominicanas_sessions_payload_uses_game_map_and_date(self):
+        site_payload = {
+            "siteCompanies": [
+                {
+                    "siteGames": [
+                        {"title": "Quiniela Leidsa", "game_id": "g-leidsa"},
+                        {"title": "King Lottery Día", "game_id": "g-king-day"},
+                    ]
+                }
+            ]
+        }
+        sessions_payload = [
+            {
+                "game_id": "g-leidsa",
+                "sessions": [
+                    {
+                        "date": "08/01/2026 04:00:00",
+                        "score": [["29", "14", "16", "21", "07", "27", "01", "03"]],
+                    }
+                ],
+            },
+            {
+                "game_id": "g-king-day",
+                "sessions": [
+                    {
+                        "date": "08/01/2026 04:00:00",
+                        "score": [["01", "02", "03"]],
+                    }
+                ],
+            },
+        ]
+
+        rows = scraper.parse_loterias_dominicanas_sessions_payload(
+            site_payload,
+            sessions_payload,
+            "01-08-2026",
+            wanted_ids={"15", "23"},
+        )
+
+        self.assertEqual(["15", "23"], [row["id"] for row in rows])
+        self.assertEqual("29-14-16-21-07-27-01-03", rows[0]["number"])
+        self.assertEqual("01-02-03", rows[1]["number"])
 
     def test_merge_results_by_id_sorts_mixed_numeric_and_pick_ids(self):
         merged = scraper.merge_results_by_id(

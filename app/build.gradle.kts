@@ -2,9 +2,14 @@ import java.util.Properties
 
 plugins {
     id("com.android.application")
+    id("androidx.baselineprofile")
     id("base")
     id("org.jetbrains.kotlin.plugin.compose") version "2.2.20"
     id("org.jetbrains.kotlin.plugin.serialization") version "2.2.20"
+}
+
+if (rootProject.file("app/google-services.json").exists()) {
+    apply(plugin = "com.google.gms.google-services")
 }
 
 val localProps = Properties().apply {
@@ -14,7 +19,7 @@ val localProps = Properties().apply {
     }
 }
 
-val artifactBaseName = "lotterynet-kotlin-v1.0.13-kotlin"
+val artifactBaseName = "lotterynet-kotlin-v1.0.15-kotlin"
 val sentryDsn = localProps.getProperty("sentry.dsn")
     ?: System.getenv("SENTRY_DSN")
     ?: ""
@@ -45,8 +50,8 @@ android {
         applicationId = "com.lotterynet.pro"
         minSdk = 24
         targetSdk = 36
-        versionCode = 14
-        versionName = "1.0.13-kotlin"
+        versionCode = 16
+        versionName = "1.0.15-kotlin"
         manifestPlaceholders += mapOf(
             "sentryDsn" to sentryDsn,
             "sentryTracesSampleRate" to sentryTracesSampleRate,
@@ -98,6 +103,17 @@ android {
         compose = true
         buildConfig = true
     }
+
+    packaging {
+        jniLibs {
+            keepDebugSymbols += setOf(
+                "**/libandroidx.graphics.path.so",
+                "**/libdatastore_shared_counter.so",
+                "**/libsentry-android.so",
+                "**/libsentry.so",
+            )
+        }
+    }
 }
 
 dependencies {
@@ -112,9 +128,11 @@ dependencies {
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.7")
     implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:2.8.7")
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.7")
+    implementation("androidx.work:work-runtime-ktx:2.10.5")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.2")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0")
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
+    implementation("com.squareup.okhttp3:okhttp-dnsoverhttps:4.12.0")
     implementation(platform("io.github.jan-tennert.supabase:bom:3.6.0"))
     implementation("io.github.jan-tennert.supabase:postgrest-kt")
     implementation("io.github.jan-tennert.supabase:realtime-kt")
@@ -124,6 +142,9 @@ dependencies {
     implementation("com.caverock:androidsvg:1.4")
     implementation("io.sentry:sentry-android:8.34.0")
     implementation("androidx.security:security-crypto:1.0.0")
+    implementation(platform("com.google.firebase:firebase-bom:34.6.0"))
+    implementation("com.google.firebase:firebase-messaging")
+    implementation("androidx.profileinstaller:profileinstaller:1.4.1")
 
     implementation(platform("androidx.compose:compose-bom:2025.09.01"))
     implementation("androidx.compose.ui:ui")
@@ -143,4 +164,5 @@ dependencies {
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.5")
 
     debugImplementation("androidx.compose.ui:ui-tooling")
+    baselineProfile(project(":baselineprofile"))
 }

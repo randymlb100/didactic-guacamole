@@ -11,4 +11,5 @@ data class LotterynetRealtimeEvent(
     val table: String,
     val filterValue: String? = null,
     val payloadJson: String,
+    val topic: String? = null,
 )

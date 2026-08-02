@@ -148,6 +148,27 @@ async function handle(req: Request): Promise<Response> {
       updated_at: new Date().toISOString(),
     }, { onConflict: "scope" });
 
+  // The production path gives lotterynet_master_state precedence over the
+  // compatibility flag. Keep the QA enablement scoped to the two test users.
+  await supabaseAdmin()
+    .from("lotterynet_master_state")
+    .upsert({
+      config_key: "sportsbook:global",
+      payload: {
+        configured: true,
+        enabled: true,
+        adminEnabled: true,
+        supervisorEnabled: false,
+        cashierEnabled: true,
+        allowedActorKeys: [actorKey, adminKey, cashierKey],
+        cashierAdminKeys: [adminKey],
+        enabledMarkets: ["moneyline", "runline", "spread", "total"],
+        updatedAt: Date.now(),
+        updatedBy: "sports-qa-seed",
+      },
+      updated_at: new Date().toISOString(),
+    }, { onConflict: "config_key" });
+
   await supabaseAdmin()
     .from("lotterynet_kv")
     .upsert({

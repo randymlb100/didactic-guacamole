@@ -2,6 +2,8 @@ package com.lotterynet.pro.ui.tickets
 
 import com.journeyapps.barcodescanner.ScanOptions
 import com.lotterynet.pro.core.model.TicketRecord
+import java.time.LocalDate
+import java.time.ZoneId
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -72,7 +74,7 @@ class TicketLookupContractsTest {
     @Test
     fun `lookup modes keep clear operational titles`() {
         assertEquals("Duplicar ticket", LookupMode.from("duplicar").title)
-        assertEquals("Cobro de ticket", LookupMode.from("pagar").title)
+        assertEquals("Cobros · Buscar ganador", LookupMode.from("pagar").title)
         assertEquals("Eliminar ticket", LookupMode.from("anular").title)
     }
 
@@ -124,9 +126,54 @@ class TicketLookupContractsTest {
     }
 
     @Test
+    fun `pay lookup filters by day and payout state`() {
+        val todayPending = TicketRecord(
+            id = "today-pending",
+            status = "winner",
+            total = 25.0,
+            totalPrize = 850.0,
+            createdAtEpochMs = dominicanNoon("2026-06-09"),
+        )
+        val todayPaid = todayPending.copy(
+            id = "today-paid",
+            status = "paid",
+        )
+        val yesterdayPending = todayPending.copy(
+            id = "yesterday-pending",
+            createdAtEpochMs = dominicanNoon("2026-06-08"),
+        )
+        val rows = listOf(todayPending, todayPaid, yesterdayPending)
+
+        assertEquals(
+            listOf("today-pending"),
+            filterTicketLookupPaymentView(rows, LookupMode.PAY, "", "today", "pending", "2026-06-09").map { it.id },
+        )
+        assertEquals(
+            listOf("today-paid"),
+            filterTicketLookupPaymentView(rows, LookupMode.PAY, "", "today", "paid", "2026-06-09").map { it.id },
+        )
+        assertEquals(
+            listOf("today-pending", "today-paid"),
+            filterTicketLookupPaymentView(rows, LookupMode.PAY, "", "today", "all", "2026-06-09").map { it.id },
+        )
+        assertEquals(
+            rows.map { it.id },
+            filterTicketLookupPaymentView(rows, LookupMode.PAY, "NAT-1", "today", "pending", "2026-06-09").map { it.id },
+        )
+    }
+
+    @Test
     fun `invalid lookup mode falls back to search without repeating ticket`() {
         assertEquals(LookupMode.SEARCH, LookupMode.from("modo-raro"))
         assertEquals(LookupMode.SEARCH, LookupMode.from(""))
         assertEquals(LookupMode.SEARCH, LookupMode.from(null))
+    }
+
+    private fun dominicanNoon(dayKey: String): Long {
+        return LocalDate.parse(dayKey)
+            .atTime(12, 0)
+            .atZone(ZoneId.of("America/Santo_Domingo"))
+            .toInstant()
+            .toEpochMilli()
     }
 }

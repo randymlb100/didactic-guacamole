@@ -127,7 +127,7 @@ class RenderAppContractsTest(unittest.TestCase):
         self.assertEqual(1, payload["lotteries"]["count"])
         self.assertEqual(1, payload["picks"]["count"])
 
-    def test_live_lottery_results_refreshes_instead_of_returning_stale_snapshot(self):
+    def test_live_lottery_results_serves_snapshot_and_schedules_refresh(self):
         cached_lotteries = [{"id": "37", "name": "Anguilla 7PM", "date": "20-05-2026", "number": "74-83-14"}]
         fresh_lotteries = [{"id": "38", "name": "Anguilla 8PM", "date": "20-05-2026", "number": "08-15-45"}]
 
@@ -135,14 +135,16 @@ class RenderAppContractsTest(unittest.TestCase):
                 patch("app.fetch_existing_from_supabase", return_value=cached_lotteries), \
                 patch("app.scrape", return_value=fresh_lotteries) as scrape, \
                 patch("app.save_to_supabase") as save_lottery, \
+                patch("app.schedule_background_lottery_refresh") as schedule_refresh, \
                 patch("app.SUPABASE_KEY", "test-key"):
             response = self.client.get("/system-results?date=20-05-2026&mode=lottery&live=1")
 
-        scrape.assert_called_once_with("20-05-2026")
-        save_lottery.assert_called_once()
+        scrape.assert_not_called()
+        save_lottery.assert_not_called()
+        schedule_refresh.assert_called_once_with("20-05-2026")
         payload = json.loads(response.data.decode("utf-8"))
-        self.assertEqual("inline-scrape", payload["servedFrom"])
-        self.assertEqual(["37", "38"], [row["id"] for row in payload["lotteries"]["results"]])
+        self.assertEqual("supabase-snapshot", payload["servedFrom"])
+        self.assertEqual(["37"], [row["id"] for row in payload["lotteries"]["results"]])
 
     def test_live_pick_results_uses_cache_without_background_scrape(self):
         cached_picks = [{

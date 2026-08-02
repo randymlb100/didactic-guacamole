@@ -4,6 +4,7 @@ type JsonMap = Record<string, unknown>;
 
 const THESPORTSDB_BASE_URL = "https://www.thesportsdb.com/api/v1/json";
 const CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
+const THESPORTSDB_PUBLIC_V1_KEY = "123";
 
 function ok(body: JsonMap): Response {
   return json({ ok: true, ...body });
@@ -63,30 +64,47 @@ function freshEnough(lastCheckedAt: unknown, logoUrl: unknown): boolean {
   return clean(logoUrl).length > 0 && Number.isFinite(checkedMs) && Date.now() - checkedMs < CACHE_TTL_MS;
 }
 
-async function fetchLeagueTeams(leagueTitle: string, apiKey: string): Promise<JsonMap[]> {
-  if (!clean(leagueTitle)) return [];
-  const url = new URL(`${THESPORTSDB_BASE_URL}/${encodeURIComponent(apiKey)}/search_all_teams.php`);
-  url.searchParams.set("l", leagueTitle);
-  const response = await fetch(url, { headers: { "Accept": "application/json" } });
-  const payload = asObject(await response.json().catch(() => ({})));
-  if (!response.ok) {
-    throw new Error(`${response.status} ${clean(payload.message || payload.error) || "TheSportsDB league error"}`);
-  }
-  return asArray(payload.teams).map(asObject);
+function providerMessage(payload: JsonMap): string {
+  return clean(payload.message || payload.Message || payload.error || payload.Error);
 }
 
-async function fetchTeamAsset(teamName: string, apiKey: string): Promise<JsonMap> {
-  const url = new URL(`${THESPORTSDB_BASE_URL}/${encodeURIComponent(apiKey)}/searchteams.php`);
-  url.searchParams.set("t", teamName);
-  const response = await fetch(url, { headers: { "Accept": "application/json" } });
-  const payload = asObject(await response.json().catch(() => ({})));
-  if (!response.ok) {
-    throw new Error(`${response.status} ${clean(payload.message || payload.error) || "TheSportsDB error"}`);
-  }
+function sportsDbApiKeys(configuredApiKey: string): string[] {
+  const configured = clean(configuredApiKey);
+  const keys = configured && configured !== "YOUR_API_KEY_GOES_HERE" ? [configured] : [];
+  if (!keys.includes(THESPORTSDB_PUBLIC_V1_KEY)) keys.push(THESPORTSDB_PUBLIC_V1_KEY);
+  return keys;
+}
 
-  const normalized = normalizeTeamName(teamName);
-  const teams = asArray(payload.teams).map(asObject);
-  return teams.find((team) => normalizeTeamName(team.strTeam) === normalized) ?? {};
+async function fetchLeagueTeams(leagueTitle: string, apiKeys: string[]): Promise<JsonMap[]> {
+  if (!clean(leagueTitle)) return [];
+  const errors: string[] = [];
+  for (const apiKey of apiKeys) {
+    const url = new URL(`${THESPORTSDB_BASE_URL}/${encodeURIComponent(apiKey)}/search_all_teams.php`);
+    url.searchParams.set("l", leagueTitle);
+    const response = await fetch(url, { headers: { "Accept": "application/json" } });
+    const payload = asObject(await response.json().catch(() => ({})));
+    if (response.ok) return asArray(payload.teams).map(asObject);
+    errors.push(`${response.status} ${providerMessage(payload) || "TheSportsDB league error"}`);
+  }
+  throw new Error(errors.join(" | ") || "TheSportsDB league error");
+}
+
+async function fetchTeamAsset(teamName: string, apiKeys: string[]): Promise<JsonMap> {
+  const errors: string[] = [];
+  for (const apiKey of apiKeys) {
+    const url = new URL(`${THESPORTSDB_BASE_URL}/${encodeURIComponent(apiKey)}/searchteams.php`);
+    url.searchParams.set("t", teamName);
+    const response = await fetch(url, { headers: { "Accept": "application/json" } });
+    const payload = asObject(await response.json().catch(() => ({})));
+    if (!response.ok) {
+      errors.push(`${response.status} ${providerMessage(payload) || "TheSportsDB error"}`);
+      continue;
+    }
+    const normalized = normalizeTeamName(teamName);
+    const teams = asArray(payload.teams).map(asObject);
+    return teams.find((team) => normalizeTeamName(team.strTeam) === normalized) ?? {};
+  }
+  throw new Error(errors.join(" | ") || "TheSportsDB error");
 }
 
 async function handle(req: Request): Promise<Response> {
@@ -104,8 +122,7 @@ async function handle(req: Request): Promise<Response> {
     return json({ ok: false, message: "Admin deportivo requerido." }, 403);
   }
 
-  const apiKey = Deno.env.get("THESPORTSDB_API_KEY") ?? "";
-  if (!apiKey) return json({ ok: false, message: "THESPORTSDB_API_KEY no esta configurada." }, 500);
+  const apiKeys = sportsDbApiKeys(Deno.env.get("THESPORTSDB_API_KEY") ?? "");
 
   const supabase = supabaseAdmin();
   const requestedLimit = Number(body.limit);
@@ -170,11 +187,11 @@ async function handle(req: Request): Promise<Response> {
       const leagueKey = `${team.sportKey}::${team.leagueTitle}`;
       let leagueTeams = leagueTeamsByKey.get(leagueKey);
       if (!leagueTeams) {
-        leagueTeams = await fetchLeagueTeams(team.leagueTitle, apiKey);
+        leagueTeams = await fetchLeagueTeams(team.leagueTitle, apiKeys);
         leagueTeamsByKey.set(leagueKey, leagueTeams);
       }
       const asset = leagueTeams.find((candidate) => normalizeTeamName(candidate.strTeam) === team.teamNameNormalized) ??
-        await fetchTeamAsset(team.teamName, apiKey);
+        await fetchTeamAsset(team.teamName, apiKeys);
       const logoUrl = clean(asset.strTeamBadge || asset.strBadge || asset.strTeamLogo || asset.strLogo);
       const badgeUrl = clean(asset.strTeamBadge || asset.strBadge);
       const { error: upsertError } = await supabase

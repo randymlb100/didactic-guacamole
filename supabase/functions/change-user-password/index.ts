@@ -1,5 +1,6 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
+import { authenticatedActor, canAccessOwner, type AuthenticatedActor } from "../_shared/lotterynet-admin.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -39,7 +40,8 @@ function matchesAccount(account: Record<string, unknown>, idOrUser: string): boo
 }
 
 function roleOf(account: Record<string, unknown>): string {
-  return lower(account.role);
+  const role = lower(account.role);
+  return role === "cashier" ? "cajero" : role;
 }
 
 function sameNetwork(actor: Record<string, unknown>, target: Record<string, unknown>): boolean {
@@ -49,17 +51,21 @@ function sameNetwork(actor: Record<string, unknown>, target: Record<string, unkn
 }
 
 function canChangePassword(
-  actor: Record<string, unknown> | null,
-  actorRole: string,
+  actor: AuthenticatedActor,
   target: Record<string, unknown>,
 ): boolean {
-  if (actorRole === "master") return true;
-  if (!actor) return false;
-  if (roleOf(actor) === "master") return true;
-  if (roleOf(actor) !== "admin") return false;
+  if (actor.role === "master") return true;
+  if (actor.role !== "admin") return false;
   const targetRole = roleOf(target);
   return (targetRole === "supervisor" || targetRole === "cashier" || targetRole === "cajero") &&
-    sameNetwork(actor, target);
+    (
+      canAccessOwner(actor, clean(target.id)) ||
+      canAccessOwner(actor, clean(target.user)) ||
+      canAccessOwner(actor, clean(target.username)) ||
+      actor.ownerKeys.some((ownerKey) =>
+        sameNetwork({ id: ownerKey, user: ownerKey, banca: ownerKey }, target)
+      )
+    );
 }
 
 function randomHex(length: number): string {
@@ -108,12 +114,14 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (req.method !== "POST") return json({ message: "Metodo no permitido" }, 405);
   try {
+    const auth = await authenticatedActor(req, ["admin", "master"]);
+    if (!auth.ok) return auth.response;
+
     const body = await req.json().catch(() => ({}));
+    const action = lower(body.action);
     const targetId = clean(body.targetId);
     const targetUser = clean(body.targetUser);
     const newPassword = clean(body.newPassword);
-    const actorRole = lower(body.actorRole);
-    if (!targetId && !targetUser) return json({ message: "Usuario destino requerido" }, 400);
     if (newPassword.length < 6) return json({ message: "La clave debe tener 6 caracteres o mas." }, 400);
 
     const { data, error } = await supabase
@@ -131,15 +139,68 @@ Deno.serve(async (req) => {
       all.findIndex((other) => lower(other.id) === lower(account.id) || lower(other.user) === lower(account.user)) === index
     );
     const cashiers = accountArray(payload.cajeros);
+
+    if (action === "change-cashier-group-password") {
+      if (auth.actor.role !== "master") return json({ message: "Solo Master puede cambiar la clave grupal." }, 403);
+      const adminId = clean(body.adminId);
+      const admin = admins.find((account) => matchesAccount(account, adminId));
+      if (!admin) return json({ message: "No se encontro la banca." }, 404);
+      const group = cashiers.filter((cashier) =>
+        lower(cashier.adminId) === lower(admin.id) ||
+        lower(cashier.adminUser) === lower(admin.user) ||
+        lower(cashier.banca) === lower(admin.banca)
+      );
+      if (group.length === 0) return json({ message: "Esta banca no tiene cajeros." }, 400);
+
+      const authResults: Record<string, unknown>[] = [];
+      for (const cashier of group) {
+        try {
+          authResults.push({
+            id: clean(cashier.id),
+            user: clean(cashier.user),
+            authUpdated: await updateAuthIfPossible(cashier, newPassword),
+          });
+        } catch (error) {
+          return json({
+            ok: false,
+            partial: true,
+            updated: authResults,
+            failedUser: clean(cashier.user),
+            message: error instanceof Error ? error.message : "No se pudo actualizar Auth.",
+          }, 502);
+        }
+      }
+
+      const secretById = new Map<string, Record<string, unknown>>();
+      for (const cashier of group) secretById.set(lower(cashier.id), await passwordSecret(newPassword));
+      const nextCashiers = cashiers.map((cashier) => {
+        const secret = secretById.get(lower(cashier.id));
+        return secret ? { ...cashier, ...secret } : cashier;
+      });
+      const { error: groupSaveError } = await supabase
+        .from("lotterynet_users_state")
+        .upsert({ scope: "global", payload: { ...payload, cajeros: nextCashiers }, updated_at: new Date().toISOString() }, { onConflict: "scope" });
+      if (groupSaveError) throw groupSaveError;
+
+      return json({
+        ok: true,
+        action,
+        adminId: clean(admin.id),
+        updated: authResults,
+        updatedCount: group.length,
+        authUpdatedCount: authResults.filter((item) => item.authUpdated === true).length,
+        payloadConfirmed: true,
+        message: "Clave grupal actualizada.",
+      });
+    }
+
+    if (!targetId && !targetUser) return json({ message: "Usuario destino requerido" }, 400);
     const allAccounts = [...admins, ...supervisors, ...cashiers];
-    const actor = allAccounts.find((account) =>
-      matchesAccount(account, clean(body.actorId)) || matchesAccount(account, clean(body.actorUser))
-    ) ?? null;
     const target = allAccounts.find((account) =>
       matchesAccount(account, targetId) || matchesAccount(account, targetUser)
     );
     if (!target) return json({ message: "No se encontro el usuario." }, 404);
-    if (!canChangePassword(actor, actorRole, target)) {
+    if (!canChangePassword(auth.actor, target)) {
       return json({ message: "No tiene permiso para cambiar esta clave." }, 403);
     }
 

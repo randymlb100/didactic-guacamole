@@ -20,6 +20,7 @@ import com.lotterynet.pro.core.sales.SaleLimitRemainingRow
 import com.lotterynet.pro.core.storage.AdminSystemModeConfig
 import com.lotterynet.pro.core.storage.effectiveAdminSystemModeConfigForRole
 import com.lotterynet.pro.ui.common.LotteryNetWindowMode
+import java.io.IOException
 import java.time.Instant
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -43,7 +44,7 @@ class SalesUiContractsTest {
         assertTrue(contract.useTightSellingLayout)
         assertFalse(keypad.showStatsBadges)
         assertTrue(keypad.totalAboveKeypad)
-        assertEquals(44, keypad.keyHeightDp)
+        assertEquals(48, keypad.keyHeightDp)
         assertTrue(keypad.numberKeyFontSp <= 22)
         assertTrue(keypad.commandKeyFontSp <= 14)
         assertTrue(staged.rowVerticalPaddingDp <= 2)
@@ -65,8 +66,32 @@ class SalesUiContractsTest {
         assertFalse(normal.useTightSellingLayout)
         assertEquals(LotteryNetWindowMode.POS_TIGHT, lite.windowMode)
         assertTrue(lite.useTightSellingLayout)
-        assertTrue(resolveVentaKeypadLayout(lite.windowMode).keyHeightDp < resolveVentaKeypadLayout(normal.windowMode).keyHeightDp)
+        assertEquals(48, resolveVentaKeypadLayout(lite.windowMode).keyHeightDp)
         assertTrue(resolveVentaStagedListLayout(lite.windowMode).prioritizeListSpace)
+    }
+
+    @Test
+    fun `pos contract centralizes compact surface budget without changing normal sale`() {
+        val normal = resolveVentaPosLiteContract(
+            windowMode = LotteryNetWindowMode.POS,
+            posLiteEnabled = false,
+        )
+        val pos = resolveVentaPosLiteContract(
+            windowMode = LotteryNetWindowMode.POS,
+            posLiteEnabled = true,
+        )
+
+        assertTrue(normal.headerSubtitleVisible)
+        assertEquals(0, normal.contentHorizontalPaddingDp)
+        assertFalse(normal.hideStatsBadges)
+        assertEquals(48, normal.touchTargetMinDp)
+
+        assertFalse(pos.headerSubtitleVisible)
+        assertEquals(6, pos.contentHorizontalPaddingDp)
+        assertEquals(0.50f, pos.stagedListMaxHeightFraction, 0.001f)
+        assertEquals(88, pos.stagedListMinHeightDp)
+        assertTrue(pos.hideStatsBadges)
+        assertEquals(48, pos.touchTargetMinDp)
     }
 
     @Test
@@ -105,7 +130,7 @@ class SalesUiContractsTest {
     }
 
     @Test
-    fun `sales startup keeps local session when only supabase jwt is missing`() {
+    fun `sales startup keeps local session when supabase auth or network fails`() {
         val authRequired = SupabaseEdgeException(
             userMessage = "Sesion del servidor requerida. Inicia sesion con internet para continuar.",
             technicalMessage = "Missing Supabase Auth JWT for server-first operation.",
@@ -113,7 +138,30 @@ class SalesUiContractsTest {
         )
 
         assertTrue(shouldKeepSalesSessionAfterStartupFailure(authRequired))
+        assertTrue(
+            shouldKeepSalesSessionAfterStartupFailure(
+                IllegalStateException("server unavailable", IOException("timeout")),
+            ),
+        )
         assertFalse(shouldKeepSalesSessionAfterStartupFailure(IllegalStateException("local database corrupt")))
+    }
+
+    @Test
+    fun `sales startup system mode checks owner aliases before falling back local`() {
+        val requestedKeys = mutableListOf<String>()
+        val remoteConfig = firstSalesStartupRemoteValue(
+            ownerKeys = listOf("ADM-C5FFB0", "auth-user-id", "nicola01"),
+        ) { key ->
+            requestedKeys += key
+            if (key == "auth-user-id") {
+                """{"configured":true,"blockedSalePlays":[{"playType":"Q","number":"03"}]}"""
+            } else {
+                null
+            }
+        }
+
+        assertEquals("""{"configured":true,"blockedSalePlays":[{"playType":"Q","number":"03"}]}""", remoteConfig)
+        assertEquals(listOf("ADM-C5FFB0", "auth-user-id"), requestedKeys)
     }
 
     @Test
@@ -269,6 +317,46 @@ class SalesUiContractsTest {
 
         assertEquals("native-1780330590000", first.clientRequestId)
         assertEquals("native-1780330710000", changed.clientRequestId)
+    }
+
+    @Test
+    fun `sale validation bearer token prefers the warmed token`() {
+        assertEquals(
+            "eyJwcmV3YXJtZWQudG9rZW4",
+            resolveSaleValidationBearerToken(
+                warmedToken = "eyJwcmV3YXJtZWQudG9rZW4",
+                fallbackTokenProvider = { "eyJmYWxsYmFjay50b2tlbg" },
+            ),
+        )
+        assertEquals(
+            "eyJmYWxsYmFjay50b2tlbg",
+            resolveSaleValidationBearerToken(
+                warmedToken = null,
+                fallbackTokenProvider = { "eyJmYWxsYmFjay50b2tlbg" },
+            ),
+        )
+    }
+
+    @Test
+    fun `sale validation bearer token does not call fallback when warmed token exists`() {
+        var fallbackCalls = 0
+
+        val token = resolveSaleValidationBearerToken(
+            warmedToken = "eyJwcmV3YXJtZWQudG9rZW4",
+            fallbackTokenProvider = {
+                fallbackCalls += 1
+                "eyJmYWxsYmFjay50b2tlbg"
+            },
+        )
+
+        assertEquals("eyJwcmV3YXJtZWQudG9rZW4", token)
+        assertEquals(0, fallbackCalls)
+    }
+
+    @Test
+    fun `sale limit exposure cache stays fresh briefly`() {
+        assertTrue(isFreshSaleLimitExposureCache(cachedAtEpochMs = 1_000L, nowEpochMs = 8_900L))
+        assertFalse(isFreshSaleLimitExposureCache(cachedAtEpochMs = 1_000L, nowEpochMs = 9_200L))
     }
 
     @Test
@@ -1589,7 +1677,7 @@ class SalesUiContractsTest {
 
         assertFalse(contract.showStatsBadges)
         assertEquals(0, contract.keySpacingDp)
-        assertEquals(44, contract.keyHeightDp)
+        assertEquals(48, contract.keyHeightDp)
         assertTrue(contract.totalAboveKeypad)
     }
 
@@ -1625,6 +1713,18 @@ class SalesUiContractsTest {
         assertTrue(resolveVentaKeyRows().dropLast(1).all { it.size == 4 })
         assertEquals(3, resolveVentaKeyRows().last().size)
         assertEquals("OK", resolveVentaKeyRows().last().last())
+    }
+
+    @Test
+    fun `pos keypad preserves primary commands and touch target`() {
+        val keys = resolveVentaKeyRows(UserRole.CASHIER).flatten()
+        val contract = resolveVentaKeypadLayout(LotteryNetWindowMode.POS_TIGHT)
+
+        assertEquals(48, contract.touchTargetMinDp)
+        assertEquals(0, contract.keySpacingDp)
+        assertEquals(1, keys.count { it == "PRINT" })
+        assertEquals(1, keys.count { it == "OK" })
+        assertEquals("OK", resolveVentaKeyRows(UserRole.CASHIER).last().last())
     }
 
     @Test
@@ -1707,21 +1807,21 @@ class SalesUiContractsTest {
     }
 
     @Test
-    fun `print action does not hide incomplete current play behind latest ticket`() {
+    fun `print action does not reuse latest ticket when no new play was entered`() {
         val contract = resolveTicketPrintOpenContract(
             stagedRowCount = 0,
             hasLatestTicket = true,
             currentEntryValid = false,
-            number = "18",
+            number = "",
             amount = "",
             hasPendingConfirmation = false,
         )
 
-        assertTrue(contract.showAction)
+        assertFalse(contract.showAction)
         assertFalse(contract.stageCurrentPlayBeforeSave)
         assertFalse(contract.saveBeforeOpen)
         assertFalse(contract.openLatestTicket)
-        assertEquals("Completa la jugada y el monto antes de imprimir", contract.fallbackMessage)
+        assertEquals("No hay jugada para imprimir", contract.fallbackMessage)
     }
 
     @Test
@@ -1771,6 +1871,72 @@ class SalesUiContractsTest {
     }
 
     @Test
+    fun `sale whatsapp share uses official paged layout for large tickets`() {
+        val ticket = TicketRecord(
+            id = "share-large-ticket",
+            plays = listOf("Leidsa", "Nueva York Tarde", "Anguila 2PM", "Florida Día").flatMap { lottery ->
+                (1..18).map { index ->
+                    com.lotterynet.pro.core.model.PlayItem(
+                        number = index.toString().padStart(2, '0'),
+                        playType = "Q",
+                        amount = 100.0,
+                        lotteryName = lottery,
+                    )
+                }
+            },
+            total = 28_800.0,
+        )
+
+        assertTrue(shouldUseOfficialPagedShareBitmap(ticket))
+    }
+
+    @Test
+    fun `sale whatsapp share keeps small tickets on official compact render`() {
+        val ticket = TicketRecord(
+            id = "share-small-ticket",
+            plays = listOf(
+                com.lotterynet.pro.core.model.PlayItem(
+                    number = "18",
+                    playType = "Q",
+                    amount = 25.0,
+                    lotteryName = "Gana Más",
+                ),
+            ),
+            total = 25.0,
+        )
+        val estimatedHeight = com.lotterynet.pro.core.export.NativeBitmapExport.estimateOfficialTicketBitmapHeight(ticket)
+
+        assertEquals(
+            SaleTicketShareRenderKind.OFFICIAL_COMPACT,
+            resolveSaleTicketShareRenderKind(ticket, estimatedHeight),
+        )
+    }
+
+    @Test
+    fun `sale whatsapp share keeps large tickets on thermal compact render`() {
+        val ticket = TicketRecord(
+            id = "share-very-large-ticket",
+            plays = listOf("Leidsa", "Nueva York Tarde", "Anguila 2PM", "Florida Día").flatMap { lottery ->
+                (1..18).map { index ->
+                    com.lotterynet.pro.core.model.PlayItem(
+                        number = index.toString().padStart(2, '0'),
+                        playType = "Q",
+                        amount = 100.0,
+                        lotteryName = lottery,
+                    )
+                }
+            },
+            total = 28_800.0,
+        )
+        val estimatedHeight = com.lotterynet.pro.core.export.NativeBitmapExport.estimateOfficialTicketBitmapHeight(ticket)
+
+        assertEquals(
+            SaleTicketShareRenderKind.THERMAL_COMPACT,
+            resolveSaleTicketShareRenderKind(ticket, estimatedHeight),
+        )
+    }
+
+    @Test
     fun `venta entry strip balances jugada limit and amount boxes`() {
         val contract = resolveVentaEntryStripLayout(LotteryNetWindowMode.POS)
 
@@ -1786,6 +1952,11 @@ class SalesUiContractsTest {
 
     @Test
     fun `inline venta feedback hides normal notices but keeps real errors`() {
+        assertFalse(isVentaFeedbackErrorMessage("Ticket guardado y sincronizado con servidor"))
+        assertFalse(isVentaFeedbackErrorMessage("Lista de jugadas limpiada"))
+        assertTrue(isVentaFeedbackErrorMessage("No hay jugadas para guardar"))
+        assertTrue(isVentaFeedbackErrorMessage("No se pudo guardar el borrador local."))
+        assertTrue(isVentaFeedbackErrorMessage("Numero lleno en Leidsa · Quiniela 45"))
         assertFalse(
             shouldShowVentaInlineFeedbackBanner(
                 feedbackMessage = "Jugada repetida no modificada",
@@ -1805,6 +1976,26 @@ class SalesUiContractsTest {
                 feedbackMessage = "Monto requerido",
                 feedbackIsError = true,
                 numberHasError = false,
+            ),
+        )
+    }
+
+    @Test
+    fun `inline venta error feedback is temporary unless a confirmation is open`() {
+        assertTrue(
+            shouldAutoDismissVentaFeedbackBanner(
+                feedbackMessage = "No hay jugadas para guardar",
+                feedbackIsError = true,
+                numberHasError = false,
+                hasPendingConfirmation = false,
+            ),
+        )
+        assertFalse(
+            shouldAutoDismissVentaFeedbackBanner(
+                feedbackMessage = "Límite agotado. Admin puede autorizar esta venta.",
+                feedbackIsError = true,
+                numberHasError = false,
+                hasPendingConfirmation = true,
             ),
         )
     }
@@ -1968,6 +2159,34 @@ class SalesUiContractsTest {
     }
 
     @Test
+    fun `sale limit exhausted server message opens admin override path`() {
+        assertTrue(isSaleLimitExhaustedMessage("Limite agotado para esta jugada"))
+        assertTrue(isSaleLimitExhaustedMessage("Numero lleno en Leidsa · Quiniela 45"))
+        assertTrue(isSaleLimitExhaustedMessage("Numero lleno: Quiniela 45 en Leidsa. Disponible 0, venta 10"))
+        assertTrue(isSaleLimitExhaustedMessage("Tope diario del cajero alcanzado"))
+        assertFalse(isSaleLimitExhaustedMessage("Usuario bloqueado"))
+    }
+
+    @Test
+    fun `sale limit rejection keeps the draft out of the staged list`() {
+        assertEquals(
+            "Límite del cajero alcanzado en Leidsa · Quiniela · 02",
+            buildSaleLimitBlockedMessage(
+                listOf("Límite del cajero alcanzado en Leidsa · Quiniela · 02"),
+            ),
+        )
+        assertEquals(
+            "Pool lleno en Leidsa · Quiniela · 02 · Pool lleno en Nacional · Quiniela · 02",
+            buildSaleLimitBlockedMessage(
+                listOf(
+                    "Pool lleno en Leidsa · Quiniela · 02",
+                    "Pool lleno en Nacional · Quiniela · 02",
+                ),
+            ),
+        )
+    }
+
+    @Test
     fun `cashier sale limit badge shows remaining global amount`() {
         val limits = CashierSalesLimitInputs(quiniela = 10000.0, pale = 500.0)
 
@@ -1996,18 +2215,22 @@ class SalesUiContractsTest {
     }
 
     @Test
-    fun `cashier sale limit tone starts green and turns red when amount consumes limit`() {
+    fun `cashier sale limit tone stays green while remaining and turns red when exhausted`() {
         assertEquals(
             SaleLimitBadgeTone.GREEN,
             resolveSaleLimitBadgeTone(limit = 10000.0, sold = 0.0, pending = 0.0),
         )
         assertEquals(
-            SaleLimitBadgeTone.RED,
+            SaleLimitBadgeTone.GREEN,
             resolveSaleLimitBadgeTone(limit = 10000.0, sold = 0.0, pending = 25.0),
         )
         assertEquals(
-            SaleLimitBadgeTone.RED,
+            SaleLimitBadgeTone.GREEN,
             resolveSaleLimitBadgeTone(limit = 10000.0, sold = 50.0, pending = 0.0),
+        )
+        assertEquals(
+            SaleLimitBadgeTone.RED,
+            resolveSaleLimitBadgeTone(limit = 10000.0, sold = 10000.0, pending = 0.0),
         )
         assertEquals(
             SaleLimitBadgeTone.GREEN,
@@ -2022,17 +2245,9 @@ class SalesUiContractsTest {
     }
 
     @Test
-    fun `cashier sale limit badge shows staged remaining when no active play is selected`() {
-        val stagedLimit = SaleLimitRemainingRow(
-            playType = "Q",
-            number = "65",
-            limit = 500.0,
-            sold = 0.0,
-            pending = 138.0,
-        )
-
-        assertEquals("362", resolveSaleLimitBadgeMain(UserRole.CASHIER, stagedLimit))
-        assertEquals("362", resolveSaleLimitBadgeMain(UserRole.ADMIN, stagedLimit))
+    fun `cashier sale limit badge stays neutral when no active play is selected`() {
+        assertEquals(null, resolveSaleLimitBadgeMain(role = UserRole.CASHIER, row = null))
+        assertEquals(null, resolveSaleLimitBadgeMain(role = UserRole.ADMIN, row = null))
     }
 
     @Test
@@ -2073,9 +2288,24 @@ class SalesUiContractsTest {
     }
 
     @Test
+    fun `cashier sale limit preview does not use amount without active number`() {
+        assertEquals(
+            null,
+            resolveSaleLimitPreviewOverage(
+                remainingLabel = "0",
+                requestedAmount = 200.0,
+                hasActivePlay = false,
+            ),
+        )
+    }
+
+    @Test
     fun `cashier limits and exposure fallback polling are server friendly`() {
         assertTrue(CASHIER_LIMIT_PULL_INTERVAL_MS >= 60_000L)
-        assertTrue(SALES_EXPOSURE_REFRESH_INTERVAL_MS >= 30_000L)
+        assertTrue(SALES_EXPOSURE_REFRESH_INTERVAL_MS >= 300_000L)
+        assertTrue(SALES_RESULTS_WINNER_REFRESH_INTERVAL_MS >= 300_000L)
+        assertTrue(shouldRunSalesExposureFallbackPoll(realtimeEnabled = false))
+        assertTrue(shouldRunSalesExposureFallbackPoll(realtimeEnabled = true))
     }
 
     @Test

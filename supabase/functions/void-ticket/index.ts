@@ -1,5 +1,6 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
+import { bumpTicketDeltaResponseVersion } from "../_shared/lotterynet-admin.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -122,6 +123,7 @@ Deno.serve(async (req) => {
 
     const { data, error } = await supabase.rpc("ln_void_ticket_legacy", { p_body: body });
     if (error) throw error;
+    await bumpTicketDeltaResponseVersion();
 
     const payload = (data ?? { ok: true }) as Record<string, unknown>;
     return json(payload, Number(payload.status ?? 200));

@@ -102,6 +102,43 @@ class SaleExposureLimitContractsTest {
     }
 
     @Test
+    fun `cashier user limit overrides the shared cashier default`() {
+        val payload = """{"defaults":{"daySale":1000,"q":50,"pale":500},"byUser":{"cajero1":{"q":25,"pale":100}}}"""
+
+        val cashierWithOverride = decodeCashierLimitsForSession(
+            payload,
+            ActiveSession(role = UserRole.CASHIER, userId = "cashier-id", username = "cajero1", adminId = "admin-id"),
+        )
+        val cashierWithoutOverride = decodeCashierLimitsForSession(
+            payload,
+            ActiveSession(role = UserRole.CASHIER, userId = "cashier-2", username = "cajero2", adminId = "admin-id"),
+        )
+
+        assertEquals(25.0, cashierWithOverride.typeLimitFor("Q"), 0.001)
+        assertEquals(100.0, cashierWithOverride.typeLimitFor("P"), 0.001)
+        assertEquals(50.0, cashierWithoutOverride.typeLimitFor("Q"), 0.001)
+        assertEquals(500.0, cashierWithoutOverride.typeLimitFor("P"), 0.001)
+    }
+
+    @Test
+    fun `cashier user limit resolves when payload key matches an alternate session alias`() {
+        val payload = """{"defaults":{"daySale":1000,"q":50},"byUser":{"CAJ-77":{"daySale":4000,"q":25}}}"""
+
+        val cashierLimits = decodeCashierLimitsForSession(
+            payload,
+            ActiveSession(
+                role = UserRole.CASHIER,
+                userId = "CAJ-77",
+                username = "alias-user",
+                adminId = "admin-id",
+            ),
+        )
+
+        assertEquals(4000.0, cashierLimits.daySale, 0.001)
+        assertEquals(25.0, cashierLimits.typeLimitFor("Q"), 0.001)
+    }
+
+    @Test
     fun `quiniela exposure is scoped by owner cashier and number across all lotteries`() {
         val bucket = resolveSaleExposureLimitBucket("Q", "06")
         val tickets = listOf(
@@ -184,6 +221,163 @@ class SaleExposureLimitContractsTest {
     }
 
     @Test
+    fun `number exposure can be scoped to a single lottery across cashiers`() {
+        val bucket = resolveSaleExposureLimitBucket("Q", "06", "lot-a")
+        val tickets = listOf(
+            ticket(
+                id = "cashier-one",
+                adminId = "admin-1",
+                sellerId = "cashier-1",
+                plays = listOf(play(number = "06", playType = "Q", amount = 100.0, lotteryId = "lot-a")),
+            ),
+            ticket(
+                id = "cashier-two",
+                adminId = "admin-1",
+                sellerId = "cashier-2",
+                plays = listOf(play(number = "06", playType = "Q", amount = 150.0, lotteryId = "lot-a")),
+            ),
+            ticket(
+                id = "same-number-other-lottery",
+                adminId = "admin-1",
+                sellerId = "cashier-3",
+                plays = listOf(play(number = "06", playType = "Q", amount = 600.0, lotteryId = "lot-b")),
+            ),
+            ticket(
+                id = "other-owner",
+                adminId = "admin-2",
+                sellerId = "cashier-1",
+                plays = listOf(play(number = "06", playType = "Q", amount = 900.0, lotteryId = "lot-a")),
+            ),
+        )
+
+        assertEquals(
+            250.0,
+            calculateGlobalLimitExposure(
+                tickets = tickets,
+                ownerKey = "admin-1",
+                bucket = bucket,
+                cashierPoolOnly = true,
+            ),
+            0.001,
+        )
+    }
+
+    @Test
+    fun `own cashier exposure stays separate from shared pool exposure`() {
+        val bucket = resolveSaleExposureLimitBucket("Q", "06", "lot-a")
+        val tickets = listOf(
+            ticket(
+                id = "cashier-one",
+                adminId = "admin-1",
+                sellerId = "cashier-1",
+                plays = listOf(play(number = "06", playType = "Q", amount = 300.0, lotteryId = "lot-a")),
+            ),
+            ticket(
+                id = "cashier-two",
+                adminId = "admin-1",
+                sellerId = "cashier-2",
+                plays = listOf(play(number = "06", playType = "Q", amount = 700.0, lotteryId = "lot-a")),
+            ),
+        )
+
+        assertEquals(
+            300.0,
+            calculateGlobalLimitExposure(
+                tickets = tickets,
+                ownerKey = "admin-1",
+                bucket = bucket,
+                cashierKeys = setOf("cashier-1"),
+                cashierPoolOnly = false,
+            ),
+            0.001,
+        )
+        assertEquals(
+            1000.0,
+            calculateGlobalLimitExposure(
+                tickets = tickets,
+                ownerKey = "admin-1",
+                bucket = bucket,
+                cashierPoolOnly = true,
+            ),
+            0.001,
+        )
+    }
+
+    @Test
+    fun `global cashier exposure accepts admin id and alias as same owner`() {
+        val bucket = resolveSaleExposureLimitBucket("Q", "06", "lot-a")
+        val tickets = listOf(
+            ticket(
+                id = "new-ticket-with-admin-id",
+                adminId = "adm-123",
+                sellerId = "cashier-1",
+                plays = listOf(play(number = "06", playType = "Q", amount = 120.0, lotteryId = "lot-a")),
+            ),
+            ticket(
+                id = "old-ticket-with-admin-alias",
+                adminId = "",
+                adminUser = "podero02",
+                sellerId = "cashier-2",
+                plays = listOf(play(number = "06", playType = "Q", amount = 280.0, lotteryId = "lot-a")),
+            ),
+            ticket(
+                id = "other-admin",
+                adminId = "other-admin",
+                sellerId = "cashier-3",
+                plays = listOf(play(number = "06", playType = "Q", amount = 999.0, lotteryId = "lot-a")),
+            ),
+        )
+
+        assertEquals(
+            400.0,
+            calculateGlobalLimitExposure(
+                tickets = tickets,
+                ownerKey = "adm-123",
+                ownerKeys = setOf("adm-123", "podero02"),
+                bucket = bucket,
+                cashierPoolOnly = true,
+            ),
+            0.001,
+        )
+    }
+
+    @Test
+    fun `cashier badge exposure uses shared admin cashier pool`() {
+        val bucket = resolveSaleExposureLimitBucket("Q", "12", "29")
+        val tickets = listOf(
+            ticket(
+                id = "bancay20-ticket",
+                adminId = "ADM-163C38",
+                sellerId = "bancay20",
+                plays = listOf(play(number = "12", playType = "Q", amount = 500.0, lotteryId = "29")),
+            ),
+            ticket(
+                id = "other-lottery",
+                adminId = "ADM-163C38",
+                sellerId = "bancay22",
+                plays = listOf(play(number = "12", playType = "Q", amount = 300.0, lotteryId = "30")),
+            ),
+            ticket(
+                id = "other-admin",
+                adminId = "ADM-OTHER",
+                sellerId = "bancay20",
+                plays = listOf(play(number = "12", playType = "Q", amount = 900.0, lotteryId = "29")),
+            ),
+        )
+
+        val sold = calculateSaleLimitSoldExposureForRole(
+            role = UserRole.CASHIER,
+            tickets = tickets,
+            ownerKey = "ADM-163C38",
+            ownerKeys = setOf("ADM-163C38", "nicola01"),
+            bucket = bucket,
+            cashierKeys = setOf("bancay21"),
+        )
+
+        assertEquals(500.0, sold, 0.001)
+    }
+
+    @Test
     fun `staged exposure is global and ignores lottery for the same bucket`() {
         val bucket = resolveSaleExposureLimitBucket("Q", "06")
         val staged = listOf(
@@ -196,23 +390,41 @@ class SaleExposureLimitContractsTest {
     }
 
     @Test
-    fun `cashier remaining rows are grouped by limit bucket and scoped to cashier`() {
+    fun `staged exposure respects selected lottery when bucket has lottery`() {
+        val bucket = resolveSaleExposureLimitBucket("Q", "06", "lot-a")
+        val staged = listOf(
+            staged(number = "06", playType = "Q", amount = 100.0, lotteryId = "lot-a"),
+            staged(number = "06", playType = "Q", amount = 50.0, lotteryId = "lot-b"),
+            staged(number = "07", playType = "Q", amount = 500.0, lotteryId = "lot-a"),
+        )
+
+        assertEquals(100.0, calculateGlobalStagedExposure(staged, bucket), 0.001)
+    }
+
+    @Test
+    fun `cashier remaining rows are shared by admin and scoped to lottery`() {
         val staged = listOf(
             staged(number = "256", playType = "P3BOX", amount = 25.0, lotteryId = "p3-a"),
-            staged(number = "652", playType = "P3BOX", amount = 10.0, lotteryId = "p3-b"),
+            staged(number = "652", playType = "P3BOX", amount = 10.0, lotteryId = "p3-a"),
         )
         val tickets = listOf(
             ticket(
                 id = "same-cashier",
                 adminId = "admin-1",
                 sellerId = "cashier-1",
-                plays = listOf(play(number = "526", playType = "P3BOX", amount = 40.0, lotteryId = "p3-old")),
+                plays = listOf(play(number = "526", playType = "P3BOX", amount = 40.0, lotteryId = "p3-a")),
             ),
             ticket(
                 id = "other-cashier",
                 adminId = "admin-1",
                 sellerId = "cashier-2",
-                plays = listOf(play(number = "256", playType = "P3BOX", amount = 90.0, lotteryId = "p3-old")),
+                plays = listOf(play(number = "256", playType = "P3BOX", amount = 90.0, lotteryId = "p3-a")),
+            ),
+            ticket(
+                id = "other-lottery",
+                adminId = "admin-1",
+                sellerId = "cashier-3",
+                plays = listOf(play(number = "256", playType = "P3BOX", amount = 70.0, lotteryId = "p3-b")),
             ),
         )
 
@@ -222,15 +434,16 @@ class SaleExposureLimitContractsTest {
             tickets = tickets,
             ownerKey = "admin-1",
             cashierKeys = setOf("cashier-1"),
-            limits = CashierLimits(pick3Box = 100.0),
+            limits = CashierLimits(pick3Box = 200.0),
         )
 
         assertEquals(1, rows.size)
         assertEquals("P3BOX", rows.first().playType)
         assertEquals("256", rows.first().number)
-        assertEquals(40.0, rows.first().sold, 0.001)
+        assertEquals("p3-a", rows.first().lotteryId)
+        assertEquals(130.0, rows.first().sold, 0.001)
         assertEquals(35.0, rows.first().pending, 0.001)
-        assertEquals(25.0, rows.first().remaining, 0.001)
+        assertEquals(35.0, rows.first().remaining, 0.001)
     }
 
     @Test
@@ -240,13 +453,13 @@ class SaleExposureLimitContractsTest {
                 id = "same-admin",
                 adminId = "admin-1",
                 sellerId = "admin-1",
-                plays = listOf(play(number = "526", playType = "P3BOX", amount = 40.0, lotteryId = "p3-old")),
+                plays = listOf(play(number = "526", playType = "P3BOX", amount = 40.0, lotteryId = "p3-a")),
             ).copy(role = UserRole.ADMIN),
             ticket(
                 id = "cashier-sale",
                 adminId = "admin-1",
                 sellerId = "cashier-1",
-                plays = listOf(play(number = "256", playType = "P3BOX", amount = 90.0, lotteryId = "p3-old")),
+                plays = listOf(play(number = "256", playType = "P3BOX", amount = 90.0, lotteryId = "p3-a")),
             ).copy(role = UserRole.CASHIER),
         )
 
@@ -293,6 +506,7 @@ class SaleExposureLimitContractsTest {
     private fun ticket(
         id: String,
         adminId: String,
+        adminUser: String? = null,
         status: String = "active",
         sellerId: String? = null,
         sellerUser: String? = null,
@@ -301,6 +515,7 @@ class SaleExposureLimitContractsTest {
         return TicketRecord(
             id = id,
             adminId = adminId,
+            adminUser = adminUser,
             sellerId = sellerId,
             sellerUser = sellerUser,
             status = status,

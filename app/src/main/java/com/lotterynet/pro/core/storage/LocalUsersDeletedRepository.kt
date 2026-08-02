@@ -132,7 +132,7 @@ class LocalUsersDeletedRepository(
                 if (key == null) continue
                 val prev = map[key]
                 if (prev == null || item.rankTimestamp() >= prev.rankTimestamp()) {
-                    map[key] = item
+                    map[key] = item.withPreservedCommission(prev)
                 }
             }
         }
@@ -206,6 +206,31 @@ class LocalUsersDeletedRepository(
             optLong("updatedAt", 0L),
             optLong("createdAt", 0L),
         )
+    }
+
+    private fun JSONObject.withPreservedCommission(previous: JSONObject?): JSONObject {
+        if (previous == null) return this
+        val previousRate = previous.commissionRateOrNull()
+        val currentRate = commissionRateOrNull()
+        if (previousRate != null && previousRate > 0.0 && (currentRate == null || currentRate <= 0.0)) {
+            put("commissionRate", previousRate)
+        }
+        return this
+    }
+
+    private fun JSONObject.commissionRateOrNull(): Double? {
+        val raw = when {
+            has("commissionRate") -> opt("commissionRate")
+            has("comision") -> opt("comision")
+            else -> null
+        }
+        val value = when (raw) {
+            is Number -> raw.toDouble()
+            is String -> raw.trim().toDoubleOrNull()
+            else -> null
+        } ?: return null
+        if (!value.isFinite() || value < 0.0) return null
+        return if (value > 1.0 && value <= 100.0) value / 100.0 else value.coerceAtMost(1.0)
     }
 
     private fun String?.normalizedKey(): String? {

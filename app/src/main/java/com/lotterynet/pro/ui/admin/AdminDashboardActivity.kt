@@ -51,12 +51,15 @@ import com.lotterynet.pro.core.finance.LocalFinanceRepository
 import com.lotterynet.pro.core.model.ActiveSession
 import com.lotterynet.pro.core.model.TicketRecord
 import com.lotterynet.pro.core.model.isPaidTicketStatus
+import com.lotterynet.pro.core.auth.SupabaseSessionTokenProvider
 import com.lotterynet.pro.core.storage.LocalRechargeRepository
 import com.lotterynet.pro.core.storage.LocalSalesRepository
 import com.lotterynet.pro.core.storage.LocalSessionRepository
 import com.lotterynet.pro.core.storage.LocalUsersRepository
 import com.lotterynet.pro.core.realtime.LotterynetRealtimeClient
 import com.lotterynet.pro.core.realtime.LotterynetRealtimeSubscription
+import com.lotterynet.pro.core.sync.TicketRefreshGovernor
+import com.lotterynet.pro.core.sync.ticketRefreshGovernorKey
 import com.lotterynet.pro.core.sync.ForegroundCatchUpInput
 import com.lotterynet.pro.core.sync.ForegroundCatchUpPolicy
 import com.lotterynet.pro.core.sync.NativeOperationalSyncCoordinator
@@ -65,6 +68,7 @@ import com.lotterynet.pro.core.sync.NativeTicketRemoteStore
 import com.lotterynet.pro.core.sync.NativeTicketSyncQueueRepository
 import com.lotterynet.pro.core.sync.OperationalSyncThrottle
 import com.lotterynet.pro.core.sync.resolveOperationalOwnerKey
+import com.lotterynet.pro.core.sync.invalidateTicketRealtimeCaches
 import com.lotterynet.pro.core.operations.filterCashiersForSession
 import com.lotterynet.pro.core.operations.filterTicketsForOperationalScope
 import com.lotterynet.pro.ui.common.CompactPanel
@@ -188,7 +192,7 @@ class AdminDashboardActivity : AppCompatActivity() {
     private val syncHandler = Handler(Looper.getMainLooper())
     private val realtimeClient = LotterynetRealtimeClient()
     private val realtimeSubscriptions = mutableListOf<LotterynetRealtimeClient.SubscriptionHandle>()
-    private val remoteStampStore = NativeTicketRemoteStore()
+    private lateinit var remoteStampStore: NativeTicketRemoteStore
     private val foregroundCatchUpPolicy = ForegroundCatchUpPolicy(
         OperationalSyncThrottle(ADMIN_DASHBOARD_FOREGROUND_CATCH_UP_THROTTLE_MS),
     )
@@ -202,11 +206,14 @@ class AdminDashboardActivity : AppCompatActivity() {
     private var cashierCountState by mutableStateOf(0)
     private var recentTicketsState by mutableStateOf<List<TicketRecord>>(emptyList())
     private var syncMessageState by mutableStateOf("Sincronizando operacion...")
+    private val dashboardRemoteRefreshGovernor = TicketRefreshGovernor(requestCooldownMs = ADMIN_DASHBOARD_REMOTE_REFRESH_DEDUP_MS)
     private val operationalSyncInFlight = AtomicBoolean(false)
     private val resumeSyncRunnable = Runnable { runForegroundCatchUp(force = false) }
     private val syncPollRunnable = object : Runnable {
         override fun run() {
-            syncOperational(force = false)
+            if (realtimeClient.shouldUsePollingFallback()) {
+                syncOperational(force = false)
+            }
             syncHandler.postDelayed(this, resolveAdminOperationalPollIntervalMs(realtimeClient.isConfigured()))
         }
     }
@@ -224,6 +231,11 @@ class AdminDashboardActivity : AppCompatActivity() {
         usersRepository = LocalUsersRepository(this)
         usersRepository.touchSession(session)
         salesRepository = LocalSalesRepository(this)
+        val sessionTokenProvider = SupabaseSessionTokenProvider(LocalSessionRepository(this))
+        remoteStampStore = NativeTicketRemoteStore(
+            bearerTokenProvider = { sessionTokenProvider.freshAccessToken() },
+            bearerTokenRefresher = { sessionTokenProvider.forceFreshAccessToken() },
+        )
         dayKey = SimpleDateFormat("yyyy-MM-dd", Locale.US).apply {
             timeZone = TimeZone.getTimeZone("America/Santo_Domingo")
         }.format(Date())
@@ -268,7 +280,9 @@ class AdminDashboardActivity : AppCompatActivity() {
         }
         syncOperational(force = true)
         subscribeRealtime(reset = false)
-        syncHandler.postDelayed(syncPollRunnable, resolveAdminOperationalPollIntervalMs(realtimeClient.isConfigured()))
+        if (realtimeSubscriptions.isEmpty()) {
+            syncHandler.postDelayed(syncPollRunnable, resolveAdminOperationalPollIntervalMs(realtimeClient.isConfigured()))
+        }
     }
 
     override fun onResume() {
@@ -308,7 +322,9 @@ class AdminDashboardActivity : AppCompatActivity() {
                     ticketGateway = NativeTicketCloudSyncCoordinator(
                         salesRepository = salesRepository,
                         queueRepository = NativeTicketSyncQueueRepository(this),
+                        remoteStore = remoteStampStore,
                     ),
+                    remoteStampStore = remoteStampStore,
                 ).syncTicketsForSession(
                     session = session,
                     lastRemoteUpdatedAt = lastRemoteUpdatedAt,
@@ -331,6 +347,14 @@ class AdminDashboardActivity : AppCompatActivity() {
         refreshDashboardData()
         val ownerKey = resolveOperationalOwnerKey(session)
         if (ownerKey.isBlank()) return
+        if (shouldSkipAdminDashboardRemoteRefresh(
+                governor = dashboardRemoteRefreshGovernor,
+                ownerKey = ownerKey,
+                dayKey = dayKey,
+                authScope = session.role.name,
+                force = force,
+            )
+        ) return
         thread(name = "admin-dashboard-foreground-catch-up") {
             val remoteUpdatedAt = runCatching { remoteStampStore.fetchUpdatedAtFresh(ownerKey) }.getOrNull()
             val decision = foregroundCatchUpPolicy.decide(
@@ -368,14 +392,39 @@ class AdminDashboardActivity : AppCompatActivity() {
         }
         val ownerKey = resolveOperationalOwnerKey(session)
         if (ownerKey.isBlank()) return
-        realtimeSubscriptions += realtimeClient.subscribe(LotterynetRealtimeSubscription.ticketOwner(ownerKey)) {
-            syncOperational(force = true)
+        val tokenProvider = SupabaseSessionTokenProvider(LocalSessionRepository(this))
+        realtimeSubscriptions += realtimeClient.subscribeTicketOwnerSignals(
+            ownerKey = ownerKey,
+            bearerTokenProvider = { tokenProvider.freshAccessToken() },
+        ) {
+            invalidateTicketRealtimeCaches(ownerKey)
+            syncOperational(force = false)
         }
     }
 }
 
 private const val ADMIN_DASHBOARD_RESUME_SYNC_DELAY_MS = 100L
 private const val ADMIN_DASHBOARD_FOREGROUND_CATCH_UP_THROTTLE_MS = 10_000L
+private const val ADMIN_DASHBOARD_REMOTE_REFRESH_DEDUP_MS = 15_000L
+
+internal fun shouldSkipAdminDashboardRemoteRefresh(
+    governor: TicketRefreshGovernor,
+    ownerKey: String,
+    dayKey: String,
+    authScope: String,
+    force: Boolean,
+    nowEpochMs: Long = System.currentTimeMillis(),
+): Boolean {
+    if (force) return false
+    return governor.shouldReuse(
+        ticketRefreshGovernorKey(
+            ownerKey = ownerKey,
+            requestType = "admin-dashboard:$dayKey",
+            authScope = authScope,
+        ),
+        nowMs = nowEpochMs,
+    )
+}
 
 @Composable
 private fun AdminDashboardRoute(

@@ -1,5 +1,6 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
+import { bumpTicketDeltaResponseVersion } from "../_shared/lotterynet-admin.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -43,6 +44,19 @@ function isUnconfirmedPrizeError(message: string): boolean {
     normalized.includes("no hay resultado confirmado") ||
     normalized.includes("premio no confirmado") ||
     (normalized.includes("prize") && normalized.includes("confirm"));
+}
+
+function isMissingResultError(message: string): boolean {
+  return lower(message).includes("faltan resultados confirmados");
+}
+
+function missingResultsMessage(message: string): string {
+  const parts = clean(message).split(":");
+  const missingNames = clean(parts.length > 1 ? parts.slice(1).join(":") : "");
+  if (missingNames) {
+    return `Resultado pendiente: ${missingNames}. No se puede pagar este ticket hasta que esa loteria tenga resultado confirmado.`;
+  }
+  return "Hay loterias pendientes de resultado. No se puede pagar este ticket hasta que todos los resultados esten confirmados.";
 }
 
 function errorMessage(error: unknown): string {
@@ -248,14 +262,21 @@ Deno.serve(async (req) => {
     });
     if (error) {
       const message = errorMessage(error);
+      if (isMissingResultError(message)) {
+        return json({ ok: false, code: "missing_results", message: missingResultsMessage(message) }, 409);
+      }
       if (isUnconfirmedPrizeError(message)) {
         return json({ ok: false, message: "El ticket no tiene premio confirmado." }, 409);
       }
       throw error;
     }
+    await bumpTicketDeltaResponseVersion();
     return json((data ?? { ok: true }) as Record<string, unknown>);
   } catch (error) {
     const message = errorMessage(error);
+    if (isMissingResultError(message)) {
+      return json({ ok: false, code: "missing_results", message: missingResultsMessage(message) }, 409);
+    }
     if (isUnconfirmedPrizeError(message)) {
       return json({ ok: false, message: "El ticket no tiene premio confirmado." }, 409);
     }

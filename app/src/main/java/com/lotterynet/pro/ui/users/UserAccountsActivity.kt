@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import android.widget.Toast
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.clickable
@@ -25,24 +26,40 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.AccountBalanceWallet
+import androidx.compose.material.icons.rounded.Add
+import androidx.compose.material.icons.automirrored.rounded.ArrowBack
+import androidx.compose.material.icons.rounded.ChevronRight
 import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material.icons.rounded.ExpandMore
+import androidx.compose.material.icons.rounded.FilterList
 import androidx.compose.material.icons.rounded.Lock
 import androidx.compose.material.icons.rounded.ManageAccounts
 import androidx.compose.material.icons.rounded.Tune
 import androidx.compose.material.icons.rounded.LockOpen
+import androidx.compose.material.icons.rounded.Menu
 import androidx.compose.material.icons.rounded.Percent
 import androidx.compose.material.icons.rounded.Save
+import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material.icons.rounded.Share
 import androidx.compose.material.icons.rounded.Sync
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Checkbox
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.ListItem
+import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -84,8 +101,10 @@ import com.lotterynet.pro.core.storage.LocalUsersRepository
 import com.lotterynet.pro.core.storage.cashierSystemModeOverrideLabel
 import com.lotterynet.pro.core.storage.normalizeCashierSystemModeOverride
 import com.lotterynet.pro.core.sync.CashierPrizePayoutCloudSyncCoordinator
+import com.lotterynet.pro.core.operations.cashierDisplayLabel
 import com.lotterynet.pro.core.operations.sortCashierAccountsNatural
 import com.lotterynet.pro.core.sync.CashierLimitCloudSyncCoordinator
+import com.lotterynet.pro.core.master.SupabaseMasterConfigRemoteStore
 import com.lotterynet.pro.core.sync.NativeUsersBootstrapper
 import com.lotterynet.pro.core.users.UserPasswordBackendClient
 import com.lotterynet.pro.core.users.SupabaseUsersRemoteStore
@@ -127,13 +146,24 @@ class UserAccountsActivity : AppCompatActivity() {
         val adminLimitRepository = LocalAdminLimitRepository(this)
         val cashierSalesLimitRepository = LocalCashierSalesLimitRepository(this)
         val cashierPrizePayoutRepository = LocalCashierPrizePayoutRepository(this)
-        val cashierLimitCloudSync = CashierLimitCloudSyncCoordinator(cashierSalesLimitRepository)
-        val cashierPrizePayoutCloudSync = CashierPrizePayoutCloudSyncCoordinator(cashierPrizePayoutRepository)
         val sessionTokenProvider = SupabaseSessionTokenProvider(LocalSessionRepository(this))
+        val masterConfigRemoteStore = SupabaseMasterConfigRemoteStore(
+            bearerTokenProvider = { sessionTokenProvider.freshAccessToken() },
+        )
+        val cashierLimitCloudSync = CashierLimitCloudSyncCoordinator(
+            cashierSalesLimitRepository,
+            remoteStore = masterConfigRemoteStore,
+        )
+        val cashierPrizePayoutCloudSync = CashierPrizePayoutCloudSyncCoordinator(
+            cashierPrizePayoutRepository,
+            remoteStore = masterConfigRemoteStore,
+        )
         val usersRemoteStore = SupabaseUsersRemoteStore(
             bearerTokenProvider = { sessionTokenProvider.freshAccessToken() },
         )
-        val userPasswordBackendClient = UserPasswordBackendClient()
+        val userPasswordBackendClient = UserPasswordBackendClient(
+            bearerTokenProvider = { sessionTokenProvider.freshAccessToken() },
+        )
         val authBridgeClient = SupabaseAuthBridgeClient()
         val ownerId = session.userId
         val financeScope = financeRepository.resolveScope(session)
@@ -156,7 +186,7 @@ class UserAccountsActivity : AppCompatActivity() {
                             anchorDayKey = latestFinanceDay,
                         )
                     },
-                    onSaveAccount = { account, displayName, balance, commission, recargaTx, active, systemModeOverride ->
+                    onSaveAccount = { account, displayName, balance, commission, recargaTx, active, systemModeOverride, commissionExplicitOverride ->
                         val renamed = applyEditableCashierDisplayName(account, displayName)
                         val normalized = renamed.copy(
                             balance = balance,
@@ -170,7 +200,14 @@ class UserAccountsActivity : AppCompatActivity() {
                         usersRepository.cacheRawPayload(payload)
                         thread(name = "user-account-save-sync") {
                             val saved = runCatching {
-                                usersRemoteStore.upsertUsersPayload(payload)
+                                usersRemoteStore.upsertUsersPayload(
+                                    payload,
+                                    commissionOverrideKeys = if (commissionExplicitOverride) {
+                                        setOf(normalized.id, normalized.user)
+                                    } else {
+                                        emptySet()
+                                    },
+                                )
                             }.isSuccess
                             runOnUiThread {
                                 Toast.makeText(
@@ -349,8 +386,15 @@ class UserAccountsActivity : AppCompatActivity() {
                             mergeCashierUpdates(usersRepository.getCashiers(), updatedCashiers),
                         )
                         val payload = usersRepository.exportPayloadJson()
+                        val commissionOverrideKeys = if (groupCommissionRate != null) {
+                            setOf(normalizedSupervisor.id, normalizedSupervisor.user)
+                        } else {
+                            emptySet()
+                        }
                         thread(name = "supervisor-assignment-sync") {
-                            val saved = runCatching { usersRemoteStore.upsertUsersPayload(payload) }.isSuccess
+                            val saved = runCatching {
+                                usersRemoteStore.upsertUsersPayload(payload, commissionOverrideKeys)
+                            }.isSuccess
                             runOnUiThread {
                                 Toast.makeText(
                                     this,
@@ -365,10 +409,13 @@ class UserAccountsActivity : AppCompatActivity() {
                         if (accountUsesAdminSelfSalesLimits(account)) {
                             cashierSalesLimitRepository.getAdminSelfLimits(ownerId) ?: noLimitSalesInputs()
                         } else {
-                            cashierSalesLimitRepository.getUserLimits(ownerId, account.user).let { limits ->
+                            cashierSalesLimitRepository.getUserLimits(ownerId, account).let { limits ->
                                 if (limits.payout > 0.0) limits else limits.copy(payout = adminLimitRepository.getLimits().cashierPayoutLimit)
                             }
                         }
+                    },
+                    onLoadCashierPoolLimits = {
+                        cashierSalesLimitRepository.getPoolLimits(ownerId)
                     },
                     onLoadDefaultCashierLimits = {
                         cashierSalesLimitRepository.getDefaultLimits(ownerId).let { limits ->
@@ -386,6 +433,18 @@ class UserAccountsActivity : AppCompatActivity() {
                                 Toast.makeText(
                                     this,
                                     if (ok) "Límites guardados en servidor" else "No se guardó: servidor no disponible",
+                                    if (ok) Toast.LENGTH_SHORT else Toast.LENGTH_LONG,
+                                ).show()
+                            }
+                        }.start()
+                    },
+                    onSaveCashierPoolLimits = { limits ->
+                        Thread {
+                            val ok = cashierLimitCloudSync.pushPoolLimitsServiceFirst(ownerId, limits)
+                            runOnUiThread {
+                                Toast.makeText(
+                                    this,
+                                    if (ok) "Pool del negocio guardado en servidor" else "No se guardó: servidor no disponible",
                                     if (ok) Toast.LENGTH_SHORT else Toast.LENGTH_LONG,
                                 ).show()
                             }
@@ -637,7 +696,17 @@ internal const val ALL_CASHIER_LIMITS_ID = "__all_cashiers__"
 
 internal fun cashierSelectorOptions(accounts: List<UserAccount>): List<CashierSelectorOption> {
     return listOf(CashierSelectorOption(ALL_CASHIER_LIMITS_ID, "Valores globales")) + sortAdminCashierSelectionAccounts(accounts)
-        .map { account -> CashierSelectorOption(account.id, account.displayName ?: account.user) }
+        .map { account ->
+            CashierSelectorOption(account.id, userAccountDisplayLabel(account))
+        }
+}
+
+internal fun userAccountDisplayLabel(account: UserAccount): String {
+    return if (account.role == UserRole.CASHIER) {
+        cashierDisplayLabel(account)
+    } else {
+        account.displayName ?: account.user
+    }
 }
 
 internal fun applyEditableCashierDisplayName(account: UserAccount, rawDisplayName: String): UserAccount {
@@ -679,8 +748,36 @@ internal fun cashierPrizeSectionLabel(): String = "Pago premios"
 
 internal fun cashierPrizeSectionPurpose(): String = "Define cuanto paga cada peso ganador."
 
+internal fun cashierPoolSectionLabel(): String = "Pool del negocio"
+
+internal fun cashierPoolSectionPurpose(): String =
+    "Controla la exposición compartida por lotería, número y tipo de jugada; no pertenece a un cajero."
+
+internal fun cashierPoolFieldLabels(): List<String> = listOf(
+    "Quiniela",
+    "Pale",
+    "Super Pale",
+    "Tripleta",
+    "Pick 3 Straight",
+    "Pick 3 Box",
+    "Pick 4 Straight",
+    "Pick 4 Box",
+)
+
 internal fun cashierAdminServerStatusLabel(success: Boolean): String {
     return if (success) "Actualizado desde servidor" else "No se pudo actualizar"
+}
+
+internal fun supervisorSyncBadgeLabel(statusMessage: String): String {
+    return when {
+        statusMessage.contains("Actualizando", ignoreCase = true) ||
+            statusMessage.contains("Guardando", ignoreCase = true) -> "En curso"
+        statusMessage.contains("No se pudo", ignoreCase = true) ||
+            statusMessage.contains("pendiente", ignoreCase = true) -> "Pendiente"
+        statusMessage.contains("servidor", ignoreCase = true) -> "Servidor actualizado"
+        statusMessage.contains("local", ignoreCase = true) -> "Solo local"
+        else -> "Estado actual"
+    }
 }
 
 internal fun cashierAdminFieldLabels(): List<String> = listOf(
@@ -1108,7 +1205,7 @@ private fun UserAccountsRoute(
     initialAdminSectionName: String? = null,
     onBack: () -> Unit,
     onLoadCashierReport: (FinancePeriodPreset) -> FinancePeriodReport,
-    onSaveAccount: (UserAccount, String, Double, Double?, Double?, Boolean, String?) -> List<UserAccount>,
+    onSaveAccount: (UserAccount, String, Double, Double?, Double?, Boolean, String?, Boolean) -> List<UserAccount>,
     onSaveAccountsBatch: (List<UserAccount>) -> List<UserAccount>,
     onCreateSupervisor: (String, String, String, Set<String>, Boolean, Double?) -> SupervisorCreateResult,
     onResetSupervisorPassword: (UserAccount, String) -> SupervisorPasswordResetResult,
@@ -1116,8 +1213,10 @@ private fun UserAccountsRoute(
     onDeleteSupervisor: (UserAccount) -> List<UserAccount>,
     onSaveSupervisorAssignments: (UserAccount, Set<String>, Double?) -> List<UserAccount>,
     onLoadCashierLimits: (UserAccount) -> CashierSalesLimitInputs,
+    onLoadCashierPoolLimits: () -> CashierSalesLimitInputs,
     onLoadDefaultCashierLimits: () -> CashierSalesLimitInputs,
     onSaveCashierLimits: (UserAccount, CashierSalesLimitInputs) -> Unit,
+    onSaveCashierPoolLimits: (CashierSalesLimitInputs) -> Unit,
     onSaveDefaultCashierLimits: (CashierSalesLimitInputs) -> Unit,
     onLoadCashierPrizePayout: (UserAccount?) -> PrizeTableConfig,
     onSaveCashierPrizePayout: (UserAccount?, PrizeTableConfig) -> Unit,
@@ -1129,11 +1228,17 @@ private fun UserAccountsRoute(
     var searchQuery by rememberSaveable { mutableStateOf("") }
     var selectedPerformancePeriodName by rememberSaveable { mutableStateOf(FinancePeriodPreset.DAY.name) }
     var selectedCashierId by rememberSaveable { mutableStateOf<String?>(null) }
+    var showCashierLimitScopeSheet by rememberSaveable { mutableStateOf(false) }
     var selectedSupervisorId by rememberSaveable { mutableStateOf<String?>(null) }
     var selectedAdminSectionName by rememberSaveable {
         mutableStateOf(resolveInitialAdminSectionName(initialAdminSectionName))
     }
+    var selectedCashierLimitsDestinationName by rememberSaveable {
+        mutableStateOf(CashierLimitsDestination.OVERVIEW.name)
+    }
     var selectedSupervisorAdminViewName by rememberSaveable { mutableStateOf(SupervisorAdminView.GROUP.name) }
+    var supervisorSearchQuery by rememberSaveable { mutableStateOf("") }
+    var supervisorStatusFilterName by rememberSaveable { mutableStateOf(SupervisorStatusFilter.ALL.name) }
     var supervisorUserInput by rememberSaveable { mutableStateOf("") }
     var supervisorNameInput by rememberSaveable { mutableStateOf("") }
     var supervisorPasswordInput by rememberSaveable { mutableStateOf("") }
@@ -1146,7 +1251,12 @@ private fun UserAccountsRoute(
     var statusMessage by rememberSaveable {
         mutableStateOf("Cuentas locales listas.")
     }
+    var limitsReloadTick by rememberSaveable { mutableStateOf(0) }
+    var globalCashierLimits by remember { mutableStateOf<CashierSalesLimitInputs?>(null) }
+    var globalPoolLimits by remember { mutableStateOf<CashierSalesLimitInputs?>(null) }
     var selectedCashierLimits by remember { mutableStateOf<CashierSalesLimitInputs?>(null) }
+    var pendingGlobalCashierLimits by remember { mutableStateOf<CashierSalesLimitInputs?>(null) }
+    var showCashierPoolSheet by rememberSaveable { mutableStateOf(false) }
     var daySaleLimitInput by rememberSaveable { mutableStateOf("") }
     var payoutLimitInput by rememberSaveable { mutableStateOf("") }
     var quinielaLimitInput by rememberSaveable { mutableStateOf("") }
@@ -1157,6 +1267,14 @@ private fun UserAccountsRoute(
     var pick3BoxLimitInput by rememberSaveable { mutableStateOf("") }
     var pick4StraightLimitInput by rememberSaveable { mutableStateOf("") }
     var pick4BoxLimitInput by rememberSaveable { mutableStateOf("") }
+    var poolQuinielaLimitInput by rememberSaveable { mutableStateOf("") }
+    var poolPaleLimitInput by rememberSaveable { mutableStateOf("") }
+    var poolSuperPaleLimitInput by rememberSaveable { mutableStateOf("") }
+    var poolTripletaLimitInput by rememberSaveable { mutableStateOf("") }
+    var poolPick3StraightLimitInput by rememberSaveable { mutableStateOf("") }
+    var poolPick3BoxLimitInput by rememberSaveable { mutableStateOf("") }
+    var poolPick4StraightLimitInput by rememberSaveable { mutableStateOf("") }
+    var poolPick4BoxLimitInput by rememberSaveable { mutableStateOf("") }
     val prizePayoutInputs = remember { mutableStateMapOf<String, String>() }
     val balanceInputs = remember(accounts) {
         mutableStateMapOf<String, String>().apply {
@@ -1195,11 +1313,22 @@ private fun UserAccountsRoute(
     val selectedAdminSection = remember(selectedAdminSectionName) {
         CashierAdminSection.entries.firstOrNull { it.name == selectedAdminSectionName } ?: CashierAdminSection.LIMITS
     }
+    val selectedCashierLimitsDestination = remember(selectedCashierLimitsDestinationName) {
+        CashierLimitsDestination.entries.firstOrNull { it.name == selectedCashierLimitsDestinationName }
+            ?: CashierLimitsDestination.OVERVIEW
+    }
     val supervisorConsole = remember(initialAdminSectionName) {
         resolveInitialAdminSectionName(initialAdminSectionName) == CashierAdminSection.SUPERVISORS.name
     }
     val selectedSupervisorAdminView = remember(selectedSupervisorAdminViewName) {
         SupervisorAdminView.entries.firstOrNull { it.name == selectedSupervisorAdminViewName } ?: SupervisorAdminView.GROUP
+    }
+
+    BackHandler(
+        enabled = selectedAdminSection == CashierAdminSection.LIMITS &&
+            selectedCashierLimitsDestination != CashierLimitsDestination.OVERVIEW,
+    ) {
+        selectedCashierLimitsDestinationName = CashierLimitsDestination.OVERVIEW.name
     }
     val cashierPickerAccounts = remember(accounts, selectedFilter, searchQuery) {
         filterUserAccountsForAdmin(accounts, selectedFilter, searchQuery)
@@ -1253,6 +1382,9 @@ private fun UserAccountsRoute(
         resolveSelectedCashierAccount(cashierPickerAccounts, selectedCashierId)
     }
     val selectedAllCashiers = selectedCashierId == ALL_CASHIER_LIMITS_ID
+    val cashierLimitScopeOptions = remember(cashierPickerAccounts) {
+        cashierSelectorOptions(cashierPickerAccounts)
+    }
     val visibleAccounts = remember(accounts, session.role, selectedCashier?.id, selectedCashierId, cashierPickerAccounts) {
         if (session.role == UserRole.ADMIN) {
             resolveAdminVisibleCashierDetailAccounts(cashierPickerAccounts, selectedCashierId)
@@ -1273,6 +1405,7 @@ private fun UserAccountsRoute(
         statusMessage = "Actualizando servidor..."
         onRefreshServer { success, refreshedAccounts ->
             accounts = refreshedAccounts
+            limitsReloadTick += 1
             statusMessage = cashierAdminServerStatusLabel(success)
         }
     }
@@ -1286,10 +1419,22 @@ private fun UserAccountsRoute(
             selectedModeCashierId = modeCashiers.firstOrNull()?.id.orEmpty()
         }
     }
-    LaunchedEffect(selectedCashierId, selectedCashier?.id) {
+    LaunchedEffect(selectedAdminSection, selectedCashierId, selectedCashier?.id, limitsReloadTick) {
         if (selectedAdminSection == CashierAdminSection.SUPERVISORS) return@LaunchedEffect
+        val globalLimits = onLoadDefaultCashierLimits()
+        val poolLimits = onLoadCashierPoolLimits()
+        globalCashierLimits = globalLimits
+        globalPoolLimits = poolLimits
+        poolQuinielaLimitInput = formatBalanceInput(poolLimits.quiniela)
+        poolPaleLimitInput = formatBalanceInput(poolLimits.pale)
+        poolSuperPaleLimitInput = formatBalanceInput(poolLimits.superPale)
+        poolTripletaLimitInput = formatBalanceInput(poolLimits.tripleta)
+        poolPick3StraightLimitInput = formatBalanceInput(poolLimits.pick3Straight)
+        poolPick3BoxLimitInput = formatBalanceInput(poolLimits.pick3Box)
+        poolPick4StraightLimitInput = formatBalanceInput(poolLimits.pick4Straight)
+        poolPick4BoxLimitInput = formatBalanceInput(poolLimits.pick4Box)
         val limits = if (selectedAllCashiers) {
-            onLoadDefaultCashierLimits()
+            globalLimits
         } else {
             val currentCashier = selectedCashier ?: return@LaunchedEffect
             onLoadCashierLimits(currentCashier)
@@ -1359,15 +1504,23 @@ private fun UserAccountsRoute(
             item {
                 if (session.role == UserRole.ADMIN && selectedAdminSection == CashierAdminSection.SUPERVISORS) {
                     UserAccountsCompactHeader(
-                        title = "Supervisores",
+                        title = "Supervisores · Vista POS",
                         subtitle = "Admin · Grupos y cajeros",
                         onBack = onBack,
                         onRefresh = refreshServerAction,
                     )
                 } else {
                     ScreenHeaderPanel(
-                        title = if (session.role == UserRole.ADMIN) "Cajeros" else "Mi cuenta",
-                        subtitle = "${session.banca ?: "LotteryNet"} · ${accounts.size} cuentas",
+                        title = when {
+                            session.role != UserRole.ADMIN -> "Mi cuenta"
+                            selectedAdminSection == CashierAdminSection.LIMITS -> "Límites"
+                            else -> "Cajeros"
+                        },
+                        subtitle = when {
+                            session.role != UserRole.ADMIN -> session.banca ?: "LotteryNet"
+                            selectedAdminSection == CashierAdminSection.LIMITS -> "Pool, base global y límites personales"
+                            else -> "${session.banca ?: "LotteryNet"} · ${accounts.size} cuentas"
+                        },
                         onBack = onBack,
                         badgeLabel = presentUserRoleLabel(session.role),
                         badgeTone = MaterialTheme.colorScheme.primary,
@@ -1380,7 +1533,14 @@ private fun UserAccountsRoute(
             if (session.role == UserRole.ADMIN && selectedAdminSection == CashierAdminSection.SUPERVISORS) {
                 item {
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
-                        CompactStatusBadge(label = "Sincronizado", tone = MaterialTheme.colorScheme.primary)
+                        CompactStatusBadge(
+                            label = supervisorSyncBadgeLabel(statusMessage),
+                            tone = if (supervisorSyncBadgeLabel(statusMessage) == "Pendiente") {
+                                MaterialTheme.colorScheme.error
+                            } else {
+                                MaterialTheme.colorScheme.primary
+                            },
+                        )
                     }
                 }
             }
@@ -1394,7 +1554,11 @@ private fun UserAccountsRoute(
                     InfoStrip(text = statusMessage)
                 }
             }
-            if (session.role == UserRole.ADMIN && !supervisorConsole) {
+            if (
+                session.role == UserRole.ADMIN &&
+                !supervisorConsole &&
+                selectedAdminSection == CashierAdminSection.ACCOUNTS
+            ) {
                 selfAccount?.let { account ->
                     item {
                         AccountMiniSummary(
@@ -1404,7 +1568,11 @@ private fun UserAccountsRoute(
                     }
                 }
             }
-            if (session.role == UserRole.ADMIN && !supervisorConsole) {
+            if (
+                session.role == UserRole.ADMIN &&
+                !supervisorConsole &&
+                selectedAdminSection != CashierAdminSection.LIMITS
+            ) {
                 item {
                     AdminAccountsControlPanel(
                         layout = layout,
@@ -1413,10 +1581,11 @@ private fun UserAccountsRoute(
                         searchQuery = searchQuery,
                         onFilterChange = { selectedFilterName = it.name },
                         onSearchChange = { searchQuery = it },
-                        cashierOptions = cashierSelectorOptions(cashierPickerAccounts),
+                        cashierOptions = cashierLimitScopeOptions,
                         selectedCashierId = if (selectedAllCashiers) ALL_CASHIER_LIMITS_ID else selectedCashier?.id,
                         onCashierSelected = { selectedCashierId = it },
                         onRefreshServer = refreshServerAction,
+                        showCashierSelector = selectedAdminSection != CashierAdminSection.LIMITS,
                     )
                 }
             }
@@ -1424,17 +1593,23 @@ private fun UserAccountsRoute(
                 item {
                     CashierAdminSectionTabs(
                         selected = selectedAdminSection,
-                        onSelected = { selectedAdminSectionName = it.name },
+                        onSelected = {
+                            selectedAdminSectionName = it.name
+                            selectedCashierLimitsDestinationName = CashierLimitsDestination.OVERVIEW.name
+                        },
                         sections = cashierAdminSectionsForConsole(supervisorConsole),
                     )
                 }
             }
             if (session.role == UserRole.ADMIN && selectedAdminSection == CashierAdminSection.SUPERVISORS) {
                 item {
-                    SupervisorAdminPanel(
+                    SupervisorAdminPanelModern(
                         supervisors = supervisorAccounts,
                         cashiers = adminCashiers,
                         selectedView = selectedSupervisorAdminView,
+                        searchQuery = supervisorSearchQuery,
+                        statusFilter = SupervisorStatusFilter.entries.firstOrNull { it.name == supervisorStatusFilterName }
+                            ?: SupervisorStatusFilter.ALL,
                         selectedSupervisor = selectedSupervisor,
                         selectedSupervisorId = selectedSupervisor?.id,
                         assignedCashierIds = supervisorAssignedCashierIds,
@@ -1450,6 +1625,8 @@ private fun UserAccountsRoute(
                         onCommissionChange = { supervisorCommissionInput = sanitizeDecimal(it) },
                         onActiveChange = { supervisorActiveInput = it },
                         onViewSelected = { selectedSupervisorAdminViewName = it.name },
+                        onSearchChange = { supervisorSearchQuery = it },
+                        onStatusFilterChange = { supervisorStatusFilterName = it.name },
                         onSupervisorSelected = { selectedSupervisorId = it },
                         onCashierToggle = { cashierId, selected -> supervisorAssignedCashierIds[cashierId] = selected },
                         onCreate = {
@@ -1560,60 +1737,122 @@ private fun UserAccountsRoute(
             if (session.role == UserRole.ADMIN && (selectedAllCashiers || selectedCashier != null)) {
                 val currentCashier = selectedCashier
                 if (selectedAdminSection == CashierAdminSection.LIMITS) {
-                    item {
-                        CompactPanel {
-                            OperationalListHeader(
-                                title = if (selectedAllCashiers) "Límites de venta globales" else "Límites de venta del usuario",
-                                meta = if (selectedAllCashiers) "Venta máxima por jugada" else currentCashier?.user.orEmpty(),
-                            )
-                            CashierLimitsEditor(
-                                daySaleLimit = daySaleLimitInput,
-                                payoutLimit = payoutLimitInput,
-                                payoutLabel = cashierPayoutLimitLabel(selectedAllCashiers),
-                                quinielaLimit = quinielaLimitInput,
-                                paleLimit = paleLimitInput,
-                                superPaleLimit = superPaleLimitInput,
-                                tripletaLimit = tripletaLimitInput,
-                                pick3StraightLimit = pick3StraightLimitInput,
-                                pick3BoxLimit = pick3BoxLimitInput,
-                                pick4StraightLimit = pick4StraightLimitInput,
-                                pick4BoxLimit = pick4BoxLimitInput,
-                                onDaySaleChange = { daySaleLimitInput = sanitizeDecimal(it) },
-                                onPayoutChange = { payoutLimitInput = sanitizeDecimal(it) },
-                                onQuinielaChange = { quinielaLimitInput = sanitizeDecimal(it) },
-                                onPaleChange = { paleLimitInput = sanitizeDecimal(it) },
-                                onSuperPaleChange = { superPaleLimitInput = sanitizeDecimal(it) },
-                                onTripletaChange = { tripletaLimitInput = sanitizeDecimal(it) },
-                                onPick3StraightChange = { pick3StraightLimitInput = sanitizeDecimal(it) },
-                                onPick3BoxChange = { pick3BoxLimitInput = sanitizeDecimal(it) },
-                                onPick4StraightChange = { pick4StraightLimitInput = sanitizeDecimal(it) },
-                                onPick4BoxChange = { pick4BoxLimitInput = sanitizeDecimal(it) },
-                                onSave = {
-                                    val limits = CashierSalesLimitInputs(
-                                        daySale = daySaleLimitInput.toDoubleOrNull()?.coerceAtLeast(0.0) ?: 0.0,
-                                        payout = payoutLimitInput.toDoubleOrNull()?.coerceAtLeast(0.0) ?: 0.0,
-                                        quiniela = quinielaLimitInput.toDoubleOrNull()?.coerceAtLeast(0.0) ?: 0.0,
-                                        pale = paleLimitInput.toDoubleOrNull()?.coerceAtLeast(0.0) ?: 0.0,
-                                        superPale = superPaleLimitInput.toDoubleOrNull()?.coerceAtLeast(0.0) ?: 0.0,
-                                        tripleta = tripletaLimitInput.toDoubleOrNull()?.coerceAtLeast(0.0) ?: 0.0,
-                                        pick3Straight = pick3StraightLimitInput.toDoubleOrNull()?.coerceAtLeast(0.0) ?: 0.0,
-                                        pick3Box = pick3BoxLimitInput.toDoubleOrNull()?.coerceAtLeast(0.0) ?: 0.0,
-                                        pick4Straight = pick4StraightLimitInput.toDoubleOrNull()?.coerceAtLeast(0.0) ?: 0.0,
-                                        pick4Box = pick4BoxLimitInput.toDoubleOrNull()?.coerceAtLeast(0.0) ?: 0.0,
-                                    )
-                                    if (selectedAllCashiers) {
-                                        onSaveDefaultCashierLimits(limits)
-                                    } else {
-                                        currentCashier?.let { onSaveCashierLimits(it, limits) }
-                                    }
-                                    selectedCashierLimits = limits
-                                    statusMessage = if (selectedAllCashiers) {
-                                        "Límites de venta globales guardados."
-                                    } else {
-                                        "Límites de venta de ${currentCashier?.user.orEmpty()} guardados."
-                                    }
+                    when (selectedCashierLimitsDestination) {
+                        CashierLimitsDestination.OVERVIEW -> item {
+                            CashierLimitsOverview(
+                                globalLimits = globalCashierLimits ?: noLimitSalesInputs(),
+                                poolLimits = globalPoolLimits ?: noLimitSalesInputs(),
+                                onOpenGlobal = {
+                                    selectedCashierId = ALL_CASHIER_LIMITS_ID
+                                    selectedCashierLimitsDestinationName = CashierLimitsDestination.GLOBAL.name
+                                },
+                                onOpenPersonal = {
+                                    selectedCashierLimitsDestinationName = CashierLimitsDestination.PERSONAL.name
+                                    showCashierLimitScopeSheet = true
+                                },
+                                onOpenPool = {
+                                    selectedCashierLimitsDestinationName = CashierLimitsDestination.POOL.name
                                 },
                             )
+                        }
+
+                        CashierLimitsDestination.GLOBAL,
+                        CashierLimitsDestination.PERSONAL
+                        -> {
+                            val globalScope = selectedCashierLimitsDestination == CashierLimitsDestination.GLOBAL
+                            item {
+                                CashierLimitsDetailHeader(
+                                    title = if (globalScope) "Base global" else "Límite personal",
+                                    scope = if (globalScope) "HEREDADO" else "POR CAJERO",
+                                    onBack = {
+                                        selectedCashierLimitsDestinationName = CashierLimitsDestination.OVERVIEW.name
+                                    },
+                                )
+                            }
+                            if (!globalScope && selectedAllCashiers) {
+                                item {
+                                    CashierLimitSelectionRequired(
+                                        onSelectCashier = { showCashierLimitScopeSheet = true },
+                                    )
+                                }
+                            } else {
+                                item {
+                                    CompactPanel {
+                                        CashierLimitScopeContext(
+                                            isGlobalScope = globalScope,
+                                            selectedCashier = currentCashier,
+                                            onChangeCashier = if (globalScope) null else {
+                                                { showCashierLimitScopeSheet = true }
+                                            },
+                                        )
+                                        CashierLimitsEditor(
+                                            isGlobalScope = globalScope,
+                                            daySaleLimit = daySaleLimitInput,
+                                            payoutLimit = payoutLimitInput,
+                                            payoutLabel = cashierPayoutLimitLabel(globalScope),
+                                            quinielaLimit = quinielaLimitInput,
+                                            paleLimit = paleLimitInput,
+                                            superPaleLimit = superPaleLimitInput,
+                                            tripletaLimit = tripletaLimitInput,
+                                            pick3StraightLimit = pick3StraightLimitInput,
+                                            pick3BoxLimit = pick3BoxLimitInput,
+                                            pick4StraightLimit = pick4StraightLimitInput,
+                                            pick4BoxLimit = pick4BoxLimitInput,
+                                            onDaySaleChange = { daySaleLimitInput = sanitizeDecimal(it) },
+                                            onPayoutChange = { payoutLimitInput = sanitizeDecimal(it) },
+                                            onQuinielaChange = { quinielaLimitInput = sanitizeDecimal(it) },
+                                            onPaleChange = { paleLimitInput = sanitizeDecimal(it) },
+                                            onSuperPaleChange = { superPaleLimitInput = sanitizeDecimal(it) },
+                                            onTripletaChange = { tripletaLimitInput = sanitizeDecimal(it) },
+                                            onPick3StraightChange = { pick3StraightLimitInput = sanitizeDecimal(it) },
+                                            onPick3BoxChange = { pick3BoxLimitInput = sanitizeDecimal(it) },
+                                            onPick4StraightChange = { pick4StraightLimitInput = sanitizeDecimal(it) },
+                                            onPick4BoxChange = { pick4BoxLimitInput = sanitizeDecimal(it) },
+                                            onSave = {
+                                                val limits = CashierSalesLimitInputs(
+                                                    daySale = daySaleLimitInput.toDoubleOrNull()?.coerceAtLeast(0.0) ?: 0.0,
+                                                    payout = payoutLimitInput.toDoubleOrNull()?.coerceAtLeast(0.0) ?: 0.0,
+                                                    quiniela = quinielaLimitInput.toDoubleOrNull()?.coerceAtLeast(0.0) ?: 0.0,
+                                                    pale = paleLimitInput.toDoubleOrNull()?.coerceAtLeast(0.0) ?: 0.0,
+                                                    superPale = superPaleLimitInput.toDoubleOrNull()?.coerceAtLeast(0.0) ?: 0.0,
+                                                    tripleta = tripletaLimitInput.toDoubleOrNull()?.coerceAtLeast(0.0) ?: 0.0,
+                                                    pick3Straight = pick3StraightLimitInput.toDoubleOrNull()?.coerceAtLeast(0.0) ?: 0.0,
+                                                    pick3Box = pick3BoxLimitInput.toDoubleOrNull()?.coerceAtLeast(0.0) ?: 0.0,
+                                                    pick4Straight = pick4StraightLimitInput.toDoubleOrNull()?.coerceAtLeast(0.0) ?: 0.0,
+                                                    pick4Box = pick4BoxLimitInput.toDoubleOrNull()?.coerceAtLeast(0.0) ?: 0.0,
+                                                )
+                                                if (globalScope) {
+                                                    pendingGlobalCashierLimits = limits
+                                                } else {
+                                                    currentCashier?.let { onSaveCashierLimits(it, limits) }
+                                                    selectedCashierLimits = limits
+                                                    statusMessage = "Límites de venta de ${currentCashier?.user.orEmpty()} guardados."
+                                                }
+                                            },
+                                        )
+                                    }
+                                }
+                            }
+                        }
+
+                        CashierLimitsDestination.POOL -> {
+                            item {
+                                CashierLimitsDetailHeader(
+                                    title = "Pool del negocio",
+                                    scope = "NEGOCIO",
+                                    onBack = {
+                                        selectedCashierLimitsDestinationName = CashierLimitsDestination.OVERVIEW.name
+                                    },
+                                )
+                            }
+                            item {
+                                CompactPanel {
+                                    CashierGlobalPoolSummaryCard(
+                                        poolLimits = globalPoolLimits ?: noLimitSalesInputs(),
+                                        onEdit = { showCashierPoolSheet = true },
+                                    )
+                                }
+                            }
                         }
                     }
                 } else if (selectedAdminSection == CashierAdminSection.MODE) {
@@ -1647,6 +1886,7 @@ private fun UserAccountsRoute(
                                             targetCashier.recargaTxLimit,
                                             targetCashier.active,
                                             mode,
+                                            false,
                                         )
                                         systemModeInputs.clear()
                                         accounts.forEach {
@@ -1667,6 +1907,7 @@ private fun UserAccountsRoute(
                                             targetCashier.recargaTxLimit,
                                             targetCashier.active,
                                             mode,
+                                            false,
                                         )
                                         systemModeInputs.clear()
                                         accounts.forEach {
@@ -1749,7 +1990,11 @@ private fun UserAccountsRoute(
                     )
                 }
             } else if (shouldRenderAccountCards) {
-                    items(visibleAccounts, key = { it.id }) { account ->
+                    items(
+                        items = visibleAccounts,
+                        key = { it.id },
+                        contentType = { "user-account-card" },
+                    ) { account ->
                         UserAccountCard(
                             layout = layout,
                             account = account,
@@ -1786,7 +2031,16 @@ private fun UserAccountsRoute(
                                 }
                                 val displayName = displayNameInputs[account.id].orEmpty()
                                 val modeOverride = systemModeInputs[account.id].orEmpty()
-                                accounts = onSaveAccount(account, displayName, parsedBalance, normalizedCommission, parsedRecargaTx, account.active, modeOverride)
+                                accounts = onSaveAccount(
+                                    account,
+                                    displayName,
+                                    parsedBalance,
+                                    normalizedCommission,
+                                    parsedRecargaTx,
+                                    account.active,
+                                    modeOverride,
+                                    normalizedCommission != account.commissionRate,
+                                )
                                 balanceInputs.clear()
                                 accounts.forEach { balanceInputs[it.id] = formatBalanceInput(it.balance) }
                                 commissionInputs.clear()
@@ -1810,6 +2064,7 @@ private fun UserAccountsRoute(
                                         account.recargaTxLimit,
                                         nextActive,
                                         systemModeInputs[account.id],
+                                        false,
                                     )
                                     statusMessage = if (nextActive) {
                                         "${account.user} volvió a quedar activo."
@@ -1825,6 +2080,64 @@ private fun UserAccountsRoute(
             }
         }
     }
+    }
+    if (showCashierLimitScopeSheet) {
+        CashierLimitScopeSheet(
+            options = cashierLimitScopeOptions,
+            selectedCashierId = if (selectedAllCashiers) ALL_CASHIER_LIMITS_ID else selectedCashier?.id,
+            onCashierSelected = { selectedCashierId = it },
+            onDismiss = { showCashierLimitScopeSheet = false },
+        )
+    }
+    pendingGlobalCashierLimits?.let { limits ->
+        CashierGlobalLimitConfirmSheet(
+            onDismiss = { pendingGlobalCashierLimits = null },
+            onConfirm = {
+                onSaveDefaultCashierLimits(limits)
+                selectedCashierLimits = limits
+                pendingGlobalCashierLimits = null
+                statusMessage = "Límites de venta globales guardados."
+            },
+        )
+    }
+    if (showCashierPoolSheet) {
+        CashierPoolLimitsSheet(
+            quinielaLimit = poolQuinielaLimitInput,
+            paleLimit = poolPaleLimitInput,
+            superPaleLimit = poolSuperPaleLimitInput,
+            tripletaLimit = poolTripletaLimitInput,
+            pick3StraightLimit = poolPick3StraightLimitInput,
+            pick3BoxLimit = poolPick3BoxLimitInput,
+            pick4StraightLimit = poolPick4StraightLimitInput,
+            pick4BoxLimit = poolPick4BoxLimitInput,
+            onQuinielaChange = { poolQuinielaLimitInput = sanitizeDecimal(it) },
+            onPaleChange = { poolPaleLimitInput = sanitizeDecimal(it) },
+            onSuperPaleChange = { poolSuperPaleLimitInput = sanitizeDecimal(it) },
+            onTripletaChange = { poolTripletaLimitInput = sanitizeDecimal(it) },
+            onPick3StraightChange = { poolPick3StraightLimitInput = sanitizeDecimal(it) },
+            onPick3BoxChange = { poolPick3BoxLimitInput = sanitizeDecimal(it) },
+            onPick4StraightChange = { poolPick4StraightLimitInput = sanitizeDecimal(it) },
+            onPick4BoxChange = { poolPick4BoxLimitInput = sanitizeDecimal(it) },
+            onDismiss = { showCashierPoolSheet = false },
+            onSave = {
+                val poolLimits = CashierSalesLimitInputs(
+                    daySale = 0.0,
+                    payout = 0.0,
+                    quiniela = poolQuinielaLimitInput.toDoubleOrNull()?.coerceAtLeast(0.0) ?: 0.0,
+                    pale = poolPaleLimitInput.toDoubleOrNull()?.coerceAtLeast(0.0) ?: 0.0,
+                    superPale = poolSuperPaleLimitInput.toDoubleOrNull()?.coerceAtLeast(0.0) ?: 0.0,
+                    tripleta = poolTripletaLimitInput.toDoubleOrNull()?.coerceAtLeast(0.0) ?: 0.0,
+                    pick3Straight = poolPick3StraightLimitInput.toDoubleOrNull()?.coerceAtLeast(0.0) ?: 0.0,
+                    pick3Box = poolPick3BoxLimitInput.toDoubleOrNull()?.coerceAtLeast(0.0) ?: 0.0,
+                    pick4Straight = poolPick4StraightLimitInput.toDoubleOrNull()?.coerceAtLeast(0.0) ?: 0.0,
+                    pick4Box = poolPick4BoxLimitInput.toDoubleOrNull()?.coerceAtLeast(0.0) ?: 0.0,
+                )
+                onSaveCashierPoolLimits(poolLimits)
+                globalPoolLimits = poolLimits
+                showCashierPoolSheet = false
+                statusMessage = "Pool del negocio guardado."
+            },
+        )
     }
 }
 
@@ -1880,12 +2193,22 @@ private fun cashierAdminSectionsForConsole(supervisorConsole: Boolean): List<Cas
 
 internal enum class SupervisorAdminView(val label: String) {
     CREATE("Crear"),
-    GROUP("Grupo"),
-    CREDENTIALS("Credenciales"),
+    SUMMARY("Resumen"),
+    GROUP("Equipo"),
+    CREDENTIALS("Acceso"),
 }
 
 internal fun supervisorAdminViewLabels(): List<String> =
     SupervisorAdminView.entries.map { it.label }
+
+internal enum class SupervisorStatusFilter(val label: String) {
+    ALL("Todos"),
+    ACTIVE("Activos"),
+    BLOCKED("Bloqueados"),
+}
+
+internal fun supervisorStatusFilterOptions(): List<QuickFilterChip> =
+    SupervisorStatusFilter.entries.map { QuickFilterChip(it.name, it.label) }
 
 internal fun supervisorCreateOrganizationLabels(): List<String> =
     listOf("Usuario supervisor", "Nombre", "Clave manual", "Comisión supervisor %", "Cajeros disponibles")
@@ -1945,7 +2268,7 @@ private fun AccountMiniSummary(
                     maxLines = 1,
                 )
                 Text(
-                    text = account.displayName ?: account.user,
+                    text = userAccountDisplayLabel(account),
                     style = MaterialTheme.typography.titleSmall,
                     color = visual.colors.ink,
                     fontWeight = FontWeight.Bold,
@@ -1974,13 +2297,65 @@ private fun CashierAdminSectionTabs(
     onSelected: (CashierAdminSection) -> Unit,
     sections: List<CashierAdminSection>,
 ) {
-    CompactSegmentedSelector(
-        options = sections.map { QuickFilterChip(it.name, it.label) },
-        selectedId = selected.name,
-        onSelected = { id -> sections.firstOrNull { it.name == id }?.let(onSelected) },
-        columns = sections.size.coerceAtMost(3).coerceAtLeast(1),
-        modifier = Modifier.fillMaxWidth(),
-    )
+    val visual = rememberLotteryNetVisualSpec()
+    var expanded by remember { mutableStateOf(false) }
+    Box(modifier = Modifier.fillMaxWidth()) {
+        Surface(
+            modifier = Modifier
+                .fillMaxWidth()
+                .heightIn(min = 56.dp)
+                .clickable { expanded = true },
+            shape = RoundedCornerShape(visual.sizes.panelRadius),
+            color = visual.colors.panelAlt,
+            border = androidx.compose.foundation.BorderStroke(1.dp, visual.colors.border),
+        ) {
+            Row(
+                modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
+                Icon(Icons.Rounded.Tune, contentDescription = null, tint = visual.colors.actionPrimary)
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = "Área administrativa",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = visual.colors.muted,
+                    )
+                    Text(
+                        text = selected.label,
+                        style = MaterialTheme.typography.titleSmall,
+                        color = visual.colors.ink,
+                        fontWeight = FontWeight.Bold,
+                    )
+                }
+                Icon(
+                    imageVector = Icons.Rounded.ExpandMore,
+                    contentDescription = "Cambiar área",
+                    tint = visual.colors.actionPrimary,
+                )
+            }
+        }
+        DropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false },
+        ) {
+            sections.forEach { section ->
+                DropdownMenuItem(
+                    text = { Text(section.label) },
+                    leadingIcon = {
+                        Icon(
+                            imageVector = if (section == selected) Icons.Rounded.Tune else Icons.Rounded.ChevronRight,
+                            contentDescription = null,
+                        )
+                    },
+                    onClick = {
+                        expanded = false
+                        onSelected(section)
+                    },
+                )
+            }
+        }
+    }
 }
 
 @Composable
@@ -2073,6 +2448,7 @@ private fun AdminAccountsControlPanel(
     selectedCashierId: String?,
     onCashierSelected: (String) -> Unit,
     onRefreshServer: () -> Unit,
+    showCashierSelector: Boolean = true,
 ) {
     val visual = rememberLotteryNetVisualSpec()
     val selectedFilterOption = userAccountFilterOptions().firstOrNull { it.filter == selectedFilter }
@@ -2105,10 +2481,10 @@ private fun AdminAccountsControlPanel(
             onSelected = { id ->
                 UserAccountFilter.entries.firstOrNull { it.name == id }?.let(onFilterChange)
             },
-            columns = 3,
+            columns = 4,
             modifier = Modifier.fillMaxWidth(),
         )
-        if (cashierOptions.isNotEmpty()) {
+        if (showCashierSelector && cashierOptions.isNotEmpty()) {
             AccountsDropdown(
                 title = "Usuario",
                 selectedLabel = cashierOptions.firstOrNull { it.id == selectedCashierId }?.label ?: "Elegir usuario",
@@ -2274,7 +2650,7 @@ private fun CashierAdminInsightRowItem(
         ) {
             Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
                 Text(
-                    account.displayName ?: account.user,
+                    userAccountDisplayLabel(account),
                     style = MaterialTheme.typography.bodyMedium,
                     color = visual.colors.ink,
                     fontWeight = FontWeight.Bold,
@@ -2340,13 +2716,16 @@ private fun UserAccountsCompactHeader(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            Text("☰", modifier = Modifier.clickable(onClick = onBack), style = MaterialTheme.typography.headlineSmall, color = Color.White)
+            IconButton(onClick = onBack) {
+                Icon(Icons.Rounded.Menu, contentDescription = "Volver a cuentas", tint = Color.White)
+            }
             Column(modifier = Modifier.weight(1f)) {
                 Text(title, style = MaterialTheme.typography.headlineSmall, color = Color.White, fontWeight = FontWeight.Bold)
                 Text(subtitle, style = MaterialTheme.typography.bodyMedium, color = Color.White.copy(alpha = 0.82f), fontWeight = FontWeight.Bold)
             }
-            Icon(Icons.Rounded.Sync, contentDescription = null, modifier = Modifier.clickable(onClick = onRefresh), tint = Color.White)
-            Text("⋮", style = MaterialTheme.typography.headlineSmall, color = Color.White)
+            IconButton(onClick = onRefresh) {
+                Icon(Icons.Rounded.Sync, contentDescription = "Actualizar supervisores", tint = Color.White)
+            }
         }
     }
 }
@@ -2366,6 +2745,7 @@ private fun SupervisorCompactRow(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
+                .heightIn(min = 56.dp)
                 .clickable(onClick = onClick),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalAlignment = Alignment.CenterVertically,
@@ -2395,20 +2775,33 @@ private fun SupervisorCompactRow(
                     overflow = TextOverflow.Ellipsis,
                 )
             }
-            CompactStatusBadge(
-                label = if (supervisor.active) "Activo" else "Bloq.",
-                tone = if (supervisor.active) visual.colors.admin else MaterialTheme.colorScheme.error,
+            Column(horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                CompactStatusBadge(
+                    label = if (supervisor.active) "Activo" else "Bloqueado",
+                    tone = if (supervisor.active) visual.colors.gain else MaterialTheme.colorScheme.error,
+                )
+                Text(
+                    "Comisión ${formatCommissionInput(supervisor.commissionRate)}%",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = visual.colors.muted,
+                )
+            }
+            Icon(
+                Icons.Rounded.ChevronRight,
+                contentDescription = "Abrir supervisor",
+                tint = visual.colors.muted,
             )
-            CompactToggleSwitch(checked = supervisor.active, onCheckedChange = {}, enabled = false)
         }
     }
 }
 
 @Composable
-private fun SupervisorAdminPanel(
+private fun SupervisorAdminPanelModern(
     supervisors: List<UserAccount>,
     cashiers: List<UserAccount>,
     selectedView: SupervisorAdminView,
+    searchQuery: String,
+    statusFilter: SupervisorStatusFilter,
     selectedSupervisor: UserAccount?,
     selectedSupervisorId: String?,
     assignedCashierIds: Map<String, Boolean>,
@@ -2424,6 +2817,8 @@ private fun SupervisorAdminPanel(
     onCommissionChange: (String) -> Unit,
     onActiveChange: (Boolean) -> Unit,
     onViewSelected: (SupervisorAdminView) -> Unit,
+    onSearchChange: (String) -> Unit,
+    onStatusFilterChange: (SupervisorStatusFilter) -> Unit,
     onSupervisorSelected: (String) -> Unit,
     onCashierToggle: (String, Boolean) -> Unit,
     onCreate: () -> Unit,
@@ -2434,34 +2829,542 @@ private fun SupervisorAdminPanel(
     onShareCredential: () -> Unit,
 ) {
     val visual = rememberLotteryNetVisualSpec()
+    var destination by rememberSaveable { mutableStateOf("LIST") }
+    var createStep by rememberSaveable { mutableStateOf("IDENTITY") }
+    var showDeleteConfirmation by rememberSaveable { mutableStateOf(false) }
+    var showStatusFilterSheet by rememberSaveable { mutableStateOf(false) }
+    val activeCount = supervisors.count { it.active }
+    val blockedCount = supervisors.size - activeCount
+    val assignedCount = assignedCashierIds.count { it.value }
+    val availableCount = cashiers.size - assignedCount
+    val normalizedSearch = searchQuery.trim().lowercase(Locale.US)
+    val visibleSupervisors = supervisors.filter { supervisor ->
+        (statusFilter == SupervisorStatusFilter.ALL ||
+            (statusFilter == SupervisorStatusFilter.ACTIVE && supervisor.active) ||
+            (statusFilter == SupervisorStatusFilter.BLOCKED && !supervisor.active)) &&
+            (normalizedSearch.isBlank() || listOfNotNull(
+                supervisor.displayName,
+                supervisor.user,
+                supervisor.id,
+            ).any { it.lowercase(Locale.US).contains(normalizedSearch) })
+    }
+
+    fun navigateBackInsidePanel() {
+        when {
+            destination == "CREATE" && createStep == "TEAM" -> createStep = "IDENTITY"
+            destination != "LIST" -> {
+                destination = "LIST"
+                createStep = "IDENTITY"
+                onViewSelected(SupervisorAdminView.SUMMARY)
+            }
+        }
+    }
+    BackHandler(enabled = destination != "LIST") {
+        navigateBackInsidePanel()
+    }
+
+    when (destination) {
+        "CREATE" -> CompactPanel {
+            SupervisorFlowHeader(
+                title = if (createStep == "IDENTITY") "Nuevo supervisor" else "Asignar equipo",
+                subtitle = if (createStep == "IDENTITY") "Paso 1 de 2 · Identidad y acceso" else "Paso 2 de 2 · Cajeros iniciales",
+                onBack = ::navigateBackInsidePanel,
+            )
+            if (createStep == "IDENTITY") {
+                SectionHeader(title = "Identidad", meta = "Datos de acceso")
+                CompactTextInput(
+                    label = "Usuario supervisor",
+                    value = userValue,
+                    onValueChange = onUserChange,
+                    modifier = Modifier.fillMaxWidth(),
+                    leadingIcon = Icons.Rounded.ManageAccounts,
+                )
+                CompactTextInput(
+                    label = "Nombre",
+                    value = nameValue,
+                    onValueChange = onNameChange,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                CompactTextInput(
+                    label = "Clave manual",
+                    value = passwordValue,
+                    onValueChange = onPasswordChange,
+                    modifier = Modifier.fillMaxWidth(),
+                    leadingIcon = Icons.Rounded.Lock,
+                )
+                CompactTextInput(
+                    label = "Comisión supervisor %",
+                    value = commissionValue,
+                    onValueChange = onCommissionChange,
+                    modifier = Modifier.fillMaxWidth(),
+                    keyboardType = KeyboardType.Decimal,
+                    leadingIcon = Icons.Rounded.Percent,
+                )
+                CompactSwitchRow(
+                    title = "Supervisor activo",
+                    subtitle = if (active) "Podrá entrar al sistema." else "El acceso quedará bloqueado.",
+                    checked = active,
+                    onCheckedChange = onActiveChange,
+                    tone = if (active) ActionTone.Success else ActionTone.Secondary,
+                )
+                CompactActionButton(
+                    label = "Continuar con el equipo",
+                    onClick = { createStep = "TEAM" },
+                    modifier = Modifier.fillMaxWidth(),
+                    icon = Icons.Rounded.ChevronRight,
+                    tone = ActionTone.Primary,
+                )
+            } else {
+                CompactKeyValueRow(
+                    label = "Supervisor",
+                    value = nameValue.ifBlank { userValue.ifBlank { "Sin nombre" } },
+                )
+                SectionHeader(title = "Equipo inicial", meta = "$assignedCount seleccionados")
+                SupervisorCashierPicker(
+                    title = "Seleccionar cajeros",
+                    cashiers = cashiers,
+                    assignedCashierIds = assignedCashierIds,
+                    onCashierToggle = onCashierToggle,
+                )
+                CompactActionButton(
+                    label = "Crear supervisor",
+                    onClick = {
+                        onCreate()
+                        destination = "LIST"
+                        createStep = "IDENTITY"
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                    icon = Icons.Rounded.Save,
+                    tone = ActionTone.Primary,
+                )
+                if (credentialShareText.isNotBlank()) {
+                    CompactActionButton(
+                        label = "Compartir credencial",
+                        onClick = onShareCredential,
+                        modifier = Modifier.fillMaxWidth(),
+                        icon = Icons.Rounded.Share,
+                        tone = ActionTone.Secondary,
+                    )
+                }
+            }
+        }
+
+        "DETAIL" -> CompactPanel {
+            SupervisorFlowHeader(
+                title = selectedSupervisor?.displayName ?: selectedSupervisor?.user ?: "Supervisor",
+                subtitle = selectedSupervisor?.user ?: "Perfil administrativo",
+                onBack = { destination = "LIST" },
+            )
+            selectedSupervisor?.let { supervisor ->
+                SupervisorProfileHero(supervisor = supervisor, assignedCount = assignedCount)
+                QuickFilterChips(
+                    filters = SupervisorAdminView.entries
+                        .filterNot { it == SupervisorAdminView.CREATE }
+                        .map { QuickFilterChip(it.name, it.label) },
+                    selectedId = selectedView.name,
+                    onSelected = { id ->
+                        SupervisorAdminView.entries.firstOrNull { it.name == id }?.let(onViewSelected)
+                    },
+                )
+                when (selectedView) {
+                    SupervisorAdminView.SUMMARY -> {
+                        SectionHeader(title = "Resumen", meta = "Información del perfil")
+                        supervisorDetailRows(supervisor, assignedCount).forEachIndexed { index, row ->
+                            CompactKeyValueRow(
+                                label = if (index == 0) "Identidad" else row.substringBefore(":"),
+                                value = if (index == 0) (supervisor.displayName ?: supervisor.user) else row.substringAfter(": ", row),
+                            )
+                        }
+                        SectionHeader(title = "Equipo", meta = "$assignedCount cajeros")
+                        val assigned = cashiers.filter { assignedCashierIds[it.id] == true }
+                        if (assigned.isEmpty()) {
+                            CompactEmptyState("Este supervisor todavía no tiene cajeros asignados.", Modifier.fillMaxWidth())
+                        } else {
+                            assigned.take(8).forEach { cashier ->
+                                CompactKeyValueRow(label = cashierDisplayLabel(cashier), value = cashier.user)
+                            }
+                            if (assigned.size > 8) {
+                                Text(
+                                    "+${assigned.size - 8} cajeros adicionales",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = visual.colors.muted,
+                                )
+                            }
+                        }
+                    }
+
+                    SupervisorAdminView.GROUP -> {
+                        SectionHeader(title = "Comisión y equipo", meta = "$assignedCount asignados · $availableCount libres")
+                        CompactTextInput(
+                            label = "Comisión supervisor %",
+                            value = commissionValue,
+                            onValueChange = onCommissionChange,
+                            modifier = Modifier.fillMaxWidth(),
+                            keyboardType = KeyboardType.Decimal,
+                            leadingIcon = Icons.Rounded.Percent,
+                        )
+                        SupervisorCashierPicker(
+                            title = "Asignar cajeros",
+                            cashiers = cashiers,
+                            assignedCashierIds = assignedCashierIds,
+                            onCashierToggle = onCashierToggle,
+                        )
+                        CompactActionButton(
+                            label = "Guardar equipo y comisión",
+                            onClick = onSaveAssignments,
+                            modifier = Modifier.fillMaxWidth(),
+                            icon = Icons.Rounded.Save,
+                            tone = ActionTone.Primary,
+                        )
+                    }
+
+                    SupervisorAdminView.CREDENTIALS -> {
+                        SectionHeader(title = "Acceso y seguridad", meta = "Clave y estado")
+                        CompactTextInput(
+                            label = "Nueva clave manual",
+                            value = passwordValue,
+                            onValueChange = onPasswordChange,
+                            modifier = Modifier.fillMaxWidth(),
+                            leadingIcon = Icons.Rounded.Lock,
+                        )
+                        CompactActionButton(
+                            label = "Guardar nueva clave",
+                            onClick = onResetPassword,
+                            modifier = Modifier.fillMaxWidth(),
+                            icon = Icons.Rounded.Lock,
+                            tone = ActionTone.Secondary,
+                        )
+                        CompactActionButton(
+                            label = if (supervisor.active) "Bloquear supervisor" else "Desbloquear supervisor",
+                            onClick = onToggleSupervisorActive,
+                            modifier = Modifier.fillMaxWidth(),
+                            icon = if (supervisor.active) Icons.Rounded.Lock else Icons.Rounded.LockOpen,
+                            tone = if (supervisor.active) ActionTone.Danger else ActionTone.Success,
+                        )
+                        if (credentialShareText.isNotBlank()) {
+                            CompactActionButton(
+                                label = "Compartir credencial",
+                                onClick = onShareCredential,
+                                modifier = Modifier.fillMaxWidth(),
+                                icon = Icons.Rounded.Share,
+                                tone = ActionTone.Secondary,
+                            )
+                        }
+                        SectionHeader(title = "Zona de peligro", meta = "Acción irreversible")
+                        CompactActionButton(
+                            label = "Eliminar supervisor",
+                            onClick = { showDeleteConfirmation = true },
+                            modifier = Modifier.fillMaxWidth(),
+                            icon = Icons.Rounded.Delete,
+                            tone = ActionTone.Danger,
+                        )
+                    }
+
+                    SupervisorAdminView.CREATE -> Unit
+                }
+            } ?: CompactEmptyState(
+                message = "El supervisor seleccionado ya no está disponible.",
+                modifier = Modifier.fillMaxWidth(),
+            )
+        }
+
+        else -> CompactPanel {
+            OperationalListHeader(title = "Supervisores", meta = "${supervisors.size} registrados")
+            Text(
+                "Administra responsables, equipos, comisión y acceso.",
+                style = MaterialTheme.typography.bodySmall,
+                color = visual.colors.muted,
+            )
+            MetricStrip(
+                items = listOf(
+                    MetricStripItem("Total", supervisors.size.toString(), visual.colors.finance),
+                    MetricStripItem("Activos", activeCount.toString(), visual.colors.gain),
+                    MetricStripItem("Bloqueados", blockedCount.toString(), if (blockedCount > 0) visual.colors.loss else visual.colors.neutral),
+                ),
+            )
+            CompactActionButton(
+                label = "Nuevo supervisor",
+                onClick = {
+                    onViewSelected(SupervisorAdminView.CREATE)
+                    createStep = "IDENTITY"
+                    destination = "CREATE"
+                },
+                modifier = Modifier.fillMaxWidth(),
+                icon = Icons.Rounded.Add,
+                tone = ActionTone.Primary,
+            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                CompactTextInput(
+                    label = "Buscar supervisor",
+                    value = searchQuery,
+                    onValueChange = onSearchChange,
+                    modifier = Modifier.weight(1f),
+                    placeholder = "Nombre o usuario",
+                    leadingIcon = Icons.Rounded.Search,
+                )
+                FilterChip(
+                    selected = statusFilter != SupervisorStatusFilter.ALL,
+                    onClick = { showStatusFilterSheet = true },
+                    label = { Text(statusFilter.label) },
+                    leadingIcon = { Icon(Icons.Rounded.FilterList, contentDescription = null) },
+                )
+            }
+            SectionHeader(title = "Supervisores", meta = "${visibleSupervisors.size} visibles")
+            if (visibleSupervisors.isEmpty()) {
+                CompactEmptyState(
+                    message = if (supervisors.isEmpty()) "Todavía no hay supervisores." else "No hay coincidencias con esos filtros.",
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            } else {
+                visibleSupervisors.forEach { supervisor ->
+                    val supervisorAssignedCount = cashiers.count {
+                        it.supervisorIds.any { id -> id.equals(supervisor.id, ignoreCase = true) } ||
+                            it.supervisorUsers.any { user -> user.equals(supervisor.user, ignoreCase = true) }
+                    }
+                    SupervisorCompactRow(
+                        supervisor = supervisor,
+                        assignedCount = supervisorAssignedCount,
+                        selected = supervisor.id == selectedSupervisorId,
+                        onClick = {
+                            onSupervisorSelected(supervisor.id)
+                            onViewSelected(SupervisorAdminView.SUMMARY)
+                            destination = "DETAIL"
+                        },
+                    )
+                }
+            }
+        }
+    }
+
+    if (showDeleteConfirmation) {
+        AlertDialog(
+            onDismissRequest = { showDeleteConfirmation = false },
+            title = { Text("Eliminar supervisor") },
+            text = { Text("Esta acción eliminará el supervisor y quitará sus asignaciones. ¿Deseas continuar?") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showDeleteConfirmation = false
+                        onDeleteSupervisor()
+                        destination = "LIST"
+                    },
+                ) { Text("Eliminar") }
+            },
+            dismissButton = { TextButton(onClick = { showDeleteConfirmation = false }) { Text("Cancelar") } },
+        )
+    }
+    if (showStatusFilterSheet) {
+        SupervisorStatusFilterSheet(
+            selected = statusFilter,
+            onSelected = {
+                onStatusFilterChange(it)
+                showStatusFilterSheet = false
+            },
+            onDismiss = { showStatusFilterSheet = false },
+        )
+    }
+}
+
+private enum class CashierLimitsDestination {
+    OVERVIEW,
+    GLOBAL,
+    PERSONAL,
+    POOL,
+}
+
+@Composable
+private fun SupervisorFlowHeader(
+    title: String,
+    subtitle: String,
+    onBack: () -> Unit,
+) {
+    val visual = rememberLotteryNetVisualSpec()
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        IconButton(onClick = onBack) {
+            Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "Volver", tint = visual.colors.actionPrimary)
+        }
+        Column(modifier = Modifier.weight(1f)) {
+            Text(title, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Black, color = visual.colors.ink)
+            Text(subtitle, style = MaterialTheme.typography.bodySmall, color = visual.colors.muted)
+        }
+    }
+}
+
+@Composable
+private fun SupervisorProfileHero(
+    supervisor: UserAccount,
+    assignedCount: Int,
+) {
+    val visual = rememberLotteryNetVisualSpec()
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        color = visual.colors.panelAlt,
+        border = androidx.compose.foundation.BorderStroke(1.dp, visual.colors.border),
+    ) {
+        Row(
+            modifier = Modifier.padding(12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            Box(
+                modifier = Modifier.background(Color(0xFFE6EEFF), RoundedCornerShape(24.dp)).padding(10.dp),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(Icons.Rounded.ManageAccounts, contentDescription = null, tint = visual.colors.actionPrimary)
+            }
+            Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                Text(supervisor.displayName ?: supervisor.user, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                Text("${supervisor.user} · $assignedCount cajeros", style = MaterialTheme.typography.bodySmall, color = visual.colors.muted)
+            }
+            CompactStatusBadge(
+                label = if (supervisor.active) "Activo" else "Bloqueado",
+                tone = if (supervisor.active) visual.colors.gain else visual.colors.loss,
+            )
+        }
+    }
+}
+
+@Composable
+private fun SupervisorAdminPanel(
+    supervisors: List<UserAccount>,
+    cashiers: List<UserAccount>,
+    selectedView: SupervisorAdminView,
+    searchQuery: String,
+    statusFilter: SupervisorStatusFilter,
+    selectedSupervisor: UserAccount?,
+    selectedSupervisorId: String?,
+    assignedCashierIds: Map<String, Boolean>,
+    userValue: String,
+    nameValue: String,
+    passwordValue: String,
+    commissionValue: String,
+    active: Boolean,
+    credentialShareText: String,
+    onUserChange: (String) -> Unit,
+    onNameChange: (String) -> Unit,
+    onPasswordChange: (String) -> Unit,
+    onCommissionChange: (String) -> Unit,
+    onActiveChange: (Boolean) -> Unit,
+    onViewSelected: (SupervisorAdminView) -> Unit,
+    onSearchChange: (String) -> Unit,
+    onStatusFilterChange: (SupervisorStatusFilter) -> Unit,
+    onSupervisorSelected: (String) -> Unit,
+    onCashierToggle: (String, Boolean) -> Unit,
+    onCreate: () -> Unit,
+    onResetPassword: () -> Unit,
+    onToggleSupervisorActive: () -> Unit,
+    onDeleteSupervisor: () -> Unit,
+    onSaveAssignments: () -> Unit,
+    onShareCredential: () -> Unit,
+) {
+    val visual = rememberLotteryNetVisualSpec()
+    var showDeleteConfirmation by rememberSaveable { mutableStateOf(false) }
+    var showStatusFilterSheet by rememberSaveable { mutableStateOf(false) }
     val assignedCount = assignedCashierIds.count { it.value }
     val availableCount = cashiers.count { assignedCashierIds[it.id] != true }
+    val activeCount = supervisors.count { it.active }
+    val blockedCount = supervisors.size - activeCount
+    val normalizedSearch = searchQuery.trim().lowercase(Locale.US)
+    val visibleSupervisors = supervisors.filter { supervisor ->
+        (statusFilter == SupervisorStatusFilter.ALL ||
+            (statusFilter == SupervisorStatusFilter.ACTIVE && supervisor.active) ||
+            (statusFilter == SupervisorStatusFilter.BLOCKED && !supervisor.active)) &&
+            (normalizedSearch.isBlank() || listOfNotNull(
+                supervisor.displayName,
+                supervisor.user,
+                supervisor.id,
+            ).any { it.lowercase(Locale.US).contains(normalizedSearch) })
+    }
     CompactPanel {
         OperationalListHeader(
             title = "Supervisores",
             meta = when (selectedView) {
-                SupervisorAdminView.CREATE -> "Crear acceso"
-                SupervisorAdminView.GROUP -> "Grupo asignado"
-                SupervisorAdminView.CREDENTIALS -> "Usuario y clave"
+                SupervisorAdminView.CREATE -> "Nuevo supervisor"
+                SupervisorAdminView.SUMMARY -> "Vista general"
+                SupervisorAdminView.GROUP -> "Cajeros y comisión"
+                SupervisorAdminView.CREDENTIALS -> "Clave y estado"
             },
+        )
+        Text(
+            "Crea supervisores y administra su equipo, comisión y acceso desde una sola sección.",
+            style = MaterialTheme.typography.bodySmall,
+            color = visual.colors.muted,
         )
         MetricStrip(
             items = listOf(
                 MetricStripItem("Sup.", supervisors.size.toString(), visual.colors.finance),
+                MetricStripItem("Activos", activeCount.toString(), visual.colors.gain),
+                MetricStripItem("Bloqueados", blockedCount.toString(), if (blockedCount > 0) visual.colors.loss else visual.colors.neutral),
                 MetricStripItem("Asign.", assignedCount.toString(), visual.colors.sale),
                 MetricStripItem("Libres", availableCount.toString(), visual.colors.admin),
             ),
         )
-        CompactSegmentedSelector(
-            options = SupervisorAdminView.entries.map { QuickFilterChip(it.name, it.label) },
+        CurrentScopeDropdownCard(
+            title = "Vista de supervisores",
+            value = selectedView.label,
             selectedId = selectedView.name,
+            options = SupervisorAdminView.entries.map { it.name to it.label },
             onSelected = { id -> SupervisorAdminView.entries.firstOrNull { it.name == id }?.let(onViewSelected) },
-            columns = 3,
-            modifier = Modifier.fillMaxWidth(),
+            subtitle = "Cambia entre resumen, grupo, credenciales o creación.",
+            actionLabel = "Vista",
+            tone = ActionTone.IntenseBlue,
         )
+        CompactTextInput(
+            label = "Buscar supervisor por nombre o usuario",
+            value = searchQuery,
+            onValueChange = onSearchChange,
+            modifier = Modifier.fillMaxWidth(),
+            leadingIcon = Icons.Rounded.Search,
+        )
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                Text(
+                    "Estado de supervisores",
+                    style = MaterialTheme.typography.labelLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = visual.colors.ink,
+                )
+                Text(
+                    "${visibleSupervisors.size} visibles",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = visual.colors.muted,
+                )
+            }
+            FilterChip(
+                selected = statusFilter != SupervisorStatusFilter.ALL,
+                onClick = { showStatusFilterSheet = true },
+                label = { Text(statusFilter.label) },
+                leadingIcon = {
+                    Icon(
+                        imageVector = Icons.Rounded.FilterList,
+                        contentDescription = null,
+                        modifier = Modifier.width(18.dp),
+                    )
+                },
+            )
+        }
         if (supervisors.isNotEmpty()) {
-            SectionHeader(title = "Lista supervisores", meta = "${supervisors.size} activos/bloqueados")
-            supervisors.forEach { supervisor ->
+            SectionHeader(title = "Supervisores registrados", meta = "${visibleSupervisors.size} mostrados")
+            if (visibleSupervisors.isEmpty()) {
+                CompactEmptyState(
+                    message = "No hay supervisores que coincidan con la búsqueda.",
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
+            visibleSupervisors.forEach { supervisor ->
                 val assigned = cashiers.count {
                     it.supervisorIds.any { id -> id.equals(supervisor.id, ignoreCase = true) } ||
                         it.supervisorUsers.any { user -> user.equals(supervisor.user, ignoreCase = true) }
@@ -2469,13 +3372,14 @@ private fun SupervisorAdminPanel(
                 SupervisorCompactRow(
                     supervisor = supervisor,
                     assignedCount = assigned,
-                    selected = supervisor.id == selectedSupervisorId,
+                    selected = supervisor.id == (selectedSupervisorId ?: selectedSupervisor?.id),
                     onClick = { onSupervisorSelected(supervisor.id) },
                 )
             }
         }
         if (selectedView != SupervisorAdminView.CREATE) {
             if (supervisors.isNotEmpty()) {
+                SectionHeader(title = "Supervisor seleccionado", meta = "Edita solo este perfil")
                 AccountsDropdown(
                     title = "Supervisor",
                     selectedLabel = selectedSupervisor?.displayName ?: selectedSupervisor?.user ?: "Elegir supervisor",
@@ -2500,8 +3404,32 @@ private fun SupervisorAdminPanel(
                 )
             }
         }
+        if (selectedView == SupervisorAdminView.SUMMARY) {
+            selectedSupervisor?.let { supervisor ->
+                SectionHeader(title = "Resumen del supervisor", meta = "Solo lectura")
+                supervisorDetailRows(supervisor, assignedCount).forEachIndexed { index, row ->
+                    CompactKeyValueRow(
+                        label = if (index == 0) "Identidad" else row.substringBefore(":"),
+                        value = if (index == 0) (supervisor.displayName ?: supervisor.user) else row.substringAfter(": ", row),
+                    )
+                }
+                SectionHeader(title = "Equipo", meta = "$assignedCount asignados")
+                if (assignedCount == 0) {
+                    CompactEmptyState("Este supervisor todavía no tiene cajeros asignados.", modifier = Modifier.fillMaxWidth())
+                } else {
+                    cashiers.filter { assignedCashierIds[it.id] == true }.forEach { cashier ->
+                        Text(
+                            cashier.displayName ?: cashier.user,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = visual.colors.ink,
+                        )
+                    }
+                }
+            } ?: CompactEmptyState("Selecciona un supervisor para ver su resumen.", modifier = Modifier.fillMaxWidth())
+            return@CompactPanel
+        }
         if (selectedView == SupervisorAdminView.CREATE) {
-            SectionHeader(title = "Datos de acceso", meta = "Supervisor")
+            SectionHeader(title = "Identidad", meta = "Datos básicos")
             CompactTextInput(
                 label = "Usuario supervisor",
                 value = userValue,
@@ -2522,6 +3450,7 @@ private fun SupervisorAdminPanel(
                 modifier = Modifier.fillMaxWidth(),
                 leadingIcon = Icons.Rounded.Lock,
             )
+            SectionHeader(title = "Configuración inicial", meta = "Comisión y estado")
             CompactTextInput(
                 label = "Comisión supervisor %",
                 value = commissionValue,
@@ -2563,6 +3492,7 @@ private fun SupervisorAdminPanel(
             return@CompactPanel
         }
         if (selectedView == SupervisorAdminView.CREDENTIALS) {
+            SectionHeader(title = "Acceso del supervisor", meta = "Cambiar credencial o estado")
             selectedSupervisor?.let {
                 CompactTextInput(
                     label = "Nueva clave manual",
@@ -2598,9 +3528,10 @@ private fun SupervisorAdminPanel(
                 )
             }
             if (selectedSupervisor != null) {
+                SectionHeader(title = "Zona de peligro", meta = "Eliminar es irreversible")
                 CompactActionButton(
                     label = "Eliminar supervisor",
-                    onClick = onDeleteSupervisor,
+                    onClick = { showDeleteConfirmation = true },
                     modifier = Modifier.fillMaxWidth(),
                     icon = Icons.Rounded.Delete,
                     tone = ActionTone.Danger,
@@ -2608,6 +3539,7 @@ private fun SupervisorAdminPanel(
             }
         }
         if (selectedView == SupervisorAdminView.GROUP) {
+            SectionHeader(title = "Comisión del grupo", meta = "Se aplica al supervisor")
             CompactTextInput(
                 label = "Comisión supervisor %",
                 value = commissionValue,
@@ -2654,6 +3586,7 @@ private fun SupervisorAdminPanel(
             }
         }
         if (selectedView == SupervisorAdminView.GROUP) {
+            SectionHeader(title = "Cajeros asignados", meta = "$assignedCount asignados · $availableCount disponibles")
             if (cashiers.isEmpty()) {
                 CompactEmptyState(
                     message = "No hay cajeros libres o asignados a este supervisor.",
@@ -2668,12 +3601,141 @@ private fun SupervisorAdminPanel(
                 )
             }
             CompactActionButton(
-                label = "Guardar grupo",
+                label = "Guardar equipo y comisión",
                 onClick = onSaveAssignments,
                 modifier = Modifier.fillMaxWidth(),
                 icon = Icons.Rounded.Sync,
                 tone = ActionTone.Secondary,
             )
+        }
+    }
+
+    if (showDeleteConfirmation) {
+        AlertDialog(
+            onDismissRequest = { showDeleteConfirmation = false },
+            title = { Text("Eliminar supervisor") },
+            text = { Text("Esta acción eliminará el supervisor y quitará sus asignaciones. ¿Deseas continuar?") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showDeleteConfirmation = false
+                        onDeleteSupervisor()
+                    },
+                ) { Text("Eliminar") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteConfirmation = false }) { Text("Cancelar") }
+            },
+        )
+    }
+    if (showStatusFilterSheet) {
+        SupervisorStatusFilterSheet(
+            selected = statusFilter,
+            onSelected = {
+                onStatusFilterChange(it)
+                showStatusFilterSheet = false
+            },
+            onDismiss = { showStatusFilterSheet = false },
+        )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun SupervisorStatusFilterSheet(
+    selected: SupervisorStatusFilter,
+    onSelected: (SupervisorStatusFilter) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val visual = rememberLotteryNetVisualSpec()
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = sheetState,
+        containerColor = Color.Transparent,
+        scrimColor = Color.Black.copy(alpha = 0.54f),
+        dragHandle = null,
+    ) {
+        Surface(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 18.dp)
+                .padding(bottom = 24.dp),
+            color = visual.colors.panel,
+            shape = RoundedCornerShape(28.dp),
+            tonalElevation = 0.dp,
+            shadowElevation = 6.dp,
+        ) {
+            Column(
+                modifier = Modifier.padding(horizontal = 18.dp, vertical = 20.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Icon(Icons.Rounded.FilterList, contentDescription = null, tint = visual.colors.actionPrimary)
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text("Filtrar supervisores", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Black)
+                        Text("Elige qué estados quieres ver en la lista.", style = MaterialTheme.typography.bodySmall, color = visual.colors.muted)
+                    }
+                    TextButton(onClick = onDismiss) { Text("Cerrar") }
+                }
+                QuickFilterChips(
+                    filters = supervisorStatusFilterOptions(),
+                    selectedId = selected.name,
+                    onSelected = { id ->
+                        SupervisorStatusFilter.entries.firstOrNull { it.name == id }?.let(onSelected)
+                    },
+                )
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun SupervisorCashierFilterSheet(
+    selected: SupervisorCashierFilter,
+    onSelected: (SupervisorCashierFilter) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val visual = rememberLotteryNetVisualSpec()
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = sheetState,
+        containerColor = Color.Transparent,
+        scrimColor = Color.Black.copy(alpha = 0.54f),
+        dragHandle = null,
+    ) {
+        Surface(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 18.dp)
+                .padding(bottom = 24.dp),
+            color = visual.colors.panel,
+            shape = RoundedCornerShape(28.dp),
+            tonalElevation = 0.dp,
+            shadowElevation = 6.dp,
+        ) {
+            Column(
+                modifier = Modifier.padding(horizontal = 18.dp, vertical = 20.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Icon(Icons.Rounded.FilterList, contentDescription = null, tint = visual.colors.actionPrimary)
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text("Filtrar cajeros", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Black)
+                        Text("Elige qué grupo quieres administrar.", style = MaterialTheme.typography.bodySmall, color = visual.colors.muted)
+                    }
+                    TextButton(onClick = onDismiss) { Text("Cerrar") }
+                }
+                QuickFilterChips(
+                    filters = supervisorCashierFilterOptions(),
+                    selectedId = selected.name,
+                    onSelected = { id ->
+                        SupervisorCashierFilter.entries.firstOrNull { it.name == id }?.let(onSelected)
+                    },
+                )
+            }
         }
     }
 }
@@ -2688,6 +3750,7 @@ private fun SupervisorCashierPicker(
     val visual = rememberLotteryNetVisualSpec()
     var query by rememberSaveable { mutableStateOf("") }
     var filterName by rememberSaveable { mutableStateOf(SupervisorCashierFilter.ALL.name) }
+    var showFilterSheet by rememberSaveable { mutableStateOf(false) }
     val filter = SupervisorCashierFilter.entries.firstOrNull { it.name == filterName } ?: SupervisorCashierFilter.ALL
     val visibleCashiers = remember(cashiers, assignedCashierIds, query, filter) {
         filterSupervisorCashierOptions(cashiers, assignedCashierIds, query, filter)
@@ -2710,13 +3773,31 @@ private fun SupervisorCashierPicker(
             leadingIcon = Icons.Rounded.ManageAccounts,
             modifier = Modifier.fillMaxWidth(),
         )
-        CompactSegmentedSelector(
-            options = supervisorCashierFilterOptions(),
-            selectedId = filter.name,
-            onSelected = { filterName = it },
-            columns = 3,
+        Row(
             modifier = Modifier.fillMaxWidth(),
-        )
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            Text(
+                "Filtro de cajeros",
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = FontWeight.Bold,
+                color = visual.colors.ink,
+                modifier = Modifier.weight(1f),
+            )
+            FilterChip(
+                selected = filter != SupervisorCashierFilter.ALL,
+                onClick = { showFilterSheet = true },
+                label = { Text(filter.label) },
+                leadingIcon = {
+                    Icon(
+                        imageVector = Icons.Rounded.FilterList,
+                        contentDescription = null,
+                        modifier = Modifier.width(18.dp),
+                    )
+                },
+            )
+        }
         CompactBulkToolbar(
             selectedCount = assigned.size,
             visibleCount = visibleCashiers.size,
@@ -2741,15 +3822,45 @@ private fun SupervisorCashierPicker(
         } else {
             Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
                 visibleCashiers.take(60).forEach { cashier ->
-                val selected = assignedCashierIds[cashier.id] == true
-                    CompactSwitchRow(
-                        title = cashier.displayName ?: cashier.user,
-                        subtitle = cashier.user,
-                        checked = selected,
-                        onCheckedChange = { checked -> onCashierToggle(cashier.id, checked) },
-                        tone = ActionTone.Primary,
-                        modifier = Modifier.fillMaxWidth(),
-                    )
+                    val selected = assignedCashierIds[cashier.id] == true
+                    Surface(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { onCashierToggle(cashier.id, !selected) },
+                        shape = RoundedCornerShape(10.dp),
+                        color = if (selected) visual.colors.panelAlt else visual.colors.panel,
+                        border = androidx.compose.foundation.BorderStroke(
+                            1.dp,
+                            if (selected) visual.colors.actionPrimary else visual.colors.border,
+                        ),
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .heightIn(min = 52.dp)
+                                .padding(horizontal = 10.dp, vertical = 6.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        ) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    cashierDisplayLabel(cashier),
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    color = visual.colors.ink,
+                                )
+                                Text(
+                                    cashier.user,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = visual.colors.muted,
+                                )
+                            }
+                            Checkbox(
+                                checked = selected,
+                                onCheckedChange = { checked -> onCashierToggle(cashier.id, checked) },
+                            )
+                        }
+                    }
                 }
                 if (visibleCashiers.size > 60) {
                     Text(
@@ -2761,32 +3872,509 @@ private fun SupervisorCashierPicker(
                 }
             }
         }
-        if (assigned.isEmpty()) {
+        Text(
+            text = if (assigned.isEmpty()) {
+                "Sin cajeros seleccionados."
+            } else {
+                "${assigned.size} cajeros seleccionados. Guarda para aplicar los cambios."
+            },
+            style = MaterialTheme.typography.bodySmall,
+            color = visual.colors.muted,
+            fontWeight = FontWeight.Bold,
+        )
+    }
+    if (showFilterSheet) {
+        SupervisorCashierFilterSheet(
+            selected = filter,
+            onSelected = {
+                filterName = it.name
+                showFilterSheet = false
+            },
+            onDismiss = { showFilterSheet = false },
+        )
+    }
+}
+
+@Composable
+private fun CashierLimitsOverview(
+    globalLimits: CashierSalesLimitInputs,
+    poolLimits: CashierSalesLimitInputs,
+    onOpenGlobal: () -> Unit,
+    onOpenPersonal: () -> Unit,
+    onOpenPool: () -> Unit,
+) {
+    val visual = rememberLotteryNetVisualSpec()
+    CompactPanel {
+        OperationalListHeader(title = "Centro de límites", meta = "Negocio y cajeros")
+        Text(
+            text = "Cada regla se administra en su propio alcance. El pool del negocio nunca se mezcla con el límite de un cajero.",
+            style = MaterialTheme.typography.bodyMedium,
+            color = visual.colors.muted,
+        )
+        SectionHeader(title = "Reglas del negocio", meta = "No pertenecen a un cajero")
+        CashierLimitsOverviewCard(
+            title = "Pool del negocio",
+            scopeLabel = "NEGOCIO",
+            description = "Exposición compartida por lotería, número y tipo de jugada.",
+            value = "${configuredLimitCount(poolLimits)} de 8 reglas configuradas",
+            icon = Icons.Rounded.Tune,
+            tone = visual.colors.sale,
+            onClick = onOpenPool,
+        )
+        SectionHeader(title = "Límites de cajeros", meta = "Base y excepciones")
+        CashierLimitsOverviewCard(
+            title = "Base para cajeros",
+            scopeLabel = "HEREDADO",
+            description = "Valores que reciben los cajeros sin configuración propia.",
+            value = "Venta diaria ${formatMoney(globalLimits.daySale)}",
+            icon = Icons.Rounded.AccountBalanceWallet,
+            tone = visual.colors.actionPrimary,
+            onClick = onOpenGlobal,
+        )
+        CashierLimitsOverviewCard(
+            title = "Límite personal",
+            scopeLabel = "POR CAJERO",
+            description = "Excepción individual que no modifica el pool del negocio.",
+            value = "Selecciona el cajero que deseas editar",
+            icon = Icons.Rounded.ManageAccounts,
+            tone = visual.colors.admin,
+            onClick = onOpenPersonal,
+        )
+    }
+}
+
+private fun configuredLimitCount(limits: CashierSalesLimitInputs): Int = listOf(
+    limits.quiniela,
+    limits.pale,
+    limits.superPale,
+    limits.tripleta,
+    limits.pick3Straight,
+    limits.pick3Box,
+    limits.pick4Straight,
+    limits.pick4Box,
+).count { it > 0.0 }
+
+@Composable
+private fun CashierLimitsOverviewCard(
+    title: String,
+    scopeLabel: String,
+    description: String,
+    value: String,
+    icon: ImageVector,
+    tone: Color,
+    onClick: () -> Unit,
+) {
+    val visual = rememberLotteryNetVisualSpec()
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .heightIn(min = 88.dp)
+            .clickable(onClick = onClick),
+        shape = RoundedCornerShape(visual.sizes.panelRadius),
+        color = tone.copy(alpha = 0.10f),
+        border = androidx.compose.foundation.BorderStroke(1.dp, tone.copy(alpha = 0.30f)),
+    ) {
+        ListItem(
+            colors = ListItemDefaults.colors(containerColor = Color.Transparent),
+            leadingContent = {
+                Surface(shape = RoundedCornerShape(14.dp), color = tone.copy(alpha = 0.16f)) {
+                    Box(modifier = Modifier.padding(10.dp), contentAlignment = Alignment.Center) {
+                        Icon(icon, contentDescription = null, tint = tone)
+                    }
+                }
+            },
+            headlineContent = {
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.titleSmall,
+                    color = visual.colors.ink,
+                    fontWeight = FontWeight.Bold,
+                )
+            },
+            supportingContent = {
+                Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                    Text(text = description, style = MaterialTheme.typography.bodySmall, color = visual.colors.muted)
+                    Text(text = value, style = MaterialTheme.typography.labelMedium, color = tone, fontWeight = FontWeight.Bold)
+                }
+            },
+            trailingContent = {
+                Column(horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    CompactStatusBadge(label = scopeLabel, tone = tone)
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text("Abrir", style = MaterialTheme.typography.labelMedium, color = tone, fontWeight = FontWeight.Bold)
+                        Icon(Icons.Rounded.ChevronRight, contentDescription = "Abrir $title", tint = tone)
+                    }
+                }
+            },
+        )
+    }
+}
+
+@Composable
+private fun CashierLimitsDetailHeader(
+    title: String,
+    scope: String,
+    onBack: () -> Unit,
+) {
+    val visual = rememberLotteryNetVisualSpec()
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .heightIn(min = 56.dp)
+            .clickable(onClick = onBack),
+        shape = RoundedCornerShape(visual.sizes.panelRadius),
+        color = visual.colors.actionPrimarySurface,
+        border = androidx.compose.foundation.BorderStroke(1.dp, visual.colors.actionPrimary.copy(alpha = 0.24f)),
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "Volver al centro de límites", tint = visual.colors.actionPrimary)
+            Column(modifier = Modifier.weight(1f)) {
+                Text("Volver al centro", style = MaterialTheme.typography.labelMedium, color = visual.colors.actionPrimary)
+                Text(title, style = MaterialTheme.typography.titleSmall, color = visual.colors.ink, fontWeight = FontWeight.Bold)
+            }
+            CompactStatusBadge(label = scope, tone = visual.colors.actionPrimary)
+        }
+    }
+}
+
+@Composable
+private fun CashierLimitScopeContext(
+    isGlobalScope: Boolean,
+    selectedCashier: UserAccount?,
+    onChangeCashier: (() -> Unit)?,
+) {
+    val visual = rememberLotteryNetVisualSpec()
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
+        Icon(
+            imageVector = if (isGlobalScope) Icons.Rounded.AccountBalanceWallet else Icons.Rounded.ManageAccounts,
+            contentDescription = null,
+            tint = visual.colors.actionPrimary,
+        )
+        Column(modifier = Modifier.weight(1f)) {
             Text(
-                text = "Sin cajeros asignados.",
-                style = MaterialTheme.typography.bodySmall,
-                color = visual.colors.muted,
+                text = if (isGlobalScope) "Aplicando a todos por defecto" else cashierDisplayLabel(requireNotNull(selectedCashier)),
+                style = MaterialTheme.typography.titleSmall,
+                color = visual.colors.ink,
                 fontWeight = FontWeight.Bold,
             )
-        } else {
-            val visibleAssigned = assigned.take(8)
-            CompactAdaptiveGrid(
-                itemCount = visibleAssigned.size,
-                columns = if (visibleAssigned.size == 1) 1 else 2,
-                modifier = Modifier.fillMaxWidth(),
-            ) { index, itemModifier ->
-                CompactStatusBadge(
-                    label = visibleAssigned[index].displayName ?: visibleAssigned[index].user,
-                    modifier = itemModifier.fillMaxWidth(),
-                    tone = visual.colors.finance,
-                )
-            }
-            if (assigned.size > visibleAssigned.size) {
+            Text(
+                text = if (isGlobalScope) {
+                    "Solo lo heredan cajeros sin límite personal."
+                } else {
+                    "Esta excepción solo afecta a ${selectedCashier?.user.orEmpty()}."
+                },
+                style = MaterialTheme.typography.bodySmall,
+                color = visual.colors.muted,
+            )
+        }
+        onChangeCashier?.let { action ->
+            TextButton(onClick = action) { Text("Cambiar") }
+        }
+    }
+}
+
+@Composable
+private fun CashierLimitSelectionRequired(onSelectCashier: () -> Unit) {
+    val visual = rememberLotteryNetVisualSpec()
+    CompactPanel(alt = true) {
+        OperationalListHeader(title = "Elige un cajero", meta = "Límite personal")
+        Text(
+            text = "Selecciona el cajero antes de editar. El pool y la base global no se modificarán.",
+            style = MaterialTheme.typography.bodyMedium,
+            color = visual.colors.muted,
+        )
+        CompactActionButton(
+            label = "Seleccionar cajero",
+            onClick = onSelectCashier,
+            modifier = Modifier.fillMaxWidth(),
+            icon = Icons.Rounded.ManageAccounts,
+            active = true,
+            tone = ActionTone.Primary,
+        )
+    }
+}
+
+@Composable
+private fun CashierLimitScopeSelector(
+    selectedAllCashiers: Boolean,
+    selectedCashier: UserAccount?,
+    onChangeScope: () -> Unit,
+) {
+    val visual = rememberLotteryNetVisualSpec()
+    val title = if (selectedAllCashiers) "Valores globales" else selectedCashier?.let(::cashierDisplayLabel) ?: "Elegir cajero"
+    val subtitle = if (selectedAllCashiers) {
+        "Base para cajeros sin configuración personalizada"
+    } else {
+        selectedCashier?.user.orEmpty().ifBlank { "Selecciona a quién aplicar estos límites" }
+    }
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onChangeScope),
+        shape = RoundedCornerShape(visual.sizes.panelRadius),
+        color = visual.colors.actionPrimarySurface,
+        border = androidx.compose.foundation.BorderStroke(1.dp, visual.colors.actionPrimary.copy(alpha = 0.28f)),
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            Icon(Icons.Rounded.ManageAccounts, contentDescription = null, tint = visual.colors.actionPrimary)
+            Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = "+${assigned.size - visibleAssigned.size} cajeros mas asignados",
+                    text = "Aplicando a",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = visual.colors.muted,
+                    fontWeight = FontWeight.Bold,
+                )
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.titleSmall,
+                    color = visual.colors.ink,
+                    fontWeight = FontWeight.Black,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                Text(
+                    text = subtitle,
                     style = MaterialTheme.typography.bodySmall,
                     color = visual.colors.muted,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
                 )
+            }
+            CompactActionButton(
+                label = "Cambiar",
+                onClick = onChangeScope,
+                icon = Icons.Rounded.Tune,
+                tone = ActionTone.Secondary,
+            )
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun CashierLimitScopeSheet(
+    options: List<CashierSelectorOption>,
+    selectedCashierId: String?,
+    onCashierSelected: (String) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val visual = rememberLotteryNetVisualSpec()
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    var query by rememberSaveable { mutableStateOf("") }
+    val visibleOptions = remember(options, query) {
+        val normalizedQuery = query.trim()
+        if (normalizedQuery.isBlank()) {
+            options
+        } else {
+            options.filter { option ->
+                option.label.contains(normalizedQuery, ignoreCase = true) ||
+                    option.id.contains(normalizedQuery, ignoreCase = true)
+            }
+        }
+    }
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = sheetState,
+        containerColor = Color.Transparent,
+        scrimColor = Color.Black.copy(alpha = 0.54f),
+        dragHandle = null,
+    ) {
+        Surface(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 18.dp)
+                .padding(bottom = 24.dp),
+            color = visual.colors.panel,
+            shape = RoundedCornerShape(28.dp),
+            tonalElevation = 0.dp,
+            shadowElevation = 6.dp,
+        ) {
+            Column(
+                modifier = Modifier.padding(horizontal = 18.dp, vertical = 20.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Icon(Icons.Rounded.Tune, contentDescription = null, tint = visual.colors.actionPrimary)
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = "Aplicar límites",
+                            style = MaterialTheme.typography.titleLarge,
+                            color = visual.colors.ink,
+                            fontWeight = FontWeight.Black,
+                        )
+                        Text(
+                            text = "Elige si editas el global o un cajero específico.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = visual.colors.muted,
+                        )
+                    }
+                    TextButton(onClick = onDismiss) {
+                        Text("Cerrar")
+                    }
+                }
+                CompactTextInput(
+                    label = "Buscar cajero",
+                    value = query,
+                    onValueChange = { query = it },
+                    modifier = Modifier.fillMaxWidth(),
+                    placeholder = "Nombre, usuario o id",
+                    leadingIcon = Icons.Rounded.ManageAccounts,
+                )
+                LazyColumn(
+                    modifier = Modifier.heightIn(max = 430.dp),
+                    verticalArrangement = Arrangement.spacedBy(6.dp),
+                ) {
+                    if (visibleOptions.isEmpty()) {
+                        item("empty") {
+                            CompactEmptyState(
+                                message = "No hay cajeros con ese filtro.",
+                                modifier = Modifier.fillMaxWidth(),
+                            )
+                        }
+                    } else {
+                        items(
+                            items = visibleOptions,
+                            key = { it.id },
+                            contentType = { "cashier-limit-scope-option" },
+                        ) { option ->
+                            CashierLimitScopeOptionRow(
+                                option = option,
+                                selected = option.id == selectedCashierId,
+                                onClick = {
+                                    onCashierSelected(option.id)
+                                    onDismiss()
+                                },
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun CashierGlobalLimitConfirmSheet(
+    onDismiss: () -> Unit,
+    onConfirm: () -> Unit,
+) {
+    val visual = rememberLotteryNetVisualSpec()
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = sheetState,
+        containerColor = Color.Transparent,
+        scrimColor = Color.Black.copy(alpha = 0.54f),
+        dragHandle = null,
+    ) {
+        Surface(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 18.dp)
+                .padding(bottom = 24.dp),
+            color = visual.colors.panel,
+            shape = RoundedCornerShape(28.dp),
+            tonalElevation = 0.dp,
+            shadowElevation = 6.dp,
+        ) {
+            Column(
+                modifier = Modifier.padding(horizontal = 18.dp, vertical = 20.dp),
+                verticalArrangement = Arrangement.spacedBy(14.dp),
+            ) {
+                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Text(
+                        text = "Aplicar límite global",
+                        style = MaterialTheme.typography.titleLarge,
+                        color = visual.colors.ink,
+                        fontWeight = FontWeight.Black,
+                    )
+                    Text(
+                        text = "Esto cambia la base para cajeros sin configuración personalizada.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = visual.colors.muted,
+                    )
+                }
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    CompactActionButton(
+                        label = "Cancelar",
+                        onClick = onDismiss,
+                        modifier = Modifier.weight(1f),
+                        tone = ActionTone.Secondary,
+                    )
+                    CompactActionButton(
+                        label = "Aplicar",
+                        onClick = onConfirm,
+                        modifier = Modifier.weight(1f),
+                        icon = Icons.Rounded.Save,
+                        active = true,
+                        tone = ActionTone.Warning,
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun CashierLimitScopeOptionRow(
+    option: CashierSelectorOption,
+    selected: Boolean,
+    onClick: () -> Unit,
+) {
+    val visual = rememberLotteryNetVisualSpec()
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick),
+        color = if (selected) visual.colors.actionPrimarySurface else visual.colors.panelAlt,
+        shape = RoundedCornerShape(14.dp),
+        border = androidx.compose.foundation.BorderStroke(
+            1.dp,
+            if (selected) visual.colors.actionPrimary.copy(alpha = 0.5f) else visual.colors.border,
+        ),
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 11.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            Icon(
+                imageVector = if (option.id == ALL_CASHIER_LIMITS_ID) Icons.Rounded.Tune else Icons.Rounded.ManageAccounts,
+                contentDescription = null,
+                tint = if (selected) visual.colors.actionPrimary else visual.colors.muted,
+            )
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = option.label,
+                    style = MaterialTheme.typography.titleSmall,
+                    color = visual.colors.ink,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                Text(
+                    text = if (option.id == ALL_CASHIER_LIMITS_ID) "Configura la base global" else option.id,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = visual.colors.muted,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+            if (selected) {
+                CompactStatusBadge(label = "Actual", tone = visual.colors.actionPrimary)
             }
         }
     }
@@ -2794,6 +4382,7 @@ private fun SupervisorCashierPicker(
 
 @Composable
 private fun CashierLimitsEditor(
+    isGlobalScope: Boolean,
     daySaleLimit: String,
     payoutLimit: String,
     payoutLabel: String,
@@ -2817,13 +4406,27 @@ private fun CashierLimitsEditor(
     onPick4BoxChange: (String) -> Unit,
     onSave: () -> Unit,
 ) {
+    var lotteryExpanded by rememberSaveable { mutableStateOf(true) }
+    var pickExpanded by rememberSaveable { mutableStateOf(false) }
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        SectionHeader(
+            title = "General",
+            meta = if (isGlobalScope) "Base heredada" else "Excepción individual",
+        )
         OutlinedTextField(
             value = daySaleLimit,
             onValueChange = onDaySaleChange,
             modifier = Modifier.fillMaxWidth(),
-            label = { Text("Límite diario de venta") },
-            supportingText = { Text("Máximo de dinero que este cajero puede vender en el día. 0 = sin tope.") },
+            label = { Text(if (isGlobalScope) "Tope global de venta" else "Límite diario de venta") },
+            supportingText = {
+                Text(
+                    if (isGlobalScope) {
+                        "Base global que heredan los cajeros sin configuración propia. 0 = sin tope."
+                    } else {
+                        "Máximo de dinero que este cajero puede vender en el día. 0 = sin tope."
+                    },
+                )
+            },
             singleLine = true,
             leadingIcon = { Icon(Icons.Rounded.AccountBalanceWallet, contentDescription = null) },
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
@@ -2839,23 +4442,328 @@ private fun CashierLimitsEditor(
             leadingIcon = { Icon(Icons.Rounded.AccountBalanceWallet, contentDescription = null) },
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
         )
-        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            LimitInput("Quiniela venta diaria", quinielaLimit, onQuinielaChange, Modifier.weight(1f))
-            LimitInput("Pale venta diaria", paleLimit, onPaleChange, Modifier.weight(1f))
+        LimitEditorSectionHeader(
+            title = "Lotería normal",
+            subtitle = "Quiniela, Pale, Super Pale y Tripleta",
+            expanded = lotteryExpanded,
+            onToggle = { lotteryExpanded = !lotteryExpanded },
+        )
+        if (lotteryExpanded) {
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                LimitInput("Quiniela", quinielaLimit, onQuinielaChange, Modifier.weight(1f))
+                LimitInput("Pale", paleLimit, onPaleChange, Modifier.weight(1f))
+            }
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                LimitInput("Super Pale", superPaleLimit, onSuperPaleChange, Modifier.weight(1f))
+                LimitInput("Tripleta", tripletaLimit, onTripletaChange, Modifier.weight(1f))
+            }
         }
-        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            LimitInput("Super Pale venta diaria", superPaleLimit, onSuperPaleChange, Modifier.weight(1f))
-            LimitInput("Tripleta venta diaria", tripletaLimit, onTripletaChange, Modifier.weight(1f))
-        }
-        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            LimitInput("P3 Straight venta", pick3StraightLimit, onPick3StraightChange, Modifier.weight(1f))
-            LimitInput("P3 Box venta", pick3BoxLimit, onPick3BoxChange, Modifier.weight(1f))
-        }
-        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            LimitInput("P4 Straight venta", pick4StraightLimit, onPick4StraightChange, Modifier.weight(1f))
-            LimitInput("P4 Box venta", pick4BoxLimit, onPick4BoxChange, Modifier.weight(1f))
+        LimitEditorSectionHeader(
+            title = "Pick",
+            subtitle = "Pick 3 y Pick 4 · directo y box",
+            expanded = pickExpanded,
+            onToggle = { pickExpanded = !pickExpanded },
+        )
+        if (pickExpanded) {
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                LimitInput("P3 Straight", pick3StraightLimit, onPick3StraightChange, Modifier.weight(1f))
+                LimitInput("P3 Box", pick3BoxLimit, onPick3BoxChange, Modifier.weight(1f))
+            }
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                LimitInput("P4 Straight", pick4StraightLimit, onPick4StraightChange, Modifier.weight(1f))
+                LimitInput("P4 Box", pick4BoxLimit, onPick4BoxChange, Modifier.weight(1f))
+            }
         }
         CompactActionButton(cashierAdminSaveServerActionLabel(), onClick = onSave, modifier = Modifier.fillMaxWidth(), icon = Icons.Rounded.Save, active = true, tone = ActionTone.Primary)
+    }
+}
+
+@Composable
+private fun LimitEditorSectionHeader(
+    title: String,
+    subtitle: String,
+    expanded: Boolean,
+    onToggle: () -> Unit,
+) {
+    val visual = rememberLotteryNetVisualSpec()
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .heightIn(min = 56.dp)
+            .clickable(onClick = onToggle),
+        shape = RoundedCornerShape(visual.sizes.panelRadius),
+        color = visual.colors.panelAlt,
+        border = androidx.compose.foundation.BorderStroke(1.dp, visual.colors.border),
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 9.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(title, style = MaterialTheme.typography.titleSmall, color = visual.colors.ink, fontWeight = FontWeight.Bold)
+                Text(subtitle, style = MaterialTheme.typography.bodySmall, color = visual.colors.muted)
+            }
+            Icon(
+                imageVector = if (expanded) Icons.Rounded.ExpandMore else Icons.Rounded.ChevronRight,
+                contentDescription = if (expanded) "Contraer $title" else "Expandir $title",
+                tint = visual.colors.actionPrimary,
+            )
+        }
+    }
+}
+
+@Composable
+private fun CashierGlobalPoolSummaryCard(
+    poolLimits: CashierSalesLimitInputs,
+    onEdit: () -> Unit,
+) {
+    val visual = rememberLotteryNetVisualSpec()
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        color = visual.colors.panelAlt.copy(alpha = 0.86f),
+        shape = RoundedCornerShape(24.dp),
+        border = androidx.compose.foundation.BorderStroke(1.dp, visual.colors.border.copy(alpha = 0.55f)),
+    ) {
+        Column(
+            modifier = Modifier.padding(horizontal = 14.dp, vertical = 14.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Text(
+                    text = cashierPoolSectionLabel(),
+                    style = MaterialTheme.typography.titleMedium,
+                    color = visual.colors.ink,
+                    fontWeight = FontWeight.Black,
+                )
+                Text(
+                    text = cashierPoolSectionPurpose(),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = visual.colors.muted,
+                )
+            }
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                SummaryLimitChip("Quiniela", formatMoney(poolLimits.quiniela), Modifier.weight(1f), visual.colors.sale)
+                SummaryLimitChip("Pale", formatMoney(poolLimits.pale), Modifier.weight(1f), visual.colors.finance)
+                SummaryLimitChip("Tripleta", formatMoney(poolLimits.tripleta), Modifier.weight(1f), visual.colors.admin)
+            }
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                SummaryLimitChip("Super Pale", formatMoney(poolLimits.superPale), Modifier.weight(1f), visual.colors.warning)
+                SummaryLimitChip(
+                    "P3",
+                    "${formatMoney(poolLimits.pick3Straight)} / ${formatMoney(poolLimits.pick3Box)}",
+                    Modifier.weight(1f),
+                    visual.colors.actionPrimary,
+                )
+                SummaryLimitChip(
+                    "P4",
+                    "${formatMoney(poolLimits.pick4Straight)} / ${formatMoney(poolLimits.pick4Box)}",
+                    Modifier.weight(1f),
+                    visual.colors.finance,
+                )
+            }
+            Text(
+                text = "Esta configuración pertenece al negocio y se valida separada de cada límite personal.",
+                style = MaterialTheme.typography.bodySmall,
+                color = visual.colors.muted,
+            )
+            CompactActionButton(
+                label = "Editar pool del negocio",
+                onClick = onEdit,
+                modifier = Modifier.fillMaxWidth(),
+                icon = Icons.Rounded.Tune,
+                active = true,
+                tone = ActionTone.Secondary,
+            )
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun CashierPoolLimitsSheet(
+    quinielaLimit: String,
+    paleLimit: String,
+    superPaleLimit: String,
+    tripletaLimit: String,
+    pick3StraightLimit: String,
+    pick3BoxLimit: String,
+    pick4StraightLimit: String,
+    pick4BoxLimit: String,
+    onQuinielaChange: (String) -> Unit,
+    onPaleChange: (String) -> Unit,
+    onSuperPaleChange: (String) -> Unit,
+    onTripletaChange: (String) -> Unit,
+    onPick3StraightChange: (String) -> Unit,
+    onPick3BoxChange: (String) -> Unit,
+    onPick4StraightChange: (String) -> Unit,
+    onPick4BoxChange: (String) -> Unit,
+    onDismiss: () -> Unit,
+    onSave: () -> Unit,
+) {
+    val visual = rememberLotteryNetVisualSpec()
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = sheetState,
+        containerColor = Color.Transparent,
+        scrimColor = Color.Black.copy(alpha = 0.54f),
+        dragHandle = null,
+    ) {
+        Surface(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 18.dp)
+                .padding(bottom = 24.dp),
+            color = visual.colors.panel,
+            shape = RoundedCornerShape(28.dp),
+            tonalElevation = 0.dp,
+            shadowElevation = 6.dp,
+        ) {
+            Column(
+                modifier = Modifier.padding(horizontal = 18.dp, vertical = 20.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Icon(Icons.Rounded.Tune, contentDescription = null, tint = visual.colors.actionPrimary)
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(cashierPoolSectionLabel(), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Black)
+                        Text("Solo edición global por tipo de jugada", style = MaterialTheme.typography.bodySmall, color = visual.colors.muted)
+                    }
+                    CompactActionButton(label = "Cerrar", onClick = onDismiss, tone = ActionTone.Secondary)
+                }
+                SectionHeader(title = "Pool del negocio", meta = "Regla compartida")
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    LimitInput("Quiniela", quinielaLimit, onQuinielaChange, Modifier.weight(1f))
+                    LimitInput("Pale", paleLimit, onPaleChange, Modifier.weight(1f))
+                }
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    LimitInput("Super Pale", superPaleLimit, onSuperPaleChange, Modifier.weight(1f))
+                    LimitInput("Tripleta", tripletaLimit, onTripletaChange, Modifier.weight(1f))
+                }
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    LimitInput("P3 Straight", pick3StraightLimit, onPick3StraightChange, Modifier.weight(1f))
+                    LimitInput("P3 Box", pick3BoxLimit, onPick3BoxChange, Modifier.weight(1f))
+                }
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    LimitInput("P4 Straight", pick4StraightLimit, onPick4StraightChange, Modifier.weight(1f))
+                    LimitInput("P4 Box", pick4BoxLimit, onPick4BoxChange, Modifier.weight(1f))
+                }
+                CompactActionButton(
+                    label = cashierAdminSaveServerActionLabel(),
+                    onClick = onSave,
+                    modifier = Modifier.fillMaxWidth(),
+                    icon = Icons.Rounded.Save,
+                    active = true,
+                    tone = ActionTone.Primary,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun CashierGlobalLimitSummaryCard(
+    globalLimits: CashierSalesLimitInputs,
+    currentLimits: CashierSalesLimitInputs,
+    selectedAllCashiers: Boolean,
+) {
+    val visual = rememberLotteryNetVisualSpec()
+    val displayLimits = if (selectedAllCashiers) globalLimits else currentLimits
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        color = visual.colors.panelAlt.copy(alpha = 0.86f),
+        shape = RoundedCornerShape(24.dp),
+        border = androidx.compose.foundation.BorderStroke(1.dp, visual.colors.border.copy(alpha = 0.55f)),
+    ) {
+        Column(
+            modifier = Modifier.padding(horizontal = 14.dp, vertical = 14.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Text(
+                    text = if (selectedAllCashiers) "Base global de venta" else "Base global + excepción del cajero",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = visual.colors.ink,
+                    fontWeight = FontWeight.Black,
+                )
+                Text(
+                    text = if (selectedAllCashiers) {
+                        "Este valor base queda como referencia para todos los cajeros sin tope propio."
+                    } else {
+                        "Arriba ves la base global; abajo editas el límite individual de este cajero."
+                    },
+                    style = MaterialTheme.typography.bodySmall,
+                    color = visual.colors.muted,
+                )
+            }
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
+                SummaryLimitChip(
+                    label = "Base global",
+                    value = formatMoney(globalLimits.daySale),
+                    modifier = Modifier.weight(1f),
+                    tone = visual.colors.admin,
+                )
+                SummaryLimitChip(
+                    label = if (selectedAllCashiers) "Quiniela base" else "Quiniela actual",
+                    value = formatMoney(displayLimits.quiniela),
+                    modifier = Modifier.weight(1f),
+                    tone = visual.colors.sale,
+                )
+                SummaryLimitChip(
+                    label = "Premios",
+                    value = formatMoney(displayLimits.payout),
+                    modifier = Modifier.weight(1f),
+                    tone = visual.colors.finance,
+                )
+            }
+            Text(
+                text = if (selectedAllCashiers) {
+                    "Cuando guardes, este bloque actualiza la base global."
+                } else {
+                    "Si este cajero no tiene valor propio, toma la base global de arriba."
+                },
+                style = MaterialTheme.typography.bodySmall,
+                color = visual.colors.muted,
+            )
+        }
+    }
+}
+
+@Composable
+private fun SummaryLimitChip(
+    label: String,
+    value: String,
+    modifier: Modifier = Modifier,
+    tone: Color,
+) {
+    val visual = rememberLotteryNetVisualSpec()
+    Surface(
+        modifier = modifier,
+        shape = RoundedCornerShape(18.dp),
+        color = tone.copy(alpha = 0.12f),
+        border = androidx.compose.foundation.BorderStroke(1.dp, tone.copy(alpha = 0.22f)),
+    ) {
+        Column(
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
+            verticalArrangement = Arrangement.spacedBy(2.dp),
+        ) {
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelSmall,
+                color = visual.colors.muted,
+                fontWeight = FontWeight.Bold,
+            )
+            Text(
+                text = value,
+                style = MaterialTheme.typography.titleMedium,
+                color = visual.colors.ink,
+                fontWeight = FontWeight.Black,
+            )
+        }
     }
 }
 
@@ -2916,14 +4824,14 @@ private fun CashierModeAssignmentPanel(
         )
         AccountsDropdown(
             title = "Cajero",
-            selectedLabel = selectedCashier?.displayName ?: selectedCashier?.user ?: "Sin cajero",
+            selectedLabel = selectedCashier?.let(::cashierDisplayLabel) ?: "Sin cajero",
             icon = Icons.Rounded.ManageAccounts,
         ) { dismiss ->
             cashiers.forEach { cashier ->
                 DropdownMenuItem(
                     text = {
                         Text(
-                            text = cashier.displayName ?: cashier.user,
+                            text = cashierDisplayLabel(cashier),
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
                         )
@@ -3105,7 +5013,7 @@ private fun UserAccountCard(
             ) {
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = account.displayName ?: account.user,
+                        text = userAccountDisplayLabel(account),
                         style = MaterialTheme.typography.titleMedium,
                         color = visual.colors.ink,
                     )

@@ -3,7 +3,8 @@ import { bearerToken, clean, corsHeaders, json, lower, supabaseAdmin } from "../
 type JsonMap = Record<string, unknown>;
 
 const SELLER_ROLES = new Set(["admin", "cashier"]);
-const MARKET_KEYS = new Set(["moneyline", "runline", "spread", "total", "first_half", "first_five"]);
+// Only markets with an official final-score settlement rule are sellable.
+const MARKET_KEYS = new Set(["moneyline", "runline", "spread", "total"]);
 const DEFAULT_MAX_ODDS_AGE_SECONDS = 10 * 60;
 
 function number(value: unknown): number {
@@ -51,7 +52,7 @@ function metadataMatchesActor(metadata: JsonMap, actorKey: string, adminKey: str
     metadata.cashier_id,
     metadata.cashier_user,
   ].map(lower).filter(Boolean);
-  if (metadataValues.length === 0) return true;
+  if (metadataValues.length === 0) return false;
   const accepted = [actorKey, adminKey, cashierKey].map(lower).filter(Boolean);
   return accepted.some((value) => metadataValues.includes(value));
 }
@@ -221,14 +222,44 @@ async function bestLimits(ownerKey: string, adminKey: string, cashierKey: string
     {};
 }
 
-function validateLimits(stake: number, potentialPayout: number, limits: JsonMap): { ok: true } | { ok: false; message: string } {
+function validateLimits(
+  stake: number,
+  potentialPayout: number,
+  marketKeys: string[],
+  limits: JsonMap,
+): { ok: true } | { ok: false; message: string } {
   const maxTicketStake = number(limits.max_ticket_stake);
+  const maxSelectionStake = number(limits.max_selection_stake);
   const maxPotentialPayout = number(limits.max_potential_payout);
   if (maxTicketStake > 0 && stake > maxTicketStake) return { ok: false, message: "Monto supera limite por ticket." };
+  if (maxSelectionStake > 0 && stake > maxSelectionStake) return { ok: false, message: "Monto supera limite por seleccion." };
   if (maxPotentialPayout > 0 && potentialPayout > maxPotentialPayout) {
     return { ok: false, message: "Pago posible supera limite permitido." };
   }
+  const enabledMarkets = cleanArray(limits.enabled_markets);
+  if (enabledMarkets.length > 0 && marketKeys.some((market) => !enabledMarkets.includes(lower(market)))) {
+    return { ok: false, message: "El mercado no esta habilitado para esta cuenta." };
+  }
   return { ok: true };
+}
+
+async function eventExposure(eventId: string, ownerKey: string): Promise<number> {
+  const { data, error } = await supabaseAdmin()
+    .from("sports_ticket_legs")
+    .select("sports_tickets(stake,status,owner_key)")
+    .eq("event_id", eventId);
+  if (error) throw error;
+  const rows = Array.isArray(data) ? data as JsonMap[] : [];
+  const seenTicketIds = new Set<string>();
+  return rows.reduce((total, row) => {
+    const ticket = asObject(row.sports_tickets);
+    const ticketId = clean(ticket.id);
+    const status = lower(ticket.status);
+    if (clean(ticket.owner_key) !== ownerKey || ["void", "lost"].includes(status)) return total;
+    if (ticketId && seenTicketIds.has(ticketId)) return total;
+    if (ticketId) seenTicketIds.add(ticketId);
+    return total + number(ticket.stake);
+  }, 0);
 }
 
 async function handle(req: Request): Promise<Response> {
@@ -270,25 +301,53 @@ async function handle(req: Request): Promise<Response> {
     return json({ ok: false, message: "Deportes no esta habilitado para esta cuenta." }, 403);
   }
 
-  const resolvedLegs: JsonMap[] = [];
+  const resolvedLegs: Array<{ odds: JsonMap; market: JsonMap; event: JsonMap }> = [];
+  const selectedOddsIds = new Set<string>();
+  const selectedEventMarkets = new Set<string>();
   let combinedOdds = 1;
   for (const selection of selections) {
     const oddsId = clean(selection.oddsId);
     if (!oddsId) return json({ ok: false, message: "Seleccion incompleta." }, 400);
+    if (selectedOddsIds.has(oddsId)) {
+      return json({ ok: false, message: "La misma cuota no puede repetirse en el ticket." }, 409);
+    }
+    selectedOddsIds.add(oddsId);
     const odds = await resolveOdds(oddsId);
     if (!odds) return json({ ok: false, message: "Cuota no existe." }, 404);
     const oddsValidation = validateResolvedOdds(odds, maxOddsAgeSeconds);
     if (!oddsValidation.ok) return json({ ok: false, message: oddsValidation.message }, 409);
     const market = asObject(odds.sports_markets);
     const event = asObject(market.sports_events);
+    const eventId = clean(event.id);
+    const marketKey = lower(market.market_key);
+    const eventMarketKey = `${eventId}:${marketKey}`;
+    if (selectedEventMarkets.has(eventMarketKey)) {
+      return json({ ok: false, message: "Solo se permite una seleccion por mercado del mismo juego." }, 409);
+    }
+    selectedEventMarkets.add(eventMarketKey);
     combinedOdds *= number(odds.decimal_odds);
     resolvedLegs.push({ odds, market, event });
   }
 
   const potentialPayout = Number((stake * combinedOdds).toFixed(2));
   const limits = await bestLimits(ownerKey, adminKey, cashierKey);
-  const limitValidation = validateLimits(stake, potentialPayout, limits);
+  const limitValidation = validateLimits(
+    stake,
+    potentialPayout,
+    resolvedLegs.map(({ market }) => clean(market.market_key)),
+    limits,
+  );
   if (!limitValidation.ok) return json({ ok: false, message: limitValidation.message }, 409);
+  const maxEventExposure = number(limits.max_event_exposure);
+  if (maxEventExposure > 0) {
+    const eventIds = [...new Set(resolvedLegs.map(({ event }) => clean(event.id)).filter(Boolean))];
+    for (const eventId of eventIds) {
+      const currentExposure = await eventExposure(eventId, ownerKey);
+      if (currentExposure + stake > maxEventExposure) {
+        return json({ ok: false, message: "Exposicion del evento supera el limite permitido." }, 409);
+      }
+    }
+  }
 
   const ticket = {
     ticket_code: ticketCode(),
@@ -308,15 +367,7 @@ async function handle(req: Request): Promise<Response> {
     metadata: { actorRole, createdBy: "create-sports-ticket" },
   };
 
-  const { data: storedTicket, error: ticketError } = await supabaseAdmin()
-    .from("sports_tickets")
-    .insert(ticket)
-    .select("id,ticket_code,status,stake,decimal_odds,potential_payout")
-    .single();
-  if (ticketError || !storedTicket?.id) return json({ ok: false, message: ticketError?.message ?? "No se pudo crear ticket." }, 500);
-
   const legs = resolvedLegs.map(({ odds, market, event }) => ({
-    sports_ticket_id: storedTicket.id,
     event_id: clean(event.id),
     market_id: clean(market.id),
     odds_id: clean(odds.id),
@@ -329,13 +380,26 @@ async function handle(req: Request): Promise<Response> {
     selection_label: clean(odds.selection_label),
     point: number(odds.point) || null,
     decimal_odds: number(odds.decimal_odds),
-    odds_locked_at: new Date().toISOString(),
+    odds_locked_at: clean(odds.last_updated) || new Date().toISOString(),
     commence_time: clean(event.commence_time),
     status: "pending",
   }));
 
-  const { error: legsError } = await supabaseAdmin().from("sports_ticket_legs").insert(legs);
-  if (legsError) return json({ ok: false, message: legsError.message }, 500);
+  const { data: atomicResult, error: atomicError } = await supabaseAdmin()
+    .rpc("create_sports_ticket_atomic", {
+      p_ticket: ticket,
+      p_legs: legs,
+      p_max_event_exposure: maxEventExposure,
+    });
+  if (atomicError) return json({ ok: false, message: atomicError.message }, 500);
+  const result = asObject(atomicResult);
+  if (result.rejected === true) {
+    return json({ ok: false, message: clean(result.message) || "Venta deportiva rechazada." }, 409);
+  }
+  const storedTicket = asObject(result.ticket);
+  const storedLegs = asArray(result.legs);
+  if (!storedTicket.id) return json({ ok: false, message: "No se pudo crear ticket deportivo." }, 500);
+  if (result.duplicate === true) return json({ ok: true, duplicate: true, ticket: storedTicket });
 
   await supabaseAdmin().from("sports_audit_log").insert({
     actor_key: actorKey,
@@ -345,7 +409,7 @@ async function handle(req: Request): Promise<Response> {
     metadata: { clientRequestId, stake, potentialPayout, legs: legs.length },
   });
 
-  return json({ ok: true, ticket: storedTicket, legs });
+  return json({ ok: true, ticket: storedTicket, legs: storedLegs });
 }
 
 Deno.serve((req) => handle(req).catch((error) => {

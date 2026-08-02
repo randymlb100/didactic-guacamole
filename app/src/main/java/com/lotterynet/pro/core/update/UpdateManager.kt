@@ -17,12 +17,15 @@ class UpdateManager(
     private val repository: UpdateRepository = UpdateRepository(application),
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
-    private val sessions = LocalSessionRepository(application)
+    private val sessions by lazy(LazyThreadSafetyMode.SYNCHRONIZED) {
+        LocalSessionRepository(application)
+    }
 
     @Volatile
     private var checkRunning = false
 
     fun register() {
+        if (!LOTTERYNET_OTA_ENABLED) return
         application.registerActivityLifecycleCallbacks(
             object : Application.ActivityLifecycleCallbacks {
                 override fun onActivityCreated(activity: Activity, savedInstanceState: Bundle?) = Unit
@@ -40,6 +43,7 @@ class UpdateManager(
     }
 
     fun checkFromForeground(activity: Activity) {
+        if (!LOTTERYNET_OTA_ENABLED) return
         if (activity is LoginActivity || activity is UpdatePromptActivity) return
         if (UpdatePromptActivity.isShowing) return
         if (checkRunning) return

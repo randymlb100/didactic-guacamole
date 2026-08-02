@@ -3,7 +3,10 @@ package com.lotterynet.pro.core.export
 import com.lotterynet.pro.core.model.PlayItem
 import com.lotterynet.pro.core.model.TicketRecord
 import com.lotterynet.pro.core.model.WinningPlayDetail
+import com.lotterynet.pro.ui.tickets.OfficialTicketShareFallbackKind
+import com.lotterynet.pro.ui.tickets.resolveOfficialTicketShareFallbackKind
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -172,6 +175,7 @@ class OfficialTicketShareContractsTest {
         assertTrue(html.contains("Premios del ticket"))
         assertTrue(html.contains("Ganador 1475"))
         assertTrue(html.contains("P4BOX"))
+        assertFalse(html.contains("P4 BOX"))
     }
 
     @Test
@@ -266,6 +270,42 @@ class OfficialTicketShareContractsTest {
     }
 
     @Test
+    fun `official ticket whatsapp share gives small tickets a little more breathing room`() {
+        val density = NativeBitmapExport.resolveOfficialTicketBitmapDensity(
+            totalPlayCount = 3,
+            groupCount = 1,
+            maxGroupPlayCount = 3,
+            forceCompact = true,
+        )
+
+        assertTrue(density.compact)
+        assertTrue(density.rowHeightPx >= 56)
+        assertTrue(density.playTextSizePx >= 34f)
+        assertTrue(density.amountTextSizePx >= 33f)
+    }
+
+    @Test
+    fun `official ticket share spacing removes internal dividers and adds breathing room`() {
+        val compactSpacing = NativeBitmapExport.resolveOfficialTicketShareSpacing(
+            totalPlayCount = 3,
+            groupCount = 1,
+            maxGroupPlayCount = 3,
+            compactOfficialVisual = true,
+        )
+        val largeSpacing = NativeBitmapExport.resolveOfficialTicketShareSpacing(
+            totalPlayCount = 36,
+            groupCount = 2,
+            maxGroupPlayCount = 18,
+            compactOfficialVisual = false,
+        )
+
+        assertFalse(compactSpacing.showRowDividers)
+        assertFalse(largeSpacing.showRowDividers)
+        assertTrue(largeSpacing.columnGapPx >= compactSpacing.columnGapPx)
+        assertTrue(largeSpacing.rowGapPx >= compactSpacing.rowGapPx)
+    }
+
+    @Test
     fun `official ticket estimate uses dense rows for a long single lottery ticket`() {
         val ticket = sampleTicket().copy(
             total = 470.0,
@@ -282,7 +322,7 @@ class OfficialTicketShareContractsTest {
 
         val height = NativeBitmapExport.estimateOfficialTicketBitmapHeight(ticket)
 
-        assertTrue("height=$height", height <= 2_600)
+        assertTrue("height=$height", height <= 2_800)
     }
 
     @Test
@@ -310,6 +350,35 @@ class OfficialTicketShareContractsTest {
 
         assertTrue(target.width() >= 420f)
         assertTrue(target.height() >= 190f)
+    }
+
+    @Test
+    fun `official ticket share fallback prefers compact thermal when preview render is chosen`() {
+        val plays = listOf("Leidsa", "Loteria Nacional").flatMap { lottery ->
+            (1..23).map { index ->
+                PlayItem(
+                    number = index.toString().padStart(2, '0'),
+                    playType = "Q",
+                    amount = 1.0,
+                    lotteryName = lottery,
+                )
+            }
+        }
+        val ticket = TicketRecord(
+            id = "ticket-heavy-share",
+            serial = "LN-TEST-46",
+            plays = plays,
+            total = plays.sumOf { it.amount },
+            sellerUser = "bancay01",
+        )
+
+        val securityCode = TicketSecurity.resolveSecurityCode(ticket, "Banca Mani Taxi")
+        val officialHeight = NativeBitmapExport.estimateOfficialTicketBitmapHeight(ticket, securityCode)
+
+        assertEquals(
+            OfficialTicketShareFallbackKind.COMPACT_THERMAL,
+            resolveOfficialTicketShareFallbackKind(ticket, officialHeight),
+        )
     }
 
     private fun sampleTicket(): TicketRecord {

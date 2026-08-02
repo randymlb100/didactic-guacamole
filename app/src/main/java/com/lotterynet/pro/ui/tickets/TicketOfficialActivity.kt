@@ -241,7 +241,7 @@ class TicketOfficialActivity : AppCompatActivity() {
         val adminLimits = LocalAdminLimitRepository(this).getLimits()
         val cashierSalesLimits = LocalCashierSalesLimitRepository(this)
         val cashierPayoutLimit = if (activeSession.role == UserRole.CASHIER) {
-            val userLimit = cashierSalesLimits.getUserLimits(activeSession.adminId ?: activeSession.userId, activeSession.username).payout
+            val userLimit = cashierSalesLimits.getUserLimits(activeSession.adminId ?: activeSession.userId, activeSession).payout
             userLimit.takeIf { it > 0.0 } ?: adminLimits.cashierPayoutLimit
         } else {
             0.0
@@ -492,17 +492,17 @@ class TicketOfficialActivity : AppCompatActivity() {
                             val serverResult = runCatching {
                                 runBlocking {
                                     withContext(Dispatchers.IO) {
-                                        val freshBearerToken = SupabaseSessionTokenProvider(
-                                            LocalSessionRepository(this@TicketOfficialActivity),
-                                        ).freshAccessToken()
-                                        SupabaseTicketBackendClient().voidTicket(
-                                            request = BackendTicketActionRequest(
-                                                actorKey = resolveTicketBackendActorKey(activeSession),
-                                                adminKey = record.adminUser ?: activeSession.adminUser ?: record.adminId ?: activeSession.username,
-                                                ownerKey = record.adminId ?: record.adminUser ?: activeSession.adminUser ?: activeSession.username,
-                                                cashierKey = record.sellerId ?: record.sellerUser,
-                                                localTicketId = record.id,
-                                                clientRequestId = record.id,
+                                    val freshBearerToken = SupabaseSessionTokenProvider(
+                                        LocalSessionRepository(this@TicketOfficialActivity),
+                                    ).freshAccessToken()
+                                    SupabaseTicketBackendClient().voidTicket(
+                                        request = BackendTicketActionRequest(
+                                            actorKey = resolveTicketActionBackendActorKey(activeSession),
+                                            adminKey = record.adminUser ?: activeSession.adminUser ?: record.adminId ?: activeSession.username,
+                                            ownerKey = record.adminId ?: record.adminUser ?: activeSession.adminUser ?: activeSession.username,
+                                            cashierKey = record.sellerId ?: record.sellerUser,
+                                            localTicketId = record.id,
+                                            clientRequestId = record.id,
                                             ),
                                             bearerToken = freshBearerToken,
                                         )
@@ -553,7 +553,7 @@ class TicketOfficialActivity : AppCompatActivity() {
                                     ).freshAccessToken()
                                     SupabaseTicketBackendClient().deleteTicket(
                                         request = BackendTicketActionRequest(
-                                            actorKey = resolveTicketBackendActorKey(activeSession),
+                                            actorKey = resolveTicketActionBackendActorKey(activeSession),
                                             adminKey = record.adminUser ?: activeSession.adminUser ?: record.adminId ?: activeSession.username,
                                             ownerKey = record.adminId ?: record.adminUser ?: activeSession.adminUser ?: activeSession.username,
                                             cashierKey = record.sellerId ?: record.sellerUser,
@@ -565,13 +565,13 @@ class TicketOfficialActivity : AppCompatActivity() {
                                     )
                                 }
                                 serverResult.onSuccess {
+                                    repo.deleteTicket(record)
                                     thread(name = "ticket-delete-sync") {
                                         resolveTicketRealtimeSyncOwnerKeys(activeSession, record).forEach { ownerKey ->
                                             operationalSync.flushOwnerLocalSnapshot(ownerKey, bancaName)
                                         }
                                     }
                                     runOnUiThread {
-                                        repo.deleteTicket(record)
                                         Toast.makeText(this, "Ticket eliminado en servidor.", Toast.LENGTH_SHORT).show()
                                         finish()
                                     }
@@ -633,14 +633,23 @@ class TicketOfficialActivity : AppCompatActivity() {
                 val ticketResults = dateReconciler.dateAliases(drawDayKey)
                     .flatMap(resultsRepository::getResultsForDate)
                     .distinctBy { it.lotteryId.ifBlank { it.lotteryName.orEmpty() } }
-                val validation = validationEngine.validate(
-                    ticket = canonicalRefreshedTicket,
-                    results = ticketResults,
-                    prizeConfig = cashierPrizePayoutRepository.resolveForTicket(
-                        ownerId = canonicalRefreshedTicket.adminId ?: activeSession.adminId ?: activeSession.userId,
-                        sellerUser = canonicalRefreshedTicket.sellerUser,
-                    ),
-                )
+                val validation = if (canonicalRefreshedTicket.totalPrize > 0.0) {
+                    PrizeValidationOutcome(
+                        ticket = canonicalRefreshedTicket,
+                        totalPrize = canonicalRefreshedTicket.totalPrize,
+                        matchCount = canonicalRefreshedTicket.winningDetails.size,
+                        didValidate = false,
+                    )
+                } else {
+                    validationEngine.validate(
+                        ticket = canonicalRefreshedTicket,
+                        results = ticketResults,
+                        prizeConfig = cashierPrizePayoutRepository.resolveForTicket(
+                            ownerId = canonicalRefreshedTicket.adminId ?: activeSession.adminId ?: activeSession.userId,
+                            sellerUser = canonicalRefreshedTicket.sellerUser,
+                        ),
+                    )
+                }
                 val protectedTicket = resolveOfficialTicketAfterLocalValidation(
                     current = ticketState ?: canonicalRefreshedTicket,
                     canonical = canonicalRefreshedTicket,
@@ -1027,7 +1036,18 @@ internal fun buildOfficialTicketViewState(
     actorLabelsByKey: Map<String, String> = emptyMap(),
 ): OfficialTicketViewState {
     val groups = ticket.plays
-        .groupBy { play -> play.lotteryName?.takeIf { it.isNotBlank() } ?: "Sin lotería" }
+        .groupBy { play ->
+            val primary = play.lotteryName?.takeIf { it.isNotBlank() }
+                ?: play.lotteryId?.takeIf { it.isNotBlank() }
+                ?: "Sin lotería"
+            if (officialTicketSnapshotPlayTypeLabel(play.playType) == "SP") {
+                val secondary = play.secondaryLotteryName?.takeIf { it.isNotBlank() }
+                    ?: play.secondaryLotteryId?.takeIf { it.isNotBlank() }
+                if (secondary.isNullOrBlank()) primary else "$primary / $secondary"
+            } else {
+                primary
+            }
+        }
         .map { (lotteryName, plays) ->
             OfficialTicketLotteryGroup(
                 lotteryName = lotteryName,
@@ -1068,9 +1088,9 @@ internal fun resolveOfficialTicketAfterLocalValidation(
 ): TicketRecord {
     val validated = if (validation.didValidate) validation.ticket else canonical
     val protectedSource = resolveInitialOfficialTicket(current, canonical) ?: current
-    val currentHasPendingPrize = protectedSource.isOfficialPayRelevant() && !protectedSource.isPaidStatus()
+    val currentHasConfirmedPrize = protectedSource.totalPrize > 0.0
     val validationRemovedPrize = !validated.isOfficialPayRelevant() || validated.totalPrize <= 0.0
-    return if (currentHasPendingPrize && validationRemovedPrize) protectedSource else validated
+    return if (currentHasConfirmedPrize && validationRemovedPrize) protectedSource else validated
 }
 
 internal fun resolveTicketLotteryBadgeGrid(
@@ -1193,6 +1213,22 @@ internal fun resolveOfficialTicketBitmapPreviewPolicy(
     )
 }
 
+internal enum class OfficialTicketShareFallbackKind {
+    COMPACT_THERMAL,
+    OFFICIAL_PAGED,
+}
+
+internal fun resolveOfficialTicketShareFallbackKind(
+    ticket: TicketRecord,
+    estimatedHeightPx: Int,
+): OfficialTicketShareFallbackKind {
+    return if (TicketDeliveryPolicy.shouldRenderPreviewBitmap(ticket, estimatedHeightPx)) {
+        OfficialTicketShareFallbackKind.COMPACT_THERMAL
+    } else {
+        OfficialTicketShareFallbackKind.OFFICIAL_PAGED
+    }
+}
+
 internal fun resolveOfficialTicketRenderCacheKey(
     ticket: TicketRecord,
     bancaName: String,
@@ -1310,18 +1346,13 @@ internal fun resolveTicketDeleteSyncOwnerKey(session: ActiveSession, ticket: Tic
 }
 
 internal fun resolveTicketRealtimeSyncOwnerKeys(session: ActiveSession, ticket: TicketRecord): List<String> {
-    return (
-        listOf(
-            ticket.adminId,
-            ticket.sellerId,
-            session.adminId,
-            session.userId,
-            ticket.adminUser,
-            ticket.sellerUser,
-            session.adminUser,
-            session.username,
-        ) + resolveOperationalOwnerKeys(session) + listOf(resolveOperationalOwnerKey(session))
-        )
+    return listOf(
+        ticket.adminId,
+        ticket.sellerId,
+        ticket.adminUser,
+        ticket.sellerUser,
+        resolveOperationalOwnerKey(session),
+    )
         .mapNotNull { value -> value?.trim()?.takeIf { it.isNotBlank() } }
         .distinctBy { it.lowercase() }
 }
@@ -1335,6 +1366,11 @@ internal fun resolveTicketBackendActorKey(session: ActiveSession): String {
         ?: session.adminUser?.takeIf { it.isNotBlank() }
         ?: session.adminId?.takeIf { it.isNotBlank() }
         ?: session.userId
+}
+
+internal fun resolveTicketActionBackendActorKey(session: ActiveSession): String {
+    return resolveOperationalOwnerKey(session).takeIf { it.isNotBlank() }
+        ?: resolveTicketBackendActorKey(session)
 }
 
 internal fun resolveTicketPayoutBackendRequest(
@@ -1450,10 +1486,19 @@ private fun TicketOfficialRouteCompact(
         val securityCode = TicketSecurity.resolveSecurityCode(currentTicket, bancaName)
         suspend fun renderBitmapsForAction(record: TicketRecord): List<Bitmap> {
             return withContext(Dispatchers.IO) {
-                runCatching {
-                    val security = TicketSecurity.resolveSecurityCode(record, bancaName)
-                    val estimatedHeight = NativeBitmapExport.estimateOfficialTicketBitmapHeight(record, security)
-                    if (TicketDeliveryPolicy.shouldRenderPreviewBitmap(record, estimatedHeight)) {
+                val security = TicketSecurity.resolveSecurityCode(record, bancaName)
+                val estimatedHeight = NativeBitmapExport.estimateOfficialTicketBitmapHeight(record, security)
+                val fallbackKind = resolveOfficialTicketShareFallbackKind(record, estimatedHeight)
+                val renderCompactFallback = {
+                    listOf(
+                        ThermalTicketRenderer().renderCompactShareBitmap(
+                            ticket = record,
+                            bancaName = bancaName,
+                        ),
+                    )
+                }
+                if (TicketDeliveryPolicy.shouldRenderPreviewBitmap(record, estimatedHeight)) {
+                    runCatching {
                         listOf(
                             NativeBitmapExport.renderOfficialTicketBitmap(
                                 context = localContext,
@@ -1464,15 +1509,32 @@ private fun TicketOfficialRouteCompact(
                                 forceCompactLayout = true,
                             ),
                         )
-                    } else {
+                    }.getOrElse {
+                        runCatching { renderCompactFallback() }.getOrDefault(emptyList())
+                    }
+                } else {
+                    runCatching {
                         listOf(
                             ThermalTicketRenderer().renderCompactShareBitmap(
                                 ticket = record,
                                 bancaName = bancaName,
                             ),
                         )
+                    }.getOrElse {
+                        when (fallbackKind) {
+                            OfficialTicketShareFallbackKind.COMPACT_THERMAL -> runCatching { renderCompactFallback() }.getOrDefault(emptyList())
+                            OfficialTicketShareFallbackKind.OFFICIAL_PAGED -> runCatching {
+                                NativeBitmapExport.renderOfficialTicketBitmaps(
+                                    context = localContext,
+                                    ticket = record,
+                                    bancaName = bancaName,
+                                    securityCode = security,
+                                    bancaLogoUri = bancaLogoUri,
+                                )
+                            }.getOrDefault(emptyList())
+                        }
                     }
-                }.getOrDefault(emptyList())
+                }
             }
         }
         fun preparingTicketMessage(record: TicketRecord): String {
@@ -1661,13 +1723,18 @@ private fun TicketOfficialRouteCompact(
         val lotteryCatalog = remember(currentTicket.id) { StaticLotteryCatalogRepository() }
         val lotteryBadges = remember(currentTicket.plays) {
             currentTicket.plays
-                .mapNotNull { play ->
-                    val name = play.lotteryName?.takeIf { it.isNotBlank() } ?: return@mapNotNull null
-                    val logo = lotteryCatalog.getLotteryById(play.lotteryId.orEmpty())
-                        ?: lotteryCatalog.getLotteryByName(name)
-                    Triple(name, logo?.logoAssetPath, play.lotteryId.orEmpty())
+                .flatMap { play ->
+                    listOf(
+                        play.lotteryName to play.lotteryId,
+                        play.secondaryLotteryName to play.secondaryLotteryId,
+                    ).mapNotNull { (rawName, rawId) ->
+                        val name = rawName?.takeIf { it.isNotBlank() } ?: return@mapNotNull null
+                        val logo = lotteryCatalog.getLotteryById(rawId.orEmpty())
+                            ?: lotteryCatalog.getLotteryByName(name)
+                        Triple(name, logo?.logoAssetPath, rawId.orEmpty())
+                    }
                 }
-                .distinctBy { it.first }
+                .distinctBy { it.third.ifBlank { it.first.lowercase(Locale.getDefault()) } }
                 .take(6)
         }
         val lotteryBadgeGrid = resolveTicketLotteryBadgeGrid(lotteryBadges.size, visual.windowMode)
@@ -2404,6 +2471,20 @@ private fun WinningDetailRow(detail: com.lotterynet.pro.core.model.WinningPlayDe
 }
 
 private fun winningHitLabel(raw: String): String {
+    val tokens = raw
+        .split(',', '|')
+        .map { it.trim() }
+        .filter { it.isNotBlank() }
+    if (tokens.isEmpty()) return "ganadora"
+    val labels = tokens.map(::winningSingleHitLabel)
+    return when (labels.size) {
+        1 -> labels.single()
+        2 -> "${labels[0]} y ${labels[1]}"
+        else -> labels.dropLast(1).joinToString(", ") + " y " + labels.last()
+    }
+}
+
+private fun winningSingleHitLabel(raw: String): String {
     return when (raw.trim().lowercase(Locale.US)) {
         "1" -> "primera"
         "2" -> "segunda"

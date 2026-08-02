@@ -24,6 +24,7 @@ class TicketPrizeReconciler(
     private val validationEngine: PrizeValidationEngine = PrizeValidationEngine(),
     private val prizeConfigResolver: ((TicketRecord) -> PrizeTableConfig)? = null,
     private val onTicketUpdated: ((TicketRecord) -> Unit)? = null,
+    private val onTicketsUpdated: ((List<TicketRecord>) -> Unit)? = null,
 ) {
     fun reconcileTicketsForDate(
         dateKey: String,
@@ -37,6 +38,7 @@ class TicketPrizeReconciler(
         var updated = 0
         var winners = 0
         var paid = 0
+        val changedTickets = mutableListOf<TicketRecord>()
 
         tickets.forEach { ticket ->
             val prizeConfig = prizeConfigResolver?.invoke(ticket) ?: prizeRepository.getConfig()
@@ -46,8 +48,18 @@ class TicketPrizeReconciler(
             if (normalized.isPaidStatus()) paid += 1
             if (outcome.didValidate && normalized != ticket) {
                 salesRepository.replaceTicket(normalized)
-                onTicketUpdated?.invoke(normalized)
+                changedTickets += normalized
                 updated += 1
+            }
+        }
+
+        if (changedTickets.isNotEmpty()) {
+            if (onTicketsUpdated != null) {
+                onTicketsUpdated.invoke(changedTickets)
+            } else {
+                changedTickets.forEach { updatedTicket ->
+                    onTicketUpdated?.invoke(updatedTicket)
+                }
             }
         }
 

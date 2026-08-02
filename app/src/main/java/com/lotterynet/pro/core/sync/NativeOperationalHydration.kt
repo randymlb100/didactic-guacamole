@@ -307,6 +307,11 @@ private fun JSONObject.toDeltaTicketJson(items: JSONArray, ownerKey: String? = n
         ?: "active"
     val adminKey = stringOrNull("admin_key").orEmpty()
     val ownerAlias = ownerKey?.trim().orEmpty()
+    val cashierKey = stringOrNull("cashier_key")
+        ?: ownerAlias.takeIf { it.startsWith("CAJ-", ignoreCase = true) }
+    val effectiveAdminKey = adminKey.ifBlank {
+        ownerAlias.takeUnless { it.startsWith("CAJ-", ignoreCase = true) }.orEmpty()
+    }
     return JSONObject().apply {
         put("id", stringOrNull("client_request_id") ?: stringOrNull("id").orEmpty())
         put("serial", stringOrNull("ticket_code") ?: stringOrNull("id").orEmpty())
@@ -314,11 +319,11 @@ private fun JSONObject.toDeltaTicketJson(items: JSONArray, ownerKey: String? = n
         put("total", numberValue("total_amount") ?: numberValue("monto") ?: 0.0)
         put("tot", numberValue("total_amount") ?: numberValue("monto") ?: 0.0)
         put("totalPrize", numberValue("payout_amount") ?: 0.0)
-        put("adminId", adminKey.ifBlank { ownerAlias })
-        put("adminUser", ownerAlias.ifBlank { adminKey })
-        put("cajeroId", stringOrNull("cashier_key").orEmpty())
-        put("vendedorId", stringOrNull("cashier_key").orEmpty())
-        put("vendedorRol", if (stringOrNull("cashier_key").isNullOrBlank()) "admin" else "cashier")
+        put("adminId", effectiveAdminKey)
+        put("adminUser", effectiveAdminKey)
+        put("cajeroId", cashierKey.orEmpty())
+        put("vendedorId", cashierKey.orEmpty())
+        put("vendedorRol", if (cashierKey.isNullOrBlank()) "admin" else "cashier")
         put("createdAtIso", createdAt.orEmpty())
         put("drawDateKey", normalizeServerDayKey(drawDate))
         put("drawDate", normalizeServerDayKey(drawDate))
@@ -442,7 +447,9 @@ internal fun filterDeletedTickets(
     deletedIds: Set<String>,
 ): List<TicketRecord> {
     if (deletedIds.isEmpty()) return tickets
-    return tickets.filterNot { ticket -> ticket.id in deletedIds }
+    return tickets.filterNot { ticket ->
+        ticket.id in deletedIds && !ticket.status.isTerminalTicketStatus()
+    }
 }
 
 internal fun filterServerVisibleTickets(
@@ -450,7 +457,17 @@ internal fun filterServerVisibleTickets(
     deletedIds: Set<String> = emptySet(),
 ): List<TicketRecord> {
     return tickets.filterNot { ticket ->
-        ticket.id in deletedIds || ticket.hasRemoteDeletedStatus()
+        (ticket.id in deletedIds && !ticket.status.isTerminalTicketStatus()) ||
+            ticket.hasRemoteDeletedStatus()
+    }
+}
+
+internal fun TicketRecord.hasMeaningfulLotteryIdentity(): Boolean {
+    return plays.any { play ->
+        !play.lotteryId.isNullOrBlank() ||
+            !play.lotteryName.isNullOrBlank() ||
+            !play.secondaryLotteryId.isNullOrBlank() ||
+            !play.secondaryLotteryName.isNullOrBlank()
     }
 }
 
@@ -486,7 +503,16 @@ private fun webTicketToRecord(json: JSONObject): TicketRecord? {
     val status = json.stringOrNull("status")
         ?: json.stringOrNull("st")
         ?: "active"
-    if (plays.isEmpty() && total > 0.0 && !status.isRemoteTicketTombstone() && !status.isTerminalTicketStatus()) {
+    if (plays.isEmpty() && total > 0.0 && !status.isRemoteTicketTombstone()) {
+        return null
+    }
+    val hasAnyLotteryIdentity = plays.any { play ->
+        !play.lotteryId.isNullOrBlank() ||
+            !play.lotteryName.isNullOrBlank() ||
+            !play.secondaryLotteryId.isNullOrBlank() ||
+            !play.secondaryLotteryName.isNullOrBlank()
+    }
+    if (plays.isNotEmpty() && !hasAnyLotteryIdentity && !status.isRemoteTicketTombstone()) {
         return null
     }
     val sellerId = json.stringOrNull("vendedorId") ?: json.stringOrNull("cajeroId")
@@ -644,7 +670,15 @@ private fun JSONObject.resolveEpochMs(): Long {
 }
 
 private fun parseIsoEpochMs(raw: String): Long? {
-    return runCatching { java.time.Instant.parse(raw).toEpochMilli() }.getOrNull()
+    val value = raw.trim()
+    return runCatching { java.time.Instant.parse(value).toEpochMilli() }.getOrNull()
+        ?: runCatching { java.time.OffsetDateTime.parse(value).toInstant().toEpochMilli() }.getOrNull()
+        ?: runCatching {
+            java.time.OffsetDateTime.parse(
+                value.replace(' ', 'T'),
+                java.time.format.DateTimeFormatter.ISO_OFFSET_DATE_TIME,
+            ).toInstant().toEpochMilli()
+        }.getOrNull()
 }
 
 private fun parseDominicanDateTime(raw: String): Long? {

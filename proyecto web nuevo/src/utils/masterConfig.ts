@@ -7,6 +7,31 @@ import {
 } from './recargasRapidasCredentials';
 import { defaultMasterSportsbookSettings, type MasterSportsbookSettings } from './userFeatureAccess';
 
+const MASTER_CONFIG_CACHE_TTL_MS = 30_000;
+type MasterConfigCacheEntry = {
+  at: number;
+  data?: unknown;
+  promise?: Promise<unknown> | null;
+};
+
+const masterConfigCache = new Map<string, MasterConfigCacheEntry>();
+
+const buildMasterConfigCacheKey = (accessToken: string | null, key: string) =>
+  `${accessToken ?? 'anon'}::${key}`;
+
+const clearMasterConfigCache = (key?: string) => {
+  if (!key) {
+    masterConfigCache.clear();
+    return;
+  }
+
+  for (const cacheKey of masterConfigCache.keys()) {
+    if (cacheKey.endsWith(`::${key}`)) {
+      masterConfigCache.delete(cacheKey);
+    }
+  }
+};
+
 export type AdminMasterConfigPrefix =
   | 'cashier_limits'
   | 'cashier_prize_payouts'
@@ -66,26 +91,58 @@ export async function getMasterConfig<T>(key: string, fallback: T): Promise<T> {
   if (!supabase) return fallback;
 
   const accessToken = getValidAccessToken();
+  const cacheKey = buildMasterConfigCacheKey(accessToken, key);
+  const cached = masterConfigCache.get(cacheKey);
+  if (cached?.promise) {
+    return cached.promise as Promise<T>;
+  }
+  if (cached && Date.now() - cached.at < MASTER_CONFIG_CACHE_TTL_MS && cached.data !== undefined) {
+    return cached.data as T;
+  }
+
   const headers: Record<string, string> = {};
   if (accessToken) {
     headers['Authorization'] = `Bearer ${accessToken}`;
   }
 
-  const { data, error } = await supabase.functions.invoke('get-master-config', {
-    headers,
-    body: { key },
+  const promise = (async () => {
+    const { data, error } = await supabase.functions.invoke('get-master-config', {
+      headers,
+      body: { key },
+    });
+
+    if (error) {
+      console.warn(`Failed to fetch master config ${key}`, error);
+      return fallback;
+    }
+
+    if (!data || typeof data !== 'object' || !('payload' in data) || data.payload == null) {
+      return fallback;
+    }
+
+    return data.payload as T;
+  })();
+
+  masterConfigCache.set(cacheKey, {
+    at: Date.now(),
+    promise,
+    data: cached?.data,
   });
 
-  if (error) {
-    console.warn(`Failed to fetch master config ${key}`, error);
-    return fallback;
+  try {
+    const result = await promise;
+    masterConfigCache.set(cacheKey, {
+      at: Date.now(),
+      data: result,
+      promise: null,
+    });
+    return result;
+  } catch (error) {
+    if (masterConfigCache.get(cacheKey)?.promise === promise) {
+      masterConfigCache.delete(cacheKey);
+    }
+    throw error;
   }
-
-  if (!data || typeof data !== 'object' || !('payload' in data) || data.payload == null) {
-    return fallback;
-  }
-
-  return data.payload as T;
 }
 
 export async function saveMasterConfig<T>(key: string, payload: T): Promise<void> {
@@ -107,6 +164,8 @@ export async function saveMasterConfig<T>(key: string, payload: T): Promise<void
   if (error) {
     throw new Error(`No se pudo guardar ${key}: ${error.message}`);
   }
+
+  clearMasterConfigCache(key);
 }
 
 const normalizeMoneyValue = (value: unknown): number => {

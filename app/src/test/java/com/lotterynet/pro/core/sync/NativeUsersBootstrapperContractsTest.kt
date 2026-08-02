@@ -1,5 +1,6 @@
 package com.lotterynet.pro.core.sync
 
+import com.lotterynet.pro.core.remote.SupabaseEdgeException
 import com.lotterynet.pro.core.users.UsersRemoteStore
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -31,6 +32,21 @@ class NativeUsersBootstrapperContractsTest {
         store.upsertUsersPayload(payload)
 
         assertEquals(payload, store.fetchUsersPayload())
+    }
+
+    @Test
+    fun `bootstrap error prefers user-facing supabase edge message`() {
+        val message = presentBootstrapError(
+            SupabaseEdgeException(
+                userMessage = "No se pudo encontrar el servidor. Revisa internet o cambia el DNS/red del equipo.",
+                technicalMessage = "Unable to resolve host",
+            ),
+        )
+
+        assertEquals(
+            "No se pudo encontrar el servidor. Revisa internet o cambia el DNS/red del equipo.",
+            message,
+        )
     }
 
     private class RecordingUsersRemoteStore : UsersRemoteStore {

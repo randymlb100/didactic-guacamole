@@ -6,7 +6,7 @@ import java.security.MessageDigest
 
 fun ticketRenderCacheKey(ticket: TicketRecord, bancaName: String, logoUri: String): String {
     val raw = buildString {
-        append("ticket|")
+        append("ticket-v2|")
         append(ticket.id).append('|')
         append(ticket.serial.orEmpty()).append('|')
         append(ticket.securityCode.orEmpty()).append('|')
@@ -18,6 +18,8 @@ fun ticketRenderCacheKey(ticket: TicketRecord, bancaName: String, logoUri: Strin
         ticket.plays.forEach { play ->
             append(play.lotteryId.orEmpty()).append(':')
             append(play.lotteryName.orEmpty()).append(':')
+            append(play.secondaryLotteryId.orEmpty()).append(':')
+            append(play.secondaryLotteryName.orEmpty()).append(':')
             append(play.playType).append(':')
             append(play.number).append(':')
             append(play.amount).append(';')

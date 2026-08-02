@@ -118,6 +118,7 @@ class ShellUiContractsTest {
 
         assertTrue(permissions.contains(android.Manifest.permission.CAMERA))
         assertTrue(permissions.contains(android.Manifest.permission.BLUETOOTH_CONNECT))
+        assertTrue(permissions.contains(android.Manifest.permission.BLUETOOTH_SCAN))
         assertTrue(permissions.contains(android.Manifest.permission.POST_NOTIFICATIONS))
     }
 
@@ -135,6 +136,7 @@ class ShellUiContractsTest {
         val status = resolvePermissionStatusMessage(
             missingPermissions = listOf(
                 android.Manifest.permission.BLUETOOTH_CONNECT,
+                android.Manifest.permission.BLUETOOTH_SCAN,
                 android.Manifest.permission.CAMERA,
             ),
         )
@@ -173,6 +175,28 @@ class ShellUiContractsTest {
         assertTrue(shouldRefreshShellDashboardOnResume(UserRole.ADMIN))
         assertTrue(shouldRefreshShellDashboardOnResume(UserRole.CASHIER))
         assertTrue(shouldRefreshShellDashboardOnResume(UserRole.SUPERVISOR))
+    }
+
+    @Test
+    fun `shell dashboard local refresh only listens to ticket storage keys`() {
+        assertTrue(isShellDashboardTicketStorageKey("tickets_day_2026-06-12"))
+        assertTrue(isShellDashboardTicketStorageKey("deleted_ticket_ids_v1"))
+        assertTrue(isShellDashboardTicketStorageKey("deleted_ticket_refs_v1"))
+        assertFalse(isShellDashboardTicketStorageKey("bv_cashier_limits_admin"))
+        assertFalse(isShellDashboardTicketStorageKey("cashier_prize_payouts_admin"))
+    }
+
+    @Test
+    fun `shell dashboard business refresh listens to tickets and recharges`() {
+        assertTrue(isShellDashboardBusinessStorageKey("tickets_day_2026-06-12"))
+        assertTrue(isShellDashboardBusinessStorageKey("lot_recharges_2026-06-12"))
+        assertFalse(isShellDashboardBusinessStorageKey("recharge_global_limit"))
+        assertFalse(isShellDashboardBusinessStorageKey("lotterynet_users"))
+    }
+
+    @Test
+    fun `shell dashboard refresh debounce stays responsive without wobble`() {
+        assertEquals(500L, SHELL_DASHBOARD_LOCAL_STORAGE_REFRESH_DELAY_MS)
     }
 
     @Test

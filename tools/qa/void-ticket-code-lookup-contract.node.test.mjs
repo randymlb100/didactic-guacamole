@@ -22,6 +22,10 @@ const scopedSnapshotCleanupMigration = readFileSync(
   "supabase/migrations/20260602105000_limit_void_snapshot_cleanup_to_ticket_owners.sql",
   "utf8",
 );
+const deleteCleanupMigration = readFileSync(
+  "supabase/migrations/20260619161000_fix_ticket_delete_snapshot_cleanup.sql",
+  "utf8",
+);
 
 test("void-ticket can resolve app visible LN ticket codes", () => {
   assert.match(migration, /ticket_code = nullif\(p_body ->> 'ticketId', ''\)/);
@@ -60,4 +64,11 @@ test("void snapshot cleanup is scoped to ticket owners for fast legacy deletes",
   assert.match(scopedSnapshotCleanupMigration, /where s\.owner_key = any\(v_owner_keys\)/);
   assert.doesNotMatch(scopedSnapshotCleanupMigration, /or s\.owner_key = any/);
   assert.doesNotMatch(scopedSnapshotCleanupMigration, /where exists \(/);
+});
+
+test("ticket delete cleanup trigger removes server deletes from owner snapshots", () => {
+  assert.match(deleteCleanupMigration, /lotterynet_cleanup_ticket_owner_snapshot_on_delete/);
+  assert.match(deleteCleanupMigration, /ln_mark_owner_snapshots_ticket_deleted\(identifiers, owner_keys\)/);
+  assert.match(deleteCleanupMigration, /after update of status, estado, deleted_at, updated_at or delete/);
+  assert.match(deleteCleanupMigration, /revoke all on function public\.lotterynet_cleanup_ticket_owner_snapshot_on_delete/);
 });

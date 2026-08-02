@@ -90,7 +90,8 @@ class PrinterActivity : AppCompatActivity() {
         ActivityResultContracts.RequestMultiplePermissions(),
     ) { grants ->
         bluetoothPermissionCallback?.invoke(
-            grants[Manifest.permission.BLUETOOTH_CONNECT] == true,
+            grants[Manifest.permission.BLUETOOTH_CONNECT] == true &&
+                grants[Manifest.permission.BLUETOOTH_SCAN] == true,
         )
         bluetoothPermissionCallback = null
     }
@@ -189,8 +190,13 @@ class PrinterActivity : AppCompatActivity() {
         return checkSelfPermission(Manifest.permission.BLUETOOTH_CONNECT) == PackageManager.PERMISSION_GRANTED
     }
 
+    private fun hasBluetoothScanPermission(): Boolean {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) return true
+        return checkSelfPermission(Manifest.permission.BLUETOOTH_SCAN) == PackageManager.PERMISSION_GRANTED
+    }
+
     private fun hasBluetoothPermissions(): Boolean {
-        return hasBluetoothConnectPermission()
+        return hasBluetoothConnectPermission() && hasBluetoothScanPermission()
     }
 
     private fun requestBluetoothPermission(callback: (Boolean) -> Unit) {
@@ -202,6 +208,7 @@ class PrinterActivity : AppCompatActivity() {
         bluetoothPermissionLauncher.launch(
             arrayOf(
                 Manifest.permission.BLUETOOTH_CONNECT,
+                Manifest.permission.BLUETOOTH_SCAN,
             ),
         )
     }

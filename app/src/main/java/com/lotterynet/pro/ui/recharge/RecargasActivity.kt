@@ -2,9 +2,11 @@ package com.lotterynet.pro.ui.recharge
 
 import android.content.Intent
 import android.os.Bundle
+import android.util.Log
 import android.widget.Toast
 import androidx.activity.compose.setContent
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.lifecycleScope
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -37,6 +39,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -59,6 +62,7 @@ import com.lotterynet.pro.core.model.UserAccount
 import com.lotterynet.pro.core.model.UserRole
 import com.lotterynet.pro.core.auth.SupabaseSessionTokenProvider
 import com.lotterynet.pro.core.remote.SupabaseEdgeException
+import com.lotterynet.pro.core.realtime.LotterynetRealtimeClient
 import com.lotterynet.pro.core.recharge.recargasrapidas.RecargasRapidasBackendClient
 import com.lotterynet.pro.core.recharge.recargasrapidas.RecargasRapidasPaqueticoInfo
 import com.lotterynet.pro.core.recharge.recargasrapidas.RecargasRapidasProvider
@@ -69,6 +73,8 @@ import com.lotterynet.pro.core.recharge.recargasrapidas.sanitizeRecargasRapidasP
 import com.lotterynet.pro.core.recharge.recargasrapidas.validateRecargasRapidasPhoneForProvider
 import com.lotterynet.pro.core.printing.BluetoothThermalPrinter
 import com.lotterynet.pro.core.printing.IntegratedThermalPrinter
+import com.lotterynet.pro.core.printing.printerRootCause
+import com.lotterynet.pro.core.printing.printerSafeMessage
 import com.lotterynet.pro.core.storage.LocalRechargeRepository
 import com.lotterynet.pro.core.storage.LocalRechargeLimitRepository
 import com.lotterynet.pro.core.storage.LocalSessionRepository
@@ -77,6 +83,7 @@ import com.lotterynet.pro.core.storage.LocalUsersRepository
 import com.lotterynet.pro.core.storage.RechargeLimitSettings
 import com.lotterynet.pro.core.master.SupabaseMasterConfigRemoteStore
 import com.lotterynet.pro.core.sync.NativeRechargeCloudSyncCoordinator
+import com.lotterynet.pro.core.users.SupabaseUsersRemoteStore
 import com.lotterynet.pro.ui.common.*
 import com.lotterynet.pro.ui.master.MasterDashboardActivity
 import com.lotterynet.pro.ui.navigation.NativeDestination
@@ -90,6 +97,7 @@ import java.util.Locale
 import java.util.TimeZone
 import java.util.UUID
 import kotlin.concurrent.thread
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -146,6 +154,12 @@ private data class PendingRechargeSale(
     val paqueticoPlan: RechargePaqueticoPlanContract?,
 )
 
+private data class RechargeSaleOutcome(
+    val nextRows: List<RechargeRecord>,
+    val voucher: RechargeVoucherState,
+    val rechargeBalanceSynced: Boolean,
+)
+
 internal fun resolveRechargeLayout(windowMode: com.lotterynet.pro.ui.common.LotteryNetWindowMode): RechargeLayoutContract {
     return when (windowMode) {
         com.lotterynet.pro.ui.common.LotteryNetWindowMode.POS_TIGHT -> RechargeLayoutContract(
@@ -198,6 +212,7 @@ internal const val RECHARGE_LIMIT_PULL_INTERVAL_MS: Long = 60_000L
 class RecargasActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        val activity = this
 
         val session = LocalSessionRepository(this).getActiveSession()
         if (redirectIfNativeDestinationBlocked(this, session?.role, NativeDestination.RECHARGE)) {
@@ -209,7 +224,13 @@ class RecargasActivity : AppCompatActivity() {
         val usersRepository = LocalUsersRepository(this)
         val rechargeLimitRepository = LocalRechargeLimitRepository(this)
         val rechargeCloudSyncCoordinator = NativeRechargeCloudSyncCoordinator(rechargeRepository)
-        val serviceStore = SupabaseMasterConfigRemoteStore()
+        val sessionTokenProvider = SupabaseSessionTokenProvider(LocalSessionRepository(this))
+        val usersRemoteStore = SupabaseUsersRemoteStore(
+            bearerTokenProvider = { sessionTokenProvider.freshAccessToken() },
+        )
+        val serviceStore = SupabaseMasterConfigRemoteStore(
+            bearerTokenProvider = { sessionTokenProvider.freshAccessToken() },
+        )
         val recargasRapidasBackend = RecargasRapidasBackendClient()
         if (!canShowRechargeAccess(resolveRechargeOwnerAccount(session, usersRepository))) {
             Toast.makeText(this, "Recargas bloqueadas por Master.", Toast.LENGTH_SHORT).show()
@@ -228,9 +249,20 @@ class RecargasActivity : AppCompatActivity() {
 
         setContent {
             LotteryNetComposeTheme {
+                val cashierDisplayNames = remember {
+                    (usersRepository.getCashiers() + usersRepository.getAdmins())
+                        .flatMap { account ->
+                            (listOf(account.id, account.user) + listOfNotNull(account.authUserId))
+                                .filter { it.isNotBlank() }
+                                .map { it.trim().lowercase(Locale.US) to account.displayName?.trim().orEmpty() }
+                        }
+                        .filter { it.second.isNotBlank() }
+                        .toMap()
+                }
                 RecargasRoute(
                     session = session,
                     initialRows = initialRows,
+                    cashierDisplayNames = cashierDisplayNames,
                     initialBalanceState = resolveRechargeBalanceState(session, usersRepository),
                     initialLimitSettings = rechargeLimitRepository.getSettings(),
                     onShare = { rows ->
@@ -254,9 +286,6 @@ class RecargasActivity : AppCompatActivity() {
                         shareRechargeVoucher(voucher)
                     },
                     onConsultPaqueticos = { provider, phone ->
-                        val freshBearerToken = SupabaseSessionTokenProvider(
-                            LocalSessionRepository(this),
-                        ).freshAccessToken()
                         recargasRapidasBackend.getPaqueticosInfo(
                             JSONObject()
                                 .put("userId", session.userId)
@@ -267,103 +296,140 @@ class RecargasActivity : AppCompatActivity() {
                                 .put("ownerAccountId", resolveRechargeBalanceState(session, usersRepository).ownerAccountId)
                                 .put("providerId", provider.id)
                                 .put("phone", sanitizeRecargasRapidasPhone(phone)),
-                            bearerToken = freshBearerToken,
+                            bearerToken = sessionTokenProvider.freshAccessToken(),
                         )
                     },
                     onSubmit = { provider, mode, phone, amount, paqueticoPlan, onRowsChanged, onSyncResult, onVoucherReady ->
-                        val balanceState = resolveRechargeBalanceState(session, usersRepository)
-                        val validation = validateRechargeSubmission(
-                            amount = amount,
-                            balanceState = balanceState,
-                            limitSettings = rechargeLimitRepository.getSettings(),
-                        )
-                        if (validation != null) {
-                            Toast.makeText(this, validation, Toast.LENGTH_SHORT).show()
-                            onSyncResult(OperationalFeedback.error(validation))
-                            return@RecargasRoute
-                        }
-                        onSyncResult(OperationalFeedback.syncPending("Procesando ${mode.label.lowercase(Locale.US)} en Recargas Rapidas..."))
-                        thread(name = "native-recargas-rapidas-sale") {
-                            val clientRequestId = "rec-${UUID.randomUUID()}"
-                            val purchase = runCatching {
-                                val freshBearerToken = SupabaseSessionTokenProvider(
-                                    LocalSessionRepository(this),
-                                ).freshAccessToken()
-                                recargasRapidasBackend.executeSale(
-                                    buildRecargasRapidasSaleRequestJson(
-                                        session = session,
-                                        ownerAccountId = balanceState.ownerAccountId,
+                        lifecycleScope.launch {
+                            val balanceState = refreshRechargeBalanceStateOffMain(
+                                dispatcher = Dispatchers.IO,
+                                refreshUsersPayload = { usersRemoteStore.refreshUsersPayload(forceRemote = true) },
+                                cacheUsersPayload = usersRepository::cacheRawPayload,
+                                resolveState = { resolveRechargeBalanceState(session, usersRepository) },
+                            )
+                            var validation = withContext(Dispatchers.IO) {
+                                validateRechargeSubmission(
+                                    amount = amount,
+                                    balanceState = balanceState,
+                                    limitSettings = rechargeLimitRepository.getSettings(),
+                                    role = session.role,
+                                )
+                            }
+                            val refreshedBalanceState = if (shouldRefreshRechargeBalanceValidation(validation)) {
+                                refreshRechargeBalanceStateOffMain(
+                                    dispatcher = Dispatchers.IO,
+                                    refreshUsersPayload = { usersRemoteStore.refreshUsersPayload(forceRemote = true) },
+                                    cacheUsersPayload = usersRepository::cacheRawPayload,
+                                    resolveState = { resolveRechargeBalanceState(session, usersRepository) },
+                                )
+                            } else {
+                                balanceState
+                            }
+                            if (refreshedBalanceState !== balanceState) {
+                                validation = withContext(Dispatchers.IO) {
+                                    validateRechargeSubmission(
+                                        amount = amount,
+                                        balanceState = refreshedBalanceState,
+                                        limitSettings = rechargeLimitRepository.getSettings(),
+                                        role = session.role,
+                                    )
+                                }
+                            }
+                            if (validation != null) {
+                                Toast.makeText(activity, validation, Toast.LENGTH_SHORT).show()
+                                onSyncResult(OperationalFeedback.error(validation))
+                                return@launch
+                            }
+                            onSyncResult(OperationalFeedback.syncPending("Procesando ${mode.label.lowercase(Locale.US)} en Recargas Rapidas..."))
+                            val purchaseOutcome = runCatching {
+                                withContext(Dispatchers.IO) {
+                                    val clientRequestId = "rec-${UUID.randomUUID()}"
+                                    val purchase = runCatching {
+                                        recargasRapidasBackend.executeSale(
+                                            buildRecargasRapidasSaleRequestJson(
+                                                session = session,
+                                                ownerAccountId = refreshedBalanceState.ownerAccountId,
+                                                provider = provider.toContract(),
+                                                mode = mode,
+                                                phone = phone,
+                                                amount = amount,
+                                                paqueticoPlan = paqueticoPlan,
+                                                clientRequestId = clientRequestId,
+                                            ),
+                                            bearerToken = sessionTokenProvider.freshAccessToken(),
+                                        )
+                                    }
+                                    val error = purchase.exceptionOrNull()
+                                    if (error != null) {
+                                        throw IllegalStateException(resolveRechargeSaleErrorMessage(error), error)
+                                    }
+                                    val now = System.currentTimeMillis()
+                                    val purchaseResponse = purchase.getOrThrow()
+                                    val rejection = validateRecargasRapidasSaleResponse(purchaseResponse)
+                                    if (rejection != null) {
+                                        throw IllegalStateException(rejection)
+                                    }
+                                    val record = buildRechargeSaleRecord(
                                         provider = provider.toContract(),
                                         mode = mode,
                                         phone = phone,
                                         amount = amount,
-                                        paqueticoPlan = paqueticoPlan,
-                                        clientRequestId = clientRequestId,
-                                    ),
-                                    bearerToken = freshBearerToken,
-                                )
+                                        userId = session.userId,
+                                        userName = resolveRechargeOperatorLabel(session, usersRepository),
+                                        adminId = resolveAdminId(session),
+                                        adminUser = resolveAdminUser(session),
+                                        now = now,
+                                        id = purchaseResponse.optString("localId").ifBlank { clientRequestId },
+                                        status = "completed",
+                                        providerReference = extractRecargasRapidasReference(purchaseResponse),
+                                    )
+                                    val rechargeBalanceSynced = discountRechargeBalance(session, usersRepository, usersRemoteStore, amount)
+                                    rechargeRepository.saveRecharge(record)
+                                    val nextRows = rechargeRepository
+                                        .getRechargesForActor(dayKey, session.userId)
+                                        .sortedByDescending { it.createdAtEpochMs }
+                                    rechargeCloudSyncCoordinator.hydrateOwner(ownerKey)
+                                    val voucher = RechargeVoucherState(
+                                        record = record,
+                                        bancaName = session.banca.orEmpty(),
+                                        operatorName = resolveRechargeOperatorLabel(session, usersRepository),
+                                        saleLabel = mode.label,
+                                        providerNewBalance = extractRecargasRapidasNewBalance(purchaseResponse),
+                                        providerBillNumber = extractRecargasRapidasBillNumber(purchaseResponse),
+                                        printerAvailable = resolveRechargeVoucherPrintTarget(
+                                            integratedAvailable = IntegratedThermalPrinter.isAvailable(activity),
+                                            selectedBluetoothAddress = LocalThermalPrinterRepository(activity).getPrefs().selectedPrinterAddress,
+                                        ) != RechargeVoucherPrintTarget.NONE,
+                                    )
+                                    RechargeSaleOutcome(
+                                        nextRows = nextRows,
+                                        voucher = voucher,
+                                        rechargeBalanceSynced = rechargeBalanceSynced,
+                                    )
+                                }
                             }
-                            val error = purchase.exceptionOrNull()
-                            if (error != null) {
-                                runOnUiThread {
-                                    val message = resolveRechargeSaleErrorMessage(error)
-                                    Toast.makeText(this, message, Toast.LENGTH_LONG).show()
+                            purchaseOutcome
+                                .onSuccess { outcome ->
+                                    Toast.makeText(
+                                        activity,
+                                        "${mode.label} completado: ${provider.label} ${formatMoney(amount)}",
+                                        Toast.LENGTH_SHORT,
+                                    ).show()
+                                    onRowsChanged(outcome.nextRows)
+                                    onSyncResult(
+                                        if (outcome.rechargeBalanceSynced) {
+                                            OperationalFeedback.saved("${mode.label} completado por servidor.")
+                                        } else {
+                                            OperationalFeedback.error("La venta quedó registrada, pero el saldo de recargas no se confirmó en servidor.")
+                                        },
+                                    )
+                                    onVoucherReady(outcome.voucher)
+                                }
+                                .onFailure { throwable ->
+                                    val message = throwable.message ?: "No se pudo completar la recarga."
+                                    Toast.makeText(activity, message, Toast.LENGTH_LONG).show()
                                     onSyncResult(OperationalFeedback.error(message))
                                 }
-                                return@thread
-                            }
-                            val now = System.currentTimeMillis()
-                            val purchaseResponse = purchase.getOrThrow()
-                            val rejection = validateRecargasRapidasSaleResponse(purchaseResponse)
-                            if (rejection != null) {
-                                runOnUiThread {
-                                    Toast.makeText(this, rejection, Toast.LENGTH_LONG).show()
-                                    onSyncResult(OperationalFeedback.error(rejection))
-                                }
-                                return@thread
-                            }
-                            val record = buildRechargeSaleRecord(
-                                provider = provider.toContract(),
-                                mode = mode,
-                                phone = phone,
-                                amount = amount,
-                                userId = session.userId,
-                                userName = session.username,
-                                adminId = resolveAdminId(session),
-                                adminUser = resolveAdminUser(session),
-                                now = now,
-                                id = purchaseResponse.optString("localId").ifBlank { clientRequestId },
-                                status = "completed",
-                                providerReference = extractRecargasRapidasReference(purchaseResponse),
-                            )
-                            discountRechargeBalance(session, usersRepository, amount)
-                            rechargeRepository.saveRecharge(record)
-                            val nextRows = rechargeRepository
-                                .getRechargesForActor(dayKey, session.userId)
-                                .sortedByDescending { it.createdAtEpochMs }
-                            rechargeCloudSyncCoordinator.hydrateOwner(ownerKey)
-                            val voucher = RechargeVoucherState(
-                                record = record,
-                                bancaName = session.banca.orEmpty(),
-                                operatorName = session.username,
-                                saleLabel = mode.label,
-                                providerNewBalance = extractRecargasRapidasNewBalance(purchaseResponse),
-                                providerBillNumber = extractRecargasRapidasBillNumber(purchaseResponse),
-                                printerAvailable = resolveRechargeVoucherPrintTarget(
-                                    integratedAvailable = IntegratedThermalPrinter.isAvailable(this),
-                                    selectedBluetoothAddress = LocalThermalPrinterRepository(this).getPrefs().selectedPrinterAddress,
-                                ) != RechargeVoucherPrintTarget.NONE,
-                            )
-                            runOnUiThread {
-                                Toast.makeText(
-                                    this,
-                                    "${mode.label} completado: ${provider.label} ${formatMoney(amount)}",
-                                    Toast.LENGTH_SHORT,
-                                ).show()
-                                onRowsChanged(nextRows)
-                                onSyncResult(OperationalFeedback.saved("${mode.label} completado por servidor."))
-                                onVoucherReady(voucher)
-                            }
                         }
                     },
                     onSaveLimits = { settings ->
@@ -406,6 +472,14 @@ class RecargasActivity : AppCompatActivity() {
                             runOnUiThread { onApplied(latest) }
                         }
                     },
+                    onRefreshBalance = { onApplied ->
+                        thread(name = "recharge-users-live-pull") {
+                            usersRemoteStore.refreshUsersPayload(forceRemote = true)?.let(usersRepository::cacheRawPayload)
+                            val latest = resolveRechargeBalanceState(session, usersRepository)
+                            runOnUiThread { onApplied(latest) }
+                        }
+                    },
+                    realtimeTokenProvider = { sessionTokenProvider.freshAccessToken() },
                 )
             }
         }
@@ -416,6 +490,7 @@ class RecargasActivity : AppCompatActivity() {
 private fun RecargasRoute(
     session: ActiveSession,
     initialRows: List<RechargeRecord>,
+    cashierDisplayNames: Map<String, String> = emptyMap(),
     initialBalanceState: RechargeBalanceState,
     initialLimitSettings: RechargeLimitSettings,
     onShare: (List<RechargeRecord>) -> Unit,
@@ -426,6 +501,8 @@ private fun RecargasRoute(
     onSubmit: (RechargeProvider, RechargeSellMode, String, Double, RechargePaqueticoPlanContract?, (List<RechargeRecord>) -> Unit, (OperationalFeedback) -> Unit, (RechargeVoucherState) -> Unit) -> Unit,
     onSaveLimits: (RechargeLimitSettings) -> RechargeLimitSettings,
     onRefreshLimits: ((RechargeLimitSettings) -> Unit) -> Unit,
+    onRefreshBalance: ((RechargeBalanceState) -> Unit) -> Unit,
+    realtimeTokenProvider: () -> String?,
 ) {
     val visual = rememberLotteryNetVisualSpec()
     val layout = resolveRechargeLayout(visual.windowMode)
@@ -445,11 +522,34 @@ private fun RecargasRoute(
     val statusMessage = feedback.message
     val activeProviders = providersForMode(selectedMode)
     val scope = rememberCoroutineScope()
+    val realtimeClient = remember { LotterynetRealtimeClient() }
+
+    DisposableEffect(Unit) {
+        val subscriptions = if (realtimeClient.isConfigured()) {
+            realtimeClient.subscribeUsersStateSignals(
+                bearerTokenProvider = realtimeTokenProvider,
+            ) {
+                onRefreshBalance { latest -> balanceState = latest }
+            }
+        } else {
+            emptyList()
+        }
+        onDispose {
+            subscriptions.forEach { it.close() }
+            realtimeClient.shutdown()
+        }
+    }
+
+    LaunchedEffect(session.userId, session.adminId) {
+        onRefreshBalance { latest -> balanceState = latest }
+    }
 
     LaunchedEffect(session.userId, session.adminId) {
         while (true) {
-            onRefreshLimits { latest ->
-                limitSettings = latest
+            if (realtimeClient.shouldUsePollingFallback()) {
+                onRefreshLimits { latest ->
+                    limitSettings = latest
+                }
             }
             delay(RECHARGE_LIMIT_PULL_INTERVAL_MS)
         }
@@ -767,7 +867,7 @@ private fun RecargasRoute(
                         ) {
                             when (resolveRechargeHistoryLayout()) {
                                 RechargeHistoryLayout.EMBEDDED_ROWS -> rows.forEach { row ->
-                                    RechargeHistoryRow(row = row, layout = layout)
+                                    RechargeHistoryRow(row = row, layout = layout, viewerRole = session.role, cashierDisplayNames = cashierDisplayNames)
                                 }
                             }
                         }
@@ -930,7 +1030,12 @@ private fun PaqueticoPlanList(
 }
 
 @Composable
-private fun RechargeHistoryRow(row: RechargeRecord, layout: RechargeLayoutContract) {
+private fun RechargeHistoryRow(
+    row: RechargeRecord,
+    layout: RechargeLayoutContract,
+    viewerRole: UserRole,
+    cashierDisplayNames: Map<String, String> = emptyMap(),
+) {
     val visual = rememberLotteryNetVisualSpec()
     CompactPanel(
         modifier = Modifier.padding(horizontal = 12.dp),
@@ -961,6 +1066,11 @@ private fun RechargeHistoryRow(row: RechargeRecord, layout: RechargeLayoutContra
                     )
                     Text(
                         text = "${row.phoneNumber ?: "-"} · ${formatStamp(row.createdAtEpochMs)}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = visual.colors.muted,
+                    )
+                    Text(
+                        text = rechargeHistoryOperatorLabel(row, viewerRole, cashierDisplayNames),
                         style = MaterialTheme.typography.bodySmall,
                         color = visual.colors.muted,
                     )
@@ -1095,16 +1205,18 @@ private fun RecargasHeader(
                     )
                 }
                 Text(
-                    text = formatCompactMoney(balanceState.availableBalance),
+                    text = if (session.role == UserRole.CASHIER) "Operativa" else formatCompactMoney(balanceState.availableBalance),
                     style = MaterialTheme.typography.labelLarge,
                     color = if (balanceState.availableBalance > 0) gainColor() else lossColor(),
                 )
             }
-            Text(
-                text = "Queda ${formatCompactMoney(balanceState.availableBalance)} de ${formatCompactMoney(balanceState.assignedBalance)} asignado por Master",
-                style = MaterialTheme.typography.labelSmall,
-                color = visual.colors.muted,
-            )
+            rechargeFundDisplayText(session.role, balanceState.assignedBalance, balanceState.availableBalance)?.let { fundText ->
+                Text(
+                    text = fundText,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = visual.colors.muted,
+                )
+            }
             statusMessage?.let {
                 Text(
                     text = it,
@@ -1126,12 +1238,14 @@ private fun RecargasHeader(
                         label = "Operaciones",
                         value = actorCount.toString(),
                     )
-                    HeaderMetric(
-                        modifier = Modifier.fillMaxWidth(),
-                        icon = Icons.Rounded.Wallet,
-                        label = "Disponible",
-                        value = formatCompactMoney(balanceState.availableBalance),
-                    )
+                    if (session.role != UserRole.CASHIER) {
+                        HeaderMetric(
+                            modifier = Modifier.fillMaxWidth(),
+                            icon = Icons.Rounded.Wallet,
+                            label = "Disponible",
+                            value = formatCompactMoney(balanceState.availableBalance),
+                        )
+                    }
                 }
             }
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -1452,6 +1566,23 @@ private fun resolveAdminUser(session: ActiveSession): String? {
     }
 }
 
+private fun resolveRechargeOperatorLabel(
+    session: ActiveSession,
+    usersRepository: LocalUsersRepository,
+): String {
+    val actorAccount = usersRepository.findByIdOrUser(session.userId)
+        ?: usersRepository.findByIdOrUser(session.username)
+    return listOfNotNull(
+        actorAccount?.displayName?.takeIf { it.isNotBlank() },
+        actorAccount?.banca?.takeIf { it.isNotBlank() },
+        actorAccount?.ownerName?.takeIf { it.isNotBlank() },
+        actorAccount?.user?.takeIf { it.isNotBlank() },
+        session.banca?.takeIf { it.isNotBlank() },
+        session.username.takeIf { it.isNotBlank() },
+        session.adminUser?.takeIf { it.isNotBlank() },
+    ).firstOrNull() ?: "Recarga"
+}
+
 internal fun resolveRechargeOwnerAccount(
     session: ActiveSession,
     usersRepository: LocalUsersRepository,
@@ -1586,10 +1717,30 @@ internal fun resolveRechargeAccessState(
     )
 }
 
+internal fun refreshRechargeBalanceState(
+    refreshUsersPayload: () -> String?,
+    cacheUsersPayload: (String) -> Unit,
+    resolveState: () -> RechargeBalanceState,
+): RechargeBalanceState {
+    refreshUsersPayload()?.let(cacheUsersPayload)
+    return resolveState()
+}
+
+internal suspend fun refreshRechargeBalanceStateOffMain(
+    dispatcher: CoroutineDispatcher = Dispatchers.IO,
+    refreshUsersPayload: () -> String?,
+    cacheUsersPayload: (String) -> Unit,
+    resolveState: () -> RechargeBalanceState,
+): RechargeBalanceState = withContext(dispatcher) {
+    refreshUsersPayload()?.let(cacheUsersPayload)
+    resolveState()
+}
+
 internal fun validateRechargeSubmission(
     amount: Double,
     balanceState: RechargeBalanceState,
     limitSettings: RechargeLimitSettings,
+    role: UserRole = UserRole.ADMIN,
 ): String? {
     val fundDebitAmount = resolveRechargeFundDebitAmount(amount)
     if (!balanceState.enabled) {
@@ -1607,13 +1758,32 @@ internal fun validateRechargeSubmission(
         return "Saldo de recargas agotado para ${balanceState.ownerLabel}."
     }
     if (fundDebitAmount > balanceState.availableBalance) {
-        return "Saldo insuficiente. Disponible: ${formatMoney(balanceState.availableBalance)}"
+        return if (role == UserRole.CASHIER) {
+            "Saldo de recargas insuficiente. Contacta al administrador."
+        } else {
+            "Saldo insuficiente. Disponible: ${formatMoney(balanceState.availableBalance)}"
+        }
     }
     val txLimit = balanceState.cashierTxLimit ?: 0.0
     if (txLimit > 0.0 && amount > txLimit) {
         return "Tope de recarga del cajero: ${formatMoney(txLimit)}"
     }
     return null
+}
+
+internal fun shouldRefreshRechargeBalanceValidation(validation: String?): Boolean {
+    val message = validation?.lowercase().orEmpty()
+    return message.contains("saldo") || message.contains("bloquead")
+}
+
+internal fun rechargeFundDisplayText(
+    role: UserRole,
+    assigned: Double,
+    available: Double,
+): String? {
+    if (role == UserRole.CASHIER) return null
+    return "Queda $${com.lotterynet.pro.core.format.formatWholeAmount(available)} de " +
+        "$${com.lotterynet.pro.core.format.formatWholeAmount(assigned)} asignado por Master"
 }
 
 internal fun debitRechargeOwnerBalance(
@@ -1644,18 +1814,22 @@ internal fun publishRechargeBalancePayload(
 private fun discountRechargeBalance(
     session: ActiveSession,
     usersRepository: LocalUsersRepository,
+    usersRemoteStore: SupabaseUsersRemoteStore,
     amount: Double,
-) {
+) : Boolean {
     val ownerAccount = when (session.role) {
         UserRole.ADMIN -> usersRepository.findByIdOrUser(session.userId)
             ?: usersRepository.findByIdOrUser(session.username)
         UserRole.CASHIER -> session.adminId?.let(usersRepository::findByIdOrUser)
             ?: session.adminUser?.let(usersRepository::findByIdOrUser)
         else -> null
-    } ?: return
-    usersRepository.updateAccount(
-        debitRechargeOwnerBalance(ownerAccount, amount),
-    )
+    } ?: return false
+    val updatedAccount = debitRechargeOwnerBalance(ownerAccount, amount)
+    return runCatching {
+        usersRemoteStore.updateRechargeBalance(updatedAccount.id, updatedAccount.rechargesBalance)
+    }.onSuccess {
+        usersRepository.updateAccount(updatedAccount)
+    }.isSuccess
 }
 
 private fun validateRecharge(phone: String, amount: Double): String? {
@@ -1715,28 +1889,41 @@ private fun sanitizeDecimal(value: String): String {
 }
 
 private fun RecargasActivity.printRechargeVoucher(voucher: RechargeVoucherState) {
+    val activity = this
     thread(name = "native-recharge-voucher-print") {
-        val prefs = LocalThermalPrinterRepository(this).getPrefs()
-        val content = buildRechargeVoucherText(voucher)
-        val result = when (
-            resolveRechargeVoucherPrintTarget(
-                integratedAvailable = IntegratedThermalPrinter.isAvailable(this),
-                selectedBluetoothAddress = prefs.selectedPrinterAddress,
-            )
-        ) {
-            RechargeVoucherPrintTarget.BLUETOOTH -> BluetoothThermalPrinter.printText(
-                context = this,
-                content = content,
-                prefs = prefs,
-            )
-            RechargeVoucherPrintTarget.INTEGRATED -> IntegratedThermalPrinter.printText(
-                context = this,
-                content = content,
-            )
-            RechargeVoucherPrintTarget.NONE -> BluetoothThermalPrinter.PrintResult(false, "No hay impresora conectada")
-        }
-        runOnUiThread {
-            Toast.makeText(this, result.message, if (result.success) Toast.LENGTH_SHORT else Toast.LENGTH_LONG).show()
+        try {
+            val prefs = LocalThermalPrinterRepository(activity).getPrefs()
+            val content = buildRechargeVoucherText(voucher)
+            val result = when (
+                resolveRechargeVoucherPrintTarget(
+                    integratedAvailable = IntegratedThermalPrinter.isAvailable(activity),
+                    selectedBluetoothAddress = prefs.selectedPrinterAddress,
+                )
+            ) {
+                RechargeVoucherPrintTarget.BLUETOOTH -> BluetoothThermalPrinter.printText(
+                    context = activity,
+                    content = content,
+                    prefs = prefs,
+                )
+                RechargeVoucherPrintTarget.INTEGRATED -> IntegratedThermalPrinter.printText(
+                    context = activity,
+                    content = content,
+                )
+                RechargeVoucherPrintTarget.NONE -> BluetoothThermalPrinter.PrintResult(false, "No hay impresora conectada")
+            }
+            runOnUiThread {
+                Toast.makeText(activity, result.message, if (result.success) Toast.LENGTH_SHORT else Toast.LENGTH_LONG).show()
+            }
+        } catch (error: Throwable) {
+            val rootCause = error.printerRootCause()
+            Log.w("RecargasActivity", "Recharge voucher print crashed before response", rootCause)
+            runOnUiThread {
+                Toast.makeText(
+                    activity,
+                    rootCause.printerSafeMessage("No se pudo preparar la impresión"),
+                    Toast.LENGTH_LONG,
+                ).show()
+            }
         }
     }
 }
@@ -1870,7 +2057,7 @@ private fun buildRechargesShareText(
     }
     if (rows.isEmpty()) return "$header\n\nSin recargas registradas todavia."
     val lines = rows.take(15).mapIndexed { index, row ->
-        "${index + 1}. ${row.providerName ?: "Recarga"} · ${row.phoneNumber ?: "-"} · ${formatMoney(row.amount)} · ${formatStamp(row.createdAtEpochMs)}"
+        "${index + 1}. ${row.providerName ?: "Recarga"} · ${row.phoneNumber ?: "-"} · ${formatMoney(row.amount)} · ${formatStamp(row.createdAtEpochMs)} · ${rechargeHistoryOperatorLabel(row, session.role)}"
     }
     val overflow = if (rows.size > 15) "\n... y ${rows.size - 15} mas" else ""
     return buildString {
@@ -1878,5 +2065,39 @@ private fun buildRechargesShareText(
         append("\n\n")
         append(lines.joinToString("\n"))
         append(overflow)
+    }
+}
+
+internal fun rechargeHistoryOperatorLabel(
+    row: RechargeRecord,
+    viewerRole: UserRole,
+    cashierDisplayNames: Map<String, String> = emptyMap(),
+): String {
+    val cashierName = row.userName?.trim().orEmpty()
+    val cashierId = row.userId?.trim().orEmpty()
+    val adminName = row.adminUser?.trim().orEmpty()
+    val adminId = row.adminId?.trim().orEmpty()
+    val configuredCashierName = cashierDisplayNames[cashierId.lowercase(Locale.US)]
+        ?: cashierDisplayNames[cashierName.lowercase(Locale.US)]
+    val resolvedCashier = configuredCashierName?.takeIf { it.isNotBlank() }
+        ?: cashierName.ifBlank { cashierId }
+    val resolvedAdmin = adminName.ifBlank { adminId }
+    return when (viewerRole) {
+        UserRole.MASTER -> {
+            when {
+                resolvedCashier.isNotBlank() && resolvedAdmin.isNotBlank() && !resolvedCashier.equals(resolvedAdmin, ignoreCase = true) ->
+                    "Cajero: $resolvedCashier · Admin: $resolvedAdmin"
+                resolvedCashier.isNotBlank() -> resolvedCashier
+                resolvedAdmin.isNotBlank() -> resolvedAdmin
+                else -> "-"
+            }
+        }
+        else -> {
+            when {
+                resolvedCashier.isNotBlank() -> resolvedCashier
+                resolvedAdmin.isNotBlank() -> resolvedAdmin
+                else -> "-"
+            }
+        }
     }
 }

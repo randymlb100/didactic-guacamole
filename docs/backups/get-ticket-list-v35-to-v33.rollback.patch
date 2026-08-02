@@ -1,0 +1,41 @@
+*** Reverse only the write-path optimization before redeploying get-ticket-list. ***
+
+1. In `supabase/functions/get-ticket-list/index.ts`, replace:
+
+```ts
+const mergedTickets = mergeSnapshotUploadTickets(
+```
+
+with:
+
+```ts
+const mergedTickets = mergeTickets(
+```
+
+2. Replace the `admin.rpc("lotterynet_upsert_ticket_owner_snapshot", ...)`
+block with:
+
+```ts
+const { error: upsertError } = await admin
+  .from("lotterynet_tickets_by_owner")
+  .upsert(
+    { owner_key: ownerKey, payload, updated_at: nextUpdatedAt },
+    { onConflict: "owner_key" },
+  );
+if (upsertError) throw new Error(upsertError.message);
+ownerUpdatedAtStampCache.set(ownerKey.trim().toLowerCase(), {
+  updatedAt: nextUpdatedAt,
+  cachedAtMs: Date.now(),
+});
+return json(200, { ok: true, ownerKey });
+```
+
+3. Redeploy:
+
+```powershell
+npx --yes supabase@latest functions deploy get-ticket-list `
+  --project-ref unhoulkujbtsypccpirc --no-verify-jwt --use-api --yes
+```
+
+The helper functions may remain unused during an emergency rollback; removing
+them is optional and has no runtime effect.

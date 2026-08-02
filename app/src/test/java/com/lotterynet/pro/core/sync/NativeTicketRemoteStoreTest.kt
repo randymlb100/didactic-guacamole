@@ -3,6 +3,10 @@ package com.lotterynet.pro.core.sync
 import com.sun.net.httpserver.HttpServer
 import com.lotterynet.pro.core.remote.SupabaseEdgeException
 import com.lotterynet.pro.core.remote.SupabaseEdgeFailureReason
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.Executors
+import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicInteger
 import org.json.JSONObject
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -43,6 +47,145 @@ class NativeTicketRemoteStoreTest {
     }
 
     @Test
+    fun `concurrent ticket snapshot fetches share one network request`() {
+        clearTicketUpdatedAtMemoryCache()
+        val requestCount = AtomicInteger(0)
+        val server = HttpServer.create(InetSocketAddress("127.0.0.1", 0), 0)
+        server.createContext("/") { exchange ->
+            requestCount.incrementAndGet()
+            Thread.sleep(250)
+            val responseJson = JSONObject()
+                .put("ok", true)
+                .put("payload", JSONObject().put("tickets", emptyList<String>()).put("deletedIds", emptyList<String>()))
+                .put("source", "authoritative")
+                .put("completeScope", true)
+            val response = responseJson.toString().toByteArray(Charsets.UTF_8)
+            exchange.sendResponseHeaders(200, response.size.toLong())
+            exchange.responseBody.use { it.write(response) }
+        }
+        server.start()
+        try {
+            val store = NativeTicketRemoteStore(
+                baseUrl = "http://127.0.0.1:${server.address.port}",
+                apiKey = "anon-key",
+            )
+            val startGate = CountDownLatch(1)
+            val executor = Executors.newFixedThreadPool(2)
+            try {
+                val futureA = executor.submit<Any?> {
+                    startGate.await(2, TimeUnit.SECONDS)
+                    store.fetchSnapshot("admin-1")
+                }
+                val futureB = executor.submit<Any?> {
+                    startGate.await(2, TimeUnit.SECONDS)
+                    store.fetchSnapshot("admin-1")
+                }
+                startGate.countDown()
+
+                assertEquals(0, (futureA.get(5, TimeUnit.SECONDS) as NativeTicketRemoteSnapshot).tickets.size)
+                assertEquals(0, (futureB.get(5, TimeUnit.SECONDS) as NativeTicketRemoteSnapshot).tickets.size)
+                assertEquals(1, requestCount.get())
+            } finally {
+                executor.shutdownNow()
+            }
+        } finally {
+            server.stop(0)
+            clearTicketUpdatedAtMemoryCache()
+        }
+    }
+
+    @Test
+    fun `concurrent ticket snapshot fetches stay coalesced when bearer token rotates`() {
+        clearTicketUpdatedAtMemoryCache()
+        val requestCount = AtomicInteger(0)
+        val tokenCalls = AtomicInteger(0)
+        val server = HttpServer.create(InetSocketAddress("127.0.0.1", 0), 0)
+        server.createContext("/") { exchange ->
+            requestCount.incrementAndGet()
+            Thread.sleep(250)
+            val responseJson = JSONObject()
+                .put("ok", true)
+                .put("payload", JSONObject().put("tickets", emptyList<String>()).put("deletedIds", emptyList<String>()))
+                .put("source", "authoritative")
+                .put("completeScope", true)
+            val response = responseJson.toString().toByteArray(Charsets.UTF_8)
+            exchange.sendResponseHeaders(200, response.size.toLong())
+            exchange.responseBody.use { it.write(response) }
+        }
+        server.start()
+        try {
+            val store = NativeTicketRemoteStore(
+                baseUrl = "http://127.0.0.1:${server.address.port}",
+                apiKey = "anon-key",
+                bearerTokenProvider = {
+                    if (tokenCalls.incrementAndGet() % 2 == 0) {
+                        "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ0b2tlbi0yIn0.signature"
+                    } else {
+                        "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ0b2tlbi0xIn0.signature"
+                    }
+                },
+            )
+            val startGate = CountDownLatch(1)
+            val executor = Executors.newFixedThreadPool(2)
+            try {
+                val futureA = executor.submit<Any?> {
+                    startGate.await(2, TimeUnit.SECONDS)
+                    store.fetchSnapshot("admin-1")
+                }
+                val futureB = executor.submit<Any?> {
+                    startGate.await(2, TimeUnit.SECONDS)
+                    store.fetchSnapshot("admin-1")
+                }
+                startGate.countDown()
+
+                assertEquals(0, (futureA.get(5, TimeUnit.SECONDS) as NativeTicketRemoteSnapshot).tickets.size)
+                assertEquals(0, (futureB.get(5, TimeUnit.SECONDS) as NativeTicketRemoteSnapshot).tickets.size)
+                assertEquals(1, requestCount.get())
+            } finally {
+                executor.shutdownNow()
+            }
+        } finally {
+            server.stop(0)
+            clearTicketUpdatedAtMemoryCache()
+        }
+    }
+
+    @Test
+    fun `sequential ticket snapshot fetches reuse the recent snapshot window`() {
+        clearTicketUpdatedAtMemoryCache()
+        val requestCount = AtomicInteger(0)
+        val server = HttpServer.create(InetSocketAddress("127.0.0.1", 0), 0)
+        server.createContext("/") { exchange ->
+            requestCount.incrementAndGet()
+            val responseJson = JSONObject()
+                .put("ok", true)
+                .put("payload", JSONObject().put("tickets", emptyList<String>()).put("deletedIds", emptyList<String>()))
+                .put("source", "authoritative")
+                .put("completeScope", true)
+            val response = responseJson.toString().toByteArray(Charsets.UTF_8)
+            exchange.sendResponseHeaders(200, response.size.toLong())
+            exchange.responseBody.use { it.write(response) }
+        }
+        server.start()
+        try {
+            val store = NativeTicketRemoteStore(
+                baseUrl = "http://127.0.0.1:${server.address.port}",
+                apiKey = "anon-key",
+            )
+
+            val first = store.fetchSnapshot("admin-1")
+            val second = store.fetchSnapshot("admin-1")
+
+            assertEquals(0, first.tickets.size)
+            assertEquals(0, second.tickets.size)
+            assertEquals(1, requestCount.get())
+        } finally {
+            server.stop(0)
+            clearTicketUpdatedAtMemoryCache()
+        }
+    }
+
+    @Test
     fun `basic updated-at remains anonymous compatible without bearer provider`() {
         clearTicketUpdatedAtMemoryCache()
         val requests = mutableListOf<CapturedRequest>()
@@ -60,6 +203,33 @@ class NativeTicketRemoteStoreTest {
             assertEquals("updated-at", request.body.getString("action"))
             assertEquals("Bearer anon-key", request.authorization)
             assertEquals(false, request.body.getBoolean("includeOfficialStamp"))
+        } finally {
+            server.stop(0)
+            clearTicketUpdatedAtMemoryCache()
+        }
+    }
+
+    @Test
+    fun `fresh updated-at reuses the recent value instead of hitting the server twice`() {
+        clearTicketUpdatedAtMemoryCache()
+        val requestCount = AtomicInteger(0)
+        val server = HttpServer.create(InetSocketAddress("127.0.0.1", 0), 0)
+        server.createContext("/") { exchange ->
+            requestCount.incrementAndGet()
+            val response = """{"ok":true,"updatedAt":"2026-06-04T12:00:00Z"}""".toByteArray(Charsets.UTF_8)
+            exchange.sendResponseHeaders(200, response.size.toLong())
+            exchange.responseBody.use { it.write(response) }
+        }
+        server.start()
+        try {
+            val store = NativeTicketRemoteStore(
+                baseUrl = "http://127.0.0.1:${server.address.port}",
+                apiKey = "anon-key",
+            )
+
+            assertEquals("2026-06-04T12:00:00Z", store.fetchUpdatedAtFresh("admin-1"))
+            assertEquals("2026-06-04T12:00:00Z", store.fetchUpdatedAtFresh("admin-1"))
+            assertEquals(1, requestCount.get())
         } finally {
             server.stop(0)
             clearTicketUpdatedAtMemoryCache()

@@ -4,6 +4,7 @@ import android.content.Intent
 import android.os.Bundle
 import androidx.activity.compose.setContent
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.lifecycleScope
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -15,6 +16,7 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
@@ -23,12 +25,9 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.ArrowDropDown
 import androidx.compose.material.icons.rounded.QueryStats
 import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.material.icons.rounded.Share
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -61,29 +60,36 @@ import com.lotterynet.pro.core.finance.FinanceSummary
 import com.lotterynet.pro.core.finance.LocalFinanceRepository
 import com.lotterynet.pro.core.finance.OperationalReportActorFilter
 import com.lotterynet.pro.core.finance.OperationalReportManualTarget
+import com.lotterynet.pro.core.finance.OperationalReportServerCache
 import com.lotterynet.pro.core.finance.OperationalReportRemoteLoadResult
+import com.lotterynet.pro.core.finance.OperationalReportRequestSnapshot
 import com.lotterynet.pro.core.finance.OperationalReportSyncStatus
 import com.lotterynet.pro.core.finance.OperationalReportViewState
+import com.lotterynet.pro.core.finance.RemoteOperationalReportRepository
 import com.lotterynet.pro.core.finance.buildOperationalReportActorFilters
 import com.lotterynet.pro.core.finance.buildOperationalReportShareText
 import com.lotterynet.pro.core.finance.buildOperationalReportViewState
 import com.lotterynet.pro.core.finance.operationalReportCommissionPercent
 import com.lotterynet.pro.core.finance.operationalReportMoney
+import com.lotterynet.pro.core.finance.isOperationalReportRequestCurrent
 import com.lotterynet.pro.core.finance.resolveFinanceRemoteRefreshDecision
 import com.lotterynet.pro.core.finance.resolveOperationalReportNet
+import com.lotterynet.pro.core.finance.resolveOperationalReportFilterForRefresh
+import com.lotterynet.pro.core.finance.shouldFetchOperationalReportEndpoint
+import com.lotterynet.pro.core.finance.shouldSynchronizeOperationalReportDependencies
 import com.lotterynet.pro.core.finance.updateOperationalReportManualRange
 import com.lotterynet.pro.core.export.NativeBitmapExport
+import com.lotterynet.pro.core.auth.SupabaseSessionTokenProvider
 import com.lotterynet.pro.core.model.ActiveSession
 import com.lotterynet.pro.core.model.UserRole
 import com.lotterynet.pro.core.storage.LocalRechargeRepository
-import com.lotterynet.pro.core.storage.LocalCashierSalesLimitRepository
 import com.lotterynet.pro.core.storage.LocalSalesRepository
 import com.lotterynet.pro.core.storage.LocalSessionRepository
 import com.lotterynet.pro.core.storage.LocalUsersRepository
-import com.lotterynet.pro.core.sync.CashierLimitCloudSyncCoordinator
 import com.lotterynet.pro.core.sync.NativeOperationalSyncCoordinator
 import com.lotterynet.pro.core.sync.NativeRechargeCloudSyncCoordinator
 import com.lotterynet.pro.core.sync.NativeTicketCloudSyncCoordinator
+import com.lotterynet.pro.core.sync.NativeTicketRemoteStore
 import com.lotterynet.pro.core.sync.NativeTicketSyncQueueRepository
 import com.lotterynet.pro.core.sync.NativeUsersBootstrapper
 import com.lotterynet.pro.core.sync.LocalSyncFreshnessRepository
@@ -96,10 +102,13 @@ import com.lotterynet.pro.ui.common.AppTopBar
 import com.lotterynet.pro.ui.common.BottomNavBar
 import com.lotterynet.pro.ui.common.CompactActionButton
 import com.lotterynet.pro.ui.common.CompactPanel
+import com.lotterynet.pro.ui.common.CurrentScopeCard
 import com.lotterynet.pro.ui.common.LotteryNetWindowMode
 import com.lotterynet.pro.ui.common.NativeBottomTab
+import com.lotterynet.pro.ui.common.OperationalModalSheet
 import com.lotterynet.pro.ui.common.ScreenChromeAction
 import com.lotterynet.pro.ui.common.ScreenChromeSpec
+import com.lotterynet.pro.ui.common.SectionHeader
 import com.lotterynet.pro.ui.common.gainColor
 import com.lotterynet.pro.ui.common.openBottomTab
 import com.lotterynet.pro.ui.common.rememberLotteryNetVisualSpec
@@ -115,7 +124,14 @@ import java.time.format.TextStyle as JavaTextStyle
 import java.util.Date
 import java.util.Locale
 import java.util.TimeZone
-import kotlin.concurrent.thread
+import java.util.concurrent.atomic.AtomicLong
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.ensureActive
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+
+const val EXTRA_REPORT_CASHIER_KEY = "report_cashier_key"
 
 internal data class OperationalReportLayoutContract(
     val compactHeader: Boolean,
@@ -155,6 +171,15 @@ internal fun operationalReportVisibleServerLabels(): List<String> = listOf(
     "Sin conexión usando última copia",
     "No se pudo cargar servidor",
 )
+
+internal fun operationalReportHeaderSubtitle(
+    bancaName: String,
+    report: OperationalReportViewState?,
+    fallbackDayKey: String,
+): String {
+    val range = report?.periodLabel?.takeIf { it.isNotBlank() } ?: fallbackDayKey
+    return "$bancaName · $range"
+}
 
 internal data class OperationalReportMetricSpec(
     val label: String,
@@ -206,7 +231,9 @@ class OperationalReportActivity : AppCompatActivity() {
     private lateinit var rechargeRepository: LocalRechargeRepository
     private lateinit var financeRepository: LocalFinanceRepository
     private lateinit var freshnessRepository: LocalSyncFreshnessRepository
+    private lateinit var serverReportCache: OperationalReportServerCache
     private lateinit var dayKey: String
+    private var forcedCashierKey: String? = null
 
     private var actorFiltersState by mutableStateOf<List<OperationalReportActorFilter>>(listOf(OperationalReportActorFilter.All))
     private var selectedFilterState by mutableStateOf<OperationalReportActorFilter>(OperationalReportActorFilter.All)
@@ -217,12 +244,15 @@ class OperationalReportActivity : AppCompatActivity() {
     private var reportState by mutableStateOf<OperationalReportViewState?>(null)
     private var loadingState by mutableStateOf(true)
     private var messageState by mutableStateOf("Datos locales listos")
+    private val reportRequestGeneration = AtomicLong(0L)
+    private var reportLoadJob: Job? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val activeSession = LocalSessionRepository(this).getActiveSession()
         if (redirectIfNativeDestinationBlocked(this, activeSession?.role, NativeDestination.OPERATIONAL_REPORT)) return
         session = activeSession ?: return
+        forcedCashierKey = intent?.getStringExtra(EXTRA_REPORT_CASHIER_KEY)?.trim()?.takeIf { it.isNotBlank() }
         usersRepository = LocalUsersRepository(this)
         salesRepository = LocalSalesRepository(this)
         rechargeRepository = LocalRechargeRepository(this)
@@ -232,6 +262,7 @@ class OperationalReportActivity : AppCompatActivity() {
             usersRepository = usersRepository,
         )
         freshnessRepository = LocalSyncFreshnessRepository(this)
+        serverReportCache = OperationalReportServerCache(this)
         dayKey = SimpleDateFormat("yyyy-MM-dd", Locale.US).apply {
             timeZone = TimeZone.getTimeZone("America/Santo_Domingo")
         }.format(Date())
@@ -255,26 +286,14 @@ class OperationalReportActivity : AppCompatActivity() {
                     onBack = { finish() },
                     onRefresh = { refreshReport(forceRemote = true) },
                     onShare = { shareReport() },
-                    onFilterSelected = { filter ->
-                        selectedFilterState = filter
+                    onApplyFilters = { selection ->
+                        selectedPeriodState = selection.period
+                        fromDayState = selection.fromDayKey
+                        toDayState = selection.toDayKey
+                        manualTargetState = selection.manualTarget
+                        selectedFilterState = selection.actorFilter
                         refreshReport(forceRemote = false)
                     },
-                    onPeriodSelected = { period ->
-                        selectedPeriodState = period
-                        refreshReport(forceRemote = false)
-                    },
-                    onManualTargetSelected = { target -> manualTargetState = target },
-                    onManualDaySelected = { day ->
-                        val range = updateOperationalReportManualRange(
-                            fromDayKey = fromDayState,
-                            toDayKey = toDayState,
-                            selectedDayKey = day,
-                            target = manualTargetState,
-                        )
-                        fromDayState = range.fromDayKey
-                        toDayState = range.toDayKey
-                    },
-                    onApplyManual = { refreshReport(forceRemote = false) },
                 )
             }
         }
@@ -283,77 +302,168 @@ class OperationalReportActivity : AppCompatActivity() {
     }
 
     private fun refreshReport(forceRemote: Boolean) {
+        reportLoadJob?.cancel()
+        val requestId = reportRequestGeneration.incrementAndGet()
+        val selectedPeriod = selectedPeriodState
+        val request = OperationalReportRequestSnapshot(
+            requestId = requestId,
+            preset = selectedPeriod.toPreset(),
+            fromDayKey = if (selectedPeriod == OperationalReportPeriod.MANUAL) fromDayState else null,
+            toDayKey = if (selectedPeriod == OperationalReportPeriod.MANUAL) toDayState else null,
+            selectedFilter = selectedFilterState,
+            forceRemote = forceRemote,
+        )
         loadingState = true
-        messageState = if (forceRemote) "Cargando desde servidor..." else "Datos locales listos"
+        messageState = if (forceRemote) "Cargando desde servidor..." else "Consultando servidor..."
         val appContext = applicationContext
-        thread(name = "operational-report-refresh") {
+        reportLoadJob = lifecycleScope.launch(Dispatchers.IO) {
             val ownerKey = resolveOperationalOwnerKey(session)
             val filters = buildOperationalReportActorFilters(
                 session = session,
                 cashiers = usersRepository.getCashiers(),
                 supervisors = usersRepository.getSupervisors(),
             )
-            val safeFilter = filters.firstOrNull { it.key == selectedFilterState.key } ?: OperationalReportActorFilter.All
-            val preset = selectedPeriodState.toPreset()
+            val safeFilter = resolveOperationalReportFilterForRefresh(
+                filters = filters,
+                selected = request.selectedFilter,
+                forcedCashierKey = forcedCashierKey,
+            )
+            val range = financeRepository.resolveRange(
+                preset = request.preset,
+                anchorDayKey = dayKey,
+                fromDayKey = request.fromDayKey,
+                toDayKey = request.toDayKey,
+            )
             val cacheKey = buildSyncFreshnessKey(
                 type = SyncFreshnessType.REPORT_PERIOD,
                 ownerKey = ownerKey,
                 banca = session.banca,
-                dateKey = buildReportFreshnessDateKey(preset, safeFilter),
+                dateKey = buildReportFreshnessDateKey(request, safeFilter),
             )
-            val localSummary = reportCacheProbe(preset, safeFilter)
+            val localReport = buildOperationalReportViewState(
+                repository = financeRepository,
+                session = session,
+                preset = request.preset,
+                anchorDayKey = dayKey,
+                fromDayKey = request.fromDayKey,
+                toDayKey = request.toDayKey,
+                filter = safeFilter,
+                syncStatus = OperationalReportSyncStatus.CACHED_COPY,
+            ).let { report ->
+                report.copy(syncStatus = resolveReportStatus(remoteSucceeded = false, summary = report.summary))
+            }
+            val localSummary = localReport.summary
             val decision = resolveFinanceRemoteRefreshDecision(
                 hasLocalData = reportSummaryHasData(localSummary),
-                forceRemote = forceRemote,
-                selectedDayKey = if (preset == FinancePeriodPreset.CALENDAR) toDayState else dayKey,
+                forceRemote = request.forceRemote,
+                selectedDayKey = request.toDayKey ?: dayKey,
                 todayDayKey = dayKey,
                 freshnessRecord = freshnessRepository.getRecord(cacheKey),
                 nowEpochMs = System.currentTimeMillis(),
             )
-            val remoteSucceeded = if (decision.shouldRefreshRemote) {
-                val usersResult = NativeUsersBootstrapper(usersRepository).bootstrap(forceRemoteRefresh = forceRemote)
-                CashierLimitCloudSyncCoordinator(
-                    LocalCashierSalesLimitRepository(appContext),
-                ).pullOwner(ownerKey)
+            val serverCachedReport = serverReportCache.read(cacheKey, safeFilter)
+            withContext(Dispatchers.Main) {
+                if (!isOperationalReportRequestCurrent(reportRequestGeneration.get(), request.requestId)) {
+                    return@withContext
+                }
+                actorFiltersState = filters.ifEmpty { listOf(OperationalReportActorFilter.All) }
+                selectedFilterState = safeFilter
+                reportState = serverCachedReport?.copy(syncStatus = OperationalReportSyncStatus.CACHED_COPY)
+                    ?: reportState
+                messageState = if (serverCachedReport != null) {
+                    "Copia oficial guardada; verificando servidor..."
+                } else {
+                    decision.initialMessage
+                }
+            }
+            ensureActive()
+            if (!isOperationalReportRequestCurrent(reportRequestGeneration.get(), request.requestId)) return@launch
+            val sessionTokenProvider = SupabaseSessionTokenProvider(LocalSessionRepository(appContext))
+            val shouldSynchronizeDependencies = decision.shouldRefreshRemote &&
+                shouldSynchronizeOperationalReportDependencies(request, dayKey)
+            val remoteSucceeded = if (shouldSynchronizeDependencies) {
+                val ticketRemoteStore = NativeTicketRemoteStore(
+                    bearerTokenProvider = { sessionTokenProvider.freshAccessToken() },
+                    bearerTokenRefresher = { sessionTokenProvider.forceFreshAccessToken() },
+                )
+                val usersResult = NativeUsersBootstrapper(usersRepository).bootstrap(forceRemoteRefresh = request.forceRemote)
+                ensureActive()
                 val ticketResult = NativeOperationalSyncCoordinator(
                     ticketGateway = NativeTicketCloudSyncCoordinator(
                         salesRepository = salesRepository,
                         queueRepository = NativeTicketSyncQueueRepository(appContext),
+                        remoteStore = ticketRemoteStore,
                     ),
-                ).syncTicketsForSession(session = session, force = forceRemote)
+                    remoteStampStore = ticketRemoteStore,
+                ).syncTicketsForSession(session = session, force = request.forceRemote)
+                ensureActive()
                 val rechargeResult = NativeRechargeCloudSyncCoordinator(rechargeRepository).hydrateOwner(ownerKey)
                 usersResult.ok && ticketResult.ok && rechargeResult.ok
             } else {
                 false
             }
-            val refreshedLocalSummary = reportCacheProbe(preset, safeFilter)
+            val refreshedLocalReport = if (shouldSynchronizeDependencies) {
+                buildOperationalReportViewState(
+                    repository = financeRepository,
+                    session = session,
+                    preset = request.preset,
+                    anchorDayKey = dayKey,
+                    fromDayKey = request.fromDayKey,
+                    toDayKey = request.toDayKey,
+                    filter = safeFilter,
+                    syncStatus = OperationalReportSyncStatus.CACHED_COPY,
+                ).let { report ->
+                    report.copy(
+                        syncStatus = resolveReportStatus(
+                            remoteSucceeded = remoteSucceeded,
+                            summary = report.summary,
+                        ),
+                    )
+                }
+            } else {
+                localReport
+            }
+            val refreshedLocalSummary = refreshedLocalReport.summary
             if (decision.shouldRefreshRemote && remoteSucceeded) {
                 freshnessRepository.mark(cacheKey, SyncFreshnessState.SERVER_UPDATED)
             } else if (decision.shouldRefreshRemote && reportSummaryHasData(refreshedLocalSummary)) {
                 freshnessRepository.mark(cacheKey, SyncFreshnessState.SERVER_FAILED_USING_CACHE)
             }
-            val report = buildOperationalReportViewState(
-                repository = financeRepository,
-                session = session,
-                preset = preset,
-                anchorDayKey = dayKey,
-                fromDayKey = if (preset == FinancePeriodPreset.CALENDAR) fromDayState else null,
-                toDayKey = if (preset == FinancePeriodPreset.CALENDAR) toDayState else null,
-                filter = safeFilter,
-                syncStatus = resolveReportStatus(
-                    remoteSucceeded = remoteSucceeded,
-                    summary = refreshedLocalSummary,
-                ),
-            )
-            runOnUiThread {
+            ensureActive()
+            if (!isOperationalReportRequestCurrent(reportRequestGeneration.get(), request.requestId)) return@launch
+            val remoteReport = if (
+                shouldFetchOperationalReportEndpoint(
+                    refreshDecision = decision,
+                    hasLocalReport = reportSummaryHasData(localSummary),
+                )
+            ) {
+                runCatching {
+                    RemoteOperationalReportRepository(
+                        bearerTokenProvider = { sessionTokenProvider.freshAccessToken() },
+                        bearerTokenRefresher = { sessionTokenProvider.forceFreshAccessToken() },
+                    ).getReport(
+                        session = session,
+                        filter = safeFilter,
+                        preset = request.preset,
+                        range = range,
+                    )
+                }.getOrNull()
+            } else {
+                null
+            }
+            remoteReport?.let { serverReportCache.write(cacheKey, it) }
+            val report = remoteReport ?: serverCachedReport
+            withContext(Dispatchers.Main) {
+                if (!isOperationalReportRequestCurrent(reportRequestGeneration.get(), request.requestId)) {
+                    return@withContext
+                }
                 actorFiltersState = filters.ifEmpty { listOf(OperationalReportActorFilter.All) }
                 selectedFilterState = safeFilter
                 reportState = report
                 messageState = when {
-                    !decision.shouldRefreshRemote -> "Datos locales listos"
-                    remoteSucceeded -> "Actualizado desde servidor"
-                    reportSummaryHasData(refreshedLocalSummary) -> "Sin conexión usando última copia"
-                    else -> "No se pudo cargar servidor"
+                    remoteReport != null -> "Actualizado desde servidor"
+                    serverCachedReport != null -> "Sin conexión usando última copia del servidor"
+                    else -> "No se pudo cargar el reporte del servidor"
                 }
                 loadingState = false
             }
@@ -361,31 +471,15 @@ class OperationalReportActivity : AppCompatActivity() {
     }
 
     private fun buildReportFreshnessDateKey(
-        preset: FinancePeriodPreset,
+        request: OperationalReportRequestSnapshot,
         filter: OperationalReportActorFilter,
     ): String {
         return listOf(
-            preset.name,
-            if (preset == FinancePeriodPreset.CALENDAR) fromDayState else dayKey,
-            if (preset == FinancePeriodPreset.CALENDAR) toDayState else dayKey,
+            request.preset.name,
+            request.fromDayKey ?: dayKey,
+            request.toDayKey ?: dayKey,
             filter.key,
         ).joinToString("|")
-    }
-
-    private fun reportCacheProbe(
-        preset: FinancePeriodPreset,
-        filter: OperationalReportActorFilter,
-    ): FinanceSummary {
-        return buildOperationalReportViewState(
-            repository = financeRepository,
-            session = session,
-            preset = preset,
-            anchorDayKey = dayKey,
-            fromDayKey = if (preset == FinancePeriodPreset.CALENDAR) fromDayState else null,
-            toDayKey = if (preset == FinancePeriodPreset.CALENDAR) toDayState else null,
-            filter = filter,
-            syncStatus = OperationalReportSyncStatus.SERVER_FAILED,
-        ).summary
     }
 
     private fun resolveReportStatus(
@@ -464,6 +558,14 @@ internal enum class OperationalReportPeriod(val label: String) {
     MANUAL("Manual"),
 }
 
+internal data class OperationalReportFilterSelection(
+    val period: OperationalReportPeriod,
+    val fromDayKey: String,
+    val toDayKey: String,
+    val actorFilter: OperationalReportActorFilter,
+    val manualTarget: OperationalReportManualTarget = OperationalReportManualTarget.FROM,
+)
+
 private fun OperationalReportPeriod.toPreset(): FinancePeriodPreset {
     return when (this) {
         OperationalReportPeriod.TODAY -> FinancePeriodPreset.DAY
@@ -490,11 +592,7 @@ private fun OperationalReportRoute(
     onBack: () -> Unit,
     onRefresh: () -> Unit,
     onShare: () -> Unit,
-    onFilterSelected: (OperationalReportActorFilter) -> Unit,
-    onPeriodSelected: (OperationalReportPeriod) -> Unit,
-    onManualTargetSelected: (OperationalReportManualTarget) -> Unit,
-    onManualDaySelected: (String) -> Unit,
-    onApplyManual: () -> Unit,
+    onApplyFilters: (OperationalReportFilterSelection) -> Unit,
 ) {
     val visual = rememberLotteryNetVisualSpec()
     val layout = remember(visual.windowMode) { resolveOperationalReportLayout(visual.windowMode) }
@@ -522,7 +620,11 @@ private fun OperationalReportRoute(
                 AppTopBar(
                     spec = ScreenChromeSpec(
                         title = "Reporte",
-                        subtitle = "${session.banca ?: "LotteryNet"} · $dayKey",
+                        subtitle = operationalReportHeaderSubtitle(
+                            bancaName = session.banca ?: "LotteryNet",
+                            report = report,
+                            fallbackDayKey = dayKey,
+                        ),
                         activeBottomTab = NativeBottomTab.MENU,
                         rightAction = ScreenChromeAction(
                             icon = Icons.Rounded.Refresh,
@@ -536,36 +638,14 @@ private fun OperationalReportRoute(
             item {
                 OperationalReportControls(
                     selectedPeriod = selectedPeriod,
+                    currentPeriodLabel = report?.periodLabel,
                     fromDay = fromDay,
                     toDay = toDay,
                     manualTarget = manualTarget,
                     filters = filters,
                     selectedFilter = selectedFilter,
-                    onPeriodSelected = onPeriodSelected,
-                    onManualTargetSelected = onManualTargetSelected,
-                    onManualDaySelected = onManualDaySelected,
-                    onApplyManual = onApplyManual,
-                    onFilterSelected = onFilterSelected,
+                    onApplyFilters = onApplyFilters,
                 )
-            }
-            item {
-                CompactPanel {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Rounded.QueryStats, contentDescription = null, modifier = Modifier.size(18.dp), tint = visual.colors.ink)
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text(
-                            text = if (loading) "Actualizando..." else message,
-                            style = MaterialTheme.typography.bodyMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = when (report?.syncStatus) {
-                                OperationalReportSyncStatus.UPDATED -> gainColor()
-                                OperationalReportSyncStatus.CACHED_COPY -> warningColor()
-                                OperationalReportSyncStatus.SERVER_FAILED -> MaterialTheme.colorScheme.error
-                                null -> visual.colors.neutral
-                            },
-                        )
-                    }
-                }
             }
             report?.let { current ->
                 if (layout.showLedgerStrip) {
@@ -578,34 +658,299 @@ private fun OperationalReportRoute(
                     }
                 }
                 item {
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
-                        CompactActionButton(
-                            label = "Compartir",
-                            onClick = onShare,
-                            icon = Icons.Rounded.Share,
-                            modifier = Modifier.weight(1f),
-                            tone = ActionTone.Primary,
-                        )
-                        CompactActionButton(
-                            label = "Actualizar servidor",
-                            onClick = onRefresh,
-                            icon = Icons.Rounded.Refresh,
-                            modifier = Modifier.weight(1f),
-                            tone = ActionTone.Secondary,
-                        )
-                    }
+                    OperationalReportStatusRow(
+                        loading = loading,
+                        message = message,
+                        status = current.syncStatus,
+                    )
                 }
                 if (current.actorRows.isNotEmpty()) {
                     item {
-                        Text(
-                            text = "Cajeros",
-                            style = MaterialTheme.typography.titleSmall,
-                            fontWeight = FontWeight.Bold,
-                            color = visual.colors.ink,
+                        SectionHeader(
+                            title = "Desglose por cajero",
+                            meta = "${current.actorRows.size} usuarios",
                         )
                     }
-                    items(current.actorRows) { row ->
-                        OperationalReportActorRow(row)
+                    item {
+                        OperationalReportActorList(current.actorRows)
+                    }
+                }
+                item {
+                    CompactActionButton(
+                        label = "Compartir reporte",
+                        onClick = onShare,
+                        icon = Icons.Rounded.Share,
+                        modifier = Modifier.fillMaxWidth(),
+                        tone = ActionTone.Primary,
+                    )
+                }
+            } ?: item {
+                OperationalReportStatusRow(
+                    loading = loading,
+                    message = message,
+                    status = null,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun OperationalReportStatusRow(
+    loading: Boolean,
+    message: String,
+    status: OperationalReportSyncStatus?,
+) {
+    val visual = rememberLotteryNetVisualSpec()
+    val tone = if (loading) {
+        visual.colors.finance
+    } else {
+        when (status) {
+            OperationalReportSyncStatus.UPDATED -> gainColor()
+            OperationalReportSyncStatus.CACHED_COPY -> warningColor()
+            OperationalReportSyncStatus.SERVER_FAILED -> MaterialTheme.colorScheme.error
+            null -> visual.colors.neutral
+        }
+    }
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(10.dp),
+        color = tone.copy(alpha = 0.08f),
+        border = androidx.compose.foundation.BorderStroke(1.dp, tone.copy(alpha = 0.24f)),
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(7.dp),
+        ) {
+            Icon(
+                imageVector = if (loading) Icons.Rounded.Refresh else Icons.Rounded.QueryStats,
+                contentDescription = null,
+                modifier = Modifier.size(18.dp),
+                tint = tone,
+            )
+            Text(
+                text = if (loading) "Actualizando · $message" else message,
+                style = MaterialTheme.typography.bodySmall,
+                fontWeight = FontWeight.Bold,
+                color = tone,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
+    }
+}
+
+@Composable
+private fun OperationalReportControls(
+    selectedPeriod: OperationalReportPeriod,
+    currentPeriodLabel: String?,
+    fromDay: String,
+    toDay: String,
+    manualTarget: OperationalReportManualTarget,
+    filters: List<OperationalReportActorFilter>,
+    selectedFilter: OperationalReportActorFilter,
+    onApplyFilters: (OperationalReportFilterSelection) -> Unit,
+) {
+    var filtersSheetVisible by remember { mutableStateOf(false) }
+    var draftPeriod by remember { mutableStateOf(selectedPeriod) }
+    var draftFromDay by remember { mutableStateOf(fromDay) }
+    var draftToDay by remember { mutableStateOf(toDay) }
+    var draftManualTarget by remember { mutableStateOf(manualTarget) }
+    var draftActorFilter by remember { mutableStateOf(selectedFilter) }
+    var manualCalendarExpanded by remember { mutableStateOf(false) }
+    val periodLabel = currentPeriodLabel ?: operationalReportPeriodScopeLabel(selectedPeriod, fromDay, toDay)
+
+    fun applyDraftFilters() {
+        filtersSheetVisible = false
+        onApplyFilters(
+            OperationalReportFilterSelection(
+                period = draftPeriod,
+                fromDayKey = draftFromDay,
+                toDayKey = draftToDay,
+                actorFilter = draftActorFilter,
+                manualTarget = draftManualTarget,
+            ),
+        )
+    }
+    CurrentScopeCard(
+        title = "Periodo del reporte",
+        value = "${selectedPeriod.label} · $periodLabel",
+        subtitle = "Operador: ${selectedFilter.label}",
+        actionLabel = "Cambiar",
+        onChange = {
+            draftPeriod = selectedPeriod
+            draftFromDay = fromDay
+            draftToDay = toDay
+            draftManualTarget = manualTarget
+            draftActorFilter = selectedFilter
+            manualCalendarExpanded = selectedPeriod == OperationalReportPeriod.MANUAL
+            filtersSheetVisible = true
+        },
+        tone = ActionTone.Primary,
+    )
+    if (filtersSheetVisible) {
+        OperationalReportFilterSheet(
+            selectedPeriod = draftPeriod,
+            fromDay = draftFromDay,
+            toDay = draftToDay,
+            manualTarget = draftManualTarget,
+            filters = filters,
+            selectedFilter = draftActorFilter,
+            manualCalendarExpanded = manualCalendarExpanded,
+            onManualCalendarExpandedChange = { manualCalendarExpanded = it },
+            onPeriodSelected = { period ->
+                draftPeriod = period
+                manualCalendarExpanded = shouldExpandManualReportCalendarAfterPeriodTap(period)
+                if (period != OperationalReportPeriod.MANUAL) {
+                    filtersSheetVisible = false
+                    onApplyFilters(
+                        OperationalReportFilterSelection(
+                            period = period,
+                            fromDayKey = draftFromDay,
+                            toDayKey = draftToDay,
+                            actorFilter = draftActorFilter,
+                            manualTarget = draftManualTarget,
+                        ),
+                    )
+                }
+            },
+            onManualTargetSelected = { draftManualTarget = it },
+            onManualDaySelected = { selectedDay ->
+                val range = updateOperationalReportManualRange(
+                    fromDayKey = draftFromDay,
+                    toDayKey = draftToDay,
+                    selectedDayKey = selectedDay,
+                    target = draftManualTarget,
+                )
+                draftFromDay = range.fromDayKey
+                draftToDay = range.toDayKey
+                if (draftManualTarget == OperationalReportManualTarget.TO) {
+                    onApplyFilters(
+                        OperationalReportFilterSelection(
+                            period = OperationalReportPeriod.MANUAL,
+                            fromDayKey = range.fromDayKey,
+                            toDayKey = range.toDayKey,
+                            actorFilter = draftActorFilter,
+                            manualTarget = draftManualTarget,
+                        ),
+                    )
+                }
+            },
+            onFilterSelected = {
+                draftActorFilter = it
+                filtersSheetVisible = false
+                onApplyFilters(
+                    OperationalReportFilterSelection(
+                        period = draftPeriod,
+                        fromDayKey = draftFromDay,
+                        toDayKey = draftToDay,
+                        actorFilter = it,
+                        manualTarget = draftManualTarget,
+                    ),
+                )
+            },
+            onApply = ::applyDraftFilters,
+            onDismiss = { filtersSheetVisible = false },
+        )
+    }
+}
+
+@Composable
+private fun OperationalReportFilterSheet(
+    selectedPeriod: OperationalReportPeriod,
+    fromDay: String,
+    toDay: String,
+    manualTarget: OperationalReportManualTarget,
+    filters: List<OperationalReportActorFilter>,
+    selectedFilter: OperationalReportActorFilter,
+    manualCalendarExpanded: Boolean,
+    onManualCalendarExpandedChange: (Boolean) -> Unit,
+    onPeriodSelected: (OperationalReportPeriod) -> Unit,
+    onManualTargetSelected: (OperationalReportManualTarget) -> Unit,
+    onManualDaySelected: (String) -> Unit,
+    onFilterSelected: (OperationalReportActorFilter) -> Unit,
+    onApply: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val visual = rememberLotteryNetVisualSpec()
+    OperationalModalSheet(
+        title = "Filtros del reporte",
+        subtitle = "Periodo y operador visible en el reporte.",
+        onDismiss = onDismiss,
+        primaryActionLabel = "Aplicar filtro",
+        onPrimaryAction = onApply,
+        primaryActionTone = ActionTone.Primary,
+        contentScrollable = true,
+    ) {
+        CompactPanel(alt = true) {
+            Text(
+                "Periodo",
+                style = MaterialTheme.typography.labelLarge,
+                color = visual.colors.ink,
+                fontWeight = FontWeight.Black,
+            )
+            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                OperationalReportPeriod.entries.toList().chunked(3).forEach { row ->
+                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.fillMaxWidth()) {
+                        row.forEach { period ->
+                            CompactActionButton(
+                                label = period.label,
+                                onClick = {
+                                    onManualCalendarExpandedChange(shouldExpandManualReportCalendarAfterPeriodTap(period))
+                                    onPeriodSelected(period)
+                                },
+                                modifier = Modifier.weight(1f),
+                                tone = if (period == selectedPeriod) ActionTone.Success else ActionTone.Secondary,
+                            )
+                        }
+                        repeat(3 - row.size) {
+                            Spacer(modifier = Modifier.weight(1f))
+                        }
+                    }
+                }
+            }
+        }
+        if (selectedPeriod == OperationalReportPeriod.MANUAL) {
+            CompactPanel(alt = true) {
+                if (manualCalendarExpanded) {
+                    ManualReportRangePicker(
+                        fromDay = fromDay,
+                        toDay = toDay,
+                        target = manualTarget,
+                        onTargetSelected = onManualTargetSelected,
+                        onDaySelected = onManualDaySelected,
+                    )
+                } else {
+                    CompactActionButton(
+                        label = "Cambiar fechas: $fromDay a $toDay",
+                        onClick = { onManualCalendarExpandedChange(true) },
+                        modifier = Modifier.fillMaxWidth(),
+                        tone = ActionTone.Secondary,
+                    )
+                }
+            }
+        }
+        if (shouldShowOperationalReportActorFilter(filters)) {
+            CompactPanel(alt = true) {
+                Text(
+                    "Operador",
+                    style = MaterialTheme.typography.labelLarge,
+                    color = visual.colors.ink,
+                    fontWeight = FontWeight.Black,
+                )
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(max = 320.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    items(filters, key = { it.key }) { filter ->
+                        OperationalReportFilterRow(
+                            filter = filter,
+                            selected = filter.key == selectedFilter.key,
+                            onClick = { onFilterSelected(filter) },
+                        )
                     }
                 }
             }
@@ -614,70 +959,54 @@ private fun OperationalReportRoute(
 }
 
 @Composable
-private fun OperationalReportControls(
+private fun OperationalReportFilterRow(
+    filter: OperationalReportActorFilter,
+    selected: Boolean,
+    onClick: () -> Unit,
+) {
+    val visual = rememberLotteryNetVisualSpec()
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick),
+        shape = RoundedCornerShape(10.dp),
+        color = if (selected) visual.colors.finance.copy(alpha = 0.13f) else visual.colors.panelAlt,
+        border = androidx.compose.foundation.BorderStroke(1.dp, if (selected) visual.colors.finance else visual.colors.border),
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 10.dp, vertical = 9.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            Icon(Icons.Rounded.QueryStats, contentDescription = null, tint = if (selected) visual.colors.finance else visual.colors.muted)
+            Text(
+                filter.label,
+                modifier = Modifier.weight(1f),
+                style = MaterialTheme.typography.bodyMedium,
+                color = visual.colors.ink,
+                fontWeight = FontWeight.Bold,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            Text(
+                if (selected) "Activo" else "Elegir",
+                style = MaterialTheme.typography.labelMedium,
+                color = if (selected) visual.colors.finance else visual.colors.muted,
+                fontWeight = FontWeight.Bold,
+            )
+        }
+    }
+}
+
+private fun operationalReportPeriodScopeLabel(
     selectedPeriod: OperationalReportPeriod,
     fromDay: String,
     toDay: String,
-    manualTarget: OperationalReportManualTarget,
-    filters: List<OperationalReportActorFilter>,
-    selectedFilter: OperationalReportActorFilter,
-    onPeriodSelected: (OperationalReportPeriod) -> Unit,
-    onManualTargetSelected: (OperationalReportManualTarget) -> Unit,
-    onManualDaySelected: (String) -> Unit,
-    onApplyManual: () -> Unit,
-    onFilterSelected: (OperationalReportActorFilter) -> Unit,
-) {
-    var manualCalendarExpanded by remember(selectedPeriod) {
-        mutableStateOf(selectedPeriod == OperationalReportPeriod.MANUAL)
-    }
-    CompactPanel {
-        Row(horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.fillMaxWidth()) {
-            OperationalReportPeriod.entries.forEach { period ->
-                CompactActionButton(
-                    label = period.label,
-                    onClick = {
-                        manualCalendarExpanded = shouldExpandManualReportCalendarAfterPeriodTap(period)
-                        onPeriodSelected(period)
-                    },
-                    modifier = Modifier.weight(1f),
-                    tone = if (period == selectedPeriod) ActionTone.Success else ActionTone.Secondary,
-                )
-            }
-        }
-        if (selectedPeriod == OperationalReportPeriod.MANUAL) {
-            if (manualCalendarExpanded) {
-                ManualReportRangePicker(
-                    fromDay = fromDay,
-                    toDay = toDay,
-                    target = manualTarget,
-                    onTargetSelected = onManualTargetSelected,
-                    onDaySelected = onManualDaySelected,
-                )
-            } else {
-                CompactActionButton(
-                    label = "Cambiar fechas: $fromDay a $toDay",
-                    onClick = { manualCalendarExpanded = true },
-                    modifier = Modifier.fillMaxWidth(),
-                    tone = ActionTone.Secondary,
-                )
-            }
-            CompactActionButton(
-                label = "Aplicar",
-                onClick = {
-                    manualCalendarExpanded = false
-                    onApplyManual()
-                },
-                modifier = Modifier.fillMaxWidth(),
-                tone = ActionTone.Primary,
-            )
-        }
-        if (shouldShowOperationalReportActorFilter(filters)) {
-            OperationalReportFilterDropdown(
-                filters = filters,
-                selectedFilter = selectedFilter,
-                onFilterSelected = onFilterSelected,
-            )
-        }
+): String {
+    return if (selectedPeriod == OperationalReportPeriod.MANUAL) {
+        "$fromDay a $toDay"
+    } else {
+        selectedPeriod.label
     }
 }
 
@@ -881,52 +1210,6 @@ private fun calendarCells(month: YearMonth): List<LocalDate?> {
 }
 
 @Composable
-private fun OperationalReportFilterDropdown(
-    filters: List<OperationalReportActorFilter>,
-    selectedFilter: OperationalReportActorFilter,
-    onFilterSelected: (OperationalReportActorFilter) -> Unit,
-) {
-    var expanded by remember { mutableStateOf(false) }
-    val visual = rememberLotteryNetVisualSpec()
-    Box {
-        Surface(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(42.dp)
-                .clickable { expanded = true },
-            shape = RoundedCornerShape(visual.sizes.panelRadius),
-            color = visual.colors.panelAlt,
-            border = androidx.compose.foundation.BorderStroke(1.dp, visual.colors.border),
-        ) {
-            Row(
-                modifier = Modifier.padding(horizontal = 10.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Text(
-                    text = selectedFilter.label,
-                    modifier = Modifier.weight(1f),
-                    fontWeight = FontWeight.Bold,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-                Icon(Icons.Rounded.ArrowDropDown, contentDescription = null)
-            }
-        }
-        DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-            filters.forEach { filter ->
-                DropdownMenuItem(
-                    text = { Text(filter.label, maxLines = 1, overflow = TextOverflow.Ellipsis) },
-                    onClick = {
-                        expanded = false
-                        onFilterSelected(filter)
-                    },
-                )
-            }
-        }
-    }
-}
-
-@Composable
 private fun OperationalReportLedgerSummary(
     summary: FinanceSummary,
     layout: OperationalReportLayoutContract,
@@ -1065,33 +1348,51 @@ private fun ReportMiniMetric(label: String, value: Double, color: Color, modifie
 }
 
 @Composable
-private fun OperationalReportActorRow(row: FinanceActorPeriodRow) {
+private fun OperationalReportActorList(rows: List<FinanceActorPeriodRow>) {
+    val visual = rememberLotteryNetVisualSpec()
+    CompactPanel(
+        contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 10.dp, vertical = 4.dp),
+    ) {
+        rows.forEachIndexed { index, row ->
+            OperationalReportActorContent(row)
+            if (index < rows.lastIndex) {
+                HorizontalDivider(color = visual.colors.border)
+            }
+        }
+    }
+}
+
+@Composable
+private fun OperationalReportActorContent(row: FinanceActorPeriodRow) {
     val visual = rememberLotteryNetVisualSpec()
     val net = resolveOperationalReportNet(row.summary)
-    CompactPanel(alt = true, contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 10.dp, vertical = 7.dp)) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text(row.actorDisplay, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                Text(
-                    "Venta ${operationalReportMoney(row.summary.ventas)} · Premio ${operationalReportMoney(row.summary.premiosPagados)}",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = visual.colors.muted,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-            }
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 7.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(row.actorDisplay, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
             Text(
-                operationalReportMoney(net),
-                style = MaterialTheme.typography.bodyMedium.merge(TextStyle(fontWeight = FontWeight.Bold)),
-                color = reportMetricColor(
-                    when {
-                        net > 0.0 -> "gain"
-                        net < 0.0 -> "loss"
-                        else -> "ink"
-                    },
-                ),
+                "Venta ${operationalReportMoney(row.summary.ventas)} · Premio ${operationalReportMoney(row.summary.premiosPagados)}",
+                style = MaterialTheme.typography.bodySmall,
+                color = visual.colors.muted,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
             )
         }
-        HorizontalDivider(color = visual.colors.border)
+        Text(
+            operationalReportMoney(net),
+            style = MaterialTheme.typography.bodyMedium.merge(TextStyle(fontWeight = FontWeight.Bold)),
+            color = reportMetricColor(
+                when {
+                    net > 0.0 -> "gain"
+                    net < 0.0 -> "loss"
+                    else -> "ink"
+                },
+            ),
+        )
     }
 }

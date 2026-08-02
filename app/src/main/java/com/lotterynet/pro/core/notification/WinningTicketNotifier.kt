@@ -21,6 +21,7 @@ import com.lotterynet.pro.core.model.UserRole
 import com.lotterynet.pro.core.model.isPaidStatus
 
 object WinningTicketNotifier {
+    private val CONFIRMED_WINNER_STATUSES = setOf("winner", "ganador", "pending_winner")
     private const val CHANNEL_ID = "lotterynet_winning_tickets"
     private const val CHANNEL_NAME = "Premios"
     private const val PREFS_NAME = "winning_ticket_notifications"
@@ -100,7 +101,7 @@ object WinningTicketNotifier {
         if (ticket.isPaidStatus()) return false
         if (ticket.status.equals("voided", true) || ticket.status.equals("nulled", true)) return false
         if (ticket.status.equals("invalid", true)) return false
-        return ticket.status.equals("winner", true) || ticket.totalPrize > 0.0
+        return ticket.status.trim().lowercase() in CONFIRMED_WINNER_STATUSES && ticket.totalPrize > 0.0
     }
 
     internal fun shouldNotifyTicketForActiveSession(session: ActiveSession?, ticket: TicketRecord): Boolean {

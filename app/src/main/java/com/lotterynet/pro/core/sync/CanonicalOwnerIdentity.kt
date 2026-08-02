@@ -20,11 +20,11 @@ fun resolveCanonicalOwnerIdentity(session: ActiveSession?): CanonicalOwnerIdenti
     val valid = when (session.role) {
         UserRole.CASHIER,
         UserRole.SUPERVISOR -> listOf(
+            session.adminId,
+            session.adminUser,
             session.userId,
             session.username,
             session.authUserId,
-            session.adminId,
-            session.adminUser,
         )
         else -> listOf(
             session.adminId,
@@ -35,7 +35,11 @@ fun resolveCanonicalOwnerIdentity(session: ActiveSession?): CanonicalOwnerIdenti
         )
     }.mapNotNull(::normalizeOperationalOwnerKey)
         .distinctBy(String::lowercase)
-    val canonical = valid.firstOrNull { it.startsWith("ADM-", ignoreCase = true) && session.role == UserRole.ADMIN }
+    val canonical = valid.firstOrNull {
+        it.startsWith("CAJ-", ignoreCase = true) &&
+            session.role in setOf(UserRole.CASHIER, UserRole.SUPERVISOR)
+    }
+        ?: valid.firstOrNull { it.startsWith("ADM-", ignoreCase = true) && session.role == UserRole.ADMIN }
         ?: valid.firstOrNull()
         ?: return null
     return CanonicalOwnerIdentity(

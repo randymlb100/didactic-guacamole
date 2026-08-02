@@ -9,6 +9,7 @@ import android.os.Looper
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.compose.setContent
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -56,6 +57,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -75,6 +77,7 @@ import com.lotterynet.pro.core.model.ActiveSession
 import com.lotterynet.pro.core.model.SavedLogin
 import com.lotterynet.pro.core.model.UserAccount
 import com.lotterynet.pro.core.model.UserRole
+import com.lotterynet.pro.core.push.PushTokenRegistrar
 import com.lotterynet.pro.core.repository.NativeAuthRepository
 import com.lotterynet.pro.core.repository.NativeBootstrapRepository
 import com.lotterynet.pro.core.storage.LocalSessionRepository
@@ -216,6 +219,7 @@ class LoginActivity : AppCompatActivity() {
     ) { }
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        installSplashScreen()
         super.onCreate(savedInstanceState)
         crashReporter = NativeCrashReporter(this)
         sessionRepository = LocalSessionRepository(this)
@@ -237,6 +241,7 @@ class LoginActivity : AppCompatActivity() {
             sessionRepository.saveSessionSnapshot(null)
         }
         sessionRepository.getActiveSession()?.let { session ->
+            PushTokenRegistrar(this).registerCurrentToken()
             startActivity(homeIntentFor(session.role))
             finish()
             return
@@ -245,6 +250,10 @@ class LoginActivity : AppCompatActivity() {
         val bootstrapGate = resolveLoginBootstrapGate(usersRepository.hasCachedUsers())
         setContent {
             com.lotterynet.pro.ui.theme.LotteryNetComposeTheme {
+                LaunchedEffect(Unit) {
+                    withFrameNanos { }
+                    reportFullyDrawn()
+                }
                 LoginRoute(
                     initialUser = saved?.username.orEmpty(),
                     initialPassword = resolveInitialLoginPassword(saved),
@@ -286,6 +295,7 @@ class LoginActivity : AppCompatActivity() {
         }
         val session = authRepository.authenticate(username, password, remember)
             ?: return LoginAttemptResult(success = false)
+        PushTokenRegistrar(this).registerCurrentToken()
         startActivity(homeIntentFor(session.role, forceMenuAfterCrash).apply {
             putExtra("native_login_user", username)
             putExtra("native_login_password", password)

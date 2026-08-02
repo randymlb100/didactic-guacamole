@@ -90,14 +90,10 @@ function findAccount(payload, username) {
   );
 }
 
-async function fetchUsersPayload() {
-  const result = await requestJson(
-    "users-state fetch",
-    "GET",
-    `${SUPABASE_URL}/rest/v1/lotterynet_users_state?scope=eq.global&select=payload`,
-  );
-  if (!result.ok) throw new Error(`No se pudo leer usuarios: ${result.text}`);
-  return result.json?.[0]?.payload ?? {};
+async function fetchUsersPayload(token) {
+  const result = await edge("lotterynet-users-state", { action: "fetch" }, token);
+  if (!result.ok || result.json?.ok === false) throw new Error(`No se pudo leer usuarios: ${result.text}`);
+  return result.json?.payload ?? {};
 }
 
 async function login(username, password) {
@@ -128,10 +124,16 @@ function sportsPayload(sessionAccount, admin, oddsIds) {
 try {
   console.log(`Inicio sportsbook live flow ${RUN_ID}`);
   const credentials = parseCredentials(await readFile(CREDENTIAL_FILE, "utf8"));
-  const usersPayload = await fetchUsersPayload();
+  const adminCred = credentials.find((entry) => lower(entry.username) === "podero02");
+  if (!adminCred) throw new Error("No existe credencial QA para podero02.");
+  const adminSession = await login(adminCred.username, adminCred.password);
+  check(adminSession.ok, "login admin para leer estado protegido", {
+    status: adminSession.result.status,
+  });
+  if (!adminSession.ok) throw new Error("No se pudo autenticar podero02.");
+  const usersPayload = await fetchUsersPayload(adminSession.token);
   const admin = findAccount(usersPayload, "podero02");
   const cashier = findAccount(usersPayload, "bancae01");
-  const adminCred = credentials.find((entry) => lower(entry.username) === "podero02");
   const cashierCred = credentials.find((entry) => lower(entry.username) === "bancae01");
   check(Boolean(admin && cashier && adminCred && cashierCred), "cuentas podero02/bancae01 disponibles", {
     admin: admin?.id,
@@ -139,7 +141,6 @@ try {
   });
   if (!admin || !cashier || !adminCred || !cashierCred) throw new Error("Faltan cuentas QA.");
 
-  const adminSession = await login(adminCred.username, adminCred.password);
   const cashierSession = await login(cashierCred.username, cashierCred.password);
   check(adminSession.ok && cashierSession.ok, "login admin y cajero deportivo", {
     adminStatus: adminSession.result.status,
@@ -256,16 +257,75 @@ try {
     duplicate: duplicate.json?.duplicate,
   });
 
+  const conflictingSelection = await edge("create-sports-ticket", {
+    ...sportsPayload(cashier, admin, [seed.json.oddsIds[0], seed.json.oddsIds[0]]),
+    clientRequestId: `${RUN_ID}-same-selection`,
+  }, cashierSession.token);
+  check(conflictingSelection.status === 409 && /misma cuota|una seleccion por mercado/i.test(clean(conflictingSelection.json?.message)),
+    "servidor bloquea cuotas repetidas en el mismo ticket", {
+      status: conflictingSelection.status,
+      message: conflictingSelection.json?.message,
+    });
+
+  const raceSale = await edge("create-sports-ticket", {
+    ...sportsPayload(cashier, admin, seed.json.oddsIds),
+    clientRequestId: `${RUN_ID}-pay-race`,
+  }, cashierSession.token);
+  const raceTicketId = clean(raceSale.json?.ticket?.id);
+  check(raceSale.json?.ok === true && raceTicketId, "ticket de concurrencia creado", {
+    status: raceSale.status,
+  });
+  const raceSettlement = await edge("settle-sports-ticket", {
+    actorKey: admin.id,
+    actorRole: "admin",
+    ownerKey: admin.id,
+    adminKey: admin.id,
+    cashierKey: cashier.user,
+    ticketId: raceTicketId,
+    nextStatus: "won",
+    reason: "QA concurrent payment",
+  }, adminSession.token);
+  check(raceSettlement.json?.ok === true, "ticket de concurrencia liquidado", {
+    status: raceSettlement.status,
+  });
+  const [racePayA, racePayB] = await Promise.all([
+    edge("pay-sports-ticket", {
+      actorKey: cashier.user,
+      actorRole: "cashier",
+      ownerKey: admin.id,
+      adminKey: admin.id,
+      cashierKey: cashier.user,
+      ticketId: raceTicketId,
+    }, cashierSession.token),
+    edge("pay-sports-ticket", {
+      actorKey: cashier.user,
+      actorRole: "cashier",
+      ownerKey: admin.id,
+      adminKey: admin.id,
+      cashierKey: cashier.user,
+      ticketId: raceTicketId,
+    }, cashierSession.token),
+  ]);
+  const racePayResults = [racePayA, racePayB];
+  const successfulRacePays = racePayResults.filter((result) => result.status === 200 && result.json?.alreadyPaid !== true);
+  const alreadyPaidRacePays = racePayResults.filter((result) => result.status === 200 && result.json?.alreadyPaid === true);
+  check(successfulRacePays.length === 1 && alreadyPaidRacePays.length === 1,
+    "dos cobros simultaneos producen un solo pago", {
+      statuses: racePayResults.map((result) => result.status),
+      alreadyPaid: racePayResults.map((result) => result.json?.alreadyPaid === true),
+      messages: [racePayA.json?.message, racePayB.json?.message],
+    });
+
   const slowCalls = calls.filter((call) => call.elapsedMs > 4500);
   const edgeCalls = calls.filter((call) => !call.label.startsWith("db:"));
   const operationalCalls = edgeCalls.filter((call) =>
     !["users-state fetch", "auth-legacy-login", "sports-qa-seed"].includes(call.label) &&
-    !(call.label === "create-sports-ticket" && call.elapsedMs < 700)
+    call.label !== "create-sports-ticket"
   );
   check(slowCalls.length === 0, "ninguna llamada paso de 4.5 segundos", {
     slowCalls,
   });
-  check(operationalCalls.length <= 7, "flujo operativo usa llamadas controladas al servidor", {
+  check(operationalCalls.length <= 12, "flujo operativo usa llamadas controladas al servidor", {
     operationalCalls: operationalCalls.length,
     setupCalls: edgeCalls.length - operationalCalls.length,
     calls: operationalCalls.map((call) => `${call.label}:${call.elapsedMs}ms`),

@@ -5,12 +5,14 @@ import android.content.Context
 import android.content.Intent
 import android.content.ServiceConnection
 import android.os.IBinder
+import android.util.Log
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 
 object IntegratedThermalPrinter {
     private const val SUNMI_SERVICE_ACTION = "woyou.aidlservice.jiuiv5.IWoyouService"
     private const val SUNMI_SERVICE_PACKAGE = "woyou.aidlservice.jiuiv5"
+    private const val TAG = "IntegratedThermalPrinter"
     private const val CONNECT_TIMEOUT_MS = 2_000L
 
     fun isAvailable(context: Context): Boolean {
@@ -42,7 +44,11 @@ object IntegratedThermalPrinter {
                 val service = Class.forName("$SUNMI_SERVICE_PACKAGE.IWoyouService\$Stub")
                     .getMethod("asInterface", IBinder::class.java)
                     .invoke(null, binder) ?: return BluetoothThermalPrinter.PrintResult(false, "Impresora interna no conectó")
-                service.javaClass.getMethod("printerInit", callbackClass()).invoke(service, null)
+                runCatching {
+                    service.javaClass.getMethod("printerInit", callbackClass()).invoke(service, null)
+                }.onFailure { error ->
+                    Log.w(TAG, "Sunmi printerInit failed", error.printerRootCause())
+                }
                 content.lineSequence().forEach { rawLine ->
                     if (rawLine.startsWith("[[QR]]")) {
                         val payload = rawLine.removePrefix("[[QR]]").ifBlank { "LN" }
@@ -50,10 +56,16 @@ object IntegratedThermalPrinter {
                             service.javaClass
                                 .getMethod("printQRCode", String::class.java, Int::class.javaPrimitiveType, Int::class.javaPrimitiveType, callbackClass())
                                 .invoke(service, payload, 6, 2, null)
+                        }.onFailure { error ->
+                            Log.w(TAG, "Sunmi printQRCode failed", error.printerRootCause())
                         }.isSuccess
                         if (!printedQr) {
-                            service.javaClass.getMethod("printTextWithFont", String::class.java, String::class.java, Float::class.javaPrimitiveType, callbackClass())
-                                .invoke(service, "QR: $payload\n", "", 22f, null)
+                            runCatching {
+                                service.javaClass.getMethod("printTextWithFont", String::class.java, String::class.java, Float::class.javaPrimitiveType, callbackClass())
+                                    .invoke(service, "QR: $payload\n", "", 22f, null)
+                            }.onFailure { error ->
+                                Log.w(TAG, "Sunmi QR text fallback failed", error.printerRootCause())
+                            }
                         }
                     } else {
                         val styled = ThermalLineStyling.parse(rawLine)
@@ -73,11 +85,14 @@ object IntegratedThermalPrinter {
                 }
                 runCatching {
                     service.javaClass.getMethod("lineWrap", Int::class.javaPrimitiveType, callbackClass()).invoke(service, 5, null)
+                }.onFailure { error ->
+                    Log.w(TAG, "Sunmi lineWrap failed", error.printerRootCause())
                 }
                 BluetoothThermalPrinter.PrintResult(true, "Enviado a impresora interna")
             }
         } catch (error: Throwable) {
-            BluetoothThermalPrinter.PrintResult(false, "No se pudo imprimir en impresora interna")
+            Log.w(TAG, "Sunmi print flow failed", error.printerRootCause())
+            BluetoothThermalPrinter.PrintResult(false, error.printerSafeMessage("No se pudo imprimir en impresora interna"))
         } finally {
             runCatching { context.unbindService(connection) }
         }
@@ -97,6 +112,8 @@ object IntegratedThermalPrinter {
                 service.javaClass
                     .getMethod("setFontSize", Float::class.javaPrimitiveType, callbackClass())
                     .invoke(service, fontSize, null)
+            }.onFailure { error ->
+                Log.w(TAG, "Sunmi setFontSize failed", error.printerRootCause())
             }
             val labelColumns = (row.width - row.amount.length - 1).coerceAtLeast(1)
             service.javaClass
@@ -115,6 +132,8 @@ object IntegratedThermalPrinter {
                     null,
                 )
             true
+        }.onFailure { error ->
+            Log.w(TAG, "Sunmi printColumnsString failed", error.printerRootCause())
         }.getOrDefault(false)
     }
 
@@ -123,8 +142,12 @@ object IntegratedThermalPrinter {
         text: String,
         fontSize: Float,
     ) {
-        service.javaClass.getMethod("printTextWithFont", String::class.java, String::class.java, Float::class.javaPrimitiveType, callbackClass())
-            .invoke(service, text, "", fontSize, null)
+        runCatching {
+            service.javaClass.getMethod("printTextWithFont", String::class.java, String::class.java, Float::class.javaPrimitiveType, callbackClass())
+                .invoke(service, text, "", fontSize, null)
+        }.onFailure { error ->
+            Log.w(TAG, "Sunmi printTextWithFont failed", error.printerRootCause())
+        }
     }
 
     private fun sunmiIntent(): Intent {

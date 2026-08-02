@@ -1,5 +1,6 @@
 package com.lotterynet.pro.core.remote
 
+import java.net.UnknownHostException
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Assert.assertFalse
@@ -45,6 +46,18 @@ class SupabaseEdgeClientTest {
     }
 
     @Test
+    fun `invalid session response is classified as auth required`() {
+        assertEquals(
+            SupabaseEdgeFailureReason.AUTH_REQUIRED,
+            resolveSupabaseEdgeFailureReason(401, "Sesion invalida."),
+        )
+        assertEquals(
+            SupabaseEdgeFailureReason.REMOTE_ERROR,
+            resolveSupabaseEdgeFailureReason(500, "Sesion invalida."),
+        )
+    }
+
+    @Test
     fun `edge timeout message is safe for critical operations`() {
         assertTrue(isSupabaseEdgeTimeout("canceling statement due to statement timeout"))
         assertEquals(
@@ -57,5 +70,30 @@ class SupabaseEdgeClientTest {
     fun `edge error message supports common response shapes`() {
         assertEquals("Saldo insuficiente", extractEdgeErrorMessage("""{"message":"Saldo insuficiente"}"""))
         assertEquals("Credenciales no configuradas", extractEdgeErrorMessage("""{"error":"Credenciales no configuradas"}"""))
+    }
+
+    @Test
+    fun `unknown host is presented as actionable connection issue`() {
+        assertEquals(
+            "No se pudo encontrar el servidor. Revisa internet o cambia el DNS/red del equipo.",
+            presentSupabaseTransportMessage(UnknownHostException("unhoulkujbtsypccpirc.supabase.co")),
+        )
+    }
+
+    @Test
+    fun `cloudflare html body is presented as supabase network issue`() {
+        val html = """
+            <!DOCTYPE html>
+            <html><body>
+            DNS resolution error
+            Error 1001
+            Cloudflare is currently unable to resolve your requested domain
+            </body></html>
+        """.trimIndent()
+
+        assertEquals(
+            "Supabase no respondio correctamente. Revisa la red e intenta de nuevo.",
+            presentSupabaseHttpFailureMessage(html, "text/html"),
+        )
     }
 }

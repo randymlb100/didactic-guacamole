@@ -15,15 +15,33 @@ import org.json.JSONObject
 class LocalSessionRepository(
     context: Context,
 ) : SessionRepository {
-    private val prefs: SharedPreferences = run {
-        val masterKeyAlias = MasterKeys.getOrCreate(MasterKeys.AES256_GCM_SPEC)
-        EncryptedSharedPreferences.create(
-            SessionStorageKeys.PREFS_NAME,
-            masterKeyAlias,
-            context,
-            EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
-            EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM,
-        )
+    private val prefs: SharedPreferences = sharedPreferences(context.applicationContext)
+
+    companion object {
+        private val prefsLock = Any()
+
+        @Volatile
+        private var sharedPrefs: SharedPreferences? = null
+
+        private fun sharedPreferences(appContext: Context): SharedPreferences {
+            sharedPrefs?.let { return it }
+            return synchronized(prefsLock) {
+                sharedPrefs ?: createEncryptedPreferences(appContext).also { created ->
+                    sharedPrefs = created
+                }
+            }
+        }
+
+        private fun createEncryptedPreferences(appContext: Context): SharedPreferences {
+            val masterKeyAlias = MasterKeys.getOrCreate(MasterKeys.AES256_GCM_SPEC)
+            return EncryptedSharedPreferences.create(
+                SessionStorageKeys.PREFS_NAME,
+                masterKeyAlias,
+                appContext,
+                EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
+                EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM,
+            )
+        }
     }
 
     override fun getSavedLogin(): SavedLogin? {

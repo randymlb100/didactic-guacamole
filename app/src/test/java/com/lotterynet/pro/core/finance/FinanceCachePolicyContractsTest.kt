@@ -8,7 +8,7 @@ import org.junit.Test
 
 class FinanceCachePolicyContractsTest {
     @Test
-    fun `past day with local data does not need server`() {
+    fun `past day always refreshes authoritative server report`() {
         val decision = resolveFinanceRemoteRefreshDecision(
             hasLocalData = true,
             forceRemote = false,
@@ -18,7 +18,7 @@ class FinanceCachePolicyContractsTest {
             nowEpochMs = 120_000L,
         )
 
-        assertFalse(decision.shouldRefreshRemote)
+        assertTrue(decision.shouldRefreshRemote)
     }
 
     @Test

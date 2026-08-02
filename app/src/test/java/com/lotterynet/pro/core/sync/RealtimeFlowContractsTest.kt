@@ -30,9 +30,12 @@ class RealtimeFlowContractsTest {
         assertEquals("{}", readMasterValueMemoryCache("cashier_limits:admin-1", nowMs = 5_000L))
         assertEquals("2026-05-14T00:00:00Z", readMasterUpdatedAtMemoryCache("cashier_limits:admin-1", nowMs = 5_000L))
         assertEquals("2026-05-14T00:00:00Z", readTicketUpdatedAtCache("admin-1", nowMs = 5_000L))
-        assertEquals(null, readMasterValueMemoryCache("cashier_limits:admin-1", nowMs = 40_000L))
-        assertEquals(null, readMasterUpdatedAtMemoryCache("cashier_limits:admin-1", nowMs = 40_000L))
-        assertEquals(null, readTicketUpdatedAtCache("admin-1", nowMs = 70_000L))
+        assertEquals("2026-05-14T00:00:00Z", readTicketUpdatedAtCache("admin-1", nowMs = 30_000L))
+        assertEquals("{}", readMasterValueMemoryCache("cashier_limits:admin-1", nowMs = 240_000L))
+        assertEquals("2026-05-14T00:00:00Z", readMasterUpdatedAtMemoryCache("cashier_limits:admin-1", nowMs = 240_000L))
+        assertEquals(null, readMasterValueMemoryCache("cashier_limits:admin-1", nowMs = 320_000L))
+        assertEquals(null, readMasterUpdatedAtMemoryCache("cashier_limits:admin-1", nowMs = 320_000L))
+        assertEquals(null, readTicketUpdatedAtCache("admin-1", nowMs = 32_000L))
     }
 
     @Test
@@ -44,7 +47,7 @@ class RealtimeFlowContractsTest {
         val entry = readTicketUpdatedAtCacheEntry("admin-empty", nowMs = 5_000L)
         assertNotNull(entry)
         assertEquals(null, entry?.updatedAt)
-        assertEquals(null, readTicketUpdatedAtCacheEntry("admin-empty", nowMs = 70_000L))
+        assertEquals(null, readTicketUpdatedAtCacheEntry("admin-empty", nowMs = 32_000L))
     }
 
     @Test
@@ -91,7 +94,7 @@ class RealtimeFlowContractsTest {
 
     @Test
     fun `sales live sync fallback intervals protect server when realtime is unavailable`() {
-        assertTrue(SALES_EXPOSURE_REFRESH_INTERVAL_MS >= 60_000L)
+        assertTrue(SALES_EXPOSURE_REFRESH_INTERVAL_MS >= 300_000L)
         assertTrue(CASHIER_LIMIT_PULL_INTERVAL_MS >= 60_000L)
         assertTrue(PosPerformanceBudget.SYNC_RESUME_THROTTLE_MS <= 10_000L)
     }

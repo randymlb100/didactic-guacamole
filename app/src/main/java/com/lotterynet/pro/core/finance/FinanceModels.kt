@@ -1,5 +1,7 @@
 package com.lotterynet.pro.core.finance
 
+import com.lotterynet.pro.core.model.TicketRecord
+
 enum class FinanceAlertTone {
     DANGER,
     WARNING,
@@ -111,6 +113,7 @@ data class FinancePeriodReport(
     val summary: FinanceSummary,
     val rows: List<FinancePeriodRow>,
     val actorRows: List<FinanceActorPeriodRow> = emptyList(),
+    val winningTickets: List<TicketRecord> = emptyList(),
 )
 
 data class FinanceHistoryEntry(

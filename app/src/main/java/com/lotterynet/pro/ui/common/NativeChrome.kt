@@ -25,6 +25,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -871,7 +872,7 @@ internal fun resolveAdaptiveScreenContract(windowMode: LotteryNetWindowMode): Ad
 internal fun resolveOverflowLayoutContract(windowMode: LotteryNetWindowMode): OverflowLayoutContract {
     return when (windowMode) {
         LotteryNetWindowMode.POS_TIGHT -> OverflowLayoutContract(
-            dropdownMaxHeight = 132.dp,
+            dropdownMaxHeight = 280.dp,
             dropdownMaxWidth = 280.dp,
             sheetMaxHeightFraction = 0.78f,
             listMaxHeightFraction = 0.42f,
@@ -881,7 +882,7 @@ internal fun resolveOverflowLayoutContract(windowMode: LotteryNetWindowMode): Ov
         )
 
         LotteryNetWindowMode.POS -> OverflowLayoutContract(
-            dropdownMaxHeight = 156.dp,
+            dropdownMaxHeight = 320.dp,
             dropdownMaxWidth = 320.dp,
             sheetMaxHeightFraction = 0.82f,
             listMaxHeightFraction = 0.48f,
@@ -891,7 +892,7 @@ internal fun resolveOverflowLayoutContract(windowMode: LotteryNetWindowMode): Ov
         )
 
         else -> OverflowLayoutContract(
-            dropdownMaxHeight = 260.dp,
+            dropdownMaxHeight = 360.dp,
             dropdownMaxWidth = 420.dp,
             sheetMaxHeightFraction = 0.90f,
             listMaxHeightFraction = 0.60f,
@@ -1028,11 +1029,17 @@ fun AppTopBar(
     spec: ScreenChromeSpec,
     onOpenMenu: () -> Unit,
     modifier: Modifier = Modifier,
+    applyStatusBarInsets: Boolean = false,
 ) {
     val visual = rememberLotteryNetVisualSpec()
     val adaptive = resolveAdaptiveScreenContract(visual.windowMode)
     val compactTopBar = visual.windowMode == LotteryNetWindowMode.POS_TIGHT
-    Column(modifier = modifier.fillMaxWidth()) {
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .background(visual.colors.chrome)
+            .then(if (applyStatusBarInsets) Modifier.statusBarsPadding() else Modifier),
+    ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -3040,6 +3047,7 @@ fun openShellMenu(context: Context) {
     context.startActivity(
         Intent(context, ShellActivity::class.java).apply {
             putExtra(ShellActivity.EXTRA_FORCE_MENU, true)
+            flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
         },
     )
 }

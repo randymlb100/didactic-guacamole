@@ -35,6 +35,24 @@ let ticketFetchCache:
     }
   | null = null;
 
+const USERS_FETCH_CACHE_MS = 10_000;
+type UsersFetchCacheEntry = {
+  at: number;
+  data?: UserAccount[];
+  promise?: Promise<UserAccount[]> | null;
+};
+
+const usersFetchCache = new Map<string, UsersFetchCacheEntry>();
+
+export const clearUsersFetchCache = (scopeKey?: string) => {
+  if (!scopeKey) {
+    usersFetchCache.clear();
+    return;
+  }
+
+  usersFetchCache.delete(scopeKey);
+};
+
 const retryQuery = async <T>(fn: () => Promise<T>, retries = 2, delay = 1000): Promise<T> => {
   try {
     return await fn();
@@ -79,6 +97,16 @@ export const fetchUsers = async (): Promise<UserAccount[]> => {
   if (isSupabaseConfigured && supabase) {
     const client = supabase;
     try {
+      const accessToken = getValidAccessToken();
+      const scopeKey = accessToken || 'anon';
+      const cached = usersFetchCache.get(scopeKey);
+      if (cached?.promise) {
+        return cached.promise;
+      }
+      if (cached?.data !== undefined && Date.now() - cached.at < USERS_FETCH_CACHE_MS) {
+        return cached.data;
+      }
+
       const queryFn = async () => {
         const { data, error } = await client.functions.invoke('lotterynet-users-state', {
           method: 'GET',
@@ -86,14 +114,29 @@ export const fetchUsers = async (): Promise<UserAccount[]> => {
         if (error) throw error;
         return data;
       };
-      const data = await retryQuery(queryFn, 2, 1000);
-      if (data?.payload) {
-        const rawUsers = normalizeRemoteUsersPayload(data.payload);
-        if (rawUsers.length === 0) return [];
-        const mappedUsers = rawUsers.map(mapRemoteUserToAccount);
-        writeLocalArray('lotterynet_users', mappedUsers);
-        return mappedUsers;
-      }
+      const promise = retryQuery(queryFn, 2, 1000)
+        .then((data) => {
+          const rawUsers = normalizeRemoteUsersPayload(data?.payload);
+          if (rawUsers.length === 0) return [];
+          const mappedUsers = rawUsers.map(mapRemoteUserToAccount);
+          writeLocalArray('lotterynet_users', mappedUsers);
+          usersFetchCache.set(scopeKey, { at: Date.now(), data: mappedUsers, promise: null });
+          return mappedUsers;
+        })
+        .catch((error) => {
+          if (usersFetchCache.get(scopeKey)?.promise) {
+            usersFetchCache.delete(scopeKey);
+          }
+          throw error;
+        });
+
+      usersFetchCache.set(scopeKey, {
+        at: Date.now(),
+        data: cached?.data,
+        promise,
+      });
+
+      return await promise;
     } catch (e) {
       logWarn('Failed to fetch users from Supabase Edge Function, loading mock users', e);
     }

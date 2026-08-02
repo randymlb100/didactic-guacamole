@@ -240,4 +240,34 @@ class AdminLotteryConfigContractsTest {
         assertTrue(effective.lotteryModeEnabled)
         assertFalse(effective.pickModeEnabled)
     }
+
+    @Test
+    fun `cashier explicit pick override enables pick only`() {
+        val config = AdminSystemModeConfig(
+            lotteryModeEnabled = true,
+            pickModeEnabled = true,
+            cashierModeEnabled = true,
+            cashierLotteryModeEnabled = true,
+            cashierPickModeEnabled = false,
+        )
+        val session = ActiveSession(
+            role = UserRole.CASHIER,
+            userId = "CAJ-3",
+            username = "cajero3",
+            adminId = "ADM-1",
+        )
+        val accounts = listOf(
+            UserAccount(
+                id = "CAJ-3",
+                user = "cajero3",
+                role = UserRole.CASHIER,
+                systemModeOverride = "pick",
+            ),
+        )
+
+        val effective = effectiveSystemModeConfigForSession(config, session, accounts)
+
+        assertFalse(effective.lotteryModeEnabled)
+        assertTrue(effective.pickModeEnabled)
+    }
 }

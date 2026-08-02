@@ -31,7 +31,7 @@ function metadataMatchesActor(metadata: JsonMap, actorKey: string, adminKey: str
     metadata.cashier_id,
     metadata.cashier_user,
   ].map(lower).filter(Boolean);
-  if (metadataValues.length === 0) return true;
+  if (metadataValues.length === 0) return false;
   const accepted = [actorKey, adminKey, cashierKey].map(lower).filter(Boolean);
   return accepted.some((value) => metadataValues.includes(value));
 }
@@ -132,52 +132,30 @@ async function handle(req: Request): Promise<Response> {
     return json({ ok: false, message: "Solo se puede pagar un ticket deportivo ganador." }, 409);
   }
 
-  const paidAt = new Date().toISOString();
-  const { data: updated, error: updateError } = await supabaseAdmin()
-    .from("sports_tickets")
-    .update({ status: "paid", paid_at: paidAt, updated_at: paidAt })
-    .eq("id", ticketId)
-    .select(`
-      id,
-      ticket_code,
-      seller_username,
-      banca_name,
-      ticket_type,
-      stake,
-      decimal_odds,
-      potential_payout,
-      status,
-      sold_at,
-      sports_ticket_legs (
-        event_label,
-        market_title,
-        selection_label,
-        decimal_odds,
-        status
-      )
-    `)
-    .single();
-  if (updateError || !updated) return json({ ok: false, message: updateError?.message ?? "No se pudo pagar ticket deportivo." }, 500);
-
-  await supabaseAdmin().from("sports_settlements").insert({
-    sports_ticket_id: ticketId,
-    settlement_type: "manual",
-    previous_status: previousStatus,
-    next_status: "paid",
-    payout_amount: number(ticket.potential_payout),
-    reason: clean(body.reason || "Pago de cobro deportivo"),
-    actor_key: actorKey,
-    metadata: { action: "pay-sports-ticket" },
+  const { data: atomicResult, error: atomicError } = await supabaseAdmin().rpc("pay_sports_ticket_atomic", {
+    p_ticket_id: ticketId,
+    p_actor_key: actorKey,
+    p_payout_amount: number(ticket.potential_payout),
+    p_reason: clean(body.reason || "Pago de cobro deportivo"),
   });
-  await supabaseAdmin().from("sports_audit_log").insert({
+  if (atomicError) return json({ ok: false, message: atomicError.message }, 500);
+  const result = atomicResult as JsonMap;
+  const updated = result.ticket as JsonMap | undefined;
+  if (result.already_paid === true) return json({ ok: true, alreadyPaid: true, ticket: ticketPayload(updated ?? {}) });
+  if (result.found !== true || !updated) return json({ ok: false, message: "El ticket deportivo ya no esta disponible para pago." }, 409);
+  const { error: auditError } = await supabaseAdmin().from("sports_audit_log").insert({
     actor_key: actorKey,
     action: "pay-sports-ticket",
     entity_table: "sports_tickets",
     entity_id: ticketId,
     metadata: { payoutAmount: number(ticket.potential_payout) },
   });
+  if (auditError) {
+    // El pago ya fue confirmado atomicamente; una falla de auditoria no debe revertirlo.
+    console.warn("sports pay audit log failed", auditError.message);
+  }
 
-  return json({ ok: true, ticket: ticketPayload(updated as JsonMap) });
+  return json({ ok: true, ticket: ticketPayload(updated) });
 }
 
 Deno.serve((req) => handle(req).catch((error) => {

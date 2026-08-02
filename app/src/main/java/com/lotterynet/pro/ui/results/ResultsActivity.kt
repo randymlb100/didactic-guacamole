@@ -13,6 +13,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
 import androidx.activity.compose.setContent
+import androidx.activity.viewModels
 import androidx.compose.ui.platform.ComposeView
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
@@ -42,16 +43,23 @@ import androidx.compose.material.icons.rounded.Share
 import androidx.compose.material.icons.rounded.Whatsapp
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.DatePicker
+import androidx.compose.material3.DatePickerDialog
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.SelectableDates
+import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -62,7 +70,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -73,6 +80,7 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.lotterynet.pro.core.calendar.LotteryClosePolicy
 import com.lotterynet.pro.core.calendar.LotteryTimeZones
 import com.lotterynet.pro.core.calendar.StaticHolidayCalendarRepository
@@ -80,6 +88,7 @@ import com.lotterynet.pro.core.catalog.LotteryAssetResolver
 import com.lotterynet.pro.core.catalog.LotteryLogoBitmapLoader
 import com.lotterynet.pro.core.catalog.StaticLotteryCatalogRepository
 import com.lotterynet.pro.core.catalog.UsPickScheduleResolver
+import com.lotterynet.pro.core.auth.SupabaseSessionTokenProvider
 import com.lotterynet.pro.core.diagnostics.NativeCrashReporter
 import com.lotterynet.pro.core.export.NativeBitmapExport
 import com.lotterynet.pro.core.export.StaticExportTemplateRepository
@@ -121,11 +130,15 @@ import com.lotterynet.pro.core.storage.LocalUsersRepository
 import com.lotterynet.pro.core.sync.LocalSyncFreshnessRepository
 import com.lotterynet.pro.core.sync.NativeOperationalSyncCoordinator
 import com.lotterynet.pro.core.sync.NativeTicketCloudSyncCoordinator
+import com.lotterynet.pro.core.sync.NativeTicketRemoteStore
 import com.lotterynet.pro.core.sync.NativeTicketSyncQueueRepository
 import com.lotterynet.pro.core.sync.SyncFreshnessType
 import com.lotterynet.pro.core.sync.SyncGovernor
+import com.lotterynet.pro.core.sync.TicketRefreshGovernor
+import com.lotterynet.pro.core.sync.ticketRefreshGovernorKey
 import com.lotterynet.pro.core.sync.buildSyncFreshnessKey
 import com.lotterynet.pro.core.sync.resolveOperationalOwnerKey
+import com.lotterynet.pro.core.sync.resolveTicketSyncOwnerKeys
 import com.lotterynet.pro.ui.common.AppTopBar
 import com.lotterynet.pro.ui.common.ActionTone
 import com.lotterynet.pro.ui.common.BottomNavBar
@@ -134,10 +147,12 @@ import com.lotterynet.pro.ui.common.CompactAdaptiveGrid
 import com.lotterynet.pro.ui.common.CompactEmptyState
 import com.lotterynet.pro.ui.common.CompactPanel
 import com.lotterynet.pro.ui.common.CompactStatusBadge
+import com.lotterynet.pro.ui.common.CurrentScopeCard
 import com.lotterynet.pro.ui.common.DropdownSelectorCard
 import com.lotterynet.pro.ui.common.LotteryLogo
 import com.lotterynet.pro.ui.common.LotteryNetWindowMode
 import com.lotterynet.pro.ui.common.NativeBottomTab
+import com.lotterynet.pro.ui.common.OperationalModalSheet
 import com.lotterynet.pro.ui.common.ScreenChromeAction
 import com.lotterynet.pro.ui.common.ScreenChromeSpec
 import com.lotterynet.pro.ui.common.SectionHeader
@@ -170,6 +185,8 @@ import kotlin.concurrent.thread
 import androidx.compose.ui.text.input.KeyboardType
 
 class ResultsActivity : AppCompatActivity() {
+    private val resultsViewModel by viewModels<ResultsViewModel>()
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         try {
@@ -186,11 +203,18 @@ class ResultsActivity : AppCompatActivity() {
             val salesRepository = LocalSalesRepository(this)
             val ownerKey = resolveOperationalOwnerKey(session)
             val cashierPrizePayoutRepository = LocalCashierPrizePayoutRepository(this)
+            val sessionTokenProvider = SupabaseSessionTokenProvider(LocalSessionRepository(this))
+            val ticketRemoteStore = NativeTicketRemoteStore(
+                bearerTokenProvider = { sessionTokenProvider.freshAccessToken() },
+                bearerTokenRefresher = { sessionTokenProvider.forceFreshAccessToken() },
+            )
             val nativeOperationalSyncCoordinator = NativeOperationalSyncCoordinator(
                 ticketGateway = NativeTicketCloudSyncCoordinator(
                     salesRepository = salesRepository,
                     queueRepository = NativeTicketSyncQueueRepository(this),
+                    remoteStore = ticketRemoteStore,
                 ),
+                remoteStampStore = ticketRemoteStore,
             )
             val ticketReconciler = TicketPrizeReconciler(
                 salesRepository = salesRepository,
@@ -201,9 +225,11 @@ class ResultsActivity : AppCompatActivity() {
                         sellerUser = ticket.sellerUser,
                     )
                 },
-                onTicketUpdated = { ticket ->
+                onTicketsUpdated = { tickets ->
                     runCatching {
-                        nativeOperationalSyncCoordinator.flushTicket(ticket, session.banca)
+                        resolveTicketSyncOwnerKeys(tickets).forEach { ownerKey ->
+                            nativeOperationalSyncCoordinator.flushOwner(ownerKey, session.banca)
+                        }
                     }
                 },
             )
@@ -232,6 +258,7 @@ class ResultsActivity : AppCompatActivity() {
                         expectedResultIdsForDate(date)
                     }
                 },
+                bearerTokenProvider = { sessionTokenProvider.freshAccessToken() },
             )
             val orchestrator = ResultsScraperOrchestrator(
                 remoteStore = remoteStore,
@@ -257,11 +284,14 @@ class ResultsActivity : AppCompatActivity() {
             val branding = LocalBrandingRepository(this).getBranding()
             val defaultDate = intent?.getStringExtra("results_date")?.takeIf { it.isNotBlank() } ?: todayDateKey()
             val initialResults = resultsRepository.getResultsForDate(defaultDate)
+            resultsViewModel.showLocal(defaultDate, initialResults.size)
 
             setContent {
+                val screenState by resultsViewModel.state.collectAsState()
                 LotteryNetComposeTheme {
                     ResultsRoute(
                         activeSession = session,
+                        sessionTokenProvider = sessionTokenProvider,
                         bancaName = session.banca ?: "LotteryNet",
                         bancaLogoUri = branding.logoUri,
                         operationTerritory = normalizeTerritory(session.territory),
@@ -293,6 +323,29 @@ class ResultsActivity : AppCompatActivity() {
                         },
                         onPrint = { payload ->
                             printResults(payload)
+                        },
+                        screenState = screenState,
+                        onOperationalStateChanged = { date, resultCount, refreshing, message ->
+                            when {
+                                refreshing -> resultsViewModel.showCatchingUp(
+                                    selectedDate = date,
+                                    resultCount = resultCount,
+                                    message = message ?: "Buscando resultados remotos...",
+                                )
+                                message?.contains("fall", ignoreCase = true) == true ||
+                                    message?.contains("No se pudo", ignoreCase = true) == true -> {
+                                    resultsViewModel.showRecoverableError(
+                                        selectedDate = date,
+                                        resultCount = resultCount,
+                                        message = message,
+                                    )
+                                }
+                                else -> resultsViewModel.showFresh(
+                                    selectedDate = date,
+                                    resultCount = resultCount,
+                                    message = message ?: "Resultados listos.",
+                                )
+                            }
                         },
                     )
                 }
@@ -372,7 +425,7 @@ class ResultsActivity : AppCompatActivity() {
         val renderCache = LocalRenderCacheRepository(this)
         val pages = NativeBitmapExport.resolveCashierResultsShareImagePages(payload)
         return pages.mapIndexedNotNull { pageIndex, page ->
-            val key = resultsRenderCacheKey(payload.dateLabel, page.rows, pageIndex, page.template.name)
+            val key = resultsRenderCacheKey(payload.dateLabel, page.rows, pageIndex, "${page.template.name}_V2")
             renderCache.getUriIfPresent(key) ?: run {
                 val bitmap = NativeBitmapExport.renderResultsShareImagePage(
                     payload = payload.copy(rows = page.rows),
@@ -519,6 +572,7 @@ internal fun resolveResultsRefreshActionUi(
 @Composable
 private fun ResultsRoute(
     activeSession: ActiveSession,
+    sessionTokenProvider: SupabaseSessionTokenProvider,
     bancaName: String,
     bancaLogoUri: String,
     role: UserRole,
@@ -538,6 +592,8 @@ private fun ResultsRoute(
     onShareWhatsAppUris: (List<Uri>) -> NativeBitmapExport.ExportActionResult,
     onSave: (ResultsSharePayload) -> String,
     onPrint: (ResultsSharePayload) -> Boolean,
+    screenState: ResultsScreenState,
+    onOperationalStateChanged: (String, Int, Boolean, String?) -> Unit,
 ) {
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
@@ -552,7 +608,7 @@ private fun ResultsRoute(
     }
     var syncSource by remember(defaultDate) { mutableStateOf("local") }
     var syncMessage by remember(defaultDate, initialResults) {
-        mutableStateOf<String?>(if (initialResults.isNotEmpty()) "Resultados locales listos." else null)
+        mutableStateOf<String?>(screenState.syncMessage ?: if (initialResults.isNotEmpty()) "Resultados locales listos." else null)
     }
     var isRefreshing by remember { mutableStateOf(false) }
     var lastManualRefreshSucceeded by remember { mutableStateOf<Boolean?>(null) }
@@ -560,11 +616,25 @@ private fun ResultsRoute(
     var tickUtcMs by remember { mutableStateOf(trustedClockRepository.getTrustedUtcMs()) }
     val stableBoardUtcMs = remember(selectedDate) { trustedClockRepository.getTrustedUtcMs() }
     var lastAutoRefreshStartedMs by remember { mutableStateOf<Long?>(null) }
+    var lastReconciledResultsSignatureByDate by remember { mutableStateOf<Map<String, String>>(emptyMap()) }
     val realtimeRefreshInFlight = remember { AtomicBoolean(false) }
     val foregroundCatchUpInFlight = remember { AtomicBoolean(false) }
+    val resultsRefreshGovernor = remember { TicketRefreshGovernor(requestCooldownMs = RESULTS_REMOTE_REFRESH_DEDUP_MS) }
     val lifecycleOwner = LocalLifecycleOwner.current
     var selectedModeWindow by remember(systemModeConfig) {
         mutableStateOf(resolveResultsModeWindowTabs(systemModeConfig).firstOrNull() ?: ResultsModeWindow.LOTTERY)
+    }
+
+    fun readLastReconcileSignature(date: String): String? {
+        return lastReconciledResultsSignatureByDate[date]
+    }
+
+    fun writeLastReconcileSignature(date: String, signature: String) {
+        lastReconciledResultsSignatureByDate = lastReconciledResultsSignatureByDate + (date to signature)
+    }
+
+    LaunchedEffect(selectedDate, results.size, isRefreshing, syncMessage) {
+        onOperationalStateChanged(selectedDate, results.size, isRefreshing, syncMessage)
     }
 
     fun applyResultsForDate(date: String, nextResults: List<LotteryResult>) {
@@ -682,6 +752,8 @@ private fun ResultsRoute(
             timeoutMs = null,
             orchestrator = orchestrator,
             ticketReconciler = ticketReconciler,
+            lastReconcileSignature = ::readLastReconcileSignature,
+            recordReconcileSignature = ::writeLastReconcileSignature,
             onApplied = { refresh, reconcile ->
                 applyRefreshForDate(requestedDate, refresh, reconcile)
             },
@@ -700,17 +772,26 @@ private fun ResultsRoute(
             if (event != Lifecycle.Event.ON_RESUME) return@LifecycleEventObserver
             val resumeDate = selectedDate
             if (!shouldRunResultsForegroundCatchUp(resumeDate, todayOffset(0))) return@LifecycleEventObserver
-            if (!foregroundCatchUpInFlight.compareAndSet(false, true)) return@LifecycleEventObserver
-            scope.launch {
-                try {
-                    kotlinx.coroutines.delay(RESULTS_FOREGROUND_CATCH_UP_DELAY_MS)
-                    runResultsRefresh(
+        if (!foregroundCatchUpInFlight.compareAndSet(false, true)) return@LifecycleEventObserver
+        scope.launch {
+            try {
+                kotlinx.coroutines.delay(RESULTS_FOREGROUND_CATCH_UP_DELAY_MS)
+                if (shouldSkipResultsRemoteRefresh(
+                        governor = resultsRefreshGovernor,
                         date = resumeDate,
-                        forceRemote = true,
-                        allowLive = false,
+                        reason = "foreground-catch-up",
+                        force = false,
+                    )
+                ) return@launch
+                runResultsRefresh(
+                    date = resumeDate,
+                    forceRemote = true,
+                    allowLive = false,
                         timeoutMs = RESULTS_FOREGROUND_CATCH_UP_TIMEOUT_MS,
                         orchestrator = orchestrator,
                         ticketReconciler = ticketReconciler,
+                        lastReconcileSignature = ::readLastReconcileSignature,
+                        recordReconcileSignature = ::writeLastReconcileSignature,
                         onApplied = { refresh, reconcile ->
                             applyRefreshForDate(
                                 resumeDate,
@@ -739,35 +820,43 @@ private fun ResultsRoute(
             onDispose { }
         } else {
             val realtimeDate = selectedDate
-            val subscriptions = listOf(
-                LotterynetRealtimeSubscription.resultsDraws(realtimeDate),
-            ).map { subscription ->
-                realtimeClient.subscribe(subscription) {
-                    if (!realtimeRefreshInFlight.compareAndSet(false, true)) {
-                        return@subscribe
-                    }
-                    scope.launch {
-                        try {
-                            runResultsRefresh(
-                                date = realtimeDate,
-                                forceRemote = shouldForceRemoteOnResultsRealtime(),
-                                allowLive = false,
-                                timeoutMs = RESULTS_REALTIME_REFRESH_TIMEOUT_MS,
-                                orchestrator = orchestrator,
-                                ticketReconciler = ticketReconciler,
-                                onApplied = { refresh, reconcile ->
-                                    applyRefreshForDate(realtimeDate, refresh, reconcile, showMessage = true)
-                                },
-                                onFailure = { error ->
-                                    crashReporter.recordHandled("ResultsActivity.realtimeRefresh", error)
-                                    if (shouldApplyResultsRefreshForSelectedDate(refreshDate = realtimeDate, selectedDate = selectedDate)) {
-                                        syncMessage = "Realtime no pudo actualizar. Se mantienen resultados guardados."
-                                    }
-                                },
-                            )
-                        } finally {
-                            realtimeRefreshInFlight.set(false)
-                        }
+            val subscriptions = realtimeClient.subscribeResultsSignals(
+                dateKey = realtimeDate,
+                bearerTokenProvider = { sessionTokenProvider.freshAccessToken() },
+            ) {
+                if (!realtimeRefreshInFlight.compareAndSet(false, true)) {
+                    return@subscribeResultsSignals
+                }
+                scope.launch {
+                    try {
+                if (shouldSkipResultsRemoteRefresh(
+                        governor = resultsRefreshGovernor,
+                        date = realtimeDate,
+                        reason = "realtime-refresh",
+                        force = false,
+                    )
+                ) return@launch
+                runResultsRefresh(
+                    date = realtimeDate,
+                    forceRemote = shouldForceRemoteOnResultsRealtime(),
+                    allowLive = false,
+                    timeoutMs = RESULTS_REALTIME_REFRESH_TIMEOUT_MS,
+                    orchestrator = orchestrator,
+                    ticketReconciler = ticketReconciler,
+                    lastReconcileSignature = ::readLastReconcileSignature,
+                    recordReconcileSignature = ::writeLastReconcileSignature,
+                    onApplied = { refresh, reconcile ->
+                        applyRefreshForDate(realtimeDate, refresh, reconcile, showMessage = true)
+                    },
+                    onFailure = { error ->
+                        crashReporter.recordHandled("ResultsActivity.realtimeRefresh", error)
+                                if (shouldApplyResultsRefreshForSelectedDate(refreshDate = realtimeDate, selectedDate = selectedDate)) {
+                                    syncMessage = "Realtime no pudo actualizar. Se mantienen resultados guardados."
+                                }
+                            },
+                        )
+                    } finally {
+                        realtimeRefreshInFlight.set(false)
                     }
                 }
             }
@@ -837,7 +926,7 @@ private fun ResultsRoute(
             selectedDateIsToday = selectedDate == todayOffset(0),
             hasWaitingResult = hasWaitingResult,
             hasRecoverableNoDrawResult = hasRecoverableNoDrawResult,
-            realtimeEnabled = realtimeEnabled,
+            realtimeEnabled = realtimeClient.shouldUsePollingFallback(),
         )
         if (!shouldAutoRefresh || isRefreshing) return@LaunchedEffect
         kotlinx.coroutines.delay(resolveResultsAutoRefreshDelayMs(realtimeEnabled))
@@ -845,6 +934,13 @@ private fun ResultsRoute(
         val refreshStartMs = System.currentTimeMillis()
         if (!shouldRunResultsAutoRefresh(refreshStartMs, lastAutoRefreshStartedMs)) return@LaunchedEffect
         val autoRefreshDate = selectedDate
+        if (shouldSkipResultsRemoteRefresh(
+                governor = resultsRefreshGovernor,
+                date = autoRefreshDate,
+                reason = "auto-refresh",
+                force = false,
+            )
+        ) return@LaunchedEffect
         lastAutoRefreshStartedMs = refreshStartMs
         isRefreshing = true
         syncMessage = "Buscando resultado disponible en servidor..."
@@ -859,6 +955,8 @@ private fun ResultsRoute(
                 timeoutMs = RESULTS_AUTO_REFRESH_TIMEOUT_MS,
                 orchestrator = orchestrator,
                 ticketReconciler = ticketReconciler,
+                lastReconcileSignature = ::readLastReconcileSignature,
+                recordReconcileSignature = ::writeLastReconcileSignature,
                 onApplied = { refresh, reconcile ->
                     applyRefreshForDate(autoRefreshDate, refresh, reconcile)
                 },
@@ -928,6 +1026,8 @@ private fun ResultsRoute(
                                             timeoutMs = RESULTS_MANUAL_REFRESH_TIMEOUT_MS,
                                             orchestrator = orchestrator,
                                             ticketReconciler = ticketReconciler,
+                                            lastReconcileSignature = ::readLastReconcileSignature,
+                                            recordReconcileSignature = ::writeLastReconcileSignature,
                                             onApplied = { refresh, reconcile ->
                                                 applyRefreshForDate(manualRefreshDate, refresh, reconcile)
                                                 if (shouldApplyResultsRefreshForSelectedDate(refreshDate = manualRefreshDate, selectedDate = selectedDate)) {
@@ -969,15 +1069,9 @@ private fun ResultsRoute(
                     onOpenMenu = { com.lotterynet.pro.ui.common.openShellMenu(context) },
                 )
                 Spacer(modifier = Modifier.size(8.dp))
-                ResultsDateChips(
+                ResultsDateSelectorCard(
                     selectedDate = selectedDate,
                     onDateSelected = { selectedDate = it },
-                )
-                Spacer(modifier = Modifier.size(8.dp))
-                ResultsDateNavigator(
-                    selectedDate = selectedDate,
-                    onPrevious = { selectedDate = todayOffset(dayDiff(selectedDate) - 1) },
-                    onNext = { selectedDate = todayOffset((dayDiff(selectedDate) + 1).coerceAtMost(0)) },
                 )
                 Spacer(modifier = Modifier.size(8.dp))
                 if (modeWindowTabs.size > 1) {
@@ -1084,6 +1178,7 @@ private const val RESULTS_REALTIME_REFRESH_TIMEOUT_MS = 12_000L
 private const val RESULTS_MANUAL_REFRESH_TIMEOUT_MS = 20_000L
 private const val RESULTS_FOREGROUND_CATCH_UP_DELAY_MS = 750L
 private const val RESULTS_FOREGROUND_CATCH_UP_TIMEOUT_MS = 12_000L
+private const val RESULTS_REMOTE_REFRESH_DEDUP_MS = 15_000L
 
 private suspend fun runResultsRefresh(
     date: String,
@@ -1092,6 +1187,8 @@ private suspend fun runResultsRefresh(
     timeoutMs: Long?,
     orchestrator: ResultsScraperOrchestrator,
     ticketReconciler: TicketPrizeReconciler,
+    lastReconcileSignature: (String) -> String?,
+    recordReconcileSignature: (String, String) -> Unit,
     onApplied: (ResultsRefreshResult, TicketReconcileSummary) -> Unit,
     onFailure: (Throwable) -> Unit,
 ) {
@@ -1115,8 +1212,16 @@ private suspend fun runResultsRefresh(
                 )
             }
         }
-        val reconcile = withContext(Dispatchers.IO) {
-            ticketReconciler.reconcileTicketsForDate(date, refresh.results)
+        val reconcileSignature = resultsReconcileSignature(refresh.results)
+        val shouldReconcile = refresh.updated || lastReconcileSignature(date) != reconcileSignature
+        val reconcile = if (shouldReconcile) {
+            withContext(Dispatchers.IO) {
+                ticketReconciler.reconcileTicketsForDate(date, refresh.results)
+            }.also {
+                recordReconcileSignature(date, reconcileSignature)
+            }
+        } else {
+            TicketReconcileSummary()
         }
         onApplied(refresh, reconcile)
     }.onFailure { error ->
@@ -1150,43 +1255,54 @@ private fun logResultsDiagnostics(
 }
 
 internal fun shouldReportResultsRefreshError(error: Throwable): Boolean {
-    return error is TimeoutCancellationException || error !is CancellationException
+    return error !is CancellationException
 }
 
 private suspend fun captureResultsListBitmap(
     context: android.content.Context,
     selectedDate: String,
     rows: List<ResultsBoardRow>,
-): Bitmap = withContext(Dispatchers.Main) {
-    val activity = context as? AppCompatActivity
-        ?: throw IllegalArgumentException("La captura de resultados requiere una Activity.")
-    val root = activity.window.decorView as ViewGroup
-    val screenWidth = root.width.takeIf { it > 0 } ?: context.resources.displayMetrics.widthPixels
-    val width = resultsWhatsAppCaptureCanvasWidthPx(
-        screenWidthPx = screenWidth,
-        density = context.resources.displayMetrics.density,
-    )
-    val composeView = ComposeView(context).apply {
-        visibility = View.INVISIBLE
-        setContent {
-            LotteryNetComposeTheme {
-                ResultsFullListCapture(selectedDate = selectedDate, rows = rows)
-            }
+): Bitmap {
+    val assetResolver = LotteryAssetResolver()
+    val pageLogoAssetPaths = rows.mapNotNull { row ->
+        assetResolver.resolveLogoAssetPath(row.lottery)
+    }.distinct()
+    withContext(Dispatchers.IO) {
+        pageLogoAssetPaths.forEach { assetPath ->
+            LotteryLogoBitmapLoader.load(context, assetPath)
         }
     }
-    root.addView(composeView, ViewGroup.LayoutParams(width, ViewGroup.LayoutParams.WRAP_CONTENT))
-    try {
-        composeView.awaitNextLayoutPass()
-        val widthSpec = View.MeasureSpec.makeMeasureSpec(width, View.MeasureSpec.EXACTLY)
-        val heightSpec = View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED)
-        composeView.measure(widthSpec, heightSpec)
-        val height = composeView.measuredHeight.coerceAtLeast(1)
-        composeView.layout(0, 0, width, height)
-        Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888).also { bitmap ->
-            composeView.draw(Canvas(bitmap))
+    return withContext(Dispatchers.Main) {
+        val activity = context as? AppCompatActivity
+            ?: throw IllegalArgumentException("La captura de resultados requiere una Activity.")
+        val root = activity.window.decorView as ViewGroup
+        val screenWidth = root.width.takeIf { it > 0 } ?: context.resources.displayMetrics.widthPixels
+        val width = resultsWhatsAppCaptureCanvasWidthPx(
+            screenWidthPx = screenWidth,
+            density = context.resources.displayMetrics.density,
+        )
+        val composeView = ComposeView(context).apply {
+            visibility = View.INVISIBLE
+            setContent {
+                LotteryNetComposeTheme {
+                    ResultsFullListCapture(selectedDate = selectedDate, rows = rows)
+                }
+            }
         }
-    } finally {
-        root.removeView(composeView)
+        root.addView(composeView, ViewGroup.LayoutParams(width, ViewGroup.LayoutParams.WRAP_CONTENT))
+        try {
+            composeView.awaitNextLayoutPass()
+            val widthSpec = View.MeasureSpec.makeMeasureSpec(width, View.MeasureSpec.EXACTLY)
+            val heightSpec = View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED)
+            composeView.measure(widthSpec, heightSpec)
+            val height = composeView.measuredHeight.coerceAtLeast(1)
+            composeView.layout(0, 0, width, height)
+            Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888).also { bitmap ->
+                composeView.draw(Canvas(bitmap))
+            }
+        } finally {
+            root.removeView(composeView)
+        }
     }
 }
 
@@ -1201,7 +1317,7 @@ private suspend fun captureResultsListUris(
     val pages = rows.chunked(resultsWhatsAppCardsPerImage()).ifEmpty { listOf(emptyList()) }
     return pages.mapIndexedNotNull { pageIndex, pageRows ->
         val shareRows = pageRows.map { it.toShareRow() }
-        val key = resultsRenderCacheKey(selectedDate, shareRows, pageIndex, template = "LIGHT_RESULT_LIST")
+        val key = resultsRenderCacheKey(selectedDate, shareRows, pageIndex, template = "LIGHT_RESULT_LIST_V2")
         val cached = renderCache.getUriIfPresent(key)
         if (cached != null) {
             cached
@@ -1325,6 +1441,9 @@ private fun ResultsFullListCapture(selectedDate: String, rows: List<ResultsBoard
 @Composable
 private fun WhatsAppResultImageCard(dateLabel: String, row: ResultsBoardRow) {
     val captureSpec = resolveResultsWhatsAppCaptureVisualSpec()
+    val logoAssetPath = remember(row.lottery) {
+        LotteryAssetResolver().resolveLogoAssetPath(row.lottery)
+    }
 
     Surface(
         modifier = Modifier
@@ -1360,7 +1479,7 @@ private fun WhatsAppResultImageCard(dateLabel: String, row: ResultsBoardRow) {
                     contentAlignment = Alignment.Center,
                 ) {
                     LotteryLogo(
-                        assetPath = row.lottery.logoAssetPath,
+                        assetPath = logoAssetPath,
                         fallback = row.lottery.name,
                         modifier = Modifier
                             .width(captureSpec.logoMaxWidthDp.dp)
@@ -1433,6 +1552,125 @@ private fun applyRefreshResult(
             else -> "No hay resultados guardados para esta fecha."
         },
     )
+}
+
+internal fun shouldSkipResultsRemoteRefresh(
+    governor: TicketRefreshGovernor,
+    date: String,
+    reason: String,
+    force: Boolean,
+    nowEpochMs: Long = System.currentTimeMillis(),
+): Boolean {
+    if (force) return false
+    return governor.shouldReuse(
+        ticketRefreshGovernorKey(
+            ownerKey = date,
+            requestType = reason,
+            authScope = "results",
+        ),
+        nowMs = nowEpochMs,
+    )
+}
+
+internal fun resultsReconcileSignature(results: List<LotteryResult>): String {
+    return results
+        .sortedWith(
+            compareBy<LotteryResult> { PickResultIdentityResolver.canonicalKeyForResult(it) }
+                .thenBy { it.date }
+                .thenBy { it.status.orEmpty() },
+        )
+        .joinToString(separator = "||") { result ->
+            listOfNotNull(
+                PickResultIdentityResolver.canonicalKeyForResult(result),
+                result.status.orEmpty(),
+                result.first.orEmpty(),
+                result.second.orEmpty(),
+                result.third.orEmpty(),
+                result.pick3.orEmpty(),
+                result.pick4.orEmpty(),
+                result.isManualOverride.toString(),
+                result.manualEditedBy.orEmpty(),
+                result.manualEditedAt.orEmpty(),
+            ).joinToString("|")
+        }
+}
+
+@Composable
+@OptIn(ExperimentalMaterial3Api::class)
+private fun ResultsDateSelectorCard(
+    selectedDate: String,
+    onDateSelected: (String) -> Unit,
+) {
+    var pickerVisible by remember { mutableStateOf(false) }
+    CurrentScopeCard(
+        title = "Fecha de resultados",
+        value = "${presentResultsDateLabel(selectedDate)} · $selectedDate",
+        subtitle = formatDayName(selectedDate),
+        actionLabel = "Cambiar",
+        onChange = { pickerVisible = true },
+        tone = ActionTone.Primary,
+    )
+    if (pickerVisible) {
+        val todayUtcMillis = remember { resultsDateKeyToPickerUtcMillis(todayOffset(0)) }
+        val pickerState = rememberDatePickerState(
+            initialSelectedDateMillis = resultsDateKeyToPickerUtcMillis(selectedDate),
+            selectableDates = object : SelectableDates {
+                override fun isSelectableDate(utcTimeMillis: Long): Boolean {
+                    return isSelectableResultsPickerDate(utcTimeMillis, todayUtcMillis)
+                }
+            },
+        )
+        DatePickerDialog(
+            onDismissRequest = { pickerVisible = false },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        pickerState.selectedDateMillis?.let { millis ->
+                            onDateSelected(pickerUtcMillisToResultsDateKey(millis))
+                        }
+                        pickerVisible = false
+                    },
+                    enabled = pickerState.selectedDateMillis != null,
+                ) {
+                    Text("Ver resultados")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { pickerVisible = false }) {
+                    Text("Cancelar")
+                }
+            },
+        ) {
+            DatePicker(
+                state = pickerState,
+                title = {
+                    Column(
+                        modifier = Modifier.padding(start = 24.dp, top = 16.dp, end = 24.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        Text("Consultar resultados", style = MaterialTheme.typography.labelLarge)
+                        ResultsDateChips(
+                            selectedDate = pickerState.selectedDateMillis
+                                ?.let(::pickerUtcMillisToResultsDateKey)
+                                ?: selectedDate,
+                            onDateSelected = {
+                                pickerState.selectedDateMillis = resultsDateKeyToPickerUtcMillis(it)
+                            },
+                        )
+                    }
+                },
+                headline = {
+                    Text(
+                        pickerState.selectedDateMillis
+                            ?.let(::pickerUtcMillisToResultsDateKey)
+                            ?.let(::presentResultsDateLabel)
+                            ?: "Selecciona una fecha",
+                    )
+                },
+                showModeToggle = false,
+            )
+        }
+    }
 }
 
 @Composable
@@ -2516,6 +2754,27 @@ internal fun offsetResultDate(date: String, offsetDays: Int): String {
         add(Calendar.DAY_OF_YEAR, offsetDays)
     }
     return format.format(calendar.time)
+}
+
+internal fun resultsDateKeyToPickerUtcMillis(dateKey: String): Long {
+    val format = SimpleDateFormat("dd-MM-yyyy", Locale.US).apply {
+        isLenient = false
+        timeZone = TimeZone.getTimeZone("UTC")
+    }
+    return requireNotNull(format.parse(dateKey)) { "Fecha de resultados inválida: $dateKey" }.time
+}
+
+internal fun pickerUtcMillisToResultsDateKey(utcTimeMillis: Long): String {
+    return SimpleDateFormat("dd-MM-yyyy", Locale.US).apply {
+        timeZone = TimeZone.getTimeZone("UTC")
+    }.format(Date(utcTimeMillis))
+}
+
+internal fun isSelectableResultsPickerDate(
+    candidateUtcMillis: Long,
+    todayUtcMillis: Long,
+): Boolean {
+    return candidateUtcMillis <= todayUtcMillis
 }
 
 internal fun resolveLocalResultsForSelectedDate(

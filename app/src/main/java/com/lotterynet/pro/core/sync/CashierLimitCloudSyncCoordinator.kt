@@ -28,6 +28,16 @@ class CashierLimitCloudSyncCoordinator(
         }.getOrDefault(false)
     }
 
+    fun pushPoolLimitsServiceFirst(ownerId: String?, limits: CashierSalesLimitInputs): Boolean {
+        val key = ownerId?.takeIf { it.isNotBlank() } ?: return false
+        val payload = repository.buildPayloadWithPoolLimits(key, limits)
+        return runCatching {
+            remoteStore.upsertJsonValue(cashierLimitRemoteKey(key), payload)
+            repository.cachePayload(key, payload)
+            true
+        }.getOrDefault(false)
+    }
+
     fun pushDefaultLimitsForUsersServiceFirst(
         ownerId: String?,
         limits: CashierSalesLimitInputs,

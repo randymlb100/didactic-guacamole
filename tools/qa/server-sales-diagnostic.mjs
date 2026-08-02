@@ -132,11 +132,28 @@ function findAccount(payload, username) {
   );
 }
 
-async function fetchUsersPayload() {
+function resolvedAccount(loginSession, fallbackUsername) {
+  const user = loginSession?.user;
+  return {
+    id: clean(user?.id || fallbackUsername),
+    user: clean(user?.username || user?.user || fallbackUsername),
+    username: clean(user?.username || user?.user || fallbackUsername),
+    role: clean(user?.role || "cashier"),
+    adminId: clean(user?.adminId || user?.admin_id || ""),
+    adminUser: clean(user?.adminUser || user?.admin_user || ""),
+    banca: clean(user?.banca || user?.bank || ""),
+  };
+}
+
+async function fetchUsersPayload(token = API_KEY) {
+  const edgeResult = await edge("lotterynet-users-state", { action: "fetch" }, token);
+  if (edgeResult.ok && edgeResult.json?.payload) return edgeResult.json.payload;
   const result = await requestJson(
     "users-state fetch",
     "GET",
     `${SUPABASE_URL}/rest/v1/lotterynet_users_state?scope=eq.global&select=payload`,
+    undefined,
+    token,
   );
   if (!result.ok) throw new Error(`No se pudo leer usuarios: ${redact(result.text)}`);
   return result.json?.[0]?.payload ?? {};
@@ -287,29 +304,42 @@ async function main() {
   });
 
   const credentials = parseCredentials(await readFile(CREDENTIAL_FILE, "utf8"));
-  const usersPayload = await fetchUsersPayload();
-  const admin = findAccount(usersPayload, "podero02");
   const adminCredential = credentials.find((entry) => lower(entry.username) === "podero02");
-  const cashierEntries = credentials
+  const cashierCredentials = credentials
     .filter((entry) => lower(entry.username).startsWith("bancae"))
-    .map((entry) => ({ credential: entry, account: findAccount(usersPayload, entry.username) }))
-    .filter((entry) => entry.account)
     .slice(0, 4);
 
-  check(Boolean(admin && adminCredential), "admin de prueba disponible", { username: "podero02", id: admin?.id });
-  check(cashierEntries.length >= 4, "hay 4 cajeros de prueba", { cashiers: cashierEntries.map((entry) => entry.account.user) });
-  if (!admin || !adminCredential || cashierEntries.length < 4) throw new Error("Faltan credenciales de prueba.");
+  check(Boolean(adminCredential), "credencial admin disponible", { username: "podero02", found: Boolean(adminCredential) });
+  check(cashierCredentials.length >= 4, "hay 4 credenciales de cajero", {
+    cashiers: cashierCredentials.map((entry) => entry.username),
+  });
+  if (!adminCredential || cashierCredentials.length < 4) throw new Error("Faltan credenciales de prueba.");
 
   const adminSession = await login(adminCredential.username, adminCredential.password);
   const cashierSessions = [];
-  for (const entry of cashierEntries) {
-    cashierSessions.push({ ...entry, session: await login(entry.credential.username, entry.credential.password) });
+  for (const credential of cashierCredentials) {
+    cashierSessions.push({ credential, session: await login(credential.username, credential.password) });
   }
+
   check(adminSession.ok, "login admin valido", { status: adminSession.status, user: adminSession.user?.username });
   check(cashierSessions.every((entry) => entry.session.ok), "login cajeros valido", {
     ok: cashierSessions.filter((entry) => entry.session.ok).length,
     total: cashierSessions.length,
   });
+
+  const usersPayload = await fetchUsersPayload(adminSession.token);
+  const admin = findAccount(usersPayload, "podero02") ?? resolvedAccount(adminSession, "podero02");
+  const cashierEntries = cashierSessions
+    .map((entry) => ({
+      credential: entry.credential,
+      account: findAccount(usersPayload, entry.credential.username) ?? resolvedAccount(entry.session, entry.credential.username),
+      session: entry.session,
+    }))
+    .slice(0, 4);
+
+  check(Boolean(admin && adminCredential), "admin de prueba disponible", { username: "podero02", id: admin?.id });
+  check(cashierEntries.length >= 4, "hay 4 cajeros de prueba", { cashiers: cashierEntries.map((entry) => entry.account.user) });
+  if (!admin || !adminCredential || cashierEntries.length < 4) throw new Error("Faltan credenciales de prueba.");
 
   const mixedPickLotteries = [
     { id: "19", name: "NJ Pick 3 Dia", type: "Pick3" },
@@ -317,11 +347,11 @@ async function main() {
   ];
   const keyboardScenarios = [
     { label: "normal-q-admin", session: adminSession, actor: admin, lottery: { id: "1", name: "La Primera Día" }, keys: ["6", "5", "OK"], amountKeys: ["1"], modeKey: "Q", expectedLotteryId: "1" },
-    { label: "normal-q-cajero", session: cashierSessions[0].session, actor: cashierSessions[0].account, lottery: { id: "1", name: "La Primera Día" }, keys: ["1", "2", "OK"], amountKeys: ["1"], modeKey: "Q", expectedLotteryId: "1" },
-    { label: "mixed-p3-straight", session: cashierSessions[0].session, actor: cashierSessions[0].account, selectedLotteries: mixedPickLotteries, keys: ["2", "5", "6", "OK"], amountKeys: ["1"], modeKey: "P3", expectedLotteryId: "19" },
-    { label: "mixed-p3-box", session: cashierSessions[1].session, actor: cashierSessions[1].account, selectedLotteries: mixedPickLotteries, keys: ["6", "5", "2", "OK"], amountKeys: ["1"], modeKey: "P3BOX", expectedLotteryId: "19" },
-    { label: "mixed-p4-straight", session: cashierSessions[2].session, actor: cashierSessions[2].account, selectedLotteries: mixedPickLotteries, keys: ["5", "4", "2", "3", "OK"], amountKeys: ["1"], modeKey: "P4", expectedLotteryId: "21" },
-    { label: "mixed-p4-box", session: cashierSessions[3].session, actor: cashierSessions[3].account, selectedLotteries: mixedPickLotteries, keys: ["3", "2", "4", "5", "OK"], amountKeys: ["1"], modeKey: "P4BOX", expectedLotteryId: "21" },
+    { label: "normal-q-cajero", session: cashierEntries[0].session, actor: cashierEntries[0].account, lottery: { id: "1", name: "La Primera Día" }, keys: ["1", "2", "OK"], amountKeys: ["1"], modeKey: "Q", expectedLotteryId: "1" },
+    { label: "mixed-p3-straight", session: cashierEntries[0].session, actor: cashierEntries[0].account, selectedLotteries: mixedPickLotteries, keys: ["2", "5", "6", "OK"], amountKeys: ["1"], modeKey: "P3", expectedLotteryId: "19" },
+    { label: "mixed-p3-box", session: cashierEntries[1].session, actor: cashierEntries[1].account, selectedLotteries: mixedPickLotteries, keys: ["6", "5", "2", "OK"], amountKeys: ["1"], modeKey: "P3BOX", expectedLotteryId: "19" },
+    { label: "mixed-p4-straight", session: cashierEntries[2].session, actor: cashierEntries[2].account, selectedLotteries: mixedPickLotteries, keys: ["5", "4", "2", "3", "OK"], amountKeys: ["1"], modeKey: "P4", expectedLotteryId: "21" },
+    { label: "mixed-p4-box", session: cashierEntries[3].session, actor: cashierEntries[3].account, selectedLotteries: mixedPickLotteries, keys: ["3", "2", "4", "5", "OK"], amountKeys: ["1"], modeKey: "P4BOX", expectedLotteryId: "21" },
   ];
 
   const created = [];
@@ -373,8 +403,8 @@ async function main() {
 
   const duplicatePlay = { playType: "Q", number: "44", amount: 1, potentialPayout: 0, lotteryId: "1", lotteryName: "La Primera Día" };
   const duplicateId = `${runId}-duplicate-sequential`;
-  const duplicateFirst = await createTicket(cashierSessions[0].session, cashierSessions[0].account, admin, "duplicate-sequential-a", [duplicatePlay], { clientRequestId: duplicateId });
-  const duplicateSecond = await createTicket(cashierSessions[0].session, cashierSessions[0].account, admin, "duplicate-sequential-b", [duplicatePlay], { clientRequestId: duplicateId });
+  const duplicateFirst = await createTicket(cashierEntries[0].session, cashierEntries[0].account, admin, "duplicate-sequential-a", [duplicatePlay], { clientRequestId: duplicateId });
+  const duplicateSecond = await createTicket(cashierEntries[0].session, cashierEntries[0].account, admin, "duplicate-sequential-b", [duplicatePlay], { clientRequestId: duplicateId });
   check(duplicateFirst.result.json?.ok === true, "primera venta duplicado secuencial creada", { status: duplicateFirst.result.status });
   check(duplicateSecond.result.status !== 0, "segunda venta duplicado secuencial respondio sin bloqueo de red", {
     status: duplicateSecond.result.status,
@@ -384,8 +414,8 @@ async function main() {
 
   const concurrentId = `${runId}-duplicate-concurrent`;
   const concurrentResults = await Promise.all([
-    createTicket(cashierSessions[1].session, cashierSessions[1].account, admin, "duplicate-concurrent-a", [duplicatePlay], { clientRequestId: concurrentId }),
-    createTicket(cashierSessions[1].session, cashierSessions[1].account, admin, "duplicate-concurrent-b", [duplicatePlay], { clientRequestId: concurrentId }),
+    createTicket(cashierEntries[1].session, cashierEntries[1].account, admin, "duplicate-concurrent-a", [duplicatePlay], { clientRequestId: concurrentId }),
+    createTicket(cashierEntries[1].session, cashierEntries[1].account, admin, "duplicate-concurrent-b", [duplicatePlay], { clientRequestId: concurrentId }),
   ]);
   check(concurrentResults.every((result) => result.result.status !== 0), "duplicado concurrente recibe respuesta del servidor", {
     statuses: concurrentResults.map((result) => result.result.status),

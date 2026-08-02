@@ -19,6 +19,7 @@ import com.lotterynet.pro.ui.finance.FinanceActivity
 import com.lotterynet.pro.ui.login.LoginActivity
 import com.lotterynet.pro.ui.master.MasterCreateBankActivity
 import com.lotterynet.pro.ui.master.MasterDashboardActivity
+import com.lotterynet.pro.ui.master.MasterServicesGamesActivity
 import com.lotterynet.pro.ui.printer.PrinterActivity
 import com.lotterynet.pro.ui.report.OperationalReportActivity
 import com.lotterynet.pro.ui.recharge.RecargasActivity
@@ -26,6 +27,7 @@ import com.lotterynet.pro.ui.results.ResultsActivity
 import com.lotterynet.pro.ui.sales.SalesActivity
 import com.lotterynet.pro.ui.shell.ShellActivity
 import com.lotterynet.pro.ui.sportsbook.SportsbookActivity
+import com.lotterynet.pro.ui.servicesgames.ServicesGamesActivity
 import com.lotterynet.pro.ui.tickets.TicketLookupActivity
 import com.lotterynet.pro.ui.tickets.TicketOfficialActivity
 import com.lotterynet.pro.ui.tickets.TicketSummaryActivity
@@ -46,6 +48,7 @@ enum class NativeDestination(
     RESULTS(ResultsActivity::class.java.name),
     RECHARGE(RecargasActivity::class.java.name),
     SPORTSBOOK(SportsbookActivity::class.java.name),
+    SERVICES_GAMES(ServicesGamesActivity::class.java.name),
     PRINTER(PrinterActivity::class.java.name),
     ADMIN_WINNERS(AdminWinnersActivity::class.java.name),
     USER_ACCOUNTS(UserAccountsActivity::class.java.name),
@@ -57,6 +60,7 @@ enum class NativeDestination(
     ADMIN_AUDIT(AdminAuditActivity::class.java.name),
     ADMIN_DASHBOARD(AdminDashboardActivity::class.java.name),
     MASTER_DASHBOARD(MasterDashboardActivity::class.java.name),
+    MASTER_SERVICES_GAMES(MasterServicesGamesActivity::class.java.name),
     MASTER_CREATE_BANK(MasterCreateBankActivity::class.java.name),
 }
 
@@ -84,6 +88,9 @@ fun allowedNativeDestinations(role: UserRole): Set<NativeDestination> {
         if (role in setOf(UserRole.MASTER, UserRole.ADMIN, UserRole.SUPERVISOR, UserRole.CASHIER)) {
             add(NativeDestination.SPORTSBOOK)
         }
+        if (role == UserRole.ADMIN || role == UserRole.CASHIER) {
+            add(NativeDestination.SERVICES_GAMES)
+        }
         if (canRolePerform(role, RoleCapability.PRINT)) add(NativeDestination.PRINTER)
         if (canRolePerform(role, RoleCapability.MANAGE_USERS)) add(NativeDestination.USER_ACCOUNTS)
         if (canRolePerform(role, RoleCapability.MANAGE_LIMITS)) add(NativeDestination.ADMIN_LIMITS)
@@ -100,6 +107,7 @@ fun allowedNativeDestinations(role: UserRole): Set<NativeDestination> {
         if (canRolePerform(role, RoleCapability.VIEW_AUDIT)) add(NativeDestination.ADMIN_AUDIT)
         if (canRolePerform(role, RoleCapability.MANAGE_BANKS)) {
             add(NativeDestination.MASTER_DASHBOARD)
+            add(NativeDestination.MASTER_SERVICES_GAMES)
             add(NativeDestination.MASTER_CREATE_BANK)
         }
     }
@@ -214,6 +222,7 @@ fun intentForDestination(context: Context, destination: NativeDestination): Inte
         NativeDestination.RESULTS -> Intent(context, ResultsActivity::class.java)
         NativeDestination.RECHARGE -> Intent(context, RecargasActivity::class.java)
         NativeDestination.SPORTSBOOK -> Intent(context, SportsbookActivity::class.java)
+        NativeDestination.SERVICES_GAMES -> Intent(context, ServicesGamesActivity::class.java)
         NativeDestination.PRINTER -> Intent(context, PrinterActivity::class.java)
         NativeDestination.ADMIN_WINNERS -> Intent(context, AdminWinnersActivity::class.java)
         NativeDestination.USER_ACCOUNTS -> Intent(context, UserAccountsActivity::class.java)
@@ -225,6 +234,7 @@ fun intentForDestination(context: Context, destination: NativeDestination): Inte
         NativeDestination.ADMIN_AUDIT -> Intent(context, AdminAuditActivity::class.java)
         NativeDestination.ADMIN_DASHBOARD -> Intent(context, AdminDashboardActivity::class.java)
         NativeDestination.MASTER_DASHBOARD -> Intent(context, MasterDashboardActivity::class.java)
+        NativeDestination.MASTER_SERVICES_GAMES -> Intent(context, MasterServicesGamesActivity::class.java)
         NativeDestination.MASTER_CREATE_BANK -> Intent(context, MasterCreateBankActivity::class.java)
     }
 }

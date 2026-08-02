@@ -214,6 +214,21 @@ class LotteryClosePolicyContractsTest {
     }
 
     @Test
+    fun `quiniela real keeps its explicit twelve fifty five close time`() {
+        val lottery = catalog.getLotteryById("5") ?: error("Missing Quiniela Real")
+
+        val decision = policy.resolveCloseDecision(
+            lottery = lottery,
+            operationTerritory = LotteryTerritory.RD,
+            nowUtcMs = utcMillis("2026-05-25T16:54:00Z"),
+        )
+
+        assertEquals("12:55 PM", decision.drawTime)
+        assertEquals("12:55", decision.closeTime)
+        assertFalse(decision.isClosed)
+    }
+
+    @Test
     fun `loteka cashier closes at seven fifty five while admin keeps ten minute grace`() {
         val lottery = catalog.getLotteryById("12") ?: error("Missing Quiniela Loteka")
 
@@ -237,6 +252,35 @@ class LotteryClosePolicyContractsTest {
 
         assertTrue(cashierDecision.isClosed)
         assertEquals("19:55", cashierDecision.closeTime)
+        assertFalse(adminDecision.isClosed)
+        assertEquals(CloseState.DANGER, adminDecision.state)
+        assertTrue(afterGraceDecision.isClosed)
+    }
+
+    @Test
+    fun `leidsa cashier closes at eight fifty five while admin keeps ten minute grace`() {
+        val lottery = catalog.getLotteryById("15") ?: error("Missing Leidsa")
+
+        val cashierDecision = policy.resolveCloseDecision(
+            lottery = lottery,
+            operationTerritory = LotteryTerritory.RD,
+            nowUtcMs = utcMillis("2026-05-26T00:56:00Z"),
+        )
+        val adminDecision = policy.resolveCloseDecision(
+            lottery = lottery,
+            operationTerritory = LotteryTerritory.RD,
+            allowAdminAfterCloseGrace = true,
+            nowUtcMs = utcMillis("2026-05-26T00:56:00Z"),
+        )
+        val afterGraceDecision = policy.resolveCloseDecision(
+            lottery = lottery,
+            operationTerritory = LotteryTerritory.RD,
+            allowAdminAfterCloseGrace = true,
+            nowUtcMs = utcMillis("2026-05-26T01:06:00Z"),
+        )
+
+        assertTrue(cashierDecision.isClosed)
+        assertEquals("20:55", cashierDecision.closeTime)
         assertFalse(adminDecision.isClosed)
         assertEquals(CloseState.DANGER, adminDecision.state)
         assertTrue(afterGraceDecision.isClosed)

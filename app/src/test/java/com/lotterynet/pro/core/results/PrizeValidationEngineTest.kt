@@ -40,6 +40,29 @@ class PrizeValidationEngineTest {
     }
 
     @Test
+    fun `quiniela counts repeated result positions as separate hits`() {
+        val ticket = ticketWith(playType = "Q", number = "13", amount = 10.0)
+        val repeatedResult = LotteryResult(
+            lotteryId = "lot-1",
+            lotteryName = "Loteria",
+            date = "2026-04-30",
+            first = "13",
+            second = "88",
+            third = "13",
+        )
+        val config = PrizeTableConfig(q1 = 100, q2 = 50, q3 = 25)
+
+        val outcome = engine.validate(ticket, listOf(repeatedResult), config)
+
+        assertEquals("winner", outcome.ticket.status)
+        assertEquals(1250.0, outcome.totalPrize, 0.0)
+        assertEquals(2, outcome.matchCount)
+        assertEquals(1, outcome.ticket.winningDetails.size)
+        assertEquals("1,3", outcome.ticket.winningDetails.single().hitPosition)
+        assertEquals(1250.0, outcome.ticket.winningDetails.single().payoutAmount, 0.0)
+    }
+
+    @Test
     fun `legacy pale payout is normalized before calculating prize`() {
         val ticket = ticketWith(playType = "P", number = "1234", amount = 5.0)
         val legacyConfig = PrizeTableConfig(pale = 100000, pale12 = 100000, pale13 = 100000, pale23 = 100000)

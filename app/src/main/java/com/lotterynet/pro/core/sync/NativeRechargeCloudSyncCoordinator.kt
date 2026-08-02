@@ -29,17 +29,7 @@ class NativeRechargeCloudSyncCoordinator(
             if (normalizedOwner.isBlank()) {
                 return NativeRechargeCloudSyncResult(false, "No hay banca/admin para sincronizar recargas.")
             }
-            val remoteRecharges = remoteStore.fetchRecharges(normalizedOwner)
-            if (remoteRecharges.isNotEmpty()) {
-                rechargeRepository.replaceScopedImportedRecharges(normalizedOwner, remoteRecharges)
-            }
-            val flush = flushOwner(normalizedOwner)
-            NativeRechargeCloudSyncResult(
-                ok = flush.ok,
-                message = if (flush.ok) "Recargas sincronizadas con servidor." else flush.message,
-                pushedCount = flush.pushedCount,
-                pulledCount = remoteRecharges.size,
-            )
+            flushOwner(normalizedOwner).copy(message = "Recargas sincronizadas con servidor.")
         }.getOrElse { error ->
             NativeRechargeCloudSyncResult(false, error.message ?: "No se pudo cargar recargas del servidor.")
         }

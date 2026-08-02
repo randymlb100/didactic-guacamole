@@ -107,6 +107,7 @@ class LocalCashierPrizePayoutRepository(
     fun cachePayload(ownerId: String?, payload: String) {
         val key = ownerId?.takeIf { it.isNotBlank() } ?: return
         if (payload.isBlank()) return
+        if (prefs.getString(SalesStorageKeys.CASHIER_PRIZE_PAYOUTS_PREFIX + key, null) == payload) return
         prefs.edit { putString(SalesStorageKeys.CASHIER_PRIZE_PAYOUTS_PREFIX + key, payload) }
     }
 }

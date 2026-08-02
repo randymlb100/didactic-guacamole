@@ -1,8 +1,6 @@
 package com.lotterynet.pro.core.finance
 
 import com.lotterynet.pro.core.sync.SyncFreshnessRecord
-import com.lotterynet.pro.core.sync.SyncFreshnessState
-import com.lotterynet.pro.core.sync.resolveCacheAwareSyncState
 
 data class FinanceRemoteRefreshDecision(
     val shouldRefreshRemote: Boolean,
@@ -18,31 +16,12 @@ fun resolveFinanceRemoteRefreshDecision(
     nowEpochMs: Long,
     staleTodayMs: Long = FINANCE_TODAY_REFRESH_WINDOW_MS,
 ): FinanceRemoteRefreshDecision {
-    if (forceRemote) {
-        return FinanceRemoteRefreshDecision(
-            shouldRefreshRemote = true,
-            initialMessage = "Cargando desde servidor...",
-        )
-    }
-    val state = resolveCacheAwareSyncState(
-        hasLocalData = hasLocalData,
-        forceRemote = false,
-        localComplete = true,
-        freshnessRecord = freshnessRecord,
-        nowEpochMs = nowEpochMs,
-        staleAfterMs = if (selectedDayKey == todayDayKey) staleTodayMs else Long.MAX_VALUE,
+    // Financial reports are authoritative on the server for every selected range.
+    // The local copy is used only while the request is in flight or if it fails.
+    return FinanceRemoteRefreshDecision(
+        shouldRefreshRemote = true,
+        initialMessage = if (forceRemote) "Cargando desde servidor..." else "Consultando servidor...",
     )
-    return if (state == SyncFreshnessState.NEEDS_SERVER) {
-        FinanceRemoteRefreshDecision(
-            shouldRefreshRemote = true,
-            initialMessage = "Actualizando servidor...",
-        )
-    } else {
-        FinanceRemoteRefreshDecision(
-            shouldRefreshRemote = false,
-            initialMessage = "Datos locales listos",
-        )
-    }
 }
 
 const val FINANCE_TODAY_REFRESH_WINDOW_MS: Long = 60_000L

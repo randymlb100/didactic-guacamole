@@ -70,11 +70,13 @@ function matchesAccount(account: Record<string, unknown>, idOrUser: string): boo
 }
 
 function allAccounts(payload: Record<string, unknown>): Record<string, unknown>[] {
+  const users = accountArray(payload.users);
   const supervisors = [
     ...accountArray(payload.supervisores),
     ...accountArray(payload.supervisors),
   ];
   return [
+    ...users,
     ...accountArray(payload.admins),
     ...supervisors,
     ...accountArray(payload.cajeros),
@@ -231,6 +233,7 @@ async function saveAuthLink(account: Record<string, unknown>, authUserId: string
     .maybeSingle();
   if (readError) throw readError;
   const payload = (data?.payload ?? {}) as Record<string, unknown>;
+  const users = accountArray(payload.users);
   const admins = accountArray(payload.admins);
   const supervisors = [
     ...accountArray(payload.supervisores),
@@ -239,10 +242,13 @@ async function saveAuthLink(account: Record<string, unknown>, authUserId: string
     all.findIndex((other) => lower(other.id) === lower(candidate.id) || lower(other.user) === lower(candidate.user)) === index
   );
   const cajeros = accountArray(payload.cajeros);
+  const nextSupervisors = replaceAccountWithAuth(supervisors, account, authUserId);
   const nextPayload = {
     ...payload,
+    users: replaceAccountWithAuth(users, account, authUserId),
     admins: replaceAccountWithAuth(admins, account, authUserId),
-    supervisores: replaceAccountWithAuth(supervisors, account, authUserId),
+    supervisores: nextSupervisors,
+    supervisors: nextSupervisors,
     cajeros: replaceAccountWithAuth(cajeros, account, authUserId),
   };
   const { error } = await service

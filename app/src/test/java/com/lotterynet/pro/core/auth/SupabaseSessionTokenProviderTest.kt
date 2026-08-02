@@ -5,8 +5,8 @@ import com.lotterynet.pro.core.model.SavedLogin
 import com.lotterynet.pro.core.model.SessionSnapshot
 import com.lotterynet.pro.core.model.UserRole
 import com.lotterynet.pro.core.repository.SessionRepository
+import java.util.Base64
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNull
 import org.junit.Test
 
 class SupabaseSessionTokenProviderTest {
@@ -30,7 +30,30 @@ class SupabaseSessionTokenProviderTest {
     }
 
     @Test
-    fun `fresh access token does not reuse stale jwt when refresh fails`() {
+    fun `fresh access token reuses cached healthy session`() {
+        val repository = FakeSessionRepository(
+            active = activeSession(
+                accessToken = "cached-token",
+                refreshToken = "refresh-token",
+                expiresAt = 2_000L,
+            ),
+        )
+        val provider = SupabaseSessionTokenProvider(
+            sessionRepository = repository,
+            authRefresher = FakeAuthRefresher(),
+            nowEpochSeconds = { 1_000L },
+        )
+
+        val first = provider.freshAccessToken()
+        val second = provider.freshAccessToken()
+
+        assertEquals("cached-token", first)
+        assertEquals("cached-token", second)
+        assertEquals(1, repository.getActiveSessionCalls)
+    }
+
+    @Test
+    fun `fresh access token preserves current token when refresh fails`() {
         val repository = FakeSessionRepository(
             active = activeSession(
                 accessToken = "expired-token",
@@ -45,12 +68,32 @@ class SupabaseSessionTokenProviderTest {
             nowEpochSeconds = { 1_095L },
         ).freshAccessToken()
 
-        assertNull(token)
+        assertEquals("expired-token", token)
         assertEquals("expired-token", repository.getActiveSession()?.authAccessToken)
     }
 
     @Test
-    fun `fresh access token does not reuse expiring jwt when refresh token is missing`() {
+    fun `force fresh access token preserves current token when refresh fails`() {
+        val repository = FakeSessionRepository(
+            active = activeSession(
+                accessToken = "forced-current-token",
+                refreshToken = "refresh-token",
+                expiresAt = 1_100L,
+            ),
+        )
+
+        val token = SupabaseSessionTokenProvider(
+            sessionRepository = repository,
+            authRefresher = FakeAuthRefresher(error = IllegalStateException("refresh rejected")),
+            nowEpochSeconds = { 1_095L },
+        ).forceFreshAccessToken()
+
+        assertEquals("forced-current-token", token)
+        assertEquals("forced-current-token", repository.getActiveSession()?.authAccessToken)
+    }
+
+    @Test
+    fun `fresh access token preserves current token when refresh token is missing`() {
         val repository = FakeSessionRepository(
             active = activeSession(
                 accessToken = "expiring-token",
@@ -65,7 +108,7 @@ class SupabaseSessionTokenProviderTest {
             nowEpochSeconds = { 1_095L },
         ).freshAccessToken()
 
-        assertNull(token)
+        assertEquals("expiring-token", token)
     }
 
     @Test
@@ -128,11 +171,92 @@ class SupabaseSessionTokenProviderTest {
         assertEquals("new-refresh", repository.getActiveSession()?.authRefreshToken)
     }
 
+    @Test
+    fun `fresh access token reads jwt exp when saved expiry is missing`() {
+        val jwt = jwtWithExp(2_000L)
+        val repository = FakeSessionRepository(
+            active = activeSession(
+                accessToken = jwt,
+                refreshToken = "refresh-token",
+                expiresAt = 0L,
+            ).copy(authExpiresAtEpochSeconds = null),
+        )
+
+        val token = SupabaseSessionTokenProvider(
+            sessionRepository = repository,
+            authRefresher = FakeAuthRefresher(),
+            nowEpochSeconds = { 1_000L },
+        ).freshAccessToken()
+
+        assertEquals(jwt, token)
+    }
+
+    @Test
+    fun `fresh access token refreshes expired jwt when saved expiry is missing`() {
+        val repository = FakeSessionRepository(
+            active = activeSession(
+                accessToken = jwtWithExp(1_000L),
+                refreshToken = "refresh-token",
+                expiresAt = 0L,
+            ).copy(authExpiresAtEpochSeconds = null),
+        )
+        val refresher = FakeAuthRefresher(
+            session = SupabaseAuthBridgeSession(
+                authUserId = "auth-1",
+                accessToken = "renewed-token",
+                refreshToken = "renewed-refresh",
+                expiresAtEpochSeconds = 3_000L,
+            ),
+        )
+
+        val token = SupabaseSessionTokenProvider(
+            sessionRepository = repository,
+            authRefresher = refresher,
+            nowEpochSeconds = { 1_100L },
+        ).freshAccessToken()
+
+        assertEquals("renewed-token", token)
+        assertEquals(1, refresher.refreshCalls)
+    }
+
+    @Test
+    fun `force fresh access token refreshes even when current jwt looks usable`() {
+        val repository = FakeSessionRepository(
+            active = activeSession(
+                accessToken = "old-token",
+                refreshToken = "refresh-token",
+                expiresAt = 9_999L,
+            ),
+        )
+        val refresher = FakeAuthRefresher(
+            session = SupabaseAuthBridgeSession(
+                authUserId = "auth-1",
+                accessToken = "forced-token",
+                refreshToken = "forced-refresh",
+                expiresAtEpochSeconds = 12_000L,
+            ),
+        )
+
+        val token = SupabaseSessionTokenProvider(
+            sessionRepository = repository,
+            authRefresher = refresher,
+            nowEpochSeconds = { 1_000L },
+        ).forceFreshAccessToken()
+
+        assertEquals("forced-token", token)
+        assertEquals("forced-token", repository.getActiveSession()?.authAccessToken)
+        assertEquals(1, refresher.refreshCalls)
+    }
+
     private class FakeAuthRefresher(
         private val session: SupabaseAuthBridgeSession? = null,
         private val error: Throwable? = null,
     ) : SupabaseAuthRefresher {
+        var refreshCalls: Int = 0
+            private set
+
         override fun refreshSession(refreshToken: String): SupabaseAuthBridgeSession {
+            refreshCalls += 1
             error?.let { throw it }
             return checkNotNull(session) { "No refresh expected." }
         }
@@ -142,9 +266,15 @@ class SupabaseSessionTokenProviderTest {
         private var active: ActiveSession?,
         private val saved: SavedLogin? = null,
     ) : SessionRepository {
+        var getActiveSessionCalls: Int = 0
+            private set
+
         override fun getSavedLogin(): SavedLogin? = saved
         override fun saveSavedLogin(savedLogin: SavedLogin?) = Unit
-        override fun getActiveSession(): ActiveSession? = active
+        override fun getActiveSession(): ActiveSession? {
+            getActiveSessionCalls += 1
+            return active
+        }
         override fun saveActiveSession(activeSession: ActiveSession?) {
             active = activeSession
         }
@@ -168,5 +298,15 @@ class SupabaseSessionTokenProviderTest {
             authRefreshToken = refreshToken,
             authExpiresAtEpochSeconds = expiresAt,
         )
+    }
+
+    private fun jwtWithExp(exp: Long): String {
+        val header = Base64.getUrlEncoder()
+            .withoutPadding()
+            .encodeToString("""{"alg":"HS256"}""".toByteArray(Charsets.UTF_8))
+        val payload = Base64.getUrlEncoder()
+            .withoutPadding()
+            .encodeToString("""{"exp":$exp}""".toByteArray(Charsets.UTF_8))
+        return "$header.$payload.signature"
     }
 }

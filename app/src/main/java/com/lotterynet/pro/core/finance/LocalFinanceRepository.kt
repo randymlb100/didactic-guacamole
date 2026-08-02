@@ -6,11 +6,13 @@ import com.lotterynet.pro.core.model.RechargeRecord
 import com.lotterynet.pro.core.model.TicketRecord
 import com.lotterynet.pro.core.model.UserAccount
 import com.lotterynet.pro.core.model.UserRole
+import com.lotterynet.pro.core.operations.cashierDisplayLabel
 import com.lotterynet.pro.core.operations.filterCashiersForSession
 import com.lotterynet.pro.core.operations.sortCashierAccountsNatural
 import com.lotterynet.pro.core.repository.UsersRepository
 import com.lotterynet.pro.core.storage.LocalRechargeRepository
 import com.lotterynet.pro.core.storage.LocalSalesRepository
+import java.time.DayOfWeek
 import java.time.LocalDate
 import java.util.Locale
 
@@ -30,8 +32,8 @@ internal fun resolveFinanceRange(
             label = anchor.toString(),
         )
         FinancePeriodPreset.WEEK -> {
-            val start = anchor.minusDays(6)
-            val end = anchor
+            val start = anchor.with(DayOfWeek.MONDAY)
+            val end = anchor.with(DayOfWeek.SUNDAY)
             FinanceResolvedRange(
                 preset = preset,
                 anchorDayKey = anchor.toString(),
@@ -104,8 +106,10 @@ internal fun matchesFinanceActorTicket(
     if (matchesAnyActorToken(ticket.sellerId, actorTokens) || matchesAnyActorToken(ticket.sellerUser, actorTokens)) {
         return true
     }
-    val canFallbackToAdminOwner = ticket.role == UserRole.ADMIN ||
+    val canFallbackToAdminOwner = actorAccount?.role != UserRole.CASHIER &&
+        (ticket.role == UserRole.ADMIN ||
         (ticket.sellerId.isNullOrBlank() && ticket.sellerUser.isNullOrBlank())
+        )
     if (!canFallbackToAdminOwner) return false
     return matchesAnyActorToken(ticket.adminId, actorTokens) || matchesAnyActorToken(ticket.adminUser, actorTokens)
 }
@@ -121,7 +125,8 @@ internal fun matchesFinanceActorRecharge(
     if (matchesAnyActorToken(row.userId, actorTokens) || matchesAnyActorToken(row.userName, actorTokens)) {
         return true
     }
-    val canFallbackToAdminOwner = row.userId.isNullOrBlank() && row.userName.isNullOrBlank()
+    val canFallbackToAdminOwner = actorAccount?.role != UserRole.CASHIER &&
+        row.userId.isNullOrBlank() && row.userName.isNullOrBlank()
     if (!canFallbackToAdminOwner) return false
     return matchesAnyActorToken(row.adminId, actorTokens) || matchesAnyActorToken(row.adminUser, actorTokens)
 }
@@ -137,8 +142,10 @@ internal fun matchesFinanceActorDeletedTicket(
     if (matchesAnyActorToken(ref.sellerId, actorTokens) || matchesAnyActorToken(ref.sellerUser, actorTokens)) {
         return true
     }
-    val canFallbackToAdminOwner = ref.role == UserRole.ADMIN ||
+    val canFallbackToAdminOwner = actorAccount?.role != UserRole.CASHIER &&
+        (ref.role == UserRole.ADMIN ||
         (ref.sellerId.isNullOrBlank() && ref.sellerUser.isNullOrBlank())
+        )
     if (!canFallbackToAdminOwner) return false
     return matchesAnyActorToken(ref.adminId, actorTokens) || matchesAnyActorToken(ref.adminUser, actorTokens)
 }
@@ -165,6 +172,35 @@ internal fun filterFinanceActorRecharges(
     }
 }
 
+internal data class FinanceActorIdentity(
+    val actorKey: String,
+    val actorDisplay: String,
+    val actorAccount: UserAccount?,
+)
+
+internal fun resolveFinanceSessionActorIdentity(
+    session: ActiveSession,
+    usersRepository: UsersRepository,
+): FinanceActorIdentity {
+    if (session.role == UserRole.ADMIN) {
+        val key = session.adminId ?: session.userId
+        return FinanceActorIdentity(
+            actorKey = key,
+            actorDisplay = session.adminUser ?: session.username,
+            actorAccount = usersRepository.findByIdOrUser(key),
+        )
+    }
+    val account = listOf(session.userId, session.username, session.authUserId)
+        .firstNotNullOfOrNull { key ->
+            key?.let(usersRepository::findByIdOrUser)
+        }
+    return FinanceActorIdentity(
+        actorKey = account?.id ?: session.userId,
+        actorDisplay = account?.let(::cashierDisplayLabel) ?: session.username,
+        actorAccount = account,
+    )
+}
+
 private fun buildActorTokens(
     actorKey: String?,
     actorDisplay: String?,
@@ -177,6 +213,7 @@ private fun buildActorTokens(
             actorAccount?.id,
             actorAccount?.user,
             actorAccount?.displayName,
+            actorAccount?.authUserId,
         ).forEach { value ->
             value?.trim()?.takeIf { it.isNotBlank() }?.let { add(it.lowercase(Locale.US)) }
         }
@@ -237,18 +274,22 @@ class LocalFinanceRepository(
                             cashier.id.normalizedActorKey(),
                             cashier.user.normalizedActorKey(),
                             cashier.displayName.normalizedActorKey(),
+                            cashierDisplayLabel(cashier).normalizedActorKey(),
                         )
                     },
                 )
             }
-            else -> FinanceScope(
-                type = FinanceScopeType.ACTOR,
-                adminId = session.adminId,
-                adminUser = session.adminUser,
-                bancaName = session.banca,
-                actorKey = session.userId,
-                actorDisplay = session.username,
-            )
+            else -> {
+                val identity = resolveFinanceSessionActorIdentity(session, usersRepository)
+                FinanceScope(
+                    type = FinanceScopeType.ACTOR,
+                    adminId = session.adminId,
+                    adminUser = session.adminUser,
+                    bancaName = session.banca,
+                    actorKey = identity.actorKey,
+                    actorDisplay = identity.actorDisplay,
+                )
+            }
         }
     }
 
@@ -290,6 +331,7 @@ class LocalFinanceRepository(
                     cashier.id.normalizedActorKey(),
                     cashier.user.normalizedActorKey(),
                     cashier.displayName.normalizedActorKey(),
+                    cashierDisplayLabel(cashier).normalizedActorKey(),
                 )
             },
         )
@@ -316,6 +358,19 @@ class LocalFinanceRepository(
             ),
             supervisorCommission = calculateSupervisorCommissionForDays(listOf(dayKey), scope),
         )
+    }
+
+    /**
+     * Local projection for Cobro: only tickets with a winning signal.
+     * It reuses the existing cache and scope; it does not sync or change totals.
+     */
+    internal fun getScopedWinningTicketsForDay(
+        dayKey: String,
+        scope: FinanceScope,
+    ): List<TicketRecord> {
+        return getScopedTicketsForDay(dayKey, scope)
+            .filter(::isFinanceWinnerTicket)
+            .sortedByDescending { it.createdAtEpochMs }
     }
 
     fun getScopedPeriodReport(
@@ -361,6 +416,9 @@ class LocalFinanceRepository(
             summary = aggregate,
             rows = rows.sortedByDescending { it.dayKey },
             actorRows = buildScopedActorRows(days, scope),
+            winningTickets = days
+                .flatMap { dayKey -> getScopedWinningTicketsForDay(dayKey, scope) }
+                .sortedByDescending { it.createdAtEpochMs },
         )
     }
 
@@ -389,15 +447,17 @@ class LocalFinanceRepository(
         session: ActiveSession,
         turnoStartEpochMs: Long,
     ): TurnoFinanceSummary {
-        val actorKey = resolveActorKey(session)
-        val actorDisplay = resolveActorDisplay(session)
+        val identity = resolveFinanceSessionActorIdentity(session, usersRepository)
+        val actorKey = identity.actorKey
+        val actorDisplay = identity.actorDisplay
+        val actorAccount = identity.actorAccount
         val ticketRows = salesRepository
             .getTicketsForDay(dayKey)
-            .let { rows -> filterFinanceActorTickets(rows, actorKey, actorDisplay, usersRepository.findByIdOrUser(actorKey)) }
+            .let { rows -> filterFinanceActorTickets(rows, actorKey, actorDisplay, actorAccount) }
             .filter { it.createdAtEpochMs >= turnoStartEpochMs }
         val rechargeRows = rechargeRepository
             .getRechargesForDay(dayKey)
-            .let { rows -> filterFinanceActorRecharges(rows, actorKey, actorDisplay, usersRepository.findByIdOrUser(actorKey)) }
+            .let { rows -> filterFinanceActorRecharges(rows, actorKey, actorDisplay, actorAccount) }
             .filter { it.createdAtEpochMs >= turnoStartEpochMs }
         return TurnoFinanceSummary(
             actorKey = actorKey,
@@ -408,7 +468,7 @@ class LocalFinanceRepository(
                 rechargeRows = rechargeRows,
                 deletedRows = salesRepository.getDeletedTicketRefsForDay(dayKey).filter { ref ->
                     ref.deletedAtEpochMs >= turnoStartEpochMs &&
-                        matchesFinanceActorDeletedTicket(ref, actorKey, actorDisplay, usersRepository.findByIdOrUser(actorKey))
+                        matchesFinanceActorDeletedTicket(ref, actorKey, actorDisplay, actorAccount)
                 },
             ),
         )
@@ -468,20 +528,6 @@ class LocalFinanceRepository(
         if (normalized < 0.0) normalized = 0.0
         if (normalized > 1.0) normalized = 1.0
         return normalized
-    }
-
-    private fun resolveActorKey(session: ActiveSession): String {
-        return when (session.role) {
-            UserRole.ADMIN -> session.adminId ?: session.userId
-            else -> session.userId
-        }
-    }
-
-    private fun resolveActorDisplay(session: ActiveSession): String {
-        return when (session.role) {
-            UserRole.ADMIN -> session.adminUser ?: session.username
-            else -> session.username
-        }
     }
 
     private fun getScopedTicketsForDay(
@@ -583,15 +629,16 @@ class LocalFinanceRepository(
             .filter { cashier -> matchesFinanceCashierScope(cashier, scope) }
             .let(::sortCashierAccountsNatural)
         return cashiers.map { cashier ->
+            val actorDisplay = cashierDisplayLabel(cashier)
             FinanceActorPeriodRow(
                 actorKey = cashier.id,
-                actorDisplay = cashier.displayName ?: cashier.user,
+                actorDisplay = actorDisplay,
                 summary = summarize(
-                    rows = days.flatMap { dayKey -> getTicketsForFinanceActor(dayKey, cashier.id, cashier.displayName ?: cashier.user, cashier) },
-                    rechargeRows = days.flatMap { dayKey -> getRechargesForFinanceActor(dayKey, cashier.id, cashier.displayName ?: cashier.user, cashier) },
+                    rows = days.flatMap { dayKey -> getTicketsForFinanceActor(dayKey, cashier.id, actorDisplay, cashier) },
+                    rechargeRows = days.flatMap { dayKey -> getRechargesForFinanceActor(dayKey, cashier.id, actorDisplay, cashier) },
                     deletedRows = days.flatMap { dayKey ->
                         salesRepository.getDeletedTicketRefsForDay(dayKey).filter { ref ->
-                            matchesFinanceActorDeletedTicket(ref, cashier.id, cashier.displayName ?: cashier.user, cashier)
+                            matchesFinanceActorDeletedTicket(ref, cashier.id, actorDisplay, cashier)
                         }
                     },
                 ),
@@ -622,10 +669,12 @@ class LocalFinanceRepository(
             if (assignedCashiers.isEmpty()) return@sumOf 0.0
             val summary = summarize(
                 rows = assignedCashiers.flatMap { cashier ->
-                    days.flatMap { dayKey -> getTicketsForFinanceActor(dayKey, cashier.id, cashier.displayName ?: cashier.user, cashier) }
+                    val actorDisplay = cashierDisplayLabel(cashier)
+                    days.flatMap { dayKey -> getTicketsForFinanceActor(dayKey, cashier.id, actorDisplay, cashier) }
                 },
                 rechargeRows = assignedCashiers.flatMap { cashier ->
-                    days.flatMap { dayKey -> getRechargesForFinanceActor(dayKey, cashier.id, cashier.displayName ?: cashier.user, cashier) }
+                    val actorDisplay = cashierDisplayLabel(cashier)
+                    days.flatMap { dayKey -> getRechargesForFinanceActor(dayKey, cashier.id, actorDisplay, cashier) }
                 },
             )
             calculateSupervisorCommission(summary, rate)
@@ -725,7 +774,7 @@ internal fun matchesFinanceCashierScope(
     scope: FinanceScope,
 ): Boolean {
     if (scope.allowedActorKeys.isNotEmpty()) {
-        val keys = listOf(cashier.id, cashier.user, cashier.displayName)
+        val keys = listOf(cashier.id, cashier.user, cashier.displayName, cashierDisplayLabel(cashier))
             .mapNotNull { it.normalizedActorKey() }
             .toSet()
         if (keys.none { it in scope.allowedActorKeys }) return false
@@ -868,6 +917,12 @@ internal fun isFinancePendingWinner(ticket: TicketRecord): Boolean {
     return !isFinanceVoidStatus(ticket) &&
         !isFinancePaidStatus(ticket) &&
         (isFinanceWinnerStatus(ticket) || ticket.totalPrize > 0.0)
+}
+
+internal fun isFinanceWinnerTicket(ticket: TicketRecord): Boolean {
+    if (isFinanceVoidStatus(ticket)) return false
+    return isFinancePendingWinner(ticket) ||
+        (isFinancePaidStatus(ticket) && (ticket.totalPrize > 0.0 || ticket.winningDetails.isNotEmpty()))
 }
 
 internal fun isFinanceCancelledStatus(ticket: TicketRecord): Boolean {

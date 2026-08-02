@@ -96,13 +96,9 @@ function findAccount(payload, username) {
 }
 
 async function fetchUsersPayload() {
-  const result = await requestJson(
-    "users-state fetch",
-    "GET",
-    `${SUPABASE_URL}/rest/v1/lotterynet_users_state?scope=eq.global&select=payload`,
-  );
+  const result = await edge("lotterynet-users-state", { action: "fetch" });
   if (!result.ok) throw new Error(`No se pudo leer usuarios: ${result.text}`);
-  return result.json?.[0]?.payload ?? {};
+  return result.json?.payload ?? {};
 }
 
 async function login(credential) {

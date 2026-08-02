@@ -1,0 +1,12 @@
+{
+  "compilerOptions": {
+    "lib": ["deno.ns", "dom", "dom.iterable"],
+    "strict": true
+  },
+  "tasks": {
+    "check:edge": "deno check supabase/functions/_shared/lotterynet-admin.ts supabase/functions/_shared/upstash-redis.ts supabase/functions/_shared/sentry-edge.ts supabase/functions/get-ticket-list/index.ts supabase/functions/get-ticket-delta/index.ts supabase/functions/get-results-v2/index.ts supabase/functions/results-server-refresh/index.ts supabase/functions/get-master-config/index.ts"
+  },
+  "imports": {
+    "@supabase/functions-js/edge-runtime.d.ts": "jsr:@supabase/functions-js/edge-runtime.d.ts"
+  }
+}

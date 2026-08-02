@@ -40,6 +40,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.safeDrawing
+import com.lotterynet.pro.core.auth.SupabaseSessionTokenProvider
 import com.lotterynet.pro.core.catalog.StaticLotteryCatalogRepository
 import com.lotterynet.pro.core.model.ActiveSession
 import com.lotterynet.pro.core.model.LotteryCatalogItem
@@ -59,15 +60,19 @@ import com.lotterynet.pro.core.sync.NativeTicketSyncQueueRepository
 import com.lotterynet.pro.core.sync.OperationalSyncThrottle
 import com.lotterynet.pro.core.sync.resolveOperationalOwnerKey
 import com.lotterynet.pro.core.sync.resolveOperationalOwnerKeys
+import com.lotterynet.pro.core.sync.resolveOperationalRealtimeOwnerKeys
+import com.lotterynet.pro.core.sync.invalidateTicketRealtimeCaches
 import com.lotterynet.pro.ui.common.CompactEmptyState
 import com.lotterynet.pro.ui.common.CompactSegmentedSelector
-import com.lotterynet.pro.ui.common.CompactStatusBadge
 import com.lotterynet.pro.ui.common.CompactToggleSwitch
 import com.lotterynet.pro.ui.common.CompactPanel
 import com.lotterynet.pro.ui.common.CompactRecordRow
+import com.lotterynet.pro.ui.common.CurrentScopeCard
+import com.lotterynet.pro.ui.common.CurrentScopeDropdownCard
 import com.lotterynet.pro.ui.common.MetricStrip
 import com.lotterynet.pro.ui.common.MetricStripItem
 import com.lotterynet.pro.ui.common.OperationalListHeader
+import com.lotterynet.pro.ui.common.OperationalModalSheet
 import com.lotterynet.pro.ui.common.QuickFilterChip
 import com.lotterynet.pro.ui.common.SectionHeader
 import com.lotterynet.pro.ui.common.ActionTone
@@ -87,7 +92,7 @@ class AdminLotteryMonitorActivity : AppCompatActivity() {
     private val syncHandler = Handler(Looper.getMainLooper())
     private val realtimeClient = LotterynetRealtimeClient()
     private val realtimeSubscriptions = mutableListOf<LotterynetRealtimeClient.SubscriptionHandle>()
-    private val remoteStampStore = NativeTicketRemoteStore()
+    private lateinit var remoteStampStore: NativeTicketRemoteStore
     private val foregroundCatchUpPolicy = ForegroundCatchUpPolicy(
         OperationalSyncThrottle(ADMIN_LOTTERY_MONITOR_FOREGROUND_CATCH_UP_THROTTLE_MS),
     )
@@ -100,7 +105,9 @@ class AdminLotteryMonitorActivity : AppCompatActivity() {
     private val resumeSyncRunnable = Runnable { runForegroundCatchUp(force = false) }
     private val syncPollRunnable = object : Runnable {
         override fun run() {
-            syncLotteryMonitor(force = false)
+            if (realtimeClient.shouldUsePollingFallback()) {
+                runForegroundCatchUp(force = false)
+            }
             syncHandler.postDelayed(this, resolveAdminLotteryMonitorPollIntervalMs(realtimeClient.isConfigured()))
         }
     }
@@ -112,11 +119,18 @@ class AdminLotteryMonitorActivity : AppCompatActivity() {
         session = activeSession ?: return
         LocalUsersRepository(this).touchSession(session)
         salesRepository = LocalSalesRepository(this)
+        val sessionTokenProvider = SupabaseSessionTokenProvider(LocalSessionRepository(this))
+        remoteStampStore = NativeTicketRemoteStore(
+            bearerTokenProvider = { sessionTokenProvider.freshAccessToken() },
+            bearerTokenRefresher = { sessionTokenProvider.forceFreshAccessToken() },
+        )
         operationalSyncCoordinator = NativeOperationalSyncCoordinator(
             ticketGateway = NativeTicketCloudSyncCoordinator(
                 salesRepository = salesRepository,
                 queueRepository = NativeTicketSyncQueueRepository(this),
+                remoteStore = remoteStampStore,
             ),
+            remoteStampStore = remoteStampStore,
         )
         val catalog = StaticLotteryCatalogRepository().getAllLotteries()
         val visibleCatalog = filterMonitorLotteriesForSystemMode(
@@ -237,9 +251,14 @@ class AdminLotteryMonitorActivity : AppCompatActivity() {
         } else if (realtimeSubscriptions.isNotEmpty()) {
             return
         }
-        resolveOperationalOwnerKeys(session).forEach { ownerKey ->
-            realtimeSubscriptions += realtimeClient.subscribe(LotterynetRealtimeSubscription.ticketOwner(ownerKey)) {
-                syncLotteryMonitor(force = true)
+        val tokenProvider = SupabaseSessionTokenProvider(LocalSessionRepository(this))
+        resolveOperationalRealtimeOwnerKeys(session).forEach { ownerKey ->
+            realtimeSubscriptions += realtimeClient.subscribeTicketOwnerSignals(
+                ownerKey = ownerKey,
+                bearerTokenProvider = { tokenProvider.freshAccessToken() },
+            ) {
+                invalidateTicketRealtimeCaches(ownerKey)
+                syncLotteryMonitor(force = false)
             }
         }
     }
@@ -275,6 +294,10 @@ private const val ADMIN_LOTTERY_MONITOR_FOREGROUND_CATCH_UP_THROTTLE_MS = 10_000
 
 internal fun resolveAdminLotteryMonitorPollIntervalMs(realtimeEnabled: Boolean): Long {
     return if (realtimeEnabled) ADMIN_LOTTERY_MONITOR_REALTIME_FALLBACK_POLL_MS else ADMIN_LOTTERY_MONITOR_POLL_MS
+}
+
+internal fun shouldLotteryMonitorTabShowNumberRanking(tabId: String): Boolean {
+    return tabId == LotteryMonitorTab.PLAYS.id || tabId == LotteryMonitorTab.RANKING.id
 }
 
 internal fun resolveAdminLotteryMonitorForegroundCatchUpInput(
@@ -336,6 +359,8 @@ private fun AdminLotteryMonitorRoute(
     var selectedPlayViewName by rememberSaveable { mutableStateOf(LotteryMonitorPlayView.QUINIELA.name) }
     var highestFirst by rememberSaveable { mutableStateOf(true) }
     var showEmptyLotteries by rememberSaveable { mutableStateOf(false) }
+    var showScopeSheet by rememberSaveable { mutableStateOf(false) }
+    var showLotteryViewSheet by rememberSaveable { mutableStateOf(false) }
     val filteredTickets = remember(tickets, range) { filterTicketsByRange(tickets, range) }
     val rows = remember(filteredTickets, lotteries, showEmptyLotteries) { buildLotteryRows(filteredTickets, lotteries, includeEmpty = showEmptyLotteries) }
     val visibleRows = remember(rows, playFocusId) { filterLotteryRowsByPlayFocus(rows, playFocusId) }
@@ -388,16 +413,25 @@ private fun AdminLotteryMonitorRoute(
                 )
             }
             item {
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
-                    CompactStatusBadge(label = "Sincronizado", tone = Color(0xFF059669))
-                }
+                CurrentScopeDropdownCard(
+                    title = "Vista principal",
+                    value = LotteryMonitorTab.entries.firstOrNull { it.id == tabId }?.label ?: "Loterías",
+                    selectedId = tabId,
+                    options = LotteryMonitorTab.entries.map { it.id to it.label },
+                    onSelected = { tabId = it },
+                    subtitle = "Cambia entre loterías, ranking y totales sin llenar la pantalla de pestañas.",
+                    actionLabel = "Panel",
+                    tone = ActionTone.IntenseBlue,
+                )
             }
             item {
-                CompactSegmentedSelector(
-                    options = LotteryMonitorTab.entries.map { QuickFilterChip(it.id, it.label) },
-                    selectedId = tabId,
-                    onSelected = { tabId = it },
-                    columns = 4,
+                CurrentScopeCard(
+                    title = "Alcance del monitor",
+                    value = range.label,
+                    subtitle = "${filteredTickets.size} tickets · ${if (showEmptyLotteries) "incluye sin venta" else "solo ventas"}",
+                    actionLabel = "Cambiar",
+                    tone = ActionTone.IntenseBlue,
+                    onChange = { showScopeSheet = true },
                 )
             }
             item {
@@ -410,36 +444,18 @@ private fun AdminLotteryMonitorRoute(
                             MetricStripItem("SP/Pick", "${monitorMoney(totalSP)} / ${monitorMoney(totalPick3 + totalPick4)}", Color(0xFF7C3AED)),
                         ),
                     )
-                    CompactSegmentedSelector(
-                        options = LotteryMonitorRange.entries.map { QuickFilterChip(it.name, it.label) },
-                        selectedId = range.name,
-                        onSelected = { id -> range = LotteryMonitorRange.entries.first { it.name == id } },
-                        columns = 4,
-                    )
-                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                        Column {
-                            Text("Mostrar sin venta", style = MaterialTheme.typography.labelMedium, color = visual.colors.ink, fontWeight = FontWeight.Bold)
-                            Text("Incluye loterías en $ 0", style = MaterialTheme.typography.labelSmall, color = visual.colors.muted)
-                        }
-                        CompactToggleSwitch(
-                            checked = showEmptyLotteries,
-                            onCheckedChange = { showEmptyLotteries = it },
-                            tone = ActionTone.IntenseBlue,
-                        )
-                    }
                 }
             }
-            if (tabId == LotteryMonitorTab.LOTTERIES.id || tabId == LotteryMonitorTab.RANKING.id) {
+            if (tabId == LotteryMonitorTab.LOTTERIES.id) {
                 item {
-                    CompactPanel(alt = true) {
-                        OperationalListHeader(title = "Vista", meta = LotteryMonitorPlayFocus.entries.first { it.id == playFocusId }.label)
-                        CompactSegmentedSelector(
-                            options = LotteryMonitorPlayFocus.entries.map { QuickFilterChip(it.id, it.label) },
-                            selectedId = playFocusId,
-                            onSelected = { playFocusId = it },
-                            columns = 3,
-                        )
-                    }
+                    CurrentScopeCard(
+                        title = "Vista de loterías",
+                        value = LotteryMonitorPlayFocus.entries.first { it.id == playFocusId }.label,
+                        subtitle = "Controla qué tipo de jugada se resume.",
+                        actionLabel = "Cambiar",
+                        tone = ActionTone.Primary,
+                        onChange = { showLotteryViewSheet = true },
+                    )
                 }
                 if (visibleRows.isEmpty()) {
                     item {
@@ -454,24 +470,18 @@ private fun AdminLotteryMonitorRoute(
                     }
                 }
             }
-            if (tabId == LotteryMonitorTab.PLAYS.id) {
+            if (shouldLotteryMonitorTabShowNumberRanking(tabId)) {
                 item {
-                    CompactPanel(alt = true) {
-                        OperationalListHeader(title = "Números jugados", meta = selectedPlayView.label)
-                        CompactSegmentedSelector(
-                            options = playViews.map { QuickFilterChip(it.name, it.label) },
-                            selectedId = selectedPlayView.name,
-                            onSelected = { id -> playViews.firstOrNull { it.name == id }?.let { selectedPlayViewName = it.name } },
-                            columns = if (playViews.size <= 2) 2 else 3,
-                        )
-                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                            Column {
-                                Text("Mayor apuesta primero", style = MaterialTheme.typography.labelMedium, color = visual.colors.ink, fontWeight = FontWeight.Bold)
-                                Text("Cambia a menor apuesta apagando", style = MaterialTheme.typography.labelSmall, color = visual.colors.muted)
-                            }
-                            CompactToggleSwitch(checked = highestFirst, onCheckedChange = { highestFirst = it }, tone = ActionTone.IntenseBlue)
-                        }
-                    }
+                    CurrentScopeDropdownCard(
+                        title = if (tabId == LotteryMonitorTab.RANKING.id) "Ranking de números" else "Números jugados",
+                        value = selectedPlayView.label,
+                        selectedId = selectedPlayView.name,
+                        options = playViews.map { it.name to it.label },
+                        onSelected = { selectedPlayViewName = it },
+                        subtitle = if (highestFirst) "Mayor apuesta primero" else "Menor apuesta primero",
+                        actionLabel = "Vista",
+                        tone = ActionTone.Purple,
+                    )
                 }
                 if (numberRows.isEmpty()) {
                     item { CompactEmptyState("No hay números jugados para ${selectedPlayView.label}.") }
@@ -502,6 +512,57 @@ private fun AdminLotteryMonitorRoute(
             }
             }
         }
+        if (showScopeSheet) {
+            OperationalModalSheet(
+                title = "Alcance del monitor",
+                subtitle = "Periodo y loterías visibles.",
+                onDismiss = { showScopeSheet = false },
+                contentScrollable = false,
+            ) {
+                CompactPanel(alt = true) {
+                    OperationalListHeader(title = "Periodo", meta = range.label)
+                    CompactSegmentedSelector(
+                        options = LotteryMonitorRange.entries.map { QuickFilterChip(it.name, it.label) },
+                        selectedId = range.name,
+                        onSelected = { id -> range = LotteryMonitorRange.entries.first { it.name == id } },
+                        columns = 2,
+                    )
+                }
+                CompactPanel {
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text("Mostrar sin venta", style = MaterialTheme.typography.labelMedium, color = visual.colors.ink, fontWeight = FontWeight.Bold)
+                            Text("Incluye loterías en $ 0 para revisar catálogo completo.", style = MaterialTheme.typography.labelSmall, color = visual.colors.muted)
+                        }
+                        CompactToggleSwitch(
+                            checked = showEmptyLotteries,
+                            onCheckedChange = { showEmptyLotteries = it },
+                            tone = ActionTone.IntenseBlue,
+                        )
+                    }
+                }
+            }
+        }
+        if (showLotteryViewSheet) {
+            OperationalModalSheet(
+                title = "Vista de loterías",
+                subtitle = "Elige el tipo de jugada que quieres resumir.",
+                onDismiss = { showLotteryViewSheet = false },
+                contentScrollable = false,
+            ) {
+                CompactPanel(alt = true) {
+                    CompactSegmentedSelector(
+                        options = LotteryMonitorPlayFocus.entries.map { QuickFilterChip(it.id, it.label) },
+                        selectedId = playFocusId,
+                        onSelected = {
+                            playFocusId = it
+                            showLotteryViewSheet = false
+                        },
+                        columns = 2,
+                    )
+                }
+            }
+        }
     }
     }
 }
@@ -510,7 +571,11 @@ private fun AdminLotteryMonitorRoute(
 private fun LotteryNumberRankingRow(row: LotteryNumberMonitorRow) {
     val visual = rememberLotteryNetVisualSpec()
     CompactPanel(contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 10.dp, vertical = 8.dp)) {
-        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
             Box(
                 modifier = Modifier
                     .background(Color(0xFFE6EEFF), RoundedCornerShape(8.dp))
@@ -520,13 +585,29 @@ private fun LotteryNumberRankingRow(row: LotteryNumberMonitorRow) {
                 Text(row.displayNumber, style = MaterialTheme.typography.titleMedium, color = Color(0xFF155BD6), fontWeight = FontWeight.Bold, fontFamily = FontFamily.Monospace)
             }
             Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                Text("Apostado ${monitorMoney(row.amount)}", style = MaterialTheme.typography.titleSmall, color = visual.colors.ink, fontWeight = FontWeight.Bold)
+                Text(
+                    "${row.limitScopeLabel ?: "Tope"} · ${monitorMoney(row.amount)}",
+                    style = MaterialTheme.typography.titleSmall,
+                    color = visual.colors.ink,
+                    fontWeight = FontWeight.Bold,
+                )
                 val limitLine = row.remainingAmount?.let { remaining ->
-                    "Cajeros ${monitorMoney(row.cashierAmount)} · queda ${monitorMoney(remaining)}"
+                    val limitAmount = monitorMoney(row.limitAmount ?: 0.0)
+                    "${row.limitScopeLabel ?: "Tope"} $limitAmount · queda ${monitorMoney(remaining)}"
                 }
-                Text(limitLine ?: "${row.playsCount} jugadas · ${row.actors.take(3).joinToString(", ").ifBlank { "sin cajero" }}", style = MaterialTheme.typography.labelSmall, color = visual.colors.muted, maxLines = 1)
+                Text(
+                    limitLine ?: "${row.playsCount} jugadas · ${row.actors.take(3).joinToString(", ").ifBlank { "sin cajero" }}",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = visual.colors.muted,
+                    maxLines = 1,
+                )
             }
-            CompactStatusBadge(label = "${row.playsCount}", tone = gainColor())
+            Text(
+                "${row.playsCount}",
+                style = MaterialTheme.typography.titleMedium,
+                color = gainColor(),
+                fontWeight = FontWeight.Bold,
+            )
         }
     }
 }
@@ -682,7 +763,7 @@ private fun buildLotteryRows(
         ticket.plays.forEach { play ->
             val lotteryId = play.lotteryId ?: return@forEach
             rows[lotteryId] = mergePlayIntoLottery(rows[lotteryId] ?: return@forEach, play.playType, play.amount)
-            if (play.playType.equals("SP", true)) {
+            if (normalizeLotteryMonitorPlayType(play.playType) == "SP") {
                 play.secondaryLotteryId?.let { secondaryId ->
                     rows[secondaryId]?.let { secondary ->
                         rows[secondaryId] = mergePlayIntoLottery(secondary, play.playType, play.amount)
@@ -710,7 +791,7 @@ private fun mergePlayIntoLottery(
     playType: String,
     amount: Double,
 ): LotteryMonitorRow {
-    return when (playType.uppercase(Locale.ROOT)) {
+    return when (normalizeLotteryMonitorPlayType(playType)) {
         "Q" -> row.copy(q = row.q + amount, total = row.total + amount)
         "P" -> row.copy(p = row.p + amount, total = row.total + amount)
         "T" -> row.copy(t = row.t + amount, total = row.total + amount)

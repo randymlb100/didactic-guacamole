@@ -53,6 +53,9 @@ class LocalSalesRepository(
             val dayKey = ticket.effectiveDrawDateKey()
             val currentTickets = getTicketsForDay(dayKey)
             val previous = currentTickets.firstOrNull { existing -> sameTicketRecordIdentity(existing, ticket) }
+            if (previous == ticket) {
+                return
+            }
             val tickets = if (previous == null) {
                 currentTickets + ticket
             } else {
@@ -77,13 +80,45 @@ class LocalSalesRepository(
         synchronized(STORAGE_LOCK) {
             val normalizedOwner = ownerKey?.trim().orEmpty()
             if (normalizedOwner.isBlank() && tickets.isEmpty()) return
+            val previousTickets = getAllTickets()
             val merged = reconcileScopedImportedTickets(
-                existing = getAllTickets(),
+                existing = previousTickets,
                 ownerKey = normalizedOwner,
                 imported = tickets,
                 deletedIds = getDeletedTicketIds(),
             )
             saveAllTickets(merged)
+            notifyNewWinningTransitions(previousTickets, tickets)
+        }
+    }
+
+    fun mergeImportedTickets(tickets: List<TicketRecord>) {
+        if (tickets.isEmpty()) return
+        synchronized(STORAGE_LOCK) {
+            val previousTickets = getAllTickets()
+            val merged = filterDeletedTickets(
+                tickets = mergeTicketsPreferImported(previousTickets, tickets),
+                deletedIds = getDeletedTicketIds(),
+            )
+            saveAllTickets(merged)
+            notifyNewWinningTransitions(previousTickets, tickets)
+        }
+    }
+
+    private fun notifyNewWinningTransitions(
+        previousTickets: List<TicketRecord>,
+        importedTickets: List<TicketRecord>,
+    ) {
+        if (importedTickets.isEmpty()) return
+        val activeSession = LocalSessionRepository(appContext).getActiveSession()
+        importedTickets.forEach { current ->
+            val previous = previousTickets.firstOrNull { existing -> sameTicketRecordIdentity(existing, current) }
+            WinningTicketNotifier.notifyIfNewPendingWinner(
+                context = appContext,
+                previous = previous,
+                current = current,
+                activeSession = activeSession,
+            )
         }
     }
 
@@ -185,33 +220,37 @@ class LocalSalesRepository(
     private fun markTicketDeleted(ticket: TicketRecord) {
         val dayKey = ticket.effectiveDrawDateKey()
         markTicketDeleted(ticket.id)
-        val refs = getDeletedTicketRefs()
-            .filterNot { it.id == ticket.id }
-            .plus(
-                DeletedTicketRef(
-                    id = ticket.id,
-                    dayKey = dayKey,
-                    deletedAtEpochMs = System.currentTimeMillis(),
-                    total = ticket.total,
-                    sellerId = ticket.sellerId,
-                    sellerUser = ticket.sellerUser,
-                    adminId = ticket.adminId,
-                    adminUser = ticket.adminUser,
-                    role = ticket.role,
+        val refs = orderDeletedTicketRefsForStableStorage(
+            getDeletedTicketRefs()
+                .filterNot { it.id == ticket.id }
+                .plus(
+                    DeletedTicketRef(
+                        id = ticket.id,
+                        dayKey = dayKey,
+                        deletedAtEpochMs = System.currentTimeMillis(),
+                        total = ticket.total,
+                        sellerId = ticket.sellerId,
+                        sellerUser = ticket.sellerUser,
+                        adminId = ticket.adminId,
+                        adminUser = ticket.adminUser,
+                        role = ticket.role,
+                    ),
                 ),
-            )
-        prefs.edit(commit = true) {
-            putString(SalesStorageKeys.DELETED_TICKET_REFS_KEY, JSONArray(refs.map(::deletedTicketRefToJson)).toString())
-        }
+        )
+        writeSharedPreferenceIfChanged(
+            key = SalesStorageKeys.DELETED_TICKET_REFS_KEY,
+            value = JSONArray(refs.map(::deletedTicketRefToJson)).toString(),
+        )
     }
 
     private fun markTicketDeleted(ticketId: String) {
         val id = ticketId.trim()
         if (id.isBlank()) return
-        val deletedIds = getDeletedTicketIds() + id
-        prefs.edit(commit = true) {
-            putString(SalesStorageKeys.DELETED_TICKETS_KEY, JSONArray(deletedIds.toList()).toString())
-        }
+        val deletedIds = orderDeletedTicketIdListForStableStorage(getDeletedTicketIds() + id)
+        writeSharedPreferenceIfChanged(
+            key = SalesStorageKeys.DELETED_TICKETS_KEY,
+            value = JSONArray(deletedIds.toList()).toString(),
+        )
     }
 
     fun getDeletedTicketRefs(): List<DeletedTicketRef> {
@@ -244,29 +283,49 @@ class LocalSalesRepository(
     }
 
     private fun saveTicketsForDay(dayKey: String, tickets: List<TicketRecord>) {
-        prefs.edit(commit = true) {
-            putString(
-                SalesStorageKeys.TICKETS_PREFIX + dayKey,
-                JSONArray(tickets.map(::ticketToJson)).toString(),
-            )
+        val key = SalesStorageKeys.TICKETS_PREFIX + dayKey
+        val payload = JSONArray(orderTicketsForStableStorage(tickets).map(::ticketToJson)).toString()
+        if (!writeSharedPreferenceIfChanged(key, payload)) {
+            return
         }
         dayTicketCache.invalidate(dayKey)
     }
 
     private fun saveAllTickets(tickets: List<TicketRecord>) {
-        val grouped = tickets.groupBy { it.effectiveDrawDateKey() }
+        val grouped = orderTicketsForStableStorage(tickets)
+            .groupBy { it.effectiveDrawDateKey() }
+            .toSortedMap()
+        val nextPayloads = grouped.mapValues { (_, rows) ->
+            JSONArray(rows.map(::ticketToJson)).toString()
+        }
+        val currentPayloads = prefs.all
+            .filterKeys { it.startsWith(SalesStorageKeys.TICKETS_PREFIX) }
+            .mapValues { (_, value) -> value as? String }
+        val nextStoredPayloads = nextPayloads.mapKeys { (dayKey, _) -> SalesStorageKeys.TICKETS_PREFIX + dayKey }
+        if (currentPayloads == nextStoredPayloads) {
+            return
+        }
         prefs.edit(commit = true) {
             prefs.all.keys
                 .filter { it.startsWith(SalesStorageKeys.TICKETS_PREFIX) }
                 .forEach(::remove)
-            grouped.forEach { (dayKey, rows) ->
+            nextPayloads.forEach { (dayKey, payload) ->
                 putString(
                     SalesStorageKeys.TICKETS_PREFIX + dayKey,
-                    JSONArray(rows.map(::ticketToJson)).toString(),
+                    payload,
                 )
             }
         }
         dayTicketCache.clear()
+    }
+
+    private fun writeSharedPreferenceIfChanged(key: String, value: String): Boolean {
+        val current = prefs.getString(key, null)
+        if (current == value) return false
+        prefs.edit(commit = true) {
+            putString(key, value)
+        }
+        return true
     }
 
     override fun getTicketsForDay(dayKey: String): List<TicketRecord> {
@@ -406,7 +465,7 @@ class LocalSalesRepository(
         )
     }
 
-    private fun deletedTicketRefToJson(ref: DeletedTicketRef): JSONObject {
+private fun deletedTicketRefToJson(ref: DeletedTicketRef): JSONObject {
         return JSONObject().apply {
             put("id", ref.id)
             put("dayKey", ref.dayKey)
@@ -446,6 +505,18 @@ class LocalSalesRepository(
     private companion object {
         private val STORAGE_LOCK = Any()
     }
+}
+
+internal fun orderTicketsForStableStorage(tickets: List<TicketRecord>): List<TicketRecord> {
+    return tickets.sortedWith(compareBy<TicketRecord>({ it.createdAtEpochMs }, { it.id }))
+}
+
+internal fun orderDeletedTicketRefsForStableStorage(refs: List<DeletedTicketRef>): List<DeletedTicketRef> {
+    return refs.sortedWith(compareBy<DeletedTicketRef>({ it.dayKey }, { it.deletedAtEpochMs }, { it.id }))
+}
+
+internal fun orderDeletedTicketIdListForStableStorage(ids: Collection<String>): List<String> {
+    return ids.map { it.trim() }.filter { it.isNotBlank() }.sorted()
 }
 
 private fun sameTicketRecordIdentity(left: TicketRecord, right: TicketRecord): Boolean {

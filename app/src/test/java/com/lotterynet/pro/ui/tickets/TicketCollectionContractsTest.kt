@@ -45,6 +45,29 @@ class TicketCollectionContractsTest {
     }
 
     @Test
+    fun `ticket summary exact date resolves to the full Santo Domingo day`() {
+        val range = resolveTicketSummaryDateRange(
+            periodId = TicketSummaryPeriod.EXACT_DATE.id,
+            monthValue = "2026-07-10",
+        )
+
+        assertEquals("2026-07-10T00:00", range.first)
+        assertEquals("2026-07-10T23:59", range.second)
+    }
+
+    @Test
+    fun `ticket summary month preserves selected year`() {
+        val range = resolveTicketSummaryDateRange(
+            periodId = TicketSummaryPeriod.MONTH.id,
+            monthValue = "2025-02",
+            nowEpochMs = java.time.Instant.parse("2026-07-15T12:00:00Z").toEpochMilli(),
+        )
+
+        assertEquals("2025-02-01T00:00", range.first)
+        assertEquals("2025-02-28T23:59", range.second)
+    }
+
+    @Test
     fun `ticket detail rows group plays under the same ticket`() {
         val ticket = TicketRecord(
             id = "ticket-1",
@@ -62,6 +85,18 @@ class TicketCollectionContractsTest {
         assertEquals("ticket-1", groups.first().ticket.id)
         assertEquals(2, groups.first().plays.size)
         assertEquals(1090.0, groups.first().plays.last().amount, 0.001)
+    }
+
+    @Test
+    fun `ticket lottery label falls back to lottery id when name is missing`() {
+        val ticket = TicketRecord(
+            id = "ticket-lottery-id-only",
+            plays = listOf(
+                PlayItem(number = "22", playType = "Q", amount = 20.0, lotteryId = "anguila"),
+            ),
+        )
+
+        assertEquals("anguila", ticketLotteriesLabel(ticket))
     }
 
     @Test
@@ -518,14 +553,14 @@ class TicketCollectionContractsTest {
     @Test
     fun `summary period filters include operational ranges and month selector uses calendar months`() {
         assertEquals(
-            listOf("today", "yesterday", "week", "quinza", "month", "all"),
+            listOf("today", "yesterday", "week", "quinza", "month", "date", "all"),
             TicketSummaryPeriod.entries.map { it.id },
         )
         assertEquals(
-            listOf("Hoy", "Ayer", "Semana", "Quincena", "Mes", "Todo"),
+            listOf("Hoy", "Ayer", "Semana", "Quincena", "Mes", "Fecha exacta", "Todo"),
             TicketSummaryPeriod.entries.map { it.label },
         )
-        assertEquals(12, buildTicketMonthOptions().size)
-        assertEquals("Enero", buildTicketMonthOptions().first().label)
+        assertEquals(24, buildTicketMonthOptions().size)
+        assertTrue(buildTicketMonthOptions().first().value.matches(Regex("\\d{4}-\\d{2}")))
     }
 }

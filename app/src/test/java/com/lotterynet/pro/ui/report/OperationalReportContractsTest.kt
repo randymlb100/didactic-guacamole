@@ -11,6 +11,8 @@ import com.lotterynet.pro.core.finance.operationalReportCommissionPercent
 import com.lotterynet.pro.core.finance.resolveOperationalReportHealth
 import com.lotterynet.pro.core.finance.updateOperationalReportManualRange
 import com.lotterynet.pro.core.finance.resolveOperationalReportNet
+import com.lotterynet.pro.core.finance.resolveOperationalReportFilterForRefresh
+import com.lotterynet.pro.core.finance.resolveOperationalReportSelectedFilter
 import com.lotterynet.pro.core.finance.resolveOperationalReportSyncLabel
 import com.lotterynet.pro.core.model.ActiveSession
 import com.lotterynet.pro.core.model.UserAccount
@@ -124,9 +126,49 @@ class OperationalReportContractsTest {
     }
 
     @Test
+    fun `cashier report filter shows human labels while keeping cashier number order`() {
+        val session = ActiveSession(
+            role = UserRole.ADMIN,
+            userId = "admin-1",
+            username = "admin",
+            banca = "Banca yuniel",
+        )
+        val cashiers = listOf(
+            UserAccount(id = "CAJ-03", user = "bancay03", role = UserRole.CASHIER, displayName = "Ana", adminId = "admin-1", banca = "Banca yuniel"),
+            UserAccount(id = "CAJ-01", user = "bancay01", role = UserRole.CASHIER, displayName = "Zoe", adminId = "admin-1", banca = "Banca yuniel"),
+            UserAccount(id = "CAJ-02", user = "bancay02", role = UserRole.CASHIER, displayName = "Carlos", adminId = "admin-1", banca = "Banca yuniel"),
+        )
+
+        val filters = buildOperationalReportActorFilters(session, cashiers)
+
+        assertEquals(listOf("Todos", "Admin", "Zoe", "Carlos", "Ana"), filters.map { it.label })
+    }
+
+    @Test
+    fun `cashier report filter avoids technical cashier id when there is a stable number`() {
+        val session = ActiveSession(
+            role = UserRole.ADMIN,
+            userId = "admin-1",
+            username = "admin",
+        )
+        val cashiers = listOf(
+            UserAccount(id = "CAJ-03", user = "CAJ-03", role = UserRole.CASHIER, adminId = "admin-1"),
+        )
+
+        val filters = buildOperationalReportActorFilters(session, cashiers)
+
+        assertEquals(listOf("Todos", "Admin", "Cajero 03"), filters.map { it.label })
+    }
+
+    @Test
     fun `cashier report hides actor selector and stays on own profile`() {
         assertFalse(shouldShowOperationalReportActorFilter(emptyList()))
         assertFalse(shouldShowOperationalReportActorFilter(listOf(OperationalReportActorFilter.All)))
+        assertFalse(
+            shouldShowOperationalReportActorFilter(
+                listOf(OperationalReportActorFilter.Cashier("CAJ-21", "Banca 21")),
+            ),
+        )
         assertTrue(
             shouldShowOperationalReportActorFilter(
                 listOf(
@@ -135,6 +177,69 @@ class OperationalReportContractsTest {
                 ),
             ),
         )
+    }
+
+    @Test
+    fun `cashier report uses own cashier filter instead of global todos`() {
+        val session = ActiveSession(
+            role = UserRole.CASHIER,
+            userId = "technical-auth-id",
+            username = "bancay21",
+            authUserId = "auth-user-21",
+        )
+        val cashiers = listOf(
+            UserAccount(
+                id = "CAJ-21",
+                user = "bancay21",
+                role = UserRole.CASHIER,
+                displayName = "Banca 21",
+                authUserId = "auth-user-21",
+            ),
+        )
+
+        val filters = buildOperationalReportActorFilters(session, cashiers)
+        val selected = resolveOperationalReportSelectedFilter(filters, OperationalReportActorFilter.All)
+
+        assertEquals(listOf("Banca 21"), filters.map { it.label })
+        assertEquals("cashier:CAJ-21", selected.key)
+    }
+
+    @Test
+    fun `report selected filter falls back to first valid filter not global`() {
+        val ownFilter = OperationalReportActorFilter.Cashier("CAJ-21", "Banca 21")
+
+        val selected = resolveOperationalReportSelectedFilter(
+            filters = listOf(ownFilter),
+            selected = OperationalReportActorFilter.All,
+        )
+
+        assertEquals(ownFilter, selected)
+    }
+
+    @Test
+    fun `refresh keeps selected cashier when bootstrap list is temporarily incomplete`() {
+        val selected = OperationalReportActorFilter.Cashier("CAJ-21", "Banca 21")
+
+        val resolved = resolveOperationalReportFilterForRefresh(
+            filters = listOf(OperationalReportActorFilter.All),
+            selected = selected,
+        )
+
+        assertEquals(selected, resolved)
+    }
+
+    @Test
+    fun `refresh prefers an exact forced cashier present in the refreshed list`() {
+        val selected = OperationalReportActorFilter.Cashier("CAJ-OLD", "Caja anterior")
+        val refreshed = OperationalReportActorFilter.Cashier("CAJ-21", "Banca 21")
+
+        val resolved = resolveOperationalReportFilterForRefresh(
+            filters = listOf(OperationalReportActorFilter.All, refreshed),
+            selected = selected,
+            forcedCashierKey = "CAJ-21",
+        )
+
+        assertEquals(refreshed, resolved)
     }
 
     @Test
@@ -241,6 +346,38 @@ class OperationalReportContractsTest {
 
         assertEquals("2026-04-25", toUpdatedBeforeFrom.fromDayKey)
         assertEquals("2026-04-27", toUpdatedBeforeFrom.toDayKey)
+    }
+
+    @Test
+    fun `report filter selection keeps period range and actor together`() {
+        val selection = OperationalReportFilterSelection(
+            period = OperationalReportPeriod.MANUAL,
+            fromDayKey = "2026-07-01",
+            toDayKey = "2026-07-25",
+            actorFilter = OperationalReportActorFilter.Cashier("cashier-1", "Cajero 1"),
+        )
+
+        assertEquals(OperationalReportPeriod.MANUAL, selection.period)
+        assertEquals("2026-07-01", selection.fromDayKey)
+        assertEquals("2026-07-25", selection.toDayKey)
+        assertEquals("cashier:cashier-1", selection.actorFilter.key)
+    }
+
+    @Test
+    fun `historical report header shows selected range instead of today`() {
+        val report = com.lotterynet.pro.core.finance.OperationalReportViewState(
+            periodLabel = "01/07/2026–15/07/2026",
+            filter = OperationalReportActorFilter.All,
+            syncStatus = OperationalReportSyncStatus.CACHED_COPY,
+            summary = FinanceSummary(),
+            trend = emptyList(),
+            actorRows = emptyList(),
+        )
+
+        assertEquals(
+            "Banca Norte · 01/07/2026–15/07/2026",
+            operationalReportHeaderSubtitle("Banca Norte", report, "2026-07-25"),
+        )
     }
 
     @Test

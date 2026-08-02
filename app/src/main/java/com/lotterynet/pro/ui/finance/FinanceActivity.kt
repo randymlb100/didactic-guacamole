@@ -3,6 +3,7 @@ package com.lotterynet.pro.ui.finance
 import android.content.Intent
 import android.os.Bundle
 import androidx.activity.compose.setContent
+import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -31,6 +32,7 @@ import androidx.compose.material.icons.rounded.Archive
 import androidx.compose.material.icons.rounded.CalendarMonth
 import androidx.compose.material.icons.rounded.Download
 import androidx.compose.material.icons.rounded.EventBusy
+import androidx.compose.material.icons.rounded.ExpandLess
 import androidx.compose.material.icons.rounded.ExpandMore
 import androidx.compose.material.icons.rounded.Payments
 import androidx.compose.material.icons.rounded.PointOfSale
@@ -47,6 +49,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -77,9 +80,14 @@ import com.lotterynet.pro.core.finance.resolveFinanceRemoteRefreshDecision
 import com.lotterynet.pro.core.finance.resolveOperationalReportNet
 import com.lotterynet.pro.core.finance.LocalFinanceRepository
 import com.lotterynet.pro.core.finance.TurnoFinanceSummary
+import com.lotterynet.pro.core.finance.isFinancePaidStatus
+import com.lotterynet.pro.core.finance.normalizeLegacyPrizeAmount
+
 import com.lotterynet.pro.core.format.formatWholeMoney
+import com.lotterynet.pro.core.auth.SupabaseSessionTokenProvider
 import com.lotterynet.pro.core.model.ActiveSession
 import com.lotterynet.pro.core.model.SessionSnapshot
+import com.lotterynet.pro.core.model.TicketRecord
 import com.lotterynet.pro.core.storage.LocalFinanceHistoryRepository
 import com.lotterynet.pro.core.storage.LocalRechargeRepository
 import com.lotterynet.pro.core.storage.LocalSalesRepository
@@ -89,6 +97,7 @@ import com.lotterynet.pro.core.model.UserRole
 import com.lotterynet.pro.core.sync.NativeOperationalSyncCoordinator
 import com.lotterynet.pro.core.sync.NativeRechargeCloudSyncCoordinator
 import com.lotterynet.pro.core.sync.NativeTicketCloudSyncCoordinator
+import com.lotterynet.pro.core.sync.NativeTicketRemoteStore
 import com.lotterynet.pro.core.sync.NativeTicketSyncQueueRepository
 import com.lotterynet.pro.core.sync.LocalSyncFreshnessRepository
 import com.lotterynet.pro.core.sync.SyncFreshnessState
@@ -96,6 +105,7 @@ import com.lotterynet.pro.core.sync.SyncFreshnessType
 import com.lotterynet.pro.core.sync.buildSyncFreshnessKey
 import com.lotterynet.pro.core.sync.resolveOperationalOwnerKey
 import com.lotterynet.pro.ui.common.*
+
 import com.lotterynet.pro.ui.printer.PrinterActivity
 import com.lotterynet.pro.ui.master.MasterDashboardActivity
 import com.lotterynet.pro.ui.navigation.NativeDestination
@@ -105,11 +115,15 @@ import com.lotterynet.pro.ui.theme.LotteryNetComposeTheme
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+
 import java.util.TimeZone
 import androidx.compose.ui.text.input.KeyboardType
 import kotlin.concurrent.thread
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
+
+const val EXTRA_FINANCE_CASHIER_KEY = "finance_cashier_key"
 
 internal enum class FinanceHeaderActionId {
     WHATSAPP,
@@ -241,7 +255,8 @@ private enum class FinanceCompactSection(val id: String, val label: String) {
 }
 
 private fun financeCompactSectionOptions(): List<QuickFilterChip> =
-    FinanceCompactSection.entries.map { QuickFilterChip(it.id, it.label) }
+    listOf(FinanceCompactSection.SUMMARY, FinanceCompactSection.DETAIL, FinanceCompactSection.CLOSE)
+        .map { QuickFilterChip(it.id, it.label) }
 
 internal fun canOpenFinanceForRole(role: UserRole): Boolean {
     return role == UserRole.MASTER || role == UserRole.ADMIN || role == UserRole.SUPERVISOR || role == UserRole.CASHIER
@@ -250,6 +265,7 @@ internal fun canOpenFinanceForRole(role: UserRole): Boolean {
 private data class FinanceDaySnapshot(
     val dayKey: String,
     val summary: FinanceSummary,
+    val winningTickets: List<TicketRecord>,
     val actorSummary: CashierFinanceSummary?,
     val turnoSummary: TurnoFinanceSummary?,
     val actorRows: List<FinanceActorPeriodRow>,
@@ -287,7 +303,11 @@ internal fun resolveFinanceStartupPlan(): FinanceStartupPlan {
     )
 }
 
+internal const val FINANCE_STARTUP_REMOTE_DELAY_MS = 500L
+
 class FinanceActivity : AppCompatActivity() {
+    private val financeViewModel by viewModels<FinanceViewModel>()
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -312,7 +332,17 @@ class FinanceActivity : AppCompatActivity() {
         )
         val historyRepository = LocalFinanceHistoryRepository(this)
         val freshnessRepository = LocalSyncFreshnessRepository(this)
-        val financeScope = financeRepository.resolveScope(session)
+        val requestedCashierKey = intent?.getStringExtra(EXTRA_FINANCE_CASHIER_KEY)?.trim().orEmpty()
+        val requestedCashier = usersRepository.getCashiers().firstOrNull { cashier ->
+            cashier.id == requestedCashierKey || cashier.user.equals(requestedCashierKey, ignoreCase = true)
+        }
+        val financeScope = requestedCashier?.let { cashier ->
+            FinanceScope(
+                type = FinanceScopeType.ACTOR,
+                actorKey = cashier.id,
+                actorDisplay = cashier.user,
+            )
+        } ?: financeRepository.resolveScope(session)
         fun loadDaySnapshot(selectedDayKey: String): FinanceDaySnapshot {
             val scopedSummary = financeRepository.getScopedDaySummary(selectedDayKey, financeScope)
             val scopedReport = financeRepository.getScopedPeriodReport(
@@ -322,8 +352,8 @@ class FinanceActivity : AppCompatActivity() {
             )
             val scopedActor = financeRepository.getActorSummary(
                 dayKey = selectedDayKey,
-                actorKey = session.userId,
-                actorDisplay = session.username,
+                actorKey = requestedCashier?.id ?: session.userId,
+                actorDisplay = requestedCashier?.user ?: session.username,
             )
             val scopedTurno = if (selectedDayKey == dayKey && snapshot?.turnoStartEpochMs != null) {
                 financeRepository.getTurnoSummary(
@@ -337,6 +367,7 @@ class FinanceActivity : AppCompatActivity() {
             return FinanceDaySnapshot(
                 dayKey = selectedDayKey,
                 summary = scopedSummary,
+                winningTickets = financeRepository.getScopedWinningTicketsForDay(selectedDayKey, financeScope),
                 actorSummary = scopedActor,
                 turnoSummary = scopedTurno,
                 actorRows = scopedReport.actorRows,
@@ -346,19 +377,23 @@ class FinanceActivity : AppCompatActivity() {
         val initialDaySnapshot = FinanceDaySnapshot(
             dayKey = dayKey,
             summary = financeRepository.getScopedDaySummary(dayKey, financeScope),
+            winningTickets = financeRepository.getScopedWinningTicketsForDay(dayKey, financeScope),
             actorSummary = null,
             turnoSummary = null,
             actorRows = emptyList(),
             history = emptyList(),
         )
+        financeViewModel.showLocal(initialDaySnapshot.dayKey, initialDaySnapshot.summary)
 
         setContent {
+            val screenState by financeViewModel.state.collectAsState()
             LotteryNetComposeTheme {
                 FinanceRoute(
                     bancaName = session.banca ?: "LotteryNet",
                     activeSession = session,
                     dayKey = dayKey,
                     daySummary = initialDaySnapshot.summary,
+                    winningTickets = initialDaySnapshot.winningTickets,
                     actorSummary = initialDaySnapshot.actorSummary,
                     turnoSummary = initialDaySnapshot.turnoSummary,
                     initialHistory = initialDaySnapshot.history,
@@ -433,7 +468,7 @@ class FinanceActivity : AppCompatActivity() {
                     },
                     onRefreshDaySummary = { selectedDayKey, callback ->
                         val active = session
-                        run {
+                        thread(name = "finance-refresh-decision") {
                             val ownerKey = resolveOperationalOwnerKey(active)
                             val cacheKey = buildSyncFreshnessKey(
                                 type = SyncFreshnessType.FINANCE_DAY,
@@ -451,15 +486,36 @@ class FinanceActivity : AppCompatActivity() {
                                 nowEpochMs = System.currentTimeMillis(),
                             )
                             if (!decision.shouldRefreshRemote) {
-                                callback(currentSummary, decision.initialMessage)
+                                runOnUiThread {
+                                    financeViewModel.showFresh(
+                                        dayKey = selectedDayKey,
+                                        summary = currentSummary,
+                                        message = decision.initialMessage,
+                                    )
+                                    callback(currentSummary, decision.initialMessage)
+                                }
                             } else {
-                                thread(name = "finance-native-hydrate") {
+                                runOnUiThread {
+                                    financeViewModel.showCatchingUp(
+                                        dayKey = selectedDayKey,
+                                        summary = currentSummary,
+                                        message = "Sincronizando cuadre...",
+                                    )
+                                }
+                                run {
                                     val ticketResult = runCatching {
+                                        val sessionTokenProvider = SupabaseSessionTokenProvider(LocalSessionRepository(this))
+                                        val ticketRemoteStore = NativeTicketRemoteStore(
+                                            bearerTokenProvider = { sessionTokenProvider.freshAccessToken() },
+                                            bearerTokenRefresher = { sessionTokenProvider.forceFreshAccessToken() },
+                                        )
                                         NativeOperationalSyncCoordinator(
                                             ticketGateway = NativeTicketCloudSyncCoordinator(
                                                 salesRepository = salesRepository,
                                                 queueRepository = NativeTicketSyncQueueRepository(this),
+                                                remoteStore = ticketRemoteStore,
                                             ),
+                                            remoteStampStore = ticketRemoteStore,
                                         ).syncTicketsForSession(active, force = true)
                                     }.getOrNull()
                                     val rechargeResult = runCatching {
@@ -484,7 +540,22 @@ class FinanceActivity : AppCompatActivity() {
                                             .joinToString(" · ")
                                             .ifBlank { "Datos locales listos" }
                                     }
-                                    runOnUiThread { callback(refreshed, message) }
+                                    runOnUiThread {
+                                        if (message.contains("No se pudo", ignoreCase = true)) {
+                                            financeViewModel.showRecoverableError(
+                                                dayKey = selectedDayKey,
+                                                summary = refreshed,
+                                                message = message,
+                                            )
+                                        } else {
+                                            financeViewModel.showFresh(
+                                                dayKey = selectedDayKey,
+                                                summary = refreshed,
+                                                message = message,
+                                            )
+                                        }
+                                        callback(refreshed, message)
+                                    }
                                 }
                             }
                         }
@@ -522,6 +593,16 @@ class FinanceActivity : AppCompatActivity() {
                             sessionRepository.saveSessionSnapshot(SessionSnapshot(activeSession = session, turnoStartEpochMs = null))
                         }
                         loadFinanceHistory(historyRepository, session, selectedDayKey)
+                    },
+                    screenState = screenState,
+                    onOperationalStateChanged = { selectedDayKey, summary, refreshing, message ->
+                        when {
+                            refreshing -> financeViewModel.showCatchingUp(selectedDayKey, summary, message)
+                            message?.contains("No se pudo", ignoreCase = true) == true -> {
+                                financeViewModel.showRecoverableError(selectedDayKey, summary, message)
+                            }
+                            else -> financeViewModel.showFresh(selectedDayKey, summary, message ?: "Cuadre listo.")
+                        }
                     },
                 )
             }
@@ -635,6 +716,7 @@ private fun FinanceRoute(
     activeSession: ActiveSession?,
     dayKey: String,
     daySummary: FinanceSummary,
+    winningTickets: List<TicketRecord>,
     actorSummary: CashierFinanceSummary?,
     turnoSummary: TurnoFinanceSummary?,
     initialHistory: List<FinanceHistoryEntry>,
@@ -648,9 +730,11 @@ private fun FinanceRoute(
     onRefreshDaySummary: (String, (FinanceSummary, String) -> Unit) -> Unit,
     onSaveSnapshot: (String, FinanceSummary, CashierFinanceSummary?, TurnoFinanceSummary?, Double?, Double?) -> List<FinanceHistoryEntry>,
     onCloseTurno: (String, FinanceSummary, CashierFinanceSummary?, TurnoFinanceSummary?, Double?, Double?) -> List<FinanceHistoryEntry>,
+    screenState: FinanceScreenState,
+    onOperationalStateChanged: (String, FinanceSummary, Boolean, String?) -> Unit,
 ) {
     var cashInput by rememberSaveable { mutableStateOf("") }
-    var actionMessage by remember { mutableStateOf<String?>(null) }
+    var actionMessage by remember { mutableStateOf<String?>(screenState.message) }
     var historyEntries by remember(initialHistory) { mutableStateOf(initialHistory) }
     var selectedDayKey by rememberSaveable { mutableStateOf(dayKey) }
     var selectedPeriodName by rememberSaveable { mutableStateOf(FinancePeriodPreset.DAY.name) }
@@ -658,10 +742,21 @@ private fun FinanceRoute(
     var rangeFromDayKey by rememberSaveable { mutableStateOf(dayKey) }
     var rangeToDayKey by rememberSaveable { mutableStateOf(dayKey) }
     var visibleSummary by remember(daySummary) { mutableStateOf(daySummary) }
+    var visibleWinningTickets by remember(winningTickets) { mutableStateOf(winningTickets) }
     var visibleActorSummary by remember(actorSummary) { mutableStateOf(actorSummary) }
     var visibleTurnoSummary by remember(turnoSummary) { mutableStateOf(turnoSummary) }
     var visibleActorRows by remember { mutableStateOf(emptyList<FinanceActorPeriodRow>()) }
     var selectedFinanceSectionId by rememberSaveable { mutableStateOf(FinanceCompactSection.SUMMARY.id) }
+    var periodControlsExpanded by rememberSaveable { mutableStateOf(false) }
+
+    LaunchedEffect(selectedDayKey, visibleSummary, actionMessage) {
+        onOperationalStateChanged(
+            selectedDayKey,
+            visibleSummary,
+            actionMessage?.contains("Sincronizando", ignoreCase = true) == true,
+            actionMessage,
+        )
+    }
     fun applyDaySelection(nextDayKey: String) {
         val snapshot = onLoadDaySnapshot(nextDayKey)
         selectedDayKey = snapshot.dayKey
@@ -670,6 +765,7 @@ private fun FinanceRoute(
         rangeFromDayKey = snapshot.dayKey
         rangeToDayKey = snapshot.dayKey
         visibleSummary = snapshot.summary
+        visibleWinningTickets = snapshot.winningTickets
         visibleActorSummary = snapshot.actorSummary
         visibleTurnoSummary = snapshot.turnoSummary
         visibleActorRows = snapshot.actorRows
@@ -694,6 +790,7 @@ private fun FinanceRoute(
             visibleActorSummary = null
             visibleTurnoSummary = null
             visibleActorRows = report.actorRows
+            visibleWinningTickets = report.winningTickets
             historyEntries = emptyList()
             actionMessage = "Rango $selectedPeriodLabel cargado."
         } else {
@@ -701,17 +798,30 @@ private fun FinanceRoute(
         }
     }
     LaunchedEffect(selectedDayKey) {
-        actionMessage = "Sincronizando cuadre..."
-        val localSnapshot = withContext(Dispatchers.IO) {
-            onLoadDaySnapshot(selectedDayKey)
+        val isInitialDay = selectedDayKey == dayKey &&
+            visibleActorSummary == null &&
+            visibleTurnoSummary == null &&
+            visibleActorRows.isEmpty() &&
+            historyEntries.isEmpty()
+        if (!isInitialDay) {
+            actionMessage = "Cargando datos locales..."
+            val localSnapshot = withContext(Dispatchers.IO) {
+                onLoadDaySnapshot(selectedDayKey)
+            }
+            visibleSummary = localSnapshot.summary
+            visibleWinningTickets = localSnapshot.winningTickets
+            visibleActorSummary = localSnapshot.actorSummary
+            visibleTurnoSummary = localSnapshot.turnoSummary
+            visibleActorRows = localSnapshot.actorRows
+            historyEntries = localSnapshot.history
         }
-        visibleSummary = localSnapshot.summary
-        visibleActorSummary = localSnapshot.actorSummary
-        visibleTurnoSummary = localSnapshot.turnoSummary
-        visibleActorRows = localSnapshot.actorRows
-        historyEntries = localSnapshot.history
+        delay(FINANCE_STARTUP_REMOTE_DELAY_MS)
+        if (isInitialDay && actionMessage?.contains("Sincronizando", ignoreCase = true) != true) {
+            actionMessage = screenState.message ?: "Finanzas locales listas."
+        }
         onRefreshDaySummary(selectedDayKey) { summary, message ->
             visibleSummary = summary
+            visibleWinningTickets = onLoadDaySnapshot(selectedDayKey).winningTickets
             visibleActorRows = onLoadPeriodReport(FinancePeriodPreset.DAY, selectedDayKey, null, null)?.actorRows.orEmpty()
             actionMessage = if (message.contains("servidor", ignoreCase = true) && !message.contains("No se pudo", ignoreCase = true)) {
                 resolveActionFeedbackMessage(ActionFeedbackKind.SERVER_REFRESH, success = true)
@@ -744,17 +854,19 @@ private fun FinanceRoute(
     ) {
         val context = androidx.compose.ui.platform.LocalContext.current
         Column(modifier = Modifier.fillMaxSize()) {
+            AppTopBar(
+                spec = ScreenChromeSpec(
+                    title = "Cuadre",
+                    subtitle = "$bancaName · $selectedPeriodLabel",
+                    showBottomNav = false,
+                ),
+                onOpenMenu = { com.lotterynet.pro.ui.common.openShellMenu(context) },
+            )
             Column(
                 modifier = Modifier
                     .weight(1f)
                     .padding(horizontal = 12.dp, vertical = 8.dp),
             ) {
-                FinanceCompactHeader(
-                    title = "Cuadre",
-                    subtitle = "$bancaName · $selectedPeriodLabel",
-                    onMenu = { com.lotterynet.pro.ui.common.openShellMenu(context) },
-                )
-                Spacer(modifier = Modifier.height(8.dp))
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
                     CompactStatusBadge(
                         label = actionMessage?.takeIf { it.contains("Sincronizando", ignoreCase = true) }?.let { "Sincronizando" } ?: "Sincronizado",
@@ -766,7 +878,7 @@ private fun FinanceRoute(
                     options = financeCompactSectionOptions(),
                     selectedId = selectedFinanceSectionId,
                     onSelected = { selectedFinanceSectionId = it },
-                    columns = 4,
+                    columns = 3,
                     modifier = Modifier.fillMaxWidth(),
                 )
                 Spacer(modifier = Modifier.height(10.dp))
@@ -777,16 +889,13 @@ private fun FinanceRoute(
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                     contentPadding = androidx.compose.foundation.layout.PaddingValues(bottom = 12.dp),
                 ) {
-                    if (selectedFinanceSectionId == FinanceCompactSection.PERIOD.id) item {
+                    item {
                         FinanceHeaderCard(
-                            roleLabel = activeSession?.role?.name?.lowercase(Locale.getDefault()) ?: "offline",
                             periodLabel = selectedPeriodLabel,
                             todayDayKey = dayKey,
                             selectedDayKey = selectedDayKey,
                             onSelectDay = ::applyDaySelection,
-                            turnoOpen = visibleTurnoSummary != null,
                             actionOrder = resolveFinanceHeaderActionOrder(layout.prioritizeDeliveryActions),
-                            actionColumns = layout.actionColumns,
                             compactHeader = layout.compactHeader,
                             selectedPeriod = selectedPeriodOption,
                             onSelectPeriod = { option ->
@@ -798,6 +907,7 @@ private fun FinanceRoute(
                                     rangeToDayKey = report.toDayKey
                                     visibleSummary = report.summary
                                     visibleActorRows = report.actorRows
+                                    visibleWinningTickets = report.winningTickets
                                     actionMessage = "Periodo ${option.label.lowercase()} aplicado."
                                 } else {
                                     actionMessage = "No se pudo cargar ${option.label.lowercase()}."
@@ -842,11 +952,14 @@ private fun FinanceRoute(
                                     rangeToDayKey = report.toDayKey
                                     visibleSummary = report.summary
                                     visibleActorRows = report.actorRows
+                                    visibleWinningTickets = report.winningTickets
                                     actionMessage = "${month.label} aplicado completo."
                                 } else {
                                     actionMessage = "No se pudo cargar ${month.label}."
                                 }
                             },
+                            controlsExpanded = periodControlsExpanded,
+                            onToggleControls = { periodControlsExpanded = !periodControlsExpanded },
                         )
                     }
                     if (selectedFinanceSectionId == FinanceCompactSection.SUMMARY.id) item {
@@ -872,6 +985,9 @@ private fun FinanceRoute(
                                 FinanceLine("Comisión supervisor", money(visibleSummary.supervisorComision), valueColor = visual.colors.loss)
                             }
                         }
+                    }
+                    if (selectedFinanceSectionId == FinanceCompactSection.SUMMARY.id) item {
+                        WinningTicketsCard(tickets = visibleWinningTickets)
                     }
                     if (selectedFinanceSectionId == FinanceCompactSection.SUMMARY.id && "GLOBAL" in operationSections) {
                         item {
@@ -992,44 +1108,12 @@ private fun FinanceRoute(
 internal fun shouldApplyFinanceSafeDrawingInsets(): Boolean = true
 
 @Composable
-private fun FinanceCompactHeader(
-    title: String,
-    subtitle: String,
-    onMenu: () -> Unit,
-) {
-    Surface(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(0.dp),
-        color = Color(0xFF062A57),
-        contentColor = Color.White,
-        tonalElevation = 0.dp,
-        shadowElevation = 0.dp,
-    ) {
-        Row(
-            modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            Text("☰", modifier = Modifier.clickable(onClick = onMenu), style = MaterialTheme.typography.headlineSmall, color = Color.White)
-            Column(modifier = Modifier.weight(1f)) {
-                Text(title, style = MaterialTheme.typography.headlineSmall, color = Color.White, fontWeight = FontWeight.Bold)
-                Text(subtitle, style = MaterialTheme.typography.bodyMedium, color = Color.White.copy(alpha = 0.82f), fontWeight = FontWeight.Bold)
-            }
-            Text("⋮", style = MaterialTheme.typography.headlineSmall, color = Color.White)
-        }
-    }
-}
-
-@Composable
 private fun FinanceHeaderCard(
-    roleLabel: String,
     periodLabel: String,
     todayDayKey: String,
     selectedDayKey: String,
     onSelectDay: (String) -> Unit,
-    turnoOpen: Boolean,
     actionOrder: List<FinanceHeaderActionId>,
-    actionColumns: Int,
     compactHeader: Boolean,
     selectedPeriod: FinancePeriodUiOption,
     onSelectPeriod: (FinancePeriodUiOption) -> Unit,
@@ -1044,110 +1128,195 @@ private fun FinanceHeaderCard(
     actionMessage: String?,
     anchorDayKey: String,
     onSelectMonth: (FinanceMonthUiOption) -> Unit,
+    controlsExpanded: Boolean,
+    onToggleControls: () -> Unit,
 ) {
     val visual = rememberLotteryNetVisualSpec()
-    var exportMenuExpanded by rememberSaveable { mutableStateOf(false) }
+    var actionsSheetVisible by rememberSaveable { mutableStateOf(false) }
     val exportMenu = remember(actionOrder) { resolveFinanceExportMenuContract(actionOrder) }
     CompactPanel(contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 10.dp, vertical = visual.sizes.panelContentGap + 4.dp)) {
         Column(verticalArrangement = Arrangement.spacedBy(if (compactHeader) 8.dp else 10.dp)) {
+            FinancePeriodSummaryRow(
+                periodLabel = periodLabel,
+                selectedPeriod = selectedPeriod,
+                expanded = controlsExpanded,
+                onToggle = onToggleControls,
+            )
+            if (controlsExpanded) {
+                FinanceModalSheet(
+                    title = "Cambiar período",
+                    subtitle = "Elige el rango del cuadre. Semana usa el corte lunes a domingo.",
+                    onDismiss = onToggleControls,
+                ) {
+                    FinanceDateSelector(
+                        todayDayKey = todayDayKey,
+                        selectedDayKey = selectedDayKey,
+                        onSelectDay = {
+                            onSelectDay(it)
+                            onToggleControls()
+                        },
+                    )
+                    FinancePeriodSegmentedControl(
+                        selected = selectedPeriod,
+                        onSelect = { option ->
+                            onSelectPeriod(option)
+                            if (option.preset != FinancePeriodPreset.CALENDAR) {
+                                onToggleControls()
+                            }
+                        },
+                    )
+                    if (selectedPeriod.preset == FinancePeriodPreset.CALENDAR) {
+                        FinanceManualRangeSelector(
+                            fromDayKey = rangeFromDayKey,
+                            toDayKey = rangeToDayKey,
+                            onSelectRange = onSelectManualRange,
+                        )
+                    }
+                    FinanceMonthDropdown(
+                        anchorDayKey = anchorDayKey,
+                        onSelect = {
+                            onSelectMonth(it)
+                            onToggleControls()
+                        },
+                    )
+                }
+            }
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                Box(
-                    modifier = Modifier
-                        .background(Color(0xFFEFF6FF), RoundedCornerShape(8.dp))
-                        .padding(horizontal = 9.dp, vertical = 5.dp),
-                ) {
+                actionMessage?.let {
                     Text(
-                        roleLabel.replaceFirstChar { it.uppercase() },
-                        color = visual.colors.ink,
-                        style = MaterialTheme.typography.labelMedium,
+                        it,
+                        modifier = Modifier.weight(1f),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = visual.colors.muted,
+                        maxLines = 1,
                     )
-                }
-                Spacer(modifier = Modifier.width(10.dp))
+                } ?: Spacer(modifier = Modifier.weight(1f))
+                CompactActionButton(
+                    label = "Acciones",
+                    onClick = { actionsSheetVisible = true },
+                    icon = Icons.Rounded.Download,
+                    modifier = Modifier.widthIn(min = 112.dp),
+                    tone = ActionTone.Secondary,
+                )
+            }
+        }
+    }
+    if (actionsSheetVisible) {
+        FinanceModalSheet(
+            title = "Acciones de cuadre",
+            subtitle = periodLabel,
+            onDismiss = { actionsSheetVisible = false },
+        ) {
+            actionOrder.forEach { action ->
+                val label = financeHeaderActionLabel(action) ?: return@forEach
+                OperationalSettingRow(
+                    title = label,
+                    subtitle = financeHeaderActionSubtitle(action),
+                    meta = "Abrir",
+                    icon = financeHeaderActionIcon(action),
+                    tone = visual.colors.finance,
+                    onClick = {
+                        actionsSheetVisible = false
+                        when (action) {
+                            FinanceHeaderActionId.WHATSAPP -> onWhatsApp()
+                            FinanceHeaderActionId.SHARE -> onShare()
+                            FinanceHeaderActionId.PRINT -> onPrint()
+                            FinanceHeaderActionId.THERMAL -> onThermal()
+                            FinanceHeaderActionId.SAVE -> onSave()
+                            FinanceHeaderActionId.REPORTS -> Unit
+                        }
+                    },
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun FinanceModalSheet(
+    title: String,
+    subtitle: String,
+    onDismiss: () -> Unit,
+    content: @Composable () -> Unit,
+) {
+    OperationalModalSheet(
+        title = title,
+        subtitle = subtitle,
+        onDismiss = onDismiss,
+    ) {
+        content()
+    }
+}
+
+private fun financeHeaderActionIcon(action: FinanceHeaderActionId): ImageVector {
+    return when (action) {
+        FinanceHeaderActionId.WHATSAPP -> Icons.Rounded.Whatsapp
+        FinanceHeaderActionId.SHARE -> Icons.Rounded.Share
+        FinanceHeaderActionId.PRINT -> Icons.Rounded.Print
+        FinanceHeaderActionId.THERMAL -> Icons.Rounded.PointOfSale
+        FinanceHeaderActionId.SAVE -> Icons.Rounded.Download
+        FinanceHeaderActionId.REPORTS -> Icons.Rounded.QueryStats
+    }
+}
+
+private fun financeHeaderActionSubtitle(action: FinanceHeaderActionId): String {
+    return when (action) {
+        FinanceHeaderActionId.WHATSAPP -> "Enviar resumen por WhatsApp."
+        FinanceHeaderActionId.SHARE -> "Compartir resumen del período."
+        FinanceHeaderActionId.PRINT -> "Abrir formato de impresión."
+        FinanceHeaderActionId.THERMAL -> "Imprimir ticket térmico de cuadre."
+        FinanceHeaderActionId.SAVE -> "Guardar copia del corte."
+        FinanceHeaderActionId.REPORTS -> "Abrir reportes."
+    }
+}
+
+@Composable
+private fun FinancePeriodSummaryRow(
+    periodLabel: String,
+    selectedPeriod: FinancePeriodUiOption,
+    expanded: Boolean,
+    onToggle: () -> Unit,
+) {
+    val visual = rememberLotteryNetVisualSpec()
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(10.dp),
+        color = visual.colors.panelAlt,
+        border = BorderStroke(1.dp, visual.colors.border),
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            Icon(Icons.Rounded.CalendarMonth, contentDescription = null, tint = visual.colors.finance)
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = selectedPeriod.label,
+                    style = MaterialTheme.typography.labelMedium,
+                    color = visual.colors.muted,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 1,
+                )
                 Text(
                     text = periodLabel,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = visual.colors.muted,
-                )
-                Spacer(modifier = Modifier.weight(1f))
-                Text(
-                    text = if (turnoOpen) "Cuadre + turno" else "Cuadre",
-                    style = if (compactHeader) MaterialTheme.typography.labelMedium else MaterialTheme.typography.labelLarge,
+                    style = MaterialTheme.typography.bodyMedium,
                     color = visual.colors.ink,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 1,
                 )
             }
-            FinanceDateSelector(
-                todayDayKey = todayDayKey,
-                selectedDayKey = selectedDayKey,
-                onSelectDay = onSelectDay,
+            CompactActionButton(
+                label = if (expanded) "Cerrar" else "Cambiar",
+                onClick = onToggle,
+                icon = if (expanded) Icons.Rounded.ExpandLess else Icons.Rounded.ExpandMore,
+                tone = ActionTone.Secondary,
+                modifier = Modifier.widthIn(min = 104.dp),
             )
-            FinancePeriodSegmentedControl(
-                selected = selectedPeriod,
-                onSelect = onSelectPeriod,
-            )
-            FinanceManualRangeSelector(
-                fromDayKey = rangeFromDayKey,
-                toDayKey = rangeToDayKey,
-                onSelectRange = onSelectManualRange,
-            )
-            FinanceMonthDropdown(
-                anchorDayKey = anchorDayKey,
-                onSelect = onSelectMonth,
-            )
-            actionMessage?.let {
-                Text(
-                    it,
-                    style = MaterialTheme.typography.labelSmall,
-                    color = visual.colors.muted,
-                )
-            }
-            Box(modifier = Modifier.fillMaxWidth()) {
-                CompactActionButton(
-                    label = exportMenu.visibleButtonLabel,
-                    onClick = { exportMenuExpanded = true },
-                    icon = Icons.Rounded.Download,
-                    modifier = Modifier.fillMaxWidth(),
-                    tone = ActionTone.Primary,
-                )
-                DropdownMenu(
-                    expanded = exportMenuExpanded && exportMenu.usesOverflowMenu,
-                    onDismissRequest = { exportMenuExpanded = false },
-                    modifier = Modifier.fillMaxWidth(0.92f),
-                ) {
-                    actionOrder.forEach { action ->
-                        val label = financeHeaderActionLabel(action) ?: return@forEach
-                        DropdownMenuItem(
-                            text = { Text(label) },
-                            leadingIcon = {
-                                Icon(
-                                    imageVector = when (action) {
-                                        FinanceHeaderActionId.WHATSAPP -> Icons.Rounded.Whatsapp
-                                        FinanceHeaderActionId.SHARE -> Icons.Rounded.Share
-                                        FinanceHeaderActionId.PRINT -> Icons.Rounded.Print
-                                        FinanceHeaderActionId.THERMAL -> Icons.Rounded.PointOfSale
-                                        FinanceHeaderActionId.SAVE -> Icons.Rounded.Download
-                                        FinanceHeaderActionId.REPORTS -> Icons.Rounded.QueryStats
-                                    },
-                                    contentDescription = null,
-                                )
-                            },
-                            onClick = {
-                                exportMenuExpanded = false
-                                when (action) {
-                                    FinanceHeaderActionId.WHATSAPP -> onWhatsApp()
-                                    FinanceHeaderActionId.SHARE -> onShare()
-                                    FinanceHeaderActionId.PRINT -> onPrint()
-                                    FinanceHeaderActionId.THERMAL -> onThermal()
-                                    FinanceHeaderActionId.SAVE -> onSave()
-                                    FinanceHeaderActionId.REPORTS -> Unit
-                                }
-                            },
-                        )
-                    }
-                }
-            }
         }
     }
 }
@@ -1730,6 +1899,40 @@ private fun FinanceHistoryCard(entries: List<FinanceHistoryEntry>) {
                     },
                     badgeLabel = entry.recordType.uppercase(Locale.getDefault()),
                     badgeTone = accent,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun WinningTicketsCard(tickets: List<TicketRecord>) {
+    val visual = rememberLotteryNetVisualSpec()
+    FinancePanel {
+        OperationalListHeader(
+            title = "Tickets ganadores",
+            meta = if (tickets.isEmpty()) "Ninguno" else "${tickets.size} encontrados",
+        )
+        if (tickets.isEmpty()) {
+            CompactEmptyState(message = "No hay tickets ganadores en este período.")
+        } else {
+            tickets.take(12).forEach { ticket ->
+                val paid = isFinancePaidStatus(ticket)
+                val prize = normalizeLegacyPrizeAmount(ticket.totalPrize, ticket.total)
+                val time = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date(ticket.createdAtEpochMs))
+                CompactRecordRow(
+                    title = ticket.serial?.takeIf { it.isNotBlank() } ?: ticket.id,
+                    subtitle = "Venta ${money(ticket.total)} · Premio ${money(prize)}",
+                    meta = time,
+                    badgeLabel = if (paid) "Pagado" else "Ganador",
+                    badgeTone = if (paid) gainColor() else warningColor(),
+                )
+            }
+            if (tickets.size > 12) {
+                Text(
+                    text = "Mostrando 12 de ${tickets.size}. Abre Tickets para ver el resto.",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = visual.colors.muted,
                 )
             }
         }

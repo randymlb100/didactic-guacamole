@@ -9,6 +9,7 @@ import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import org.json.JSONObject
 
 class NativeOperationalSyncContractsTest {
 
@@ -49,7 +50,22 @@ class NativeOperationalSyncContractsTest {
             banca = "Banca Central",
         )
 
-        assertEquals(listOf("ADM-C5FFB0", "auth-user-id", "nicola01"), resolveOperationalOwnerKeys(session))
+        assertEquals(listOf("ADM-C5FFB0", "nicola01", "auth-user-id"), resolveOperationalOwnerKeys(session))
+    }
+
+    @Test
+    fun `operational owner keys reject literal null placeholders`() {
+        val session = ActiveSession(
+            role = UserRole.ADMIN,
+            userId = "ADM-163C38",
+            username = "nicola01",
+            adminId = "null",
+            adminUser = "undefined",
+            banca = "Banca yuniel",
+        )
+
+        assertEquals(listOf("ADM-163C38", "nicola01"), resolveOperationalOwnerKeys(session))
+        assertEquals("ADM-163C38", resolveOperationalOwnerKey(session))
     }
 
     @Test
@@ -90,7 +106,7 @@ class NativeOperationalSyncContractsTest {
     }
 
     @Test
-    fun `coordinator reports synchronized state after ticket hydrate`() {
+    fun `coordinator reports synchronized state after authoritative ticket hydrate`() {
         val tickets = FakeTicketGateway(
             result = NativeTicketCloudSyncResult(
                 ok = true,
@@ -121,9 +137,36 @@ class NativeOperationalSyncContractsTest {
         assertEquals(NativeOperationalSyncStatus.SYNCED, state.status)
         assertEquals("admin-1", state.ownerKey)
         assertEquals("2026-04-24T10:01:00Z", state.remoteUpdatedAt)
-        assertEquals(2, state.pushedCount)
-        assertEquals(4, state.pulledCount)
-        assertEquals(2, tickets.hydrateCalls)
+        assertEquals(1, state.pushedCount)
+        assertEquals(2, state.pulledCount)
+        assertEquals(1, tickets.hydrateCalls)
+        assertEquals(listOf("admin-1"), tickets.hydratedOwners)
+    }
+
+    @Test
+    fun `session ticket sync hydrates only primary owner so aliases do not wipe local tickets`() {
+        val tickets = FakeTicketGateway()
+        val coordinator = NativeOperationalSyncCoordinator(
+            ticketGateway = tickets,
+            remoteStampStore = FakeRemoteStampStore(remoteUpdatedAt = "2026-06-06T17:00:00Z"),
+            nowEpochMs = { 1234L },
+            syncGovernor = SyncGovernor(nowEpochMs = { 1234L }),
+        )
+        val session = ActiveSession(
+            role = UserRole.ADMIN,
+            userId = "auth-user-id",
+            username = "nicola01",
+            adminId = "ADM-163C38",
+            adminUser = "nicola01",
+            banca = "Banca yuniel",
+        )
+
+        val state = coordinator.syncTicketsForSession(session = session, force = true)
+
+        assertTrue(state.ok)
+        assertEquals(listOf("ADM-163C38"), resolveOperationalHydrationOwnerKeys(session))
+        assertEquals(listOf("ADM-163C38"), tickets.hydratedOwners)
+        assertEquals(1, tickets.hydrateCalls)
     }
 
     @Test
@@ -162,7 +205,7 @@ class NativeOperationalSyncContractsTest {
         assertEquals(NativeOperationalSyncStatus.UP_TO_DATE, third.status)
         assertEquals("Sync ya reciente.", second.message)
         assertEquals("Sync ya reciente.", third.message)
-        assertEquals(2, tickets.hydrateCalls)
+        assertEquals(1, tickets.hydrateCalls)
     }
 
     @Test
@@ -276,6 +319,32 @@ class NativeOperationalSyncContractsTest {
         val mergedIds = merged.map { it.id }.toSet()
         assertEquals(setOf("pending-ticket", "server-ticket"), mergedIds)
         assertFalse(mergedIds.contains("deleted-ticket"))
+    }
+
+    @Test
+    fun `deleted ids already present on remote do not trigger another snapshot push`() {
+        val missing = deletedIdsMissingFromRemote(
+            localDeletedIds = setOf("Ticket-1", "Ticket-2", "  "),
+            remoteDeletedIds = setOf("ticket-1"),
+        )
+
+        assertEquals(setOf("Ticket-2"), missing)
+    }
+
+    @Test
+    fun `pending ticket queue dedupes and removes ids case-insensitively`() {
+        val old = JSONObject("""{"id":"Ticket-1","total":10}""")
+        val newer = JSONObject("""{"id":"ticket-1","total":20}""")
+        val other = JSONObject("""{"id":"ticket-2","total":30}""")
+
+        val deduped = dedupeTicketSyncQueue(listOf(old, newer, other))
+
+        assertEquals(listOf("ticket-1", "ticket-2"), deduped.map { normalizedTicketQueueId(it) })
+        assertEquals(20.0, deduped.first().optDouble("total"), 0.001)
+        assertEquals(
+            listOf("ticket-2"),
+            removeTicketSyncQueueIds(deduped, listOf("TICKET-1")).map { normalizedTicketQueueId(it) },
+        )
     }
 
     private class FakeTicketGateway(

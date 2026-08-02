@@ -32,7 +32,7 @@ function metadataMatchesActor(metadata: JsonMap, actorKey: string, adminKey: str
     metadata.cashier_id,
     metadata.cashier_user,
   ].map(lower).filter(Boolean);
-  if (metadataValues.length === 0) return true;
+  if (metadataValues.length === 0) return false;
   const accepted = [actorKey, adminKey, cashierKey].map(lower).filter(Boolean);
   return accepted.some((value) => metadataValues.includes(value));
 }
@@ -100,60 +100,34 @@ async function handle(req: Request): Promise<Response> {
 
   const previousStatus = lower(ticket.status);
   if (previousStatus === "paid") return json({ ok: false, message: "Ticket deportivo ya pagado; no se liquida de nuevo." }, 409);
+  if (previousStatus !== "pending") {
+    return json({ ok: true, alreadySettled: true, ticket: ticketPayload(ticket as JsonMap) });
+  }
 
-  const settledAt = new Date().toISOString();
   const payoutAmount = nextStatus === "won" ? number(ticket.potential_payout) : 0;
-  const { error: legsError } = await supabaseAdmin()
-    .from("sports_ticket_legs")
-    .update({ status: nextStatus, result_payload: { settledBy: actorKey, reason: clean(body.reason) } })
-    .eq("sports_ticket_id", ticketId);
-  if (legsError) return json({ ok: false, message: legsError.message }, 500);
-
-  const { data: updated, error: updateError } = await supabaseAdmin()
-    .from("sports_tickets")
-    .update({ status: nextStatus, settled_at: settledAt, updated_at: settledAt })
-    .eq("id", ticketId)
-    .select(`
-      id,
-      ticket_code,
-      seller_username,
-      banca_name,
-      ticket_type,
-      stake,
-      decimal_odds,
-      potential_payout,
-      status,
-      sold_at,
-      sports_ticket_legs (
-        event_label,
-        market_title,
-        selection_label,
-        decimal_odds,
-        status
-      )
-    `)
-    .single();
-  if (updateError || !updated) return json({ ok: false, message: updateError?.message ?? "No se pudo liquidar ticket deportivo." }, 500);
-
-  await supabaseAdmin().from("sports_settlements").insert({
-    sports_ticket_id: ticketId,
-    settlement_type: "manual",
-    previous_status: previousStatus,
-    next_status: nextStatus,
-    payout_amount: payoutAmount,
-    reason: clean(body.reason || "Liquidacion deportiva"),
-    actor_key: actorKey,
-    metadata: { action: "settle-sports-ticket" },
+  const { data: atomicResult, error: atomicError } = await supabaseAdmin().rpc("settle_sports_ticket_atomic", {
+    p_ticket_id: ticketId,
+    p_next_status: nextStatus,
+    p_actor_key: actorKey,
+    p_reason: clean(body.reason || "Liquidacion deportiva"),
   });
-  await supabaseAdmin().from("sports_audit_log").insert({
+  if (atomicError) return json({ ok: false, message: atomicError.message }, 500);
+  const result = atomicResult as JsonMap;
+  const updated = result.ticket as JsonMap | undefined;
+  if (result.already_settled === true) return json({ ok: true, alreadySettled: true, ticket: ticketPayload(updated ?? {}) });
+  if (result.found !== true || !updated) return json({ ok: false, message: "Ticket deportivo no disponible para liquidar." }, 409);
+  const { error: auditError } = await supabaseAdmin().from("sports_audit_log").insert({
     actor_key: actorKey,
     action: "settle-sports-ticket",
     entity_table: "sports_tickets",
     entity_id: ticketId,
     metadata: { previousStatus, nextStatus, payoutAmount },
   });
+  if (auditError) {
+    console.warn("sports settlement audit log failed", auditError.message);
+  }
 
-  return json({ ok: true, ticket: ticketPayload(updated as JsonMap) });
+  return json({ ok: true, ticket: ticketPayload(updated) });
 }
 
 Deno.serve((req) => handle(req).catch((error) => {

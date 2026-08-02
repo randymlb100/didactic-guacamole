@@ -1,11 +1,31 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { clean, corsHeaders, fetchKvValue, json, supabaseAdmin, upsertKvValue } from "../_shared/lotterynet-admin.ts";
+import { captureEdgeError } from "../_shared/sentry-edge.ts";
 
 type ResultRow = Record<string, unknown>;
 
 const RENDER_BASE_URL = Deno.env.get("LOTTERYNET_RENDER_RESULTS_URL") ?? "https://didactic-guacamole.onrender.com";
 const ENV_CRON_SECRET = Deno.env.get("LOTTERYNET_RESULTS_CRON_SECRET") ?? Deno.env.get("LOTTERYNET_ADMIN_SHARED_SECRET") ?? "";
-const RENDER_LIVE_TIMEOUT_MS = 60_000;
+const RENDER_LIVE_TIMEOUT_MS = positiveInt(Deno.env.get("LOTTERYNET_RENDER_RESULTS_TIMEOUT_MS"), 15_000);
+const MIN_REFRESH_INTERVAL_MS = positiveInt(Deno.env.get("LOTTERYNET_RESULTS_MIN_REFRESH_INTERVAL_MS"), 90_000);
+const REFRESH_LOCK_TTL_SECONDS = Math.max(Math.ceil(RENDER_LIVE_TIMEOUT_MS / 1000) + 45, 90);
+const RESULTS_REFRESH_STATE_KEY = "sys_results_refresh_state";
+
+type RefreshState = {
+  date?: string;
+  refreshedAt?: string;
+  durationMs?: number;
+  changed?: boolean;
+  liveError?: string | null;
+  source?: string;
+  lotteries?: { rows: number; changed: boolean };
+  picks?: { rows: number; changed: boolean };
+};
+
+function positiveInt(value: unknown, fallback: number): number {
+  const parsed = Number(clean(value));
+  return Number.isFinite(parsed) && parsed > 0 ? Math.floor(parsed) : fallback;
+}
 
 function normalizeDateKey(value: unknown): string {
   const raw = clean(value);
@@ -37,10 +57,103 @@ function stableStringify(value: unknown): string {
   return JSON.stringify(value);
 }
 
+const RESULT_SIGNATURE_FIELDS = [
+  "id",
+  "lotteryId",
+  "lottery_id",
+  "lotteryLegacyId",
+  "lottery_legacy_id",
+  "name",
+  "lotteryName",
+  "lottery_name",
+  "game",
+  "gameName",
+  "draw",
+  "drawName",
+  "number",
+  "numero",
+  "numbers",
+  "first",
+  "second",
+  "third",
+  "pick3",
+  "pick4",
+  "status",
+  "estado",
+  "source",
+  "reason",
+  "message",
+];
+
+function resultRowSignature(row: ResultRow): Record<string, string> {
+  const signature: Record<string, string> = {};
+  for (const field of RESULT_SIGNATURE_FIELDS) {
+    const value = clean(row[field]);
+    if (value) signature[field] = value;
+  }
+  return signature;
+}
+
+function stableResultRowsSignature(rows: ResultRow[]): string {
+  return stableStringify(
+    rows
+      .map(resultRowSignature)
+      .sort((left, right) => stableStringify(left).localeCompare(stableStringify(right))),
+  );
+}
+
 function bool(value: unknown): boolean {
   if (value === true) return true;
   const raw = clean(value).toLowerCase();
   return raw === "true" || raw === "1" || raw === "yes";
+}
+
+function jsonRecord(value: unknown): Record<string, unknown> {
+  if (!value) return {};
+  if (typeof value === "string") {
+    try {
+      return jsonRecord(JSON.parse(value));
+    } catch {
+      return {};
+    }
+  }
+  return value && typeof value === "object" && !Array.isArray(value) ? value as Record<string, unknown> : {};
+}
+
+function refreshStateFrom(value: unknown): RefreshState {
+  const record = jsonRecord(value);
+  return {
+    date: clean(record.date) || undefined,
+    refreshedAt: clean(record.refreshedAt) || undefined,
+    durationMs: typeof record.durationMs === "number" ? record.durationMs : undefined,
+    changed: typeof record.changed === "boolean" ? record.changed : undefined,
+    liveError: record.liveError === null ? null : clean(record.liveError) || null,
+    source: clean(record.source) || undefined,
+    lotteries: jsonRecord(record.lotteries) as RefreshState["lotteries"],
+    picks: jsonRecord(record.picks) as RefreshState["picks"],
+  };
+}
+
+function stateIsFreshForDate(state: RefreshState, date: string): boolean {
+  if (state.date !== date || !state.refreshedAt) return false;
+  if (state.liveError) return false;
+  const refreshedAt = Date.parse(state.refreshedAt);
+  return Number.isFinite(refreshedAt) && Date.now() - refreshedAt < MIN_REFRESH_INTERVAL_MS;
+}
+
+async function fetchRefreshState(): Promise<RefreshState> {
+  try {
+    return refreshStateFrom(await fetchKvValue(RESULTS_REFRESH_STATE_KEY));
+  } catch {
+    return {};
+  }
+}
+
+async function saveRefreshState(state: RefreshState): Promise<void> {
+  await upsertKvValue(RESULTS_REFRESH_STATE_KEY, {
+    ...state,
+    refreshedAt: state.refreshedAt ?? new Date().toISOString(),
+  });
 }
 
 function rowsFrom(value: unknown): ResultRow[] {
@@ -270,11 +383,19 @@ async function currentRowsFor(date: string, source: "lottery" | "pick"): Promise
   return (data ?? []).map((row) => row.source_payload as ResultRow).filter(Boolean);
 }
 
+async function currentStoredResultsFor(date: string): Promise<{ lotteries: ResultRow[]; picks: ResultRow[] }> {
+  const [lotteries, picks] = await Promise.all([
+    currentRowsFor(date, "lottery"),
+    currentRowsFor(date, "pick"),
+  ]);
+  return { lotteries, picks };
+}
+
 async function upsertIfChanged(source: "lottery" | "pick", date: string, rows: ResultRow[]): Promise<boolean> {
   if (rows.length === 0) return false;
   const currentRows = await currentRowsFor(date, source);
   const effectiveRows = mergeMissingCurrentRows(currentRows, mergeProtectedNoDrawRows(currentRows, rows));
-  if (stableStringify(currentRows) === stableStringify(effectiveRows)) return false;
+  if (stableResultRowsSignature(currentRows) === stableResultRowsSignature(effectiveRows)) return false;
   const { data, error } = await supabaseAdmin()
     .rpc("lotterynet_upsert_result_draws_from_payload", {
       p_result_day_key: date,
@@ -289,7 +410,7 @@ async function shouldWriteLegacyCache(key: string, rows: ResultRow[], changed: b
   if (rows.length === 0) return false;
   if (changed) return true;
   const currentRows = rowsFrom(await fetchKvValue(key));
-  return stableStringify(currentRows) !== stableStringify(rows);
+  return stableResultRowsSignature(currentRows) !== stableResultRowsSignature(rows);
 }
 
 async function saveLegacyResultCaches(
@@ -361,6 +482,22 @@ async function configuredCronSecrets(): Promise<string[]> {
   return [...candidates].map(clean).filter(Boolean);
 }
 
+async function acquireRefreshLock(holder: string): Promise<{ acquired: boolean; detail: unknown }> {
+  const { data, error } = await supabaseAdmin()
+    .rpc("lotterynet_try_results_refresh_lock", {
+      p_holder: holder,
+      p_ttl_seconds: REFRESH_LOCK_TTL_SECONDS,
+    });
+  if (error) throw error;
+  return { acquired: bool((data as Record<string, unknown> | null)?.acquired), detail: data };
+}
+
+async function releaseRefreshLock(holder: string): Promise<void> {
+  const { error } = await supabaseAdmin()
+    .rpc("lotterynet_release_results_refresh_lock", { p_holder: holder });
+  if (error) throw error;
+}
+
 async function authorize(req: Request): Promise<Response | null> {
   const expected = await configuredCronSecrets();
   if (expected.length === 0) {
@@ -379,9 +516,12 @@ Deno.serve(async (req) => {
   const authError = await authorize(req);
   if (authError) return authError;
 
+  let date = "";
+  let lockHolder = "";
+  let lockAcquired = false;
   try {
     const body = await req.json().catch(() => ({}));
-    const date = normalizeDateKey(body.date);
+    date = normalizeDateKey(body.date);
     if (body.processOnly === true) {
       const prizeReconcile = await processPrizeJobsForDay(date);
       return json({
@@ -392,12 +532,44 @@ Deno.serve(async (req) => {
         prizeReconcile,
       }, prizeReconcile.error ? 500 : 200);
     }
-    const live = await fetchLiveResultsOrEmpty(date);
-    const payload = live.payload;
-    const split = splitPayload(payload);
+
+    const forceLiveRefresh = bool(body.forceLiveRefresh) || bool(body.forceRefresh);
+    const previousState = await fetchRefreshState();
+    if (!forceLiveRefresh && stateIsFreshForDate(previousState, date)) {
+      return json({
+        ok: true,
+        date,
+        changed: false,
+        skipped: true,
+        reason: "recent_refresh",
+        minRefreshIntervalMs: MIN_REFRESH_INTERVAL_MS,
+        state: previousState,
+      });
+    }
+
+    lockHolder = crypto.randomUUID();
+    const lock = await acquireRefreshLock(lockHolder);
+    lockAcquired = lock.acquired;
+    if (!lockAcquired) {
+      return json({
+        ok: true,
+        date,
+        changed: false,
+        skipped: true,
+        reason: "refresh_already_running",
+        lock: lock.detail,
+      });
+    }
+
+    const startedAt = Date.now();
+    const stored = await currentStoredResultsFor(date);
+    const live = !forceLiveRefresh
+      ? { payload: {}, error: "", source: "supabase-result-draws" }
+      : { ...(await fetchLiveResultsOrEmpty(date)), source: "render-fallback" };
+    const split = !forceLiveRefresh ? stored : splitPayload(live.payload);
     const holidaySplit = splitPayload(await fetchHolidayNoDrawRows(date));
-    const lotteryBaseRows = split.lotteries.length > 0 ? split.lotteries : await currentRowsFor(date, "lottery");
-    const pickBaseRows = split.picks.length > 0 ? split.picks : await currentRowsFor(date, "pick");
+    const lotteryBaseRows = split.lotteries.length > 0 ? split.lotteries : stored.lotteries;
+    const pickBaseRows = split.picks.length > 0 ? split.picks : stored.picks;
     const lotteryRows = mergeHolidayNoDrawRows(lotteryBaseRows, holidaySplit.lotteries);
     const pickRows = mergeHolidayNoDrawRows(pickBaseRows, holidaySplit.picks);
     const lotteryChanged = await upsertIfChanged("lottery", date, lotteryRows);
@@ -407,11 +579,25 @@ Deno.serve(async (req) => {
     const prizeReconcile = shouldProcessPrizes
       ? await processPrizeJobsForDay(date)
       : { data: { skipped: true, reason: "unchanged_results" }, error: null };
+    const durationMs = Date.now() - startedAt;
+
+    await saveRefreshState({
+      date,
+      refreshedAt: new Date().toISOString(),
+      durationMs,
+      changed: lotteryChanged || pickChanged,
+      liveError: live.error || null,
+      source: live.source,
+      lotteries: { rows: lotteryRows.length, changed: lotteryChanged },
+      picks: { rows: pickRows.length, changed: pickChanged },
+    });
 
     return json({
       ok: true,
       date,
+      durationMs,
       liveError: live.error || null,
+      source: live.source,
       changed: lotteryChanged || pickChanged,
       prizeReconcile,
       lotteries: { rows: lotteryRows.length, changed: lotteryChanged },
@@ -423,9 +609,24 @@ Deno.serve(async (req) => {
       },
     });
   } catch (error) {
+    await captureEdgeError(error, { functionName: "results-server-refresh", operation: "refresh", dayKey: date });
+    if (date) {
+      await saveRefreshState({
+        date,
+        refreshedAt: new Date().toISOString(),
+        changed: false,
+        liveError: error instanceof Error ? error.message : "No se pudo refrescar resultados en servidor.",
+      }).catch(() => undefined);
+    }
     return json({
       ok: false,
       message: error instanceof Error ? error.message : "No se pudo refrescar resultados en servidor.",
     }, 500);
+  } finally {
+    if (lockAcquired && lockHolder) {
+      await releaseRefreshLock(lockHolder).catch((error) =>
+        captureEdgeError(error, { functionName: "results-server-refresh", operation: "release-lock", dayKey: date })
+      );
+    }
   }
 });

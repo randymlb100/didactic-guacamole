@@ -136,6 +136,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           syncSessionToken(session);
           saveStoredUserProfile(storedUser);
           setUser(storedUser);
+        } else if (session && !storedUser) {
+          clearStoredSession();
+          setUser(null);
         } else {
           setUser(null);
         }
@@ -153,6 +156,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             if (storedUser) {
               saveStoredUserProfile(storedUser);
               setUser(storedUser);
+            } else {
+              clearStoredSession();
+              setUser(null);
             }
           }
         } else if (event === 'SIGNED_OUT') {
@@ -174,17 +180,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (!user) return;
 
     let timeoutId: any;
-    const INACTIVITY_TIMEOUT = 30 * 60 * 1000; // 30 minutes
+    const INACTIVITY_TIMEOUT = 60 * 1000; // 1 minute
 
     const resetTimer = () => {
       if (timeoutId) clearTimeout(timeoutId);
       timeoutId = setTimeout(() => {
         log("Sesión expirada por inactividad");
-        logout();
+        if (isSupabaseConfigured && supabase) {
+          supabase.auth.signOut({ scope: 'local' }).catch(err => {
+            if (!isInvalidRefreshTokenError(err)) {
+              logWarn("Error signing out from Supabase due to inactivity:", err);
+            }
+          });
+        }
+        clearStoredSession();
+        setUser(null);
       }, INACTIVITY_TIMEOUT);
     };
 
-    const events = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart'];
+    const events = ['mousedown', 'mousemove', 'keydown', 'keypress', 'scroll', 'touchstart', 'pointerdown', 'focus'];
     events.forEach(event => {
       window.addEventListener(event, resetTimer);
     });

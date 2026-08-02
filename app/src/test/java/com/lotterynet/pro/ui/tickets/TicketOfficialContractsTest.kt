@@ -260,9 +260,15 @@ class TicketOfficialContractsTest {
     }
 
     @Test
-    fun `official ticket snapshot labels pick straight explicitly`() {
-        assertEquals("P3STRAIGHT", officialTicketSnapshotPlayTypeLabel("P3"))
-        assertEquals("P4STRAIGHT", officialTicketSnapshotPlayTypeLabel("P4"))
+    fun `official ticket snapshot keeps original abbreviated play labels`() {
+        assertEquals("Q", officialTicketSnapshotPlayTypeLabel("Quiniela"))
+        assertEquals("P", officialTicketSnapshotPlayTypeLabel("Pale"))
+        assertEquals("T", officialTicketSnapshotPlayTypeLabel("Tripleta"))
+        assertEquals("SP", officialTicketSnapshotPlayTypeLabel("Super Pale"))
+        assertEquals("P3", officialTicketSnapshotPlayTypeLabel("P3"))
+        assertEquals("P4", officialTicketSnapshotPlayTypeLabel("P4"))
+        assertEquals("P3BOX", officialTicketSnapshotPlayTypeLabel("PICK3_BOX"))
+        assertEquals("P4BOX", officialTicketSnapshotPlayTypeLabel("PICK4_BOX"))
         assertEquals("P3BOX", officialTicketSnapshotPlayTypeLabel("P3BOX"))
         assertEquals("P4BOX", officialTicketSnapshotPlayTypeLabel("P4BOX"))
     }
@@ -475,6 +481,27 @@ class TicketOfficialContractsTest {
     }
 
     @Test
+    fun `official ticket local validation cannot remove confirmed paid prize`() {
+        val current = TicketRecord(id = "ticket-paid", status = "paid", total = 25.0, totalPrize = 500.0)
+        val canonical = current.copy(totalPrize = 500.0)
+        val localNoPrize = current.copy(totalPrize = 0.0)
+
+        val protected = resolveOfficialTicketAfterLocalValidation(
+            current = current,
+            canonical = canonical,
+            validation = PrizeValidationOutcome(
+                ticket = localNoPrize,
+                totalPrize = 0.0,
+                matchCount = 0,
+                didValidate = true,
+            ),
+        )
+
+        assertEquals("paid", protected.status)
+        assertEquals(500.0, protected.totalPrize, 0.001)
+    }
+
+    @Test
     fun `paid ticket sync uses ticket admin owner so other devices receive payout status`() {
         val session = ActiveSession(
             role = UserRole.CASHIER,
@@ -495,7 +522,7 @@ class TicketOfficialContractsTest {
     }
 
     @Test
-    fun `delete and void refresh every admin owner key used by realtime listeners`() {
+    fun `delete and void refresh only the canonical owner and direct ticket aliases`() {
         val session = ActiveSession(
             role = UserRole.ADMIN,
             userId = "admin-device",
@@ -512,13 +539,13 @@ class TicketOfficialContractsTest {
         )
 
         assertEquals(
-            listOf("legacy-admin-id", "banca01", "ADM-C5FFB0", "admin-device", "nicola01"),
+            listOf("legacy-admin-id", "banca01", "nicola01", "ADM-C5FFB0"),
             resolveTicketRealtimeSyncOwnerKeys(session, ticket),
         )
     }
 
     @Test
-    fun `delete and void owner keys fall back to operational owner when ticket lacks admin id`() {
+    fun `delete and void owner keys fall back to canonical operational owner when ticket lacks admin id`() {
         val session = ActiveSession(
             role = UserRole.CASHIER,
             userId = "cashier-device",
@@ -534,13 +561,13 @@ class TicketOfficialContractsTest {
         )
 
         assertEquals(
-            listOf("cashier-device", "ADM-C5FFB0", "banca01", "nicola01"),
+            listOf("cashier-device", "banca01", "ADM-C5FFB0"),
             resolveTicketRealtimeSyncOwnerKeys(session, ticket),
         )
     }
 
     @Test
-    fun `official ticket refresh listens to admin code and username aliases`() {
+    fun `official ticket refresh listens only to canonical session and direct ticket owners`() {
         val session = ActiveSession(
             role = UserRole.ADMIN,
             userId = "admin-device",
@@ -561,7 +588,7 @@ class TicketOfficialContractsTest {
 
         assertTrue(ownerKeys.contains("ADM-C5FFB0"))
         assertTrue(ownerKeys.contains("podero02"))
-        assertTrue(ownerKeys.contains("admin-device"))
+        assertFalse(ownerKeys.contains("admin-device"))
     }
 
     @Test
@@ -604,6 +631,7 @@ class TicketOfficialContractsTest {
         )
 
         assertEquals("nicola01", resolveTicketBackendActorKey(session))
+        assertEquals("ADM-163C38", resolveTicketActionBackendActorKey(session))
     }
 
     @Test
@@ -1051,5 +1079,55 @@ class TicketOfficialContractsTest {
         assertEquals("Premio", state.primaryAmountLabel)
         assertEquals("Venta $ 72", state.primaryAmountSupporting)
         assertEquals("$ 7,200", state.prizeLabel)
+    }
+
+    @Test
+    fun `official ticket view state falls back to lottery id when lottery name is missing`() {
+        val ticket = TicketRecord(
+            id = "T-FALLBACK",
+            serial = "A-FALLBACK",
+            status = "active",
+            plays = listOf(
+                PlayItem("22", "Q", 20.0, lotteryId = "anguila"),
+            ),
+        )
+
+        val state = buildOfficialTicketViewState(
+            ticket = ticket,
+            bancaName = "Mi Banca",
+            mode = TicketOfficialMode.SEARCH,
+            securityCode = "",
+            logoUri = "",
+        )
+
+        assertEquals(listOf("anguila"), state.lotteryGroups.map { it.lotteryName })
+    }
+
+    @Test
+    fun `official ticket keeps super pale as one group with both lotteries`() {
+        val state = buildOfficialTicketViewState(
+            ticket = TicketRecord(
+                id = "sp-1",
+                serial = "SP-1",
+                plays = listOf(
+                    PlayItem(
+                        number = "12-34",
+                        playType = "SP",
+                        amount = 25.0,
+                        lotteryName = "Loteka",
+                        secondaryLotteryName = "King PM",
+                    ),
+                ),
+            ),
+            bancaName = "Banca",
+            mode = TicketOfficialMode.SEARCH,
+            securityCode = "SP-1",
+            logoUri = "",
+        )
+
+        assertEquals(1, state.lotteryGroups.size)
+        assertEquals("Loteka / King PM", state.lotteryGroups.single().lotteryName)
+        assertEquals(1, state.lotteryGroups.single().playCount)
+        assertEquals("$ 25", state.lotteryGroups.single().totalLabel)
     }
 }

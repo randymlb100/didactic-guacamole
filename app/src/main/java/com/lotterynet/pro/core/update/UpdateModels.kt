@@ -95,3 +95,4 @@ sealed class OtaCheckResult {
 }
 
 const val DEFAULT_OTA_CACHE_TTL_SECONDS: Long = 21_600L
+const val LOTTERYNET_OTA_ENABLED: Boolean = false

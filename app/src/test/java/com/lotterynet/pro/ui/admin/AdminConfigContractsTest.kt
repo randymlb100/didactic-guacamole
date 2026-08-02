@@ -1,5 +1,6 @@
 package com.lotterynet.pro.ui.admin
 
+import com.lotterynet.pro.core.model.ActiveSession
 import com.lotterynet.pro.core.model.UserRole
 import com.lotterynet.pro.core.model.LotteryCatalogItem
 import com.lotterynet.pro.core.model.LotteryResult
@@ -110,10 +111,70 @@ class AdminConfigContractsTest {
     fun `configuration sections separate sale control from system mode`() {
         val sections = adminConfigSectionTitles()
 
-        assertTrue(sections.indexOf("Control de venta") > sections.indexOf("Bloqueo de lotería"))
-        assertTrue(sections.indexOf("Sistema") > sections.indexOf("Control de venta"))
-        assertEquals(1, sections.count { it == "Sistema" })
-        assertEquals(1, sections.count { it == "Control de venta" })
+        assertEquals("Centro de ajustes", sections.first())
+        assertTrue(sections.indexOf("Loterías y jugadas") > sections.indexOf("Venta y POS"))
+        assertTrue(sections.indexOf("Caja y tickets") > sections.indexOf("Loterías y jugadas"))
+        assertEquals(1, sections.count { it == "Venta y POS" })
+        assertEquals(1, sections.count { it == "Loterías y jugadas" })
+    }
+
+    @Test
+    fun `system configuration hub uses interactive component pattern`() {
+        val contract = adminConfigInteractionContract()
+
+        assertEquals(listOf("Venta y POS", "Loterías y jugadas", "Caja y tickets", "Servidor y sincronización"), adminConfigSystemHubCardTitles())
+        assertTrue(contract.usesSummaryCards)
+        assertTrue(contract.usesSwitchForBooleanSetting)
+        assertTrue(contract.usesSegmentedChoicesForModes)
+        assertTrue(contract.usesBottomSheetForSecondarySelection)
+    }
+
+    @Test
+    fun `settings destinations are unique and grouped for real navigation`() {
+        val ids = adminConfigDestinationIds()
+
+        assertEquals(ids.size, ids.toSet().size)
+        assertEquals("OPERACIÓN", adminConfigAreaGroup("sale"))
+        assertEquals("OPERACIÓN", adminConfigAreaGroup("blocks"))
+        assertEquals("CAJA", adminConfigAreaGroup("cash"))
+        assertEquals("SISTEMA", adminConfigAreaGroup("system"))
+    }
+
+    @Test
+    fun `settings details keep navigation separate from business callbacks`() {
+        val contract = adminSettingsNavigationContract()
+
+        assertTrue(contract.usesOverviewAndDetail)
+        assertTrue(contract.systemBackReturnsToOverview)
+        assertTrue(contract.groupsDestinations)
+        assertTrue(contract.preservesBusinessCallbacks)
+    }
+
+    @Test
+    fun `blocking controls stay readable on compact screens`() {
+        val contract = adminBlockControlLayoutContract()
+
+        assertTrue(contract.stacksDestructiveActions)
+        assertTrue(contract.showsSelectedDuration)
+        assertTrue(contract.keepsLotteryActionBelowIdentity)
+    }
+
+    @Test
+    fun `settings search filters destinations without changing the destination model`() {
+        assertEquals(listOf("Venta y POS"), filterAdminConfigAreaTitles("pos"))
+        assertEquals(listOf("Caja y tickets"), filterAdminConfigAreaTitles("impresora"))
+        assertEquals(4, filterAdminConfigAreaTitles(" ").size)
+        assertTrue(filterAdminConfigAreaTitles("no existe").isEmpty())
+    }
+
+    @Test
+    fun `system mode labels stay short for compact mobile cards`() {
+        assertEquals("Solo Lotería", adminConfigModeLabel("lottery"))
+        assertEquals("Solo Pick", adminConfigModeLabel("pick"))
+        assertEquals("Lotería + Pick", adminConfigModeLabel("both"))
+        assertEquals("Lot.", adminConfigModeShortLabel("lottery"))
+        assertEquals("Pick", adminConfigModeShortLabel("pick"))
+        assertEquals("L+P", adminConfigModeShortLabel("both"))
     }
 
     @Test
@@ -135,6 +196,25 @@ class AdminConfigContractsTest {
 
         assertTrue(resolved.lotteryModeEnabled)
         assertTrue(resolved.pickModeEnabled)
+    }
+
+    @Test
+    fun `system mode sync writes every owner alias needed by clean cashier installs`() {
+        val session = ActiveSession(
+            role = UserRole.ADMIN,
+            userId = "auth-user-id",
+            username = "nicola01",
+            adminId = "ADM-C5FFB0",
+            adminUser = "nicola01",
+            banca = "Poderoso",
+        )
+
+        val keys = resolveAdminSystemModeSyncKeys(
+            session = session,
+            ownerKeys = listOf("ADM-C5FFB0", "auth-user-id", "nicola01"),
+        )
+
+        assertEquals(listOf("ADM-C5FFB0", "auth-user-id", "nicola01"), keys)
     }
 
     @Test

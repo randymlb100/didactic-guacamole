@@ -8,6 +8,7 @@ import androidx.compose.foundation.Image
 import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -20,6 +21,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.sizeIn
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
@@ -84,6 +86,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.semantics.error
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.safeDrawing
 import com.lotterynet.pro.core.calendar.LotteryAvailabilityResolver
@@ -97,6 +101,7 @@ import com.lotterynet.pro.core.export.StaticExportTemplateRepository
 import com.lotterynet.pro.core.export.TicketSecurity
 import com.lotterynet.pro.core.format.formatWholeAmount
 import com.lotterynet.pro.core.model.CloseState
+import com.lotterynet.pro.core.model.ActiveSession
 import com.lotterynet.pro.core.model.LotteryCatalogItem
 import com.lotterynet.pro.core.model.LotteryResult
 import com.lotterynet.pro.core.model.LotteryTerritory
@@ -110,6 +115,7 @@ import com.lotterynet.pro.core.model.TicketRecord
 import com.lotterynet.pro.core.model.UserAccount
 import com.lotterynet.pro.core.model.dominicanDayKey
 import com.lotterynet.pro.core.model.formatPlayDisplayNumber
+import com.lotterynet.pro.core.remote.SupabaseEdgeClient
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -142,19 +148,22 @@ import com.lotterynet.pro.core.sales.SaleExposureEngine
 import com.lotterynet.pro.core.sales.SaleValidator
 import com.lotterynet.pro.core.sales.BackendTicketPlay
 import com.lotterynet.pro.core.sales.BackendTicketRequest
+import com.lotterynet.pro.core.sales.BackendSaleLimitExposureRequest
 import com.lotterynet.pro.core.sales.CashierLimits
 import com.lotterynet.pro.core.sales.SupabaseTicketBackendClient
-import com.lotterynet.pro.core.sales.calculateGlobalLimitExposure
+import com.lotterynet.pro.core.sales.calculateSaleLimitSoldExposureForRole
 import com.lotterynet.pro.core.sales.calculateGlobalStagedExposure
 import com.lotterynet.pro.core.sales.presentSupabaseTicketBackendMessage
 import com.lotterynet.pro.core.sales.resolveExposureCashierKeys
 import com.lotterynet.pro.core.sales.resolveExposureOwnerKey
+import com.lotterynet.pro.core.sales.resolveExposureOwnerKeys
 import com.lotterynet.pro.core.sales.resolveLigarBuildTargets
 import com.lotterynet.pro.core.sales.resolveSaleLimitRemainingRows
 import com.lotterynet.pro.core.sales.shouldReportSupabaseTicketBackendFailure
 import com.lotterynet.pro.core.sales.ticketBackendUserMessage
 import com.lotterynet.pro.core.sales.resolveSaleExposureLimitBucket
 import com.lotterynet.pro.core.sales.SaleLimitRemainingRow
+import com.lotterynet.pro.core.sales.SaleExposureLimitBucket
 import com.lotterynet.pro.core.operations.canonicalizeTicketOwnerForSession
 import com.lotterynet.pro.core.operations.filterCashiersForSession
 import com.lotterynet.pro.core.repository.NativeSyncQueueRepository
@@ -162,6 +171,7 @@ import com.lotterynet.pro.core.sync.NativeOperationalSyncCoordinator
 import com.lotterynet.pro.core.sync.CashierLimitCloudSyncCoordinator
 import com.lotterynet.pro.core.sync.cashierLimitRemoteKey
 import com.lotterynet.pro.core.sync.NativeTicketCloudSyncCoordinator
+import com.lotterynet.pro.core.sync.NativeTicketRemoteStore
 import com.lotterynet.pro.core.sync.NativeTicketSyncQueueRepository
 import com.lotterynet.pro.core.sync.NativeUsersBootstrapper
 import com.lotterynet.pro.core.sync.OperationalSyncThrottle
@@ -169,6 +179,9 @@ import com.lotterynet.pro.core.sync.SyncFreshnessType
 import com.lotterynet.pro.core.sync.SyncGovernor
 import com.lotterynet.pro.core.sync.buildSyncFreshnessKey
 import com.lotterynet.pro.core.sync.resolveOperationalOwnerKey
+import com.lotterynet.pro.core.sync.resolveOperationalOwnerKeys
+import com.lotterynet.pro.core.sync.resolveTicketSyncOwnerKeys
+import com.lotterynet.pro.core.sync.invalidateTicketRealtimeCaches
 import com.lotterynet.pro.core.storage.CashierSalesLimitInputs
 import com.lotterynet.pro.core.storage.AdminSystemModeConfig
 import com.lotterynet.pro.core.storage.decodeAdminSystemModeConfig
@@ -189,8 +202,8 @@ import com.lotterynet.pro.core.storage.LocalUsersRepository
 import com.lotterynet.pro.core.storage.manualDisabledLotteriesRemoteKey
 import com.lotterynet.pro.core.storage.systemModeRemoteKey
 import com.lotterynet.pro.core.master.SupabaseMasterConfigRemoteStore
-import com.lotterynet.pro.core.remote.SupabaseEdgeClient
 import com.lotterynet.pro.core.remote.isSupabaseAuthRequired
+import com.lotterynet.pro.core.users.SupabaseUsersRemoteStore
 import com.lotterynet.pro.core.printing.ThermalTicketRenderer
 import com.lotterynet.pro.core.printing.BluetoothThermalPrinter
 import com.lotterynet.pro.core.printing.IntegratedThermalPrinter
@@ -210,6 +223,7 @@ import com.lotterynet.pro.ui.common.ScreenChromeAction
 import com.lotterynet.pro.ui.common.SectionHeader
 import com.lotterynet.pro.ui.common.TicketSaveSyncUiContract
 import com.lotterynet.pro.ui.common.TicketSaveSyncStage
+import com.lotterynet.pro.ui.sales.isFreshSaleLimitExposureCache
 import com.lotterynet.pro.ui.common.gainColor
 import com.lotterynet.pro.ui.common.lossColor
 import com.lotterynet.pro.ui.common.openShellMenu
@@ -243,11 +257,14 @@ internal fun resolveSalesStartupSystemModeConfig(
     adminLotteryConfigRepository: LocalAdminLotteryConfigRepository,
 ): AdminSystemModeConfig {
     val localConfig = adminLotteryConfigRepository.getSystemModeConfig()
-    val ownerKey = resolveOperationalOwnerKey(session)
+    val ownerKeys = resolveOperationalOwnerKeys(session).ifEmpty { listOf(resolveOperationalOwnerKey(session)) }
     val serverConfig = runCatching {
-        SupabaseMasterConfigRemoteStore(
+        val remoteStore = SupabaseMasterConfigRemoteStore(
             edgeClient = SupabaseEdgeClient(connectTimeoutMs = 2_500, readTimeoutMs = 3_500),
-        ).fetchValue(systemModeRemoteKey(ownerKey))?.toString()?.let(::decodeAdminSystemModeConfig)
+        )
+        firstSalesStartupRemoteValue(ownerKeys) { ownerKey ->
+            remoteStore.fetchValue(systemModeRemoteKey(ownerKey))
+        }?.toString()?.let(::decodeAdminSystemModeConfig)
     }.getOrNull()
     val baseConfig = serverConfig?.let(adminLotteryConfigRepository::saveSystemModeConfig) ?: localConfig
     return effectiveSystemModeConfigForSession(
@@ -257,16 +274,39 @@ internal fun resolveSalesStartupSystemModeConfig(
     )
 }
 
+internal fun refreshSalesStartupUsersForMode(usersRepository: LocalUsersRepository) {
+    runCatching {
+        NativeUsersBootstrapper(
+            usersRepository = usersRepository,
+            usersRemoteStore = SupabaseUsersRemoteStore(
+                edgeClient = SupabaseEdgeClient(connectTimeoutMs = 2_500, readTimeoutMs = 3_500),
+            ),
+        ).bootstrap(forceRemoteRefresh = true)
+    }
+}
+
+internal fun firstSalesStartupRemoteValue(ownerKeys: List<String>, fetch: (String) -> Any?): Any? {
+    ownerKeys.forEach { ownerKey ->
+        val value = runCatching { fetch(ownerKey) }.getOrNull()
+        if (value != null) return value
+    }
+    return null
+}
+
 internal fun resolveSalesStartupManualDisabledLotteryIds(
     session: com.lotterynet.pro.core.model.ActiveSession,
     adminLotteryConfigRepository: LocalAdminLotteryConfigRepository,
 ): Set<String> {
     val localIds = adminLotteryConfigRepository.getManualDisabledLotteryIds()
-    val ownerKey = resolveOperationalOwnerKey(session)
+    val ownerKeys = resolveOperationalOwnerKeys(session).ifEmpty { listOf(resolveOperationalOwnerKey(session)) }
     val serverIds = runCatching {
         SupabaseMasterConfigRemoteStore(
             edgeClient = SupabaseEdgeClient(connectTimeoutMs = 2_500, readTimeoutMs = 3_500),
-        ).fetchValue(manualDisabledLotteriesRemoteKey(ownerKey))
+        ).let { remoteStore ->
+            firstSalesStartupRemoteValue(ownerKeys) { ownerKey ->
+                remoteStore.fetchValue(manualDisabledLotteriesRemoteKey(ownerKey))
+            }
+        }
             ?.toString()
             ?.let(adminLotteryConfigRepository::cacheManualDisabledLotteryConfig)
     }.getOrNull()
@@ -293,12 +333,19 @@ class SalesActivity : AppCompatActivity() {
             val ownerKey = resolveOperationalOwnerKey(session)
             val cashierPrizePayoutRepository = LocalCashierPrizePayoutRepository(this)
             val nativeSyncQueueRepository = NativeTicketSyncQueueRepository(this)
+            val sessionTokenProvider = SupabaseSessionTokenProvider(LocalSessionRepository(this))
+            val nativeTicketRemoteStore = NativeTicketRemoteStore(
+                bearerTokenProvider = { sessionTokenProvider.freshAccessToken() },
+                bearerTokenRefresher = { sessionTokenProvider.forceFreshAccessToken() },
+            )
             val nativeTicketCloudSyncCoordinator = NativeTicketCloudSyncCoordinator(
                 salesRepository = salesRepository,
                 queueRepository = nativeSyncQueueRepository,
+                remoteStore = nativeTicketRemoteStore,
             )
             val nativeOperationalSyncCoordinator = NativeOperationalSyncCoordinator(
                 ticketGateway = nativeTicketCloudSyncCoordinator,
+                remoteStampStore = nativeTicketRemoteStore,
             )
             val ticketReconciler = TicketPrizeReconciler(
                 salesRepository = salesRepository,
@@ -309,13 +356,16 @@ class SalesActivity : AppCompatActivity() {
                         sellerUser = ticket.sellerUser,
                     )
                 },
-                onTicketUpdated = { ticket ->
+                onTicketsUpdated = { tickets ->
                     runCatching {
-                        nativeOperationalSyncCoordinator.flushTicket(ticket, session.banca)
+                        resolveTicketSyncOwnerKeys(tickets).forEach { ownerKey ->
+                            nativeOperationalSyncCoordinator.flushOwner(ownerKey, session.banca)
+                        }
                     }
                 },
             )
             val adminLotteryConfigRepository = LocalAdminLotteryConfigRepository(this)
+            refreshSalesStartupUsersForMode(usersRepository)
             val systemModeConfig = resolveSalesStartupSystemModeConfig(
                 session = session,
                 usersRepository = usersRepository,
@@ -325,7 +375,9 @@ class SalesActivity : AppCompatActivity() {
             val runtimeLotteries = resolveSaleRuntimeLotteriesForSystemMode(allLotteries, systemModeConfig)
             val calendarRule = catalogRepository.getCalendarRule()
             val resultsSaleGuardOrchestrator = ResultsScraperOrchestrator(
-                remoteStore = ResultsSupabaseStore(),
+                remoteStore = ResultsSupabaseStore(
+                    bearerTokenProvider = { sessionTokenProvider.freshAccessToken() },
+                ),
                 localResultsRepository = resultsRepository,
                 freshnessRepository = LocalSyncFreshnessRepository(this),
                 freshnessKeyFactory = { date ->
@@ -364,6 +416,7 @@ class SalesActivity : AppCompatActivity() {
                 LotteryNetComposeTheme {
                     SalesRoute(
                         session = session,
+                        sessionTokenProvider = sessionTokenProvider,
                         role = session.role,
                         banca = session.banca,
                         territory = normalizeTerritory(session.territory),
@@ -438,7 +491,8 @@ class SalesActivity : AppCompatActivity() {
 }
 
 internal fun shouldKeepSalesSessionAfterStartupFailure(error: Throwable): Boolean {
-    return isSupabaseAuthRequired(error)
+    return isSupabaseAuthRequired(error) || generateSequence(error as Throwable?) { it.cause }
+        .any { it is java.io.IOException }
 }
 
 internal enum class SaleInputTarget {
@@ -626,9 +680,20 @@ internal fun resolveVentaQrLookupChoices(): List<VentaQrLookupChoice> = listOf(
 )
 
 internal const val CASHIER_LIMIT_PULL_INTERVAL_MS: Long = 60_000L
-internal const val SALES_EXPOSURE_REFRESH_INTERVAL_MS: Long = 60_000L
-internal const val SALES_RESULTS_WINNER_REFRESH_INTERVAL_MS: Long = 120_000L
+internal const val SALES_EXPOSURE_REFRESH_INTERVAL_MS: Long = 300_000L
+internal const val SALES_RESULTS_WINNER_REFRESH_INTERVAL_MS: Long = 300_000L
 internal const val SALES_SERVER_TICKET_VALIDATION_TIMEOUT_MS: Long = 4_500L
+internal const val SALES_SERVER_LARGE_TICKET_VALIDATION_TIMEOUT_MS: Long = 6_500L
+
+internal fun resolveSalesServerTicketValidationTimeoutMs(playCount: Int): Long {
+    return if (playCount >= 60) {
+        SALES_SERVER_LARGE_TICKET_VALIDATION_TIMEOUT_MS
+    } else {
+        SALES_SERVER_TICKET_VALIDATION_TIMEOUT_MS
+    }
+}
+
+internal fun shouldRunSalesExposureFallbackPoll(realtimeEnabled: Boolean): Boolean = true
 
 internal fun shouldPollSalesServerAccountGuardInBackground(
     role: UserRole,
@@ -637,7 +702,7 @@ internal fun shouldPollSalesServerAccountGuardInBackground(
 
 internal fun shouldPollSalesResultsWinnerRefreshInBackground(
     realtimeEnabled: Boolean,
-): Boolean = !realtimeEnabled
+): Boolean = true
 
 internal enum class SalesServerAccountGuard(val message: String?) {
     ALLOW(null),
@@ -674,6 +739,38 @@ internal fun shouldShowVentaInlineFeedbackBanner(
     numberHasError: Boolean,
 ): Boolean {
     return !numberHasError && feedbackIsError && !feedbackMessage.isNullOrBlank()
+}
+
+internal fun isVentaFeedbackErrorMessage(message: String?): Boolean {
+    val normalized = message?.trim()?.lowercase(Locale.getDefault()) ?: return false
+    if (normalized.isBlank()) return false
+    return listOf(
+        "no se pudo",
+        "no hay",
+        "sin conexión",
+        "sin conexion",
+        "inválid",
+        "invalid",
+        "error",
+        "bloque",
+        "límite",
+        "limite",
+        "lleno",
+        "agotado",
+        "rechaz",
+        "servidor requerido",
+        "resultado publicado",
+    ).any { token -> normalized.contains(token) }
+}
+
+internal fun shouldAutoDismissVentaFeedbackBanner(
+    feedbackMessage: String?,
+    feedbackIsError: Boolean,
+    numberHasError: Boolean,
+    hasPendingConfirmation: Boolean,
+): Boolean {
+    return !hasPendingConfirmation &&
+        shouldShowVentaInlineFeedbackBanner(feedbackMessage, feedbackIsError, numberHasError)
 }
 
 internal fun shouldShowVentaTicketSaveSyncStatus(): Boolean = false
@@ -716,6 +813,7 @@ internal data class VentaKeypadLayoutContract(
     val showStatsBadges: Boolean,
     val keySpacingDp: Int,
     val keyHeightDp: Int,
+    val touchTargetMinDp: Int,
     val numberKeyFontSp: Int,
     val commandKeyFontSp: Int,
     val strongTextOnly: Boolean,
@@ -750,12 +848,55 @@ internal data class VentaPosLiteContract(
     val includeSales: Boolean,
     val windowMode: LotteryNetWindowMode,
     val useTightSellingLayout: Boolean,
+    val headerSubtitleVisible: Boolean,
+    val contentHorizontalPaddingDp: Int,
+    val stagedListMaxHeightFraction: Float,
+    val stagedListMinHeightDp: Int,
+    val hideStatsBadges: Boolean,
+    val touchTargetMinDp: Int,
+)
+
+internal data class VentaPosLiteControlContract(
+    val visible: Boolean,
+    val enabled: Boolean,
+    val label: String,
+    val togglesPersistedMode: Boolean,
+    val reserveBottomSafePadding: Boolean,
+    val hideStatsBadges: Boolean,
+    val maxKeypadHeightDp: Int,
 )
 
 internal enum class SaleLimitBadgeTone {
     GREEN,
     RED,
     NEUTRAL,
+}
+
+private data class RemoteSaleLimitExposure(
+    val ownerKey: String,
+    val dayKey: String,
+    val lotteryId: String,
+    val playType: String,
+    val number: String,
+    val sold: Double,
+    val fetchedAtEpochMs: Long,
+) {
+    fun matches(
+        ownerKey: String,
+        dayKey: String,
+        bucket: com.lotterynet.pro.core.sales.SaleExposureLimitBucket,
+    ): Boolean {
+        return this.ownerKey.equals(ownerKey, ignoreCase = true) &&
+            this.dayKey == dayKey &&
+            this.lotteryId == bucket.lotteryId &&
+            this.playType == bucket.playType &&
+            this.number == bucket.number
+    }
+
+    fun isFresh(nowEpochMs: Long = System.currentTimeMillis()): Boolean {
+        return isFreshSaleLimitExposureCache(fetchedAtEpochMs, nowEpochMs)
+    }
+
 }
 
 internal fun resolveVentaPosLiteContract(
@@ -767,6 +908,12 @@ internal fun resolveVentaPosLiteContract(
         includeSales = true,
         windowMode = if (tight) LotteryNetWindowMode.POS_TIGHT else windowMode,
         useTightSellingLayout = tight,
+        headerSubtitleVisible = !tight,
+        contentHorizontalPaddingDp = if (tight) 6 else 0,
+        stagedListMaxHeightFraction = if (tight) 0.50f else 0f,
+        stagedListMinHeightDp = if (tight) 88 else 0,
+        hideStatsBadges = tight,
+        touchTargetMinDp = 48,
     )
 }
 
@@ -847,7 +994,8 @@ internal fun resolveVentaKeypadLayout(windowMode: LotteryNetWindowMode): VentaKe
         LotteryNetWindowMode.POS_TIGHT -> VentaKeypadLayoutContract(
             showStatsBadges = false,
             keySpacingDp = 0,
-            keyHeightDp = 44,
+            keyHeightDp = 48,
+            touchTargetMinDp = 48,
             numberKeyFontSp = 22,
             commandKeyFontSp = 14,
             strongTextOnly = true,
@@ -859,6 +1007,7 @@ internal fun resolveVentaKeypadLayout(windowMode: LotteryNetWindowMode): VentaKe
             showStatsBadges = false,
             keySpacingDp = 0,
             keyHeightDp = 48,
+            touchTargetMinDp = 48,
             numberKeyFontSp = 24,
             commandKeyFontSp = 15,
             strongTextOnly = true,
@@ -870,6 +1019,7 @@ internal fun resolveVentaKeypadLayout(windowMode: LotteryNetWindowMode): VentaKe
             showStatsBadges = true,
             keySpacingDp = 2,
             keyHeightDp = 50,
+            touchTargetMinDp = 48,
             numberKeyFontSp = 26,
             commandKeyFontSp = 16,
             strongTextOnly = true,
@@ -1160,7 +1310,6 @@ internal fun filterVentaLotteryPickerForMode(
     selectedLotteries: List<LotteryCatalogItem>,
     assistedEntry: PickAssistedEntry?,
 ): List<LotteryCatalogItem> {
-    assistedEntry?.let { return dedupePickLotteryPickerRows(filterPickAssistedLotteries(lotteries, it)) }
     val selectedIsPickMode = selectedLotteries.isNotEmpty() && selectedLotteries.all(::supportsPickModes)
     return if (selectedIsPickMode) dedupePickLotteryPickerRows(lotteries.filter(::supportsPickModes)) else lotteries
 }
@@ -1199,6 +1348,7 @@ internal fun resolvePickAssistedLotterySelection(
     assistedEntry: PickAssistedEntry?,
 ): List<String> {
     assistedEntry ?: return currentSelection
+    if (currentSelection.isNotEmpty()) return currentSelection.distinct()
     val compatibleLotteries = filterPickAssistedLotteries(lotteries, assistedEntry)
     if (compatibleLotteries.isEmpty()) return emptyList()
     val compatibleIds = compatibleLotteries.map { it.id }
@@ -1333,20 +1483,12 @@ internal fun resolveTicketPrintOpenContract(
             fallbackMessage = "Completa la jugada y el monto antes de imprimir",
         )
 
-        hasLatestTicket -> TicketPrintOpenContract(
-            showAction = true,
-            stageCurrentPlayBeforeSave = false,
-            saveBeforeOpen = false,
-            openLatestTicket = true,
-            fallbackMessage = null,
-        )
-
         else -> TicketPrintOpenContract(
             showAction = false,
             stageCurrentPlayBeforeSave = false,
             saveBeforeOpen = false,
             openLatestTicket = false,
-            fallbackMessage = "No hay jugadas para imprimir",
+            fallbackMessage = "No hay jugada para imprimir",
         )
     }
 }
@@ -1427,6 +1569,7 @@ private fun prioritizeNewestRows(
 @Composable
 private fun SalesRoute(
     session: com.lotterynet.pro.core.model.ActiveSession?,
+    sessionTokenProvider: SupabaseSessionTokenProvider,
     role: UserRole,
     banca: String?,
     territory: LotteryTerritory,
@@ -1475,11 +1618,19 @@ private fun SalesRoute(
     var tickUtcMs by remember { mutableLongStateOf(trustedClockRepository.getTrustedUtcMs()) }
     var replaceAmountOnNextDigit by remember { mutableStateOf(false) }
     var printPreviewTicket by remember { mutableStateOf<TicketRecord?>(null) }
+    var thermalPrintBusy by remember { mutableStateOf(false) }
     var pendingDuplicatePlay by remember { mutableStateOf<PendingDuplicatePlay?>(null) }
     var pendingPublishedResultPlay by remember { mutableStateOf<PendingPublishedResultPlay?>(null) }
     var ticketSaveSyncStage by remember { mutableStateOf<TicketSaveSyncStage?>(null) }
     var ticketSaveSyncDetail by remember { mutableStateOf<String?>(null) }
+    var saleSaveInFlight by remember { mutableStateOf(false) }
+    var pendingSaleSubmission by remember { mutableStateOf<SaleSubmissionIdentity?>(null) }
+    var pendingAdminLimitOverrideMessage by remember { mutableStateOf<String?>(null) }
+    var adminLimitOverrideApproved by remember { mutableStateOf(false) }
+    var saleLimitCheckInFlight by remember { mutableStateOf(false) }
     var exposureRefreshTick by remember { mutableLongStateOf(0L) }
+    var liveManualClosedLotteryIds by remember(manualClosedLotteryIds) { mutableStateOf(manualClosedLotteryIds) }
+    var liveSystemModeConfig by remember(initialSystemModeConfig) { mutableStateOf(initialSystemModeConfig) }
     val salesActionScope = rememberCoroutineScope()
     var showAdminSellerPicker by remember { mutableStateOf(false) }
     var showLigarTargetDialog by remember { mutableStateOf(false) }
@@ -1488,10 +1639,47 @@ private fun SalesRoute(
     val futureSaleEnabled = false
     var selectedDrawDay by remember { mutableStateOf(SaleDrawDay.TODAY) }
     val limitOwnerId = session?.adminId ?: session?.userId
-    var cashierSaleLimits by remember(limitOwnerId, session?.username) {
-        mutableStateOf(cashierSalesLimitRepository.getUserLimits(limitOwnerId, session?.username))
+    var cashierSaleLimits by remember(limitOwnerId, session, role) {
+        mutableStateOf(resolveConfiguredSaleLimits(cashierSalesLimitRepository, role, limitOwnerId, session))
     }
     val localContext = LocalContext.current
+    val saleValidationBackendClient = remember(localContext) {
+        SupabaseTicketBackendClient(
+            edgeClient = SupabaseEdgeClient(
+                connectTimeoutMs = 1_500,
+                readTimeoutMs = SALES_SERVER_TICKET_VALIDATION_TIMEOUT_MS.toInt(),
+                callTimeoutMs = SALES_SERVER_TICKET_VALIDATION_TIMEOUT_MS.toInt(),
+            ),
+        )
+    }
+    val saleExposureBackendClient = remember(localContext) {
+        SupabaseTicketBackendClient(
+            edgeClient = SupabaseEdgeClient(
+                connectTimeoutMs = 1_500,
+                readTimeoutMs = 2_500,
+                callTimeoutMs = 2_500,
+            ),
+        )
+    }
+    var warmedSaleAuthToken by remember { mutableStateOf<String?>(null) }
+    LaunchedEffect(session?.userId, session?.authExpiresAtEpochSeconds, session?.authRefreshToken) {
+        val activeSession = session ?: return@LaunchedEffect
+        if (activeSession.authAccessToken.isNullOrBlank()) {
+            warmedSaleAuthToken = null
+            return@LaunchedEffect
+        }
+        warmedSaleAuthToken = runCatching {
+            withContext(Dispatchers.IO) {
+                sessionTokenProvider.freshAccessToken()
+            }
+        }.getOrNull()
+    }
+    val salesAdminLotteryConfigRepository = remember(localContext) { LocalAdminLotteryConfigRepository(localContext) }
+    val salesMasterConfigRemoteStore = remember(localContext) {
+        SupabaseMasterConfigRemoteStore(
+            bearerTokenProvider = { sessionTokenProvider.freshAccessToken() },
+        )
+    }
     val realtimeClient = remember { LotterynetRealtimeClient() }
     val realtimeEnabled = remember { realtimeClient.isConfigured() }
     var showQrLookupChoices by remember { mutableStateOf(false) }
@@ -1566,13 +1754,19 @@ private fun SalesRoute(
                 }
             }
         }
-        if (activeSession.role == UserRole.CASHIER) {
+        if (usesConfiguredSaleLimits(activeSession.role)) {
             thread(name = "cashier-limit-pull") {
                 val ownerKey = activeSession.adminId ?: activeSession.userId
                 cashierLimitCloudSyncCoordinator.pullOwner(ownerKey)
-                val nextLimits = cashierSalesLimitRepository.getUserLimits(ownerKey, activeSession.username)
+                val nextLimits = resolveConfiguredSaleLimits(
+                    repository = cashierSalesLimitRepository,
+                    role = activeSession.role,
+                    ownerId = ownerKey,
+                    session = activeSession,
+                )
                 (localContext as? android.app.Activity)?.runOnUiThread {
                     cashierSaleLimits = nextLimits
+                    exposureRefreshTick = System.currentTimeMillis()
                 }
             }
         }
@@ -1580,17 +1774,23 @@ private fun SalesRoute(
 
     LaunchedEffect(session?.userId, session?.adminId, session?.username, role) {
         val activeSession = session ?: return@LaunchedEffect
-        if (activeSession.role != UserRole.CASHIER) return@LaunchedEffect
-        if (realtimeEnabled) return@LaunchedEffect
+        if (!usesConfiguredSaleLimits(activeSession.role)) return@LaunchedEffect
         while (true) {
             delay(CASHIER_LIMIT_PULL_INTERVAL_MS)
+            if (!realtimeClient.shouldUsePollingFallback()) continue
             thread(name = "cashier-limit-pull-live") {
                 val ownerKey = activeSession.adminId ?: activeSession.userId
                 val pulled = cashierLimitCloudSyncCoordinator.pullOwner(ownerKey)
                 if (pulled) {
-                    val nextLimits = cashierSalesLimitRepository.getUserLimits(ownerKey, activeSession.username)
+                val nextLimits = resolveConfiguredSaleLimits(
+                    repository = cashierSalesLimitRepository,
+                    role = activeSession.role,
+                    ownerId = ownerKey,
+                    session = activeSession,
+                )
                     (localContext as? android.app.Activity)?.runOnUiThread {
                         cashierSaleLimits = nextLimits
+                        exposureRefreshTick = System.currentTimeMillis()
                     }
                 }
                 if (shouldPollSalesServerAccountGuardInBackground(activeSession.role, realtimeEnabled)) {
@@ -1639,9 +1839,10 @@ private fun SalesRoute(
     LaunchedEffect(session?.userId, session?.adminId, role) {
         val activeSession = session ?: return@LaunchedEffect
         if (role == UserRole.MASTER) return@LaunchedEffect
-        if (realtimeEnabled) return@LaunchedEffect
+        if (!shouldRunSalesExposureFallbackPoll(realtimeEnabled)) return@LaunchedEffect
         while (true) {
             delay(SALES_EXPOSURE_REFRESH_INTERVAL_MS)
+            if (!realtimeClient.shouldUsePollingFallback()) continue
             if (!liveTicketSyncInFlight.compareAndSet(false, true)) continue
             thread(name = "sales-exposure-refresh") {
                 runCatching {
@@ -1674,20 +1875,29 @@ private fun SalesRoute(
             val subscriptions = mutableListOf<LotterynetRealtimeClient.SubscriptionHandle>()
             val ownerKey = resolveOperationalOwnerKey(activeSession)
             if (ownerKey.isNotBlank()) {
-                subscriptions += realtimeClient.subscribe(LotterynetRealtimeSubscription.usersGlobal()) {
-                    if (!usersRealtimeRefreshInFlight.compareAndSet(false, true)) return@subscribe
+                subscriptions += realtimeClient.subscribeUsersStateSignals(
+                    bearerTokenProvider = { sessionTokenProvider.freshAccessToken() },
+                ) {
+                    if (!usersRealtimeRefreshInFlight.compareAndSet(false, true)) return@subscribeUsersStateSignals
                     thread(name = "sales-realtime-users-guard") {
                         runCatching {
                             NativeUsersBootstrapper(usersRepository).bootstrap(forceRemoteRefresh = true)
                         }.onSuccess { result ->
                             if (!result.ok) return@onSuccess
+                            val accounts = usersRepository.getAdmins() + usersRepository.getCashiers()
                             val guard = resolveSalesServerAccountGuard(
                                 session = activeSession,
-                                accounts = usersRepository.getAdmins() + usersRepository.getCashiers(),
+                                accounts = accounts,
+                            )
+                            val nextSystemModeConfig = effectiveSystemModeConfigForSession(
+                                config = salesAdminLotteryConfigRepository.getSystemModeConfig(),
+                                session = activeSession,
+                                accounts = accounts,
                             )
                             val activity = localContext as? android.app.Activity ?: return@onSuccess
                             activity.runOnUiThread {
                                 userDirectoryRefreshTick += 1
+                                liveSystemModeConfig = nextSystemModeConfig
                                 if (guard != SalesServerAccountGuard.ALLOW) {
                                     LocalSessionRepository(activity).saveActiveSession(null)
                                     Toast.makeText(
@@ -1711,36 +1921,100 @@ private fun SalesRoute(
                         }
                     }
                 }
-                subscriptions += realtimeClient.subscribe(LotterynetRealtimeSubscription.ticketOwner(ownerKey)) {
-                    if (!liveTicketSyncInFlight.compareAndSet(false, true)) return@subscribe
-                    thread(name = "sales-realtime-ticket-hydrate") {
-                        runCatching {
-                            nativeOperationalSyncCoordinator.refreshOwnerFromRealtime(ownerKey, activeSession.banca)
-                        }.onSuccess { state ->
-                            state.remoteUpdatedAt?.let(liveTicketRemoteStamp::set)
-                            (localContext as? android.app.Activity)?.runOnUiThread {
-                                exposureRefreshTick = System.currentTimeMillis()
+                subscriptions += realtimeClient.subscribeTicketOwnerSignals(
+                    ownerKey = ownerKey,
+                    bearerTokenProvider = { sessionTokenProvider.freshAccessToken() },
+                    onEvent = { event ->
+                        invalidateTicketRealtimeCaches(ownerKey)
+                        if (liveTicketSyncInFlight.compareAndSet(false, true)) {
+                            thread(name = "sales-realtime-ticket-hydrate") {
+                                runCatching {
+                                    nativeOperationalSyncCoordinator.refreshOwnerFromRealtime(ownerKey, activeSession.banca)
+                                }.onSuccess { state ->
+                                    state.remoteUpdatedAt?.let(liveTicketRemoteStamp::set)
+                                    (localContext as? android.app.Activity)?.runOnUiThread {
+                                        exposureRefreshTick = System.currentTimeMillis()
+                                    }
+                                }.onFailure { error ->
+                                    if (shouldReportSalesBackgroundRefreshFailure(error)) {
+                                        crashReporter.recordHandled("SalesActivity.realtimeTicket", error)
+                                    }
+                                }.also {
+                                    liveTicketSyncInFlight.set(false)
+                                }
                             }
-                        }.onFailure { error ->
-                            if (shouldReportSalesBackgroundRefreshFailure(error)) {
-                                crashReporter.recordHandled("SalesActivity.realtimeTicket", error)
-                            }
-                        }.also {
-                            liveTicketSyncInFlight.set(false)
                         }
                     }
-                }
-                if (activeSession.role == UserRole.CASHIER) {
+                )
+                if (usesConfiguredSaleLimits(activeSession.role)) {
                     subscriptions += realtimeClient.subscribe(
-                        LotterynetRealtimeSubscription.masterKey(cashierLimitRemoteKey(ownerKey)),
+                        subscription = LotterynetRealtimeSubscription.masterKey(cashierLimitRemoteKey(ownerKey)),
+                        bearerTokenProvider = { sessionTokenProvider.freshAccessToken() },
                     ) {
                         thread(name = "sales-realtime-cashier-limits") {
                             val pulled = cashierLimitCloudSyncCoordinator.pullOwner(ownerKey)
                             if (pulled) {
-                                val nextLimits = cashierSalesLimitRepository.getUserLimits(ownerKey, activeSession.username)
+                                val nextLimits = resolveConfiguredSaleLimits(
+                                    repository = cashierSalesLimitRepository,
+                                    role = activeSession.role,
+                                    ownerId = ownerKey,
+                                    session = activeSession,
+                                )
                                 (localContext as? android.app.Activity)?.runOnUiThread {
                                     cashierSaleLimits = nextLimits
+                                    exposureRefreshTick = System.currentTimeMillis()
                                 }
+                            }
+                        }
+                    }
+                }
+                subscriptions += realtimeClient.subscribe(
+                    subscription = LotterynetRealtimeSubscription.masterKey(manualDisabledLotteriesRemoteKey(ownerKey)),
+                    bearerTokenProvider = { sessionTokenProvider.freshAccessToken() },
+                ) {
+                    thread(name = "sales-realtime-manual-lotteries") {
+                        runCatching {
+                            salesMasterConfigRemoteStore.refreshValue(manualDisabledLotteriesRemoteKey(ownerKey))
+                                ?.toString()
+                                ?.let(salesAdminLotteryConfigRepository::cacheManualDisabledLotteryConfig)
+                                ?: salesAdminLotteryConfigRepository.getManualDisabledLotteryIds()
+                        }.onSuccess { nextIds ->
+                            (localContext as? android.app.Activity)?.runOnUiThread {
+                                liveManualClosedLotteryIds = nextIds
+                                exposureRefreshTick = System.currentTimeMillis()
+                            }
+                        }.onFailure { error ->
+                            if (shouldReportSalesBackgroundRefreshFailure(error)) {
+                                crashReporter.recordHandled("SalesActivity.realtimeManualLotteries", error)
+                            }
+                        }
+                    }
+                }
+                subscriptions += realtimeClient.subscribe(
+                    subscription = LotterynetRealtimeSubscription.masterKey(systemModeRemoteKey(ownerKey)),
+                    bearerTokenProvider = { sessionTokenProvider.freshAccessToken() },
+                ) {
+                    thread(name = "sales-realtime-system-mode") {
+                        runCatching {
+                            val serverConfig = salesMasterConfigRemoteStore.refreshValue(systemModeRemoteKey(ownerKey))
+                                ?.toString()
+                                ?.let(::decodeAdminSystemModeConfig)
+                            val baseConfig = serverConfig
+                                ?.let(salesAdminLotteryConfigRepository::saveSystemModeConfig)
+                                ?: salesAdminLotteryConfigRepository.getSystemModeConfig()
+                            effectiveSystemModeConfigForSession(
+                                config = baseConfig,
+                                session = activeSession,
+                                accounts = usersRepository.getAdmins() + usersRepository.getCashiers(),
+                            )
+                        }.onSuccess { nextConfig ->
+                            (localContext as? android.app.Activity)?.runOnUiThread {
+                                liveSystemModeConfig = nextConfig
+                                exposureRefreshTick = System.currentTimeMillis()
+                            }
+                        }.onFailure { error ->
+                            if (shouldReportSalesBackgroundRefreshFailure(error)) {
+                                crashReporter.recordHandled("SalesActivity.realtimeSystemMode", error)
                             }
                         }
                     }
@@ -1761,11 +2035,11 @@ private fun SalesRoute(
     val selectedLotteries = remember(selectedLotteryIds, lotteries) {
         selectedLotteryIds.mapNotNull { selectedId -> lotteries.firstOrNull { it.id == selectedId } }
     }
-    val systemAllowedLotteryIds = remember(lotteries, initialSystemModeConfig) {
-        filterSaleLotteriesForSystemMode(lotteries, initialSystemModeConfig).map { it.id }.toSet()
+    val systemAllowedLotteryIds = remember(lotteries, liveSystemModeConfig) {
+        filterSaleLotteriesForSystemMode(lotteries, liveSystemModeConfig).map { it.id }.toSet()
     }
-    val preferredPickLotteryIds = remember(lotteries, initialSystemModeConfig) {
-        preferredPickLotteryIdsForSaleMode(lotteries, initialSystemModeConfig)
+    val preferredPickLotteryIds = remember(lotteries, liveSystemModeConfig) {
+        preferredPickLotteryIdsForSaleMode(lotteries, liveSystemModeConfig)
     }
     LaunchedEffect(systemAllowedLotteryIds, selectedLotteryIds) {
         val cleaned = selectedLotteryIds.filter { it in systemAllowedLotteryIds }
@@ -1817,14 +2091,12 @@ private fun SalesRoute(
         if (!realtimeEnabled || activeSession == null || role == UserRole.MASTER) {
             onDispose { }
         } else {
-            val subscriptions = listOf(
-                LotterynetRealtimeSubscription.resultsCache("lot_results_cache_by_day:$resultsDayKey"),
-                LotterynetRealtimeSubscription.resultsCache("pick_results_cache_by_day:$resultsDayKey"),
-                LotterynetRealtimeSubscription.resultsCache("manual_results_overrides_by_day:$resultsDayKey"),
-            ).map { subscription ->
-                realtimeClient.subscribe(subscription) {
+            val subscriptions = realtimeClient.subscribeResultsSignals(
+                dateKey = resultsDayKey,
+                bearerTokenProvider = { sessionTokenProvider.freshAccessToken() },
+            ) {
                     if (!resultsRealtimeRefreshInFlight.compareAndSet(false, true)) {
-                        return@subscribe
+                        return@subscribeResultsSignals
                     }
                     thread(name = "sales-realtime-results-refresh") {
                         try {
@@ -1847,7 +2119,6 @@ private fun SalesRoute(
                             resultsRealtimeRefreshInFlight.set(false)
                         }
                     }
-                }
             }
             onDispose { subscriptions.forEach { it.close() } }
         }
@@ -1857,6 +2128,7 @@ private fun SalesRoute(
         if (!shouldPollSalesResultsWinnerRefreshInBackground(realtimeEnabled)) return@LaunchedEffect
         while (true) {
             delay(SALES_RESULTS_WINNER_REFRESH_INTERVAL_MS)
+            if (!realtimeClient.shouldUsePollingFallback()) continue
             if (!ProductionNetworkGuard.hasValidatedInternet(localContext)) continue
             runCatching {
                 val refreshedResults = withContext(Dispatchers.IO) {
@@ -1919,12 +2191,38 @@ private fun SalesRoute(
     }
     val liveFeedbackIsError = remember(validationMessage, number, amount, partialHint, detectedPlay, validation) {
         when {
-            validationMessage != null -> !validation.isValid
+            validationMessage != null -> isVentaFeedbackErrorMessage(validationMessage)
             number.isBlank() -> false
             partialHint != null -> true
             detectedPlay != null && amount.isBlank() -> false
             amount.isNotBlank() && !validation.isValid -> true
             else -> false
+        }
+    }
+    LaunchedEffect(
+        liveFeedbackMessage,
+        liveFeedbackIsError,
+        numberAdvanceState.showNumberError,
+        pendingDuplicatePlay,
+        pendingPublishedResultPlay,
+        pendingAdminLimitOverrideMessage,
+    ) {
+        val messageAtStart = liveFeedbackMessage?.takeIf { it.isNotBlank() } ?: return@LaunchedEffect
+        val hasPendingConfirmation = pendingDuplicatePlay != null ||
+            pendingPublishedResultPlay != null ||
+            pendingAdminLimitOverrideMessage != null
+        if (!shouldAutoDismissVentaFeedbackBanner(
+                feedbackMessage = messageAtStart,
+                feedbackIsError = liveFeedbackIsError,
+                numberHasError = numberAdvanceState.showNumberError,
+                hasPendingConfirmation = hasPendingConfirmation,
+            )
+        ) {
+            return@LaunchedEffect
+        }
+        delay(1_200)
+        if (validationMessage == messageAtStart) {
+            validationMessage = null
         }
     }
     LaunchedEffect(session, draft, stagedRows.toList()) {
@@ -1965,6 +2263,7 @@ private fun SalesRoute(
             stagedRows = stagedRows.toList(),
             tickets = salesRepository.getTicketsForDay(dayKey),
             ownerKey = resolveExposureOwnerKey(session),
+            ownerKeys = resolveExposureOwnerKeys(session),
             cashierKeys = resolveExposureCashierKeys(session),
             limits = CashierLimits(
                 daySale = cashierSaleLimits.daySale,
@@ -1979,6 +2278,72 @@ private fun SalesRoute(
             ),
         )
     }
+    val activeSaleLimitPlay = validation.resolvedPlay ?: detectedPlay
+    val activeSaleLimitBucket = remember(activeSaleLimitPlay, selectedLottery?.id) {
+        activeSaleLimitPlay?.let { play ->
+            resolveSaleExposureLimitBucket(play.playType, play.normalizedNumber, selectedLottery?.id)
+        }
+    }
+    var remoteSaleLimitExposure by remember { mutableStateOf<RemoteSaleLimitExposure?>(null) }
+    var localSaleLimitExposureOverrides by remember(dayKey, session?.userId, session?.adminId) {
+        mutableStateOf<Map<SaleExposureLimitBucket, Double>>(emptyMap())
+    }
+    LaunchedEffect(
+        role,
+        session?.userId,
+        session?.adminId,
+        session?.adminUser,
+        dayKey,
+        activeSaleLimitBucket,
+        exposureRefreshTick,
+    ) {
+        val activeSession = session
+        val bucket = activeSaleLimitBucket
+        val ownerKey = resolveExposureOwnerKey(activeSession)
+        if (activeSession == null || bucket == null || !usesConfiguredSaleLimits(role) || ownerKey.isBlank() || bucket.lotteryId.isBlank()) {
+            return@LaunchedEffect
+        }
+        val nowMs = System.currentTimeMillis()
+        val cachedExposure = remoteSaleLimitExposure
+        if (cachedExposure != null &&
+            cachedExposure.matches(ownerKey = ownerKey, dayKey = dayKey, bucket = bucket) &&
+            cachedExposure.isFresh(nowMs)
+        ) {
+            return@LaunchedEffect
+        }
+        remoteSaleLimitExposure = null
+        delay(180)
+        runCatching {
+            withContext(Dispatchers.IO) {
+                saleExposureBackendClient.getSaleLimitExposure(
+                    request = BackendSaleLimitExposureRequest(
+                        ownerKey = ownerKey,
+                        dayKey = dayKey,
+                        lotteryId = bucket.lotteryId,
+                        playType = bucket.playType,
+                        number = bucket.number,
+                    ),
+                    bearerToken = sessionTokenProvider.freshAccessToken(),
+                )
+            }
+        }.onSuccess { response ->
+            if (response.optBoolean("ok", false)) {
+                remoteSaleLimitExposure = RemoteSaleLimitExposure(
+                    ownerKey = ownerKey,
+                    dayKey = dayKey,
+                    lotteryId = bucket.lotteryId,
+                    playType = bucket.playType,
+                    number = bucket.number,
+                    sold = response.optDouble("sold", 0.0),
+                    fetchedAtEpochMs = System.currentTimeMillis(),
+                )
+            }
+        }.onFailure { error ->
+            if (shouldReportSalesBackgroundRefreshFailure(error)) {
+                crashReporter.recordHandled("SalesActivity.saleLimitExposure", error)
+            }
+        }
+    }
     var saleLimitBadgeTone by remember { mutableStateOf(SaleLimitBadgeTone.NEUTRAL) }
     val saleLimitBadgeMain = remember(
         role,
@@ -1992,22 +2357,40 @@ private fun SalesRoute(
         dayKey,
         stagedRows.toList(),
         saleLimitRemainingRows,
+        remoteSaleLimitExposure,
         lastSavedTicketEpochMs,
         exposureRefreshTick,
         session,
     ) {
-        val play = validation.resolvedPlay ?: detectedPlay
-        if (role == UserRole.CASHIER && play != null) {
-            val bucket = resolveSaleExposureLimitBucket(play.playType, play.normalizedNumber)
+        val play = activeSaleLimitPlay
+        if (usesConfiguredSaleLimits(role) && play != null) {
+            val bucket = activeSaleLimitBucket ?: resolveSaleExposureLimitBucket(play.playType, play.normalizedNumber, selectedLottery?.id)
             val matchingRow = saleLimitRemainingRows.firstOrNull { row ->
-                row.playType == bucket.playType && row.number == bucket.number
+                row.playType == bucket.playType &&
+                    row.number == bucket.number &&
+                    (bucket.lotteryId.isBlank() || row.lotteryId == bucket.lotteryId)
             }
-            val soldExposure = matchingRow?.sold ?: calculateGlobalLimitExposure(
-                tickets = salesRepository.getTicketsForDay(dayKey),
-                ownerKey = resolveExposureOwnerKey(session),
-                bucket = bucket,
-                cashierKeys = resolveExposureCashierKeys(session),
+            val ownerKey = resolveExposureOwnerKey(session)
+            val remoteSoldExposure = remoteSaleLimitExposure
+                ?.takeIf { it.matches(ownerKey = ownerKey, dayKey = dayKey, bucket = bucket) && it.isFresh() }
+                ?.sold
+            val persistedLocalSoldExposure = matchingRow?.sold ?: calculateSaleLimitSoldExposureForRole(
+                    role = role,
+                    tickets = salesRepository.getTicketsForDay(dayKey),
+                    ownerKey = ownerKey,
+                    ownerKeys = resolveExposureOwnerKeys(session),
+                    bucket = bucket,
+                    cashierKeys = resolveExposureCashierKeys(session),
+                )
+            val localSoldExposure = maxOf(
+                persistedLocalSoldExposure,
+                localSaleLimitExposureOverrides[bucket] ?: 0.0,
             )
+            // A remote response can arrive after the local ticket was saved and
+            // still reflect the previous server snapshot. Never let it move the
+            // badge backwards; local confirmed exposure is the immediate floor,
+            // while the server may increase it when another device sold too.
+            val soldExposure = remoteSoldExposure?.let { maxOf(it, localSoldExposure) } ?: localSoldExposure
             val pendingExposure = resolveSaleLimitPendingPreview(
                 stagedPending = matchingRow?.pending ?: calculateGlobalStagedExposure(stagedRows.toList(), bucket),
                 currentAmount = validation.normalizedAmount,
@@ -2024,25 +2407,39 @@ private fun SalesRoute(
                 pending = pendingExposure,
             )
         } else {
-            val stagedLimitRow = saleLimitRemainingRows.firstOrNull()
-            val stagedBadge = resolveSaleLimitBadgeMain(
-                role = role,
-                row = stagedLimitRow,
-            )
-            if (stagedBadge != null && stagedLimitRow != null) {
-                saleLimitBadgeTone = resolveSaleLimitBadgeTone(
-                    limit = stagedLimitRow.limit,
-                    sold = stagedLimitRow.sold,
-                    pending = stagedLimitRow.pending,
-                )
-                stagedBadge
+            if (usesConfiguredSaleLimits(role)) {
+                // No number means there is no limit bucket to display. Never reuse
+                // the first staged row because it may belong to a previous number.
+                saleLimitBadgeTone = SaleLimitBadgeTone.NEUTRAL
+                "—"
             } else {
                 saleLimitBadgeTone = resolveSaleLimitBadgeTone(
-                    limit = if (role == UserRole.CASHIER) resolveSaleLimitValue(selectedLottery, resolvedClassicMode, pickMode, cashierSaleLimits) else 0.0,
+                    limit = if (usesConfiguredSaleLimits(role)) resolveSaleLimitValue(selectedLottery, resolvedClassicMode, pickMode, cashierSaleLimits) else 0.0,
                 )
                 resolveSaleLimitBadgeMain(role, selectedLottery, resolvedClassicMode, pickMode, cashierSaleLimits)
             }
         }
+    }
+    val saleLimitPreviewOverage = remember(saleLimitBadgeMain, validation.normalizedAmount, activeSaleLimitPlay) {
+        resolveSaleLimitPreviewOverage(
+            remainingLabel = saleLimitBadgeMain,
+            requestedAmount = validation.normalizedAmount,
+            hasActivePlay = activeSaleLimitPlay != null,
+        )
+    }
+    val saleLimitBadgeSub = remember(role, saleLimitBadgeMain, saleLimitPreviewOverage, validation.normalizedAmount, activeSaleLimitPlay) {
+        resolveSaleLimitBadgeSub(
+            role = role,
+            remainingLabel = saleLimitBadgeMain,
+            requestedAmount = validation.normalizedAmount,
+            overage = saleLimitPreviewOverage,
+            hasActivePlay = activeSaleLimitPlay != null,
+        )
+    }
+    val effectiveSaleLimitBadgeTone = if (saleLimitPreviewOverage != null && saleLimitPreviewOverage > 0.0) {
+        SaleLimitBadgeTone.RED
+    } else {
+        saleLimitBadgeTone
     }
     val calendarClosedLotteryIds = remember(lotteries, territory, saleDecisionUtcMs) {
         availabilityResolver.getRealNoDrawLotteryIds(lotteries, territory, saleDecisionUtcMs)
@@ -2050,7 +2447,7 @@ private fun SalesRoute(
     val lotteryDecisionsWithoutPublishedResultsById = remember(
         lotteries,
         territory,
-        manualClosedLotteryIds,
+        liveManualClosedLotteryIds,
         calendarClosedLotteryIds,
         role,
         saleDecisionUtcMs,
@@ -2059,7 +2456,7 @@ private fun SalesRoute(
             lottery.id to closePolicy.resolveCloseDecision(
                 lottery = lottery,
                 operationTerritory = territory,
-                manualClosedLotteryIds = manualClosedLotteryIds,
+                manualClosedLotteryIds = liveManualClosedLotteryIds,
                 calendarClosedLotteryIds = calendarClosedLotteryIds,
                 publishedResultLotteryIds = emptySet(),
                 allowAdminAfterCloseGrace = role == UserRole.ADMIN,
@@ -2076,7 +2473,7 @@ private fun SalesRoute(
     val lotteryDecisionsById = remember(
         lotteries,
         territory,
-        manualClosedLotteryIds,
+        liveManualClosedLotteryIds,
         calendarClosedLotteryIds,
         publishedResultLotteryIds,
         role,
@@ -2086,7 +2483,7 @@ private fun SalesRoute(
             lottery.id to closePolicy.resolveCloseDecision(
                 lottery = lottery,
                 operationTerritory = territory,
-                manualClosedLotteryIds = manualClosedLotteryIds,
+                manualClosedLotteryIds = liveManualClosedLotteryIds,
                 calendarClosedLotteryIds = calendarClosedLotteryIds,
                 publishedResultLotteryIds = publishedResultLotteryIds,
                 allowAdminAfterCloseGrace = role == UserRole.ADMIN,
@@ -2107,10 +2504,10 @@ private fun SalesRoute(
             excludedLotteryIds = pickerExcludedLotteryIds,
         )
     }
-    val pickerLotteries = remember(pickerLotteryIds, lotteries, selectedLotteries, pickAssistedEntry, initialSystemModeConfig) {
+    val pickerLotteries = remember(pickerLotteryIds, lotteries, selectedLotteries, pickAssistedEntry, liveSystemModeConfig) {
         val systemFiltered = filterSaleLotteriesForSystemMode(
             lotteries = pickerLotteryIds.mapNotNull { pickerId -> lotteries.firstOrNull { it.id == pickerId } },
-            config = initialSystemModeConfig,
+            config = liveSystemModeConfig,
         )
         filterVentaLotteryPickerForMode(
             lotteries = systemFiltered,
@@ -2118,24 +2515,10 @@ private fun SalesRoute(
             assistedEntry = pickAssistedEntry,
         )
     }
-    LaunchedEffect(pickAssistedEntry, pickerLotteries, selectedLotteryIds) {
-        val nextSelection = resolvePickAssistedLotterySelection(
-            currentSelection = selectedLotteryIds,
-            lotteries = pickerLotteries,
-            assistedEntry = pickAssistedEntry,
-        )
-        if (nextSelection != selectedLotteryIds) {
-            selectedLotteryIds = nextSelection
-            validationMessage = nextSelection.firstOrNull()
-                ?.let { nextId -> lotteries.firstOrNull { it.id == nextId }?.name }
-                ?.let { "Pick seleccionado: $it" }
-                ?: "Selecciona una lotería Pick disponible"
-        }
-    }
-    LaunchedEffect(initialDraft, selectedLotteryIds, lotteries, lotteryDecisionsById, initialSystemModeConfig) {
+    LaunchedEffect(initialDraft, selectedLotteryIds, lotteries, lotteryDecisionsById, liveSystemModeConfig) {
         if (initialDraft != null || selectedLotteryIds.isNotEmpty()) return@LaunchedEffect
         selectedLotteryIds = resolveInitialLotterySelection(
-            lotteries = filterSaleLotteriesForSystemMode(lotteries, initialSystemModeConfig),
+            lotteries = filterSaleLotteriesForSystemMode(lotteries, liveSystemModeConfig),
             decisionsByLotteryId = lotteryDecisionsById,
             preferredLotteryIds = preferredPickLotteryIds,
         )
@@ -2180,17 +2563,30 @@ private fun SalesRoute(
         }
     }
     val saveTicket: suspend () -> TicketRecord? = saveTicket@{
+        val gate = resolveSaleSaveGate(
+            isSaveInFlight = saleSaveInFlight,
+            stagedRowCount = stagedRows.size,
+        )
+        if (!gate.canStartSave) {
+            validationMessage = gate.message
+            return@saveTicket null
+        }
+        saleSaveInFlight = true
+        val saleRowsSnapshot = stagedRows.toList()
         if (session == null) {
             validationMessage = "No hay sesión activa"
-            null
+            saleSaveInFlight = false
+            return@saveTicket null
         } else if (!ProductionNetworkGuard.hasValidatedInternet(localContext)) {
             validationMessage = ProductionNetworkGuard.NO_INTERNET_ACTION_MESSAGE
             ticketSaveSyncStage = TicketSaveSyncStage.PENDING
             ticketSaveSyncDetail = "Internet requerido para vender"
-            null
-        } else if (stagedRows.isEmpty()) {
+            saleSaveInFlight = false
+            return@saveTicket null
+        } else if (saleRowsSnapshot.isEmpty()) {
             validationMessage = "No hay jugadas para guardar"
-            null
+            saleSaveInFlight = false
+            return@saveTicket null
         } else {
             val refreshedResults = withContext(Dispatchers.IO) {
                 runCatching {
@@ -2200,7 +2596,7 @@ private fun SalesRoute(
                 }
             }
             val blockedResultLotteryIds = resolvePublishedResultSaleBlockLotteryIds(
-                stagedRows = stagedRows,
+                stagedRows = saleRowsSnapshot,
                 results = refreshedResults,
             )
             val sellBlockedResultLotteryIds = if (canUseAdminResultGraceForSale(role)) {
@@ -2209,7 +2605,7 @@ private fun SalesRoute(
                     !closePolicy.resolveCloseDecision(
                         lottery = lottery,
                         operationTerritory = territory,
-                        manualClosedLotteryIds = manualClosedLotteryIds,
+                        manualClosedLotteryIds = liveManualClosedLotteryIds,
                         calendarClosedLotteryIds = calendarClosedLotteryIds,
                         publishedResultLotteryIds = blockedResultLotteryIds,
                         allowAdminAfterCloseGrace = true,
@@ -2226,6 +2622,7 @@ private fun SalesRoute(
                     .ifBlank { "lotería seleccionada" }
                 exposureRefreshTick = System.currentTimeMillis()
                 validationMessage = "Resultado publicado: $blockedNames. No se puede vender esa lotería."
+                saleSaveInFlight = false
                 return@saveTicket null
             } else if (blockedResultLotteryIds.isNotEmpty() && role == UserRole.ADMIN) {
                 val warningNames = lotteries
@@ -2234,11 +2631,25 @@ private fun SalesRoute(
                     .ifBlank { "lotería seleccionada" }
                 validationMessage = "Resultado publicado: $warningNames. Venta permitida por gracia de admin."
             }
-            val total = stagedRows.sumOf { it.amount }
-            val nowEpoch = tickUtcMs
+            val total = saleRowsSnapshot.sumOf { it.amount }
             val ticketSeller = activeTicketSeller ?: resolveSaleTicketSeller(session, null)
+            val isAdminSellingAsCashier = role == UserRole.ADMIN && ticketSeller.role == UserRole.CASHIER
+            val saleSubmission = resolveSaleSubmissionIdentity(
+                current = pendingSaleSubmission,
+                nextFingerprint = buildSaleSubmissionFingerprint(
+                    adminId = session.adminId ?: session.userId,
+                    adminUser = session.adminUser ?: session.username,
+                    sellerId = ticketSeller.sellerId,
+                    sellerUser = ticketSeller.sellerUser,
+                    drawDateKey = dayKey,
+                    rows = saleRowsSnapshot,
+                ),
+                nowEpochMs = tickUtcMs,
+            )
+            pendingSaleSubmission = saleSubmission
+            val nowEpoch = saleSubmission.createdAtEpochMs
             val ticket = TicketRecord(
-                id = "native-$nowEpoch",
+                id = saleSubmission.clientRequestId,
                 serial = "NAT-${nowEpoch.toString().takeLast(8)}",
                 sellerId = ticketSeller.sellerId,
                 sellerUser = ticketSeller.sellerUser,
@@ -2247,7 +2658,7 @@ private fun SalesRoute(
                 role = ticketSeller.role,
                 createdAtEpochMs = nowEpoch,
                 drawDateKey = dayKey,
-                plays = stagedRows.map { row ->
+                plays = saleRowsSnapshot.map { row ->
                     PlayItem(
                         number = row.number,
                         playType = row.playType,
@@ -2275,62 +2686,104 @@ private fun SalesRoute(
             val backendResponse = runCatching {
                 withTimeout(SALES_SERVER_TICKET_VALIDATION_TIMEOUT_MS) {
                     withContext(Dispatchers.IO) {
-                        val freshBearerToken = SupabaseSessionTokenProvider(
-                            LocalSessionRepository(localContext),
-                        ).freshAccessToken()
-                        SupabaseTicketBackendClient(
-                            edgeClient = SupabaseEdgeClient(
-                                connectTimeoutMs = 3_000,
-                                readTimeoutMs = SALES_SERVER_TICKET_VALIDATION_TIMEOUT_MS.toInt(),
-                                callTimeoutMs = SALES_SERVER_TICKET_VALIDATION_TIMEOUT_MS.toInt(),
-                            ),
-                        ).createTicket(
-                            request = BackendTicketRequest(
-                                clientRequestId = preliminarySecuredTicket.id,
-                                localTicketId = preliminarySecuredTicket.id,
-                                adminKey = preliminarySecuredTicket.adminId ?: session.adminId ?: session.userId,
-                                adminId = preliminarySecuredTicket.adminId ?: session.adminId ?: session.userId,
-                                actorKey = session.username,
-                                actorId = session.userId,
-                                actorRole = session.role.name.lowercase(Locale.US),
-                                cashierKey = preliminarySecuredTicket.sellerId ?: session.userId,
-                                cashierId = preliminarySecuredTicket.sellerId ?: session.userId,
-                                sorteoId = stagedRows.firstOrNull()?.lotteryId,
-                                drawDate = dayKey,
-                                dayKey = dayKey,
-                                lotteryName = stagedRows.firstOrNull()?.lotteryName,
-                                phoneTimeIso = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.US).apply {
-                                    timeZone = TimeZone.getTimeZone("UTC")
-                                }.format(Date(nowEpoch)),
-                                plays = stagedRows.map { row ->
-                                    BackendTicketPlay(
-                                        playType = row.playType,
-                                        number = row.number,
-                                        amount = row.amount,
-                                        lotteryId = row.lotteryId,
-                                        lotteryName = row.lotteryName,
-                                        secondaryLotteryId = row.secondaryLotteryId,
-                                        secondaryLotteryName = row.secondaryLotteryName,
-                                    )
-                                },
-                            ),
-                            bearerToken = freshBearerToken,
+                        val backendRequest = BackendTicketRequest(
+                            clientRequestId = preliminarySecuredTicket.id,
+                            localTicketId = preliminarySecuredTicket.id,
+                            adminKey = session.adminId?.takeIf { it.isNotBlank() }
+                                ?: session.adminUser?.takeIf { it.isNotBlank() }
+                                ?: session.userId,
+                            adminId = session.adminId?.takeIf { it.isNotBlank() }
+                                ?: session.userId,
+                            actorKey = session.username.takeIf { it.isNotBlank() }
+                                ?: session.adminUser?.takeIf { it.isNotBlank() }
+                                ?: session.adminId?.takeIf { it.isNotBlank() }
+                                ?: session.userId,
+                            actorId = session.userId,
+                            actorRole = session.role.name.lowercase(Locale.US),
+                            cashierKey = preliminarySecuredTicket.sellerId?.takeIf { it.isNotBlank() }
+                                ?: preliminarySecuredTicket.sellerUser?.takeIf { it.isNotBlank() }
+                                ?: session.userId,
+                            cashierId = preliminarySecuredTicket.sellerId?.takeIf { it.isNotBlank() }
+                                ?: session.userId,
+                            sorteoId = saleRowsSnapshot.firstOrNull()?.lotteryId,
+                            drawDate = dayKey,
+                            dayKey = dayKey,
+                            lotteryName = saleRowsSnapshot.firstOrNull()?.lotteryName,
+                            phoneTimeIso = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.US).apply {
+                                timeZone = TimeZone.getTimeZone("UTC")
+                            }.format(Date(nowEpoch)),
+                            adminLimitOverride = adminLimitOverrideApproved && isAdminSellingAsCashier,
+                            plays = saleRowsSnapshot.map { row ->
+                                BackendTicketPlay(
+                                    playType = row.playType,
+                                    number = row.number,
+                                    amount = row.amount,
+                                    lotteryId = row.lotteryId,
+                                    lotteryName = row.lotteryName,
+                                    secondaryLotteryId = row.secondaryLotteryId,
+                                    secondaryLotteryName = row.secondaryLotteryName,
+                                )
+                            },
                         )
+                        val bearerToken = resolveSaleValidationBearerToken(
+                            warmedToken = warmedSaleAuthToken,
+                            fallbackTokenProvider = { sessionTokenProvider.freshAccessToken() },
+                        )
+                        runCatching {
+                            saleValidationBackendClient.createTicket(
+                                request = backendRequest,
+                                bearerToken = bearerToken,
+                            )
+                        }.getOrElse { error ->
+                            if (!isSupabaseAuthRequired(error)) throw error
+                            saleValidationBackendClient.createTicket(
+                                request = backendRequest,
+                                bearerToken = sessionTokenProvider.forceFreshAccessToken(),
+                            )
+                        }
                     }
                 }
             }.getOrElse { error ->
+                val userMessage = enrichSaleLimitBackendMessage(
+                    message = ticketBackendUserMessage(error),
+                    stagedRows = saleRowsSnapshot,
+                )
+                if (isAdminSellingAsCashier && !adminLimitOverrideApproved && isSaleLimitExhaustedMessage(userMessage)) {
+                    pendingAdminLimitOverrideMessage = userMessage
+                    ticketSaveSyncStage = null
+                    ticketSaveSyncDetail = null
+                    validationMessage = "Límite agotado. Admin puede autorizar esta venta."
+                    saleSaveInFlight = false
+                    return@saveTicket null
+                }
                 if (shouldReportSupabaseTicketBackendFailure(error)) {
                     crashReporter.recordHandled("SalesActivity.createTicketBackend", error)
                 }
                 ticketSaveSyncStage = TicketSaveSyncStage.PENDING
                 ticketSaveSyncDetail = "Servidor requerido para vender"
-                validationMessage = ticketBackendUserMessage(error)
+                validationMessage = userMessage
+                adminLimitOverrideApproved = false
+                saleSaveInFlight = false
                 return@saveTicket null
             }
             if (!backendResponse.optBoolean("ok", false)) {
+                val backendMessage = enrichSaleLimitBackendMessage(
+                    message = presentSupabaseTicketBackendMessage(backendResponse.optString("message")),
+                    stagedRows = saleRowsSnapshot,
+                )
+                if (isAdminSellingAsCashier && !adminLimitOverrideApproved && isSaleLimitExhaustedMessage(backendMessage)) {
+                    pendingAdminLimitOverrideMessage = backendMessage
+                    ticketSaveSyncStage = null
+                    ticketSaveSyncDetail = null
+                    validationMessage = "Límite agotado. Admin puede autorizar esta venta."
+                    saleSaveInFlight = false
+                    return@saveTicket null
+                }
                 ticketSaveSyncStage = TicketSaveSyncStage.PENDING
                 ticketSaveSyncDetail = "Venta rechazada por servidor"
-                validationMessage = presentSupabaseTicketBackendMessage(backendResponse.optString("message"))
+                validationMessage = backendMessage
+                adminLimitOverrideApproved = false
+                saleSaveInFlight = false
                 return@saveTicket null
             }
             val officialTicket = backendResponse.optJSONObject("ticket")
@@ -2341,6 +2794,22 @@ private fun SalesRoute(
                 official.copy(securityCode = TicketSecurity.issueTicketSecurityCode(official, banca.orEmpty()))
             }
             salesRepository.saveTicket(securedTicket)
+            val confirmedExposureByBucket = securedTicket.plays
+                .groupBy { play ->
+                    resolveSaleExposureLimitBucket(play.playType, play.number, play.lotteryId)
+                }
+                .mapValues { (_, plays) -> plays.sumOf { it.amount } }
+            if (confirmedExposureByBucket.isNotEmpty()) {
+                localSaleLimitExposureOverrides = localSaleLimitExposureOverrides.toMutableMap().apply {
+                    confirmedExposureByBucket.forEach { (bucket, sold) ->
+                        this[bucket] = (this[bucket] ?: 0.0) + sold
+                    }
+                }
+            }
+            // The confirmed sale changes this bucket's exposure. Invalidate the
+            // short-lived remote snapshot so the badge cannot paint its old value
+            // while the local ticket list is already current.
+            remoteSaleLimitExposure = null
             exposureRefreshTick = System.currentTimeMillis()
             ticketSaveSyncStage = TicketSaveSyncStage.LOCAL_SAVED
             ticketSaveSyncDetail = null
@@ -2354,14 +2823,7 @@ private fun SalesRoute(
                     ticket = securedTicket,
                     banca = banca,
                 )
-                runCatching {
-                    val syncState = nativeOperationalSyncCoordinator.syncTicketsForSession(
-                        session = session,
-                        lastRemoteUpdatedAt = liveTicketRemoteStamp.get(),
-                        force = true,
-                    )
-                    syncState.remoteUpdatedAt?.let(liveTicketRemoteStamp::set)
-                }
+                result.remoteUpdatedAt?.let(liveTicketRemoteStamp::set)
                 (localContext as? android.app.Activity)?.runOnUiThread {
                     exposureRefreshTick = System.currentTimeMillis()
                     ticketSaveSyncStage = if (result.ok) TicketSaveSyncStage.SYNCED else TicketSaveSyncStage.PENDING
@@ -2374,6 +2836,8 @@ private fun SalesRoute(
                 }
             }
             stagedRows.clear()
+            pendingSaleSubmission = null
+            adminLimitOverrideApproved = false
             number = ""
             amount = ""
             selectedAdminSellerId = resolvePostTicketAdminSellerId(role, selectedAdminSellerId)
@@ -2388,6 +2852,7 @@ private fun SalesRoute(
             saleDraftRepository.clear(session)
             validationMessage = "Ticket guardado. Sincronizando servidor..."
             lastSavedTicketEpochMs = securedTicket.createdAtEpochMs
+            saleSaveInFlight = false
             securedTicket
         }
     }
@@ -2425,61 +2890,85 @@ private fun SalesRoute(
         val fileName = envelope.fileName ?: "ticket-${ticket.id}.png"
         val securityCode = TicketSecurity.resolveSecurityCode(ticket, bancaName)
         val estimatedHeight = NativeBitmapExport.estimateOfficialTicketBitmapHeight(ticket, securityCode)
-        val usePreviewBitmap = TicketDeliveryPolicy.shouldRenderPreviewBitmap(ticket, estimatedHeight)
+        val shareRenderKind = resolveSaleTicketShareRenderKind(ticket, estimatedHeight)
         val renderKey = ticketRenderCacheKey(ticket, bancaName = bancaName, logoUri = bancaLogoUri.orEmpty()).let {
-            if (usePreviewBitmap) it else "$it|compact-thermal-share"
+            when (shareRenderKind) {
+                SaleTicketShareRenderKind.OFFICIAL_COMPACT -> "$it|official-compact-share"
+                SaleTicketShareRenderKind.THERMAL_COMPACT -> "$it|compact-thermal-share"
+            }
         }
-        val cachedUri = renderCache.getUriIfPresent(renderKey)
-        if (cachedUri != null) {
+        val cachedUris = renderCache.getUriIfPresent(renderKey)?.let { listOf(it) }
+        if (!cachedUris.isNullOrEmpty()) {
             validationMessage = NativeBitmapExport.shareImageUris(
                 context = localContext,
-                uris = listOf(cachedUri),
+                uris = cachedUris,
                 title = title,
                 whatsappOnly = whatsappOnly,
             ).message
             printPreviewTicket = null
         } else {
-            validationMessage = if (usePreviewBitmap) {
-                "Preparando imagen del ticket..."
+            validationMessage = if (shareRenderKind == SaleTicketShareRenderKind.THERMAL_COMPACT) {
+                "Ticket grande: preparando versión compacta para WhatsApp..."
             } else {
-                "Ticket grande: preparando plantilla compacta para WhatsApp..."
+                "Preparando imagen del ticket..."
             }
             thread(name = "native-ticket-share-render") {
-                val bitmap = runCatching {
-                    if (usePreviewBitmap) {
-                        NativeBitmapExport.renderOfficialTicketBitmap(
-                            context = localContext,
-                            ticket = ticket,
-                            bancaName = bancaName,
-                            securityCode = securityCode,
-                            bancaLogoUri = bancaLogoUri,
-                        )
-                    } else {
-                        ThermalTicketRenderer().renderCompactShareBitmap(
-                            ticket = ticket,
-                            bancaName = bancaName,
-                        )
-                    }
-                }.getOrNull()
-                if (bitmap == null) {
+                val bitmaps = runCatching {
+                    listOf(
+                        when (shareRenderKind) {
+                            SaleTicketShareRenderKind.OFFICIAL_COMPACT -> NativeBitmapExport.renderOfficialTicketBitmap(
+                                context = localContext,
+                                ticket = ticket,
+                                bancaName = bancaName,
+                                securityCode = securityCode,
+                                bancaLogoUri = bancaLogoUri,
+                                forceCompactLayout = true,
+                            )
+
+                            SaleTicketShareRenderKind.THERMAL_COMPACT -> ThermalTicketRenderer().renderCompactShareBitmap(
+                                ticket = ticket,
+                                bancaName = bancaName,
+                            )
+                        },
+                    )
+                }.getOrElse {
+                    listOf(
+                        when (shareRenderKind) {
+                            SaleTicketShareRenderKind.OFFICIAL_COMPACT -> ThermalTicketRenderer().renderCompactShareBitmap(
+                                ticket = ticket,
+                                bancaName = bancaName,
+                            )
+
+                            SaleTicketShareRenderKind.THERMAL_COMPACT -> NativeBitmapExport.renderOfficialTicketBitmap(
+                                context = localContext,
+                                ticket = ticket,
+                                bancaName = bancaName,
+                                securityCode = securityCode,
+                                bancaLogoUri = bancaLogoUri,
+                                forceCompactLayout = true,
+                            )
+                        },
+                    )
+                }
+                if (bitmaps.isEmpty()) {
                     (localContext as? android.app.Activity)?.runOnUiThread {
                         validationMessage = "No se pudo preparar la imagen del ticket"
                     }
                     return@thread
                 }
-                val uri = renderCache.saveBitmap(renderKey, bitmap)
+                val uris = renderCache.saveBitmaps(renderKey, bitmaps)
                 (localContext as? android.app.Activity)?.runOnUiThread {
-                    validationMessage = if (uri != null) {
+                    validationMessage = if (uris.isNotEmpty()) {
                         NativeBitmapExport.shareImageUris(
                             context = localContext,
-                            uris = listOf(uri),
+                            uris = uris,
                             title = title,
                             whatsappOnly = whatsappOnly,
                         ).message
                     } else {
                         NativeBitmapExport.shareBitmap(
                             context = localContext,
-                            bitmap = bitmap,
+                            bitmap = bitmaps.first(),
                             fileName = fileName,
                             title = title,
                             text = "",
@@ -2640,6 +3129,58 @@ private fun SalesRoute(
         checkedLotteries: List<LotteryCatalogItem>,
         checkedAmount: Double,
     ) {
+        // This is the last gate before a row can enter the pending-sale list.
+        // Re-check the exact bucket here so a stale badge or a new-ticket
+        // recomposition can never stage an amount above the remaining limit.
+        val stagedSnapshot = stagedRows.toList()
+        val finalLimitError = checkedValidation.resolvedPlay?.let { play ->
+            // Use the same configured limit state that paints the center
+            // badge. This closes the gap where the badge showed 50 but the
+            // engine still read an older local preferences snapshot.
+            val uiLimitError = if (usesConfiguredSaleLimits(role)) {
+                checkedLotteries.mapNotNull { lottery ->
+                    val bucket = resolveSaleExposureLimitBucket(play.playType, play.normalizedNumber, lottery.id)
+                    val limit = resolveSaleLimitValue(bucket.playType, cashierSaleLimits)
+                    if (limit <= 0.0) return@mapNotNull null
+                    val sold = calculateSaleLimitSoldExposureForRole(
+                        role = role,
+                        tickets = salesRepository.getTicketsForDay(dayKey),
+                        ownerKey = resolveExposureOwnerKey(session),
+                        ownerKeys = resolveExposureOwnerKeys(session),
+                        bucket = bucket,
+                        cashierKeys = resolveExposureCashierKeys(session),
+                    )
+                    val pending = calculateGlobalStagedExposure(stagedSnapshot, bucket)
+                    if (sold + pending + checkedAmount > limit) {
+                        buildSaleLimitSoldOutMessage(
+                            scope = "Límite",
+                            lotteryName = lottery.name,
+                            bucket = bucket,
+                            limit = limit,
+                            sold = sold,
+                            pending = pending,
+                            amount = checkedAmount,
+                        )
+                    } else {
+                        null
+                    }
+                }.firstOrNull()
+            } else {
+                null
+            } ?: saleExposureEngine.resolveLimitError(
+                session = session,
+                dayKey = dayKey,
+                play = play,
+                amount = checkedAmount,
+                lotteries = checkedLotteries,
+                stagedRows = stagedSnapshot,
+            )
+        }
+        if (finalLimitError != null) {
+            pendingDuplicatePlay = null
+            validationMessage = buildSaleLimitBlockedMessage(listOf(finalLimitError))
+            return
+        }
         val duplicateRows = findDuplicateStagedRows(
             existingRows = stagedRows.toList(),
             validation = checkedValidation,
@@ -2656,8 +3197,67 @@ private fun SalesRoute(
             stageValidatedPlay(checkedValidation, checkedLotteries)
         }
     }
+    suspend fun resolveAuthoritativeCashierLimitError(
+        play: com.lotterynet.pro.core.model.SaleResolvedPlay,
+        playAmount: Double,
+        lotteriesForPlay: List<LotteryCatalogItem>,
+        stagedRowsSnapshot: List<SaleStagedRow>,
+    ): String? {
+        val activeSession = session ?: return null
+        if (role != UserRole.CASHIER || !usesConfiguredSaleLimits(role)) return null
+        val ownerKey = resolveExposureOwnerKey(activeSession)
+        if (ownerKey.isBlank()) return null
+        for (lottery in lotteriesForPlay) {
+            val bucket = resolveSaleExposureLimitBucket(play.playType, play.normalizedNumber, lottery.id)
+            val limit = resolveSaleLimitValue(bucket.playType, cashierSaleLimits)
+            if (limit <= 0.0) continue
+            val pending = calculateGlobalStagedExposure(stagedRowsSnapshot, bucket)
+            val nowMs = System.currentTimeMillis()
+            val cachedSold = remoteSaleLimitExposure
+                ?.takeIf { it.matches(ownerKey = ownerKey, dayKey = dayKey, bucket = bucket) && it.isFresh(nowMs) }
+                ?.sold
+            val sold = cachedSold ?: runCatching {
+                withContext(Dispatchers.IO) {
+                    saleExposureBackendClient.getSaleLimitExposure(
+                        request = BackendSaleLimitExposureRequest(
+                            ownerKey = ownerKey,
+                            dayKey = dayKey,
+                            lotteryId = bucket.lotteryId,
+                            playType = bucket.playType,
+                            number = bucket.number,
+                        ),
+                        bearerToken = sessionTokenProvider.freshAccessToken(),
+                    )
+                }
+            }.onFailure { error ->
+                if (shouldReportSalesBackgroundRefreshFailure(error)) {
+                    crashReporter.recordHandled("SalesActivity.addPlaySaleLimitExposure", error)
+                }
+            }.getOrNull()
+                ?.takeIf { it.optBoolean("ok", false) }
+                ?.optDouble("sold", 0.0)
+                ?: continue
 
-    val onAddPlay = {
+            if (sold + pending + playAmount > limit) {
+                return buildSaleLimitSoldOutMessage(
+                    scope = "Límite",
+                    lotteryName = lottery.name,
+                    bucket = bucket,
+                    limit = limit,
+                    sold = sold,
+                    pending = pending,
+                    amount = playAmount,
+                )
+            }
+        }
+        return null
+    }
+
+    val onAddPlay = addPlay@{
+        if (saleLimitCheckInFlight) {
+            validationMessage = "Verificando tope..."
+            return@addPlay
+        }
         val straightBoxShortcut = resolvePickStraightBoxShortcut(number)
         if (straightBoxShortcut != null && selectedLottery?.let { supportsPickModes(it) } == true) {
             val straightDraft = draft.copy(
@@ -2702,8 +3302,15 @@ private fun SalesRoute(
                 val duplicateStraight = findDuplicateStagedRows(stagedRows.toList(), straightValidation, effectiveSelectedLotteries)
                 val duplicateBox = findDuplicateStagedRows(stagedRows.toList(), boxValidation, effectiveSelectedLotteries)
                 when {
-                    straightLimitError != null -> validationMessage = straightLimitError
-                    boxLimitError != null -> validationMessage = boxLimitError
+                    straightLimitError != null || boxLimitError != null -> {
+                        if (duplicateStraight.isNotEmpty() || duplicateBox.isNotEmpty()) {
+                            validationMessage = "S+B tiene una jugada repetida; agrega Straight o Box separado para confirmar"
+                        } else {
+                            validationMessage = buildSaleLimitBlockedMessage(
+                                listOf(straightLimitError, boxLimitError),
+                            )
+                        }
+                    }
                     duplicateStraight.isNotEmpty() || duplicateBox.isNotEmpty() -> {
                         validationMessage = "S+B tiene una jugada repetida; agrega Straight o Box separado para confirmar"
                     }
@@ -2711,19 +3318,69 @@ private fun SalesRoute(
                         validationMessage = "Resultado publicado: agrega Straight y Box separado para confirmar"
                     }
                     else -> {
-                        val rowsAfterBoth = saleValidator.mergeIntoRows(
-                            existing = rowsAfterStraight,
-                            validation = boxValidation,
-                            selectedLotteries = effectiveSelectedLotteries,
-                        )
-                        stagedRows.clear()
-                        stagedRows.addAll(prioritizeNewestRows(stagedRows.toList(), rowsAfterBoth))
-                        val nextEntryState = resolvePostAddCarryState(amount)
-                        activeInput = nextEntryState.activeInput
-                        number = nextEntryState.number
-                        amount = nextEntryState.amount
-                        replaceAmountOnNextDigit = nextEntryState.replaceAmountOnNextDigit
-                        validationMessage = null
+                        val selectedLotteriesAtSubmit = effectiveSelectedLotteries
+                        val stagedAtSubmit = stagedRows.toList()
+                        if (role == UserRole.CASHIER) {
+                            saleLimitCheckInFlight = true
+                            validationMessage = "Verificando tope..."
+                            salesActionScope.launch {
+                                try {
+                                    val remoteStraightLimitError = straightValidation.resolvedPlay?.let { play ->
+                                        resolveAuthoritativeCashierLimitError(
+                                            play = play,
+                                            playAmount = normalizedAmount,
+                                            lotteriesForPlay = selectedLotteriesAtSubmit,
+                                            stagedRowsSnapshot = stagedAtSubmit,
+                                        )
+                                    }
+                                    if (remoteStraightLimitError != null) {
+                                        validationMessage = remoteStraightLimitError
+                                        return@launch
+                                    }
+                                    val remoteBoxLimitError = boxValidation.resolvedPlay?.let { play ->
+                                        resolveAuthoritativeCashierLimitError(
+                                            play = play,
+                                            playAmount = normalizedAmount,
+                                            lotteriesForPlay = selectedLotteriesAtSubmit,
+                                            stagedRowsSnapshot = rowsAfterStraight,
+                                        )
+                                    }
+                                    if (remoteBoxLimitError != null) {
+                                        validationMessage = remoteBoxLimitError
+                                        return@launch
+                                    }
+                                    val rowsAfterBoth = saleValidator.mergeIntoRows(
+                                        existing = rowsAfterStraight,
+                                        validation = boxValidation,
+                                        selectedLotteries = selectedLotteriesAtSubmit,
+                                    )
+                                    stagedRows.clear()
+                                    stagedRows.addAll(prioritizeNewestRows(stagedRows.toList(), rowsAfterBoth))
+                                    val nextEntryState = resolvePostAddCarryState(amount)
+                                    activeInput = nextEntryState.activeInput
+                                    number = nextEntryState.number
+                                    amount = nextEntryState.amount
+                                    replaceAmountOnNextDigit = nextEntryState.replaceAmountOnNextDigit
+                                    validationMessage = null
+                                } finally {
+                                    saleLimitCheckInFlight = false
+                                }
+                            }
+                        } else {
+                            val rowsAfterBoth = saleValidator.mergeIntoRows(
+                                existing = rowsAfterStraight,
+                                validation = boxValidation,
+                                selectedLotteries = selectedLotteriesAtSubmit,
+                            )
+                            stagedRows.clear()
+                            stagedRows.addAll(prioritizeNewestRows(stagedRows.toList(), rowsAfterBoth))
+                            val nextEntryState = resolvePostAddCarryState(amount)
+                            activeInput = nextEntryState.activeInput
+                            number = nextEntryState.number
+                            amount = nextEntryState.amount
+                            replaceAmountOnNextDigit = nextEntryState.replaceAmountOnNextDigit
+                            validationMessage = null
+                        }
                     }
                 }
             }
@@ -2742,7 +3399,7 @@ private fun SalesRoute(
                     stagedRows = stagedRows.toList(),
                 )
                 if (limitError != null) {
-                    validationMessage = limitError
+                    validationMessage = buildSaleLimitBlockedMessage(listOf(limitError))
                 } else {
                     val publishedLotteries = if (role == UserRole.ADMIN) {
                         effectiveSelectedLotteries.filter { it.id in publishedResultLotteryIds }
@@ -2758,7 +3415,32 @@ private fun SalesRoute(
                         )
                         validationMessage = "Resultado publicado: confirma si deseas vender"
                     } else {
-                        stageAfterSaleWarnings(validation, effectiveSelectedLotteries, normalizedAmount)
+                        val validationAtSubmit = validation
+                        val selectedLotteriesAtSubmit = effectiveSelectedLotteries
+                        val stagedAtSubmit = stagedRows.toList()
+                        if (role == UserRole.CASHIER) {
+                            saleLimitCheckInFlight = true
+                            validationMessage = "Verificando tope..."
+                            salesActionScope.launch {
+                                try {
+                                    val remoteLimitError = resolveAuthoritativeCashierLimitError(
+                                        play = resolvedPlay,
+                                        playAmount = normalizedAmount,
+                                        lotteriesForPlay = selectedLotteriesAtSubmit,
+                                        stagedRowsSnapshot = stagedAtSubmit,
+                                    )
+                                    if (remoteLimitError != null) {
+                                        validationMessage = remoteLimitError
+                                    } else {
+                                        stageAfterSaleWarnings(validationAtSubmit, selectedLotteriesAtSubmit, normalizedAmount)
+                                    }
+                                } finally {
+                                    saleLimitCheckInFlight = false
+                                }
+                            }
+                        } else {
+                            stageAfterSaleWarnings(validationAtSubmit, selectedLotteriesAtSubmit, normalizedAmount)
+                        }
                     }
                 }
             }
@@ -2771,6 +3453,11 @@ private fun SalesRoute(
         }
     }
     val onApplyKey: (String) -> Unit = { key ->
+        if (activeInput == SaleInputTarget.NUMBER && isSaleLimitExhaustedMessage(validationMessage)) {
+            // A warning for the previous number must not survive into the next
+            // draft. The server validation remains authoritative on save.
+            validationMessage = null
+        }
         val isPickKey = selectedLottery?.let { supportsPickModes(it) } == true
         if (isPickKey && activeInput == SaleInputTarget.NUMBER && key in setOf("-", "+", "/", "*")) {
             val nextNumber = applyPickModeSymbolToNumber(number, key)
@@ -2959,6 +3646,41 @@ private fun SalesRoute(
             },
         )
     }
+    pendingAdminLimitOverrideMessage?.let { message ->
+        AlertDialog(
+            onDismissRequest = { pendingAdminLimitOverrideMessage = null },
+            title = { Text("Límite del cajero agotado") },
+            text = {
+                Text(
+                    "$message\n\nPuedes venderlo como autorización de admin. El ticket queda a nombre del cajero seleccionado.",
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        pendingAdminLimitOverrideMessage = null
+                        adminLimitOverrideApproved = true
+                        salesActionScope.launch {
+                            saveTicket()
+                        }
+                    },
+                ) {
+                    Text("Autorizar")
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = {
+                        pendingAdminLimitOverrideMessage = null
+                        adminLimitOverrideApproved = false
+                        validationMessage = "Venta no autorizada"
+                    },
+                ) {
+                    Text("No")
+                }
+            },
+        )
+    }
     val ticketSaveSyncContract = ticketSaveSyncStage?.let { stage ->
         resolveTicketSaveSyncUiContract(stage = stage, detail = ticketSaveSyncDetail)
     }
@@ -3020,21 +3742,21 @@ private fun SalesRoute(
                 )
             }
             val compact = maxWidth < 760.dp
-            val saleModeContract = remember(visual.windowMode, initialSystemModeConfig.posLiteEnabled) {
+            val saleModeContract = remember(visual.windowMode, liveSystemModeConfig.posLiteEnabled) {
                 resolveVentaPosLiteContract(
                     windowMode = visual.windowMode,
-                    posLiteEnabled = initialSystemModeConfig.posLiteEnabled,
+                    posLiteEnabled = liveSystemModeConfig.posLiteEnabled,
                 )
             }
             val saleWindowMode = saleModeContract.windowMode
             val stagedListMaxHeight = when {
-                stagedRows.isEmpty() -> maxHeight * 0.18f
-                saleModeContract.useTightSellingLayout -> maxHeight * 0.46f
+                stagedRows.isEmpty() -> if (saleModeContract.useTightSellingLayout) maxHeight * 0.14f else maxHeight * 0.18f
+                saleModeContract.useTightSellingLayout -> maxHeight * saleModeContract.stagedListMaxHeightFraction
                 compact -> maxHeight * 0.42f
                 else -> maxHeight * 0.46f
             }
             val stagedListMinHeight = when {
-                saleModeContract.useTightSellingLayout -> 104.dp
+                saleModeContract.useTightSellingLayout -> saleModeContract.stagedListMinHeightDp.dp
                 compact -> 96.dp
                 else -> 118.dp
             }
@@ -3045,7 +3767,11 @@ private fun SalesRoute(
                 AppTopBar(
                     spec = ScreenChromeSpec(
                         title = "Venta",
-                        subtitle = "${banca ?: session?.banca ?: "LotteryNet"} · ${session?.username ?: "Operador"}",
+                        subtitle = if (saleModeContract.headerSubtitleVisible) {
+                            "${banca ?: session?.banca ?: "LotteryNet"} · ${session?.username ?: "Operador"}"
+                        } else {
+                            null
+                        },
                         activeBottomTab = NativeBottomTab.SALE,
                         rightAction = ScreenChromeAction(
                             icon = Icons.Rounded.QrCodeScanner,
@@ -3057,17 +3783,32 @@ private fun SalesRoute(
                     onOpenMenu = { openShellMenu(localContext) },
                 )
                 val bodyModifier = Modifier
-                    .padding(horizontal = visual.sizes.screenPaddingH)
+                    .padding(horizontal = if (saleModeContract.useTightSellingLayout) {
+                        saleModeContract.contentHorizontalPaddingDp.dp
+                    } else {
+                        visual.sizes.screenPaddingH
+                    })
                     .fillMaxWidth()
                     .weight(1f, fill = true)
                     .heightIn(min = stagedListMinHeight, max = stagedListMaxHeight)
-                VentaStagedList(
-                    stagedRows = stagedRows,
-                    modifier = bodyModifier,
-                    windowMode = saleWindowMode,
-                    onRemoveRow = { rowId -> stagedRows.removeAll { it.id == rowId } },
-                    onClearRows = { showClearStagedRowsDialog = true },
-                )
+                Box(modifier = bodyModifier) {
+                    VentaStagedList(
+                        stagedRows = stagedRows,
+                        saleLimitRemainingRows = saleLimitRemainingRows,
+                        modifier = Modifier.fillMaxSize(),
+                        windowMode = saleWindowMode,
+                        onRemoveRow = { rowId -> stagedRows.removeAll { it.id == rowId } },
+                        onClearRows = { showClearStagedRowsDialog = true },
+                    )
+                    VentaFloatingFeedbackBanner(
+                        feedbackMessage = liveFeedbackMessage,
+                        feedbackIsError = liveFeedbackIsError,
+                        numberHasError = numberAdvanceState.showNumberError,
+                        modifier = Modifier
+                            .align(Alignment.TopCenter)
+                            .padding(horizontal = 8.dp, vertical = 4.dp),
+                    )
+                }
                 VentaFixedComposer(
                     lottery = selectedLottery,
                     lotteryDecision = selectedLottery?.id?.let(lotteryDecisionsById::get),
@@ -3092,8 +3833,8 @@ private fun SalesRoute(
                     secondaryState = superPaleSecondaryState,
                     clockLabel = trustedClockLabel,
                     limitBadgeMain = saleLimitBadgeMain,
-                    limitBadgeSub = if (role == UserRole.CASHIER) "tope" else "admin",
-                    limitBadgeTone = saleLimitBadgeTone,
+                    limitBadgeSub = saleLimitBadgeSub,
+                    limitBadgeTone = effectiveSaleLimitBadgeTone,
                     role = role,
                     sellerKeyLabel = activeTicketSeller?.displayLabel ?: "Cajero",
                     sellerDelegationActive = selectedAdminSeller != null,
@@ -3103,6 +3844,11 @@ private fun SalesRoute(
                             validationMessage = if (number.isBlank()) "Digite la jugada primero." else validation.errorMessage
                         } else {
                             activeInput = target
+                            if (target == SaleInputTarget.NUMBER && isSaleLimitExhaustedMessage(validationMessage)) {
+                                // Selecting a new number starts a new validation
+                                // context; do not keep the previous number's error.
+                                validationMessage = null
+                            }
                         }
                     },
                     onOpenLots = onOpenLots,
@@ -3155,18 +3901,13 @@ private fun SalesRoute(
                                 }
                             }
                         } else {
-                            val ticket = if (ticketPrintOpenContract.openLatestTicket) latestTicket else null
-                            if (ticket != null) {
-                                printPreviewTicket = ticket
-                            } else {
-                                val nextMessage = validationMessage
-                                validationMessage = when {
-                                    waitsForConfirmation -> nextMessage
-                                    !nextMessage.isNullOrBlank() && nextMessage != currentMessage -> nextMessage
-                                    !ticketPrintOpenContract.fallbackMessage.isNullOrBlank() -> ticketPrintOpenContract.fallbackMessage
-                                    !validation.errorMessage.isNullOrBlank() -> validation.errorMessage
-                                    else -> "No hay ticket disponible para abrir"
-                                }
+                            val nextMessage = validationMessage
+                            validationMessage = when {
+                                waitsForConfirmation -> nextMessage
+                                !nextMessage.isNullOrBlank() && nextMessage != currentMessage -> nextMessage
+                                !ticketPrintOpenContract.fallbackMessage.isNullOrBlank() -> ticketPrintOpenContract.fallbackMessage
+                                !validation.errorMessage.isNullOrBlank() -> validation.errorMessage
+                                else -> "No hay ticket disponible para abrir"
                             }
                         }
                     },
@@ -3307,24 +4048,23 @@ private fun SalesRoute(
                     bancaLogoUri = bancaLogoUri,
                     onDismiss = { printPreviewTicket = null },
                     onQuickThermal = {
+                        if (thermalPrintBusy) return@SalePrintPreviewOverlay
+                        thermalPrintBusy = true
                         validationMessage = "Enviando a impresora..."
                         thread(name = "native-ticket-thermal-print") {
-                            val prefs = LocalThermalPrinterRepository(localContext).getPrefs()
-                            val content = ThermalTicketRenderer().renderTicket(
-                                ticket = ticket,
-                                bancaName = outputBancaName,
-                                prefs = prefs,
-                            )
-                            val printTargets = resolveSaleThermalPrintTargets(
-                                hasBluetoothPrinter = prefs.selectedPrinterAddress.isNotBlank(),
-                                hasIntegratedPrinter = IntegratedThermalPrinter.isAvailable(localContext),
-                            )
-                            var printResult = BluetoothThermalPrinter.PrintResult(
-                                success = false,
-                                message = "No hay impresora conectada",
-                            )
-                            for (target in printTargets) {
-                                printResult = when (target) {
+                            try {
+                                val prefs = LocalThermalPrinterRepository(localContext).getPrefs()
+                                val content = ThermalTicketRenderer().renderTicket(
+                                    ticket = ticket,
+                                    bancaName = outputBancaName,
+                                    prefs = prefs,
+                                )
+                                val printTargets = resolveSaleThermalPrintTargets(
+                                    hasBluetoothPrinter = prefs.selectedPrinterAddress.isNotBlank(),
+                                    hasIntegratedPrinter = IntegratedThermalPrinter.isAvailable(localContext),
+                                )
+                                val target = printTargets.first()
+                                val printResult = when (target) {
                                     SaleThermalPrintTarget.BLUETOOTH -> BluetoothThermalPrinter.printText(
                                         context = localContext,
                                         content = content,
@@ -3339,23 +4079,26 @@ private fun SalesRoute(
                                         message = "No hay impresora conectada",
                                     )
                                 }
-                                if (printResult.success) break
-                            }
-                            (localContext as? android.app.Activity)?.runOnUiThread {
-                                val flow = resolveSaleThermalPrintResult(
-                                    success = printResult.success,
-                                    message = printResult.message,
-                                )
-                                validationMessage = flow.message
-                                if (flow.closePreview) {
-                                    printPreviewTicket = null
+                                (localContext as? android.app.Activity)?.runOnUiThread {
+                                    val flow = resolveSaleThermalPrintResult(
+                                        success = printResult.success,
+                                        message = printResult.message,
+                                    )
+                                    validationMessage = flow.message
+                                    if (flow.closePreview) {
+                                        printPreviewTicket = null
+                                    }
+                                    if (flow.openPrinterSettings) {
+                                        localContext.startActivity(Intent(localContext, PrinterActivity::class.java).apply {
+                                            putExtra(PrinterActivity.EXTRA_TICKET_ID, ticket.id)
+                                            putExtra(PrinterActivity.EXTRA_TICKET_EPOCH, ticket.createdAtEpochMs)
+                                            putExtra(PrinterActivity.EXTRA_THERMAL_TITLE, "Ticket")
+                                        })
+                                    }
                                 }
-                                if (flow.openPrinterSettings) {
-                                    localContext.startActivity(Intent(localContext, PrinterActivity::class.java).apply {
-                                        putExtra(PrinterActivity.EXTRA_TICKET_ID, ticket.id)
-                                        putExtra(PrinterActivity.EXTRA_TICKET_EPOCH, ticket.createdAtEpochMs)
-                                        putExtra(PrinterActivity.EXTRA_THERMAL_TITLE, "Ticket")
-                                    })
+                            } finally {
+                                (localContext as? android.app.Activity)?.runOnUiThread {
+                                    thermalPrintBusy = false
                                 }
                             }
                         }
@@ -3384,6 +4127,7 @@ private fun SalesRoute(
 @Composable
 private fun VentaStagedList(
     stagedRows: List<SaleStagedRow>,
+    saleLimitRemainingRows: List<SaleLimitRemainingRow>,
     modifier: Modifier = Modifier,
     windowMode: LotteryNetWindowMode,
     onRemoveRow: (String) -> Unit,
@@ -3447,7 +4191,7 @@ private fun VentaStagedList(
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(if (windowMode == LotteryNetWindowMode.POS_TIGHT) 76.dp else 92.dp)
+                        .height(if (windowMode == LotteryNetWindowMode.POS_TIGHT) 60.dp else 92.dp)
                         .padding(horizontal = 8.dp),
                     contentAlignment = Alignment.Center,
                 ) {
@@ -3476,15 +4220,35 @@ private fun VentaStagedList(
                     state = listState,
                     reverseLayout = shouldReverseVentaStagedListForLatestPlay(),
                 ) {
-                    items(stagedRows, key = { it.id }) { row ->
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .background(Color.White)
-                                .padding(horizontal = 8.dp, vertical = listLayout.rowVerticalPaddingDp.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            Text(row.lotteryName, modifier = Modifier.weight(1.05f), style = MaterialTheme.typography.labelMedium, color = visual.colors.ink, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        items(stagedRows, key = { it.id }) { row ->
+                            val limitIssue = resolveSaleRowLimitIssue(row, saleLimitRemainingRows)
+                            val rowRemaining = resolveSaleLimitRemaining(row, saleLimitRemainingRows)
+                            val rowBorder = if (limitIssue != null) {
+                                BorderStroke(1.dp, lossColor().copy(alpha = 0.72f))
+                            } else {
+                                null
+                            }
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .background(if (limitIssue != null) Color(0xFFFFF7F7) else Color.White)
+                                    .then(if (rowBorder != null) Modifier.border(rowBorder, RoundedCornerShape(7.dp)) else Modifier)
+                                    .semantics {
+                                        if (limitIssue != null) {
+                                            error("${limitIssue.title}: ${limitIssue.detail}")
+                                        }
+                                    }
+                                    .padding(horizontal = 8.dp, vertical = listLayout.rowVerticalPaddingDp.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                            Column(modifier = Modifier.weight(1.05f), verticalArrangement = Arrangement.spacedBy(1.dp)) {
+                                Text(row.lotteryName, style = MaterialTheme.typography.labelMedium, color = visual.colors.ink, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                if (limitIssue != null) {
+                                    Text(limitIssue.title, style = MaterialTheme.typography.labelSmall, color = lossColor(), maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                } else if (rowRemaining != null) {
+                                    Text("Disponible ${formatWholeAmount(rowRemaining)}", style = MaterialTheme.typography.labelSmall, color = visual.colors.muted, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                }
+                            }
                             Text(row.label, modifier = Modifier.width(42.dp), style = MaterialTheme.typography.labelSmall, color = visual.colors.muted, textAlign = TextAlign.Center)
                             Text(
                                 row.displayNumber,
@@ -3630,18 +4394,6 @@ private fun VentaFixedComposer(
                 onOpenLigar = onOpenLigar,
                 onToggleOrConfigureSuperPale = onToggleOrConfigureSuperPale,
             )
-            Spacer(modifier = Modifier.height(1.dp))
-            if (shouldShowVentaInlineFeedbackBanner(feedbackMessage, feedbackIsError, numberHasError)) {
-                Text(
-                    text = feedbackMessage.orEmpty(),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .background(if (feedbackIsError) Color(0xFFFEF2F2) else Color(0xFFEAFBF2))
-                        .padding(horizontal = 7.dp, vertical = 3.dp),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = if (feedbackIsError) lossColor() else gainColor(),
-                )
-            }
             if (keypadLayout.totalAboveKeypad) {
                 CompactTotalBar(
                     total = total,
@@ -3668,6 +4420,34 @@ private fun VentaFixedComposer(
                 onOpenSellerPicker = onOpenSellerPicker,
             )
         }
+    }
+}
+
+@Composable
+private fun VentaFloatingFeedbackBanner(
+    feedbackMessage: String?,
+    feedbackIsError: Boolean,
+    numberHasError: Boolean,
+    modifier: Modifier = Modifier,
+) {
+    if (!shouldShowVentaInlineFeedbackBanner(feedbackMessage, feedbackIsError, numberHasError)) {
+        return
+    }
+    Surface(
+        modifier = modifier.fillMaxWidth(),
+        color = if (feedbackIsError) Color(0xFFFEE2E2) else Color(0xFFE7F7EF),
+        border = BorderStroke(1.dp, if (feedbackIsError) Color(0xFFFCA5A5) else Color(0xFFA7F3D0)),
+        shape = RoundedCornerShape(8.dp),
+        shadowElevation = 2.dp,
+    ) {
+        Text(
+            text = feedbackMessage.orEmpty(),
+            modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
+            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.ExtraBold),
+            color = if (feedbackIsError) lossColor() else gainColor(),
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
     }
 }
 
@@ -4147,6 +4927,10 @@ private fun VentaKeypad(
 ) {
     val visual = rememberLotteryNetVisualSpec()
     val keypadLayout = resolveVentaKeypadLayout(windowMode)
+    val posContract = resolveVentaPosLiteContract(
+        windowMode = windowMode,
+        posLiteEnabled = windowMode == LotteryNetWindowMode.POS_TIGHT,
+    )
     val keypadShape = RoundedCornerShape(10.dp)
     val keypadLine = Color(0xFFE5ECF4)
     val sellerKeyVisual = resolveVentaSellerKeyVisualContract(sellerDelegationActive)
@@ -4206,7 +4990,11 @@ private fun VentaKeypad(
                             },
                             modifier = Modifier
                                 .weight(resolveVentaKeyWeight(key, pickKeypad = pickKeypad))
-                                .height(keyHeightDp.dp),
+                                .height(keyHeightDp.dp)
+                                .sizeIn(
+                                    minWidth = keypadLayout.touchTargetMinDp.dp,
+                                    minHeight = posContract.touchTargetMinDp.dp,
+                                ),
                             color = when (key) {
                                 "OK" -> Color(0xFF1FC98B)
                                 "PRINT" -> Color(0xFF0F172A)
@@ -4628,19 +5416,12 @@ private fun EntryCard(
                     canOpenOfficialTicket = canOpenOfficialTicket,
                 )
             }
-            if (shouldShowVentaInlineFeedbackBanner(feedbackMessage, feedbackIsError, numberHasError = false)) {
-                Text(
-                    text = feedbackMessage.orEmpty(),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .background(
-                            if (feedbackIsError) Color(0xFFFEF2F2) else Color(0xFFE7F7EF),
-                        )
-                        .padding(horizontal = 10.dp, vertical = 7.dp),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = if (feedbackIsError) lossColor() else gainColor(),
-                )
-            }
+            VentaFloatingFeedbackBanner(
+                feedbackMessage = feedbackMessage,
+                feedbackIsError = feedbackIsError,
+                numberHasError = false,
+                modifier = Modifier.padding(top = 6.dp),
+            )
         }
     }
 }
@@ -4648,6 +5429,7 @@ private fun EntryCard(
 @Composable
 private fun StageListSection(
     stagedRows: List<SaleStagedRow>,
+    saleLimitRemainingRows: List<SaleLimitRemainingRow> = emptyList(),
     onRemoveRow: (String) -> Unit,
 ) {
     val listState = rememberLazyListState()
@@ -4680,7 +5462,13 @@ private fun StageListSection(
                 reverseLayout = shouldReverseVentaStagedListForLatestPlay(),
             ) {
                 items(stagedRows, key = { it.id }) { row ->
-                    SaleRowCard(row = row, onRemove = { onRemoveRow(row.id) })
+                    val rowRemaining = resolveSaleLimitRemaining(row, saleLimitRemainingRows)
+                    SaleRowCard(
+                        row = row,
+                        limitIssue = resolveSaleRowLimitIssue(row, saleLimitRemainingRows),
+                        remaining = rowRemaining,
+                        onRemove = { onRemoveRow(row.id) },
+                    )
                 }
             }
         }
@@ -4691,10 +5479,23 @@ private fun StageListSection(
 @Composable
 private fun SaleRowCard(
     row: SaleStagedRow,
+    limitIssue: SaleRowLimitIssue?,
+    remaining: Double?,
     onRemove: () -> Unit,
 ) {
     val visual = rememberLotteryNetVisualSpec()
     CompactPanel(
+        modifier = Modifier.semantics {
+            if (limitIssue != null) {
+                error("${limitIssue.title}: ${limitIssue.detail}")
+            }
+        }.then(
+            if (limitIssue != null) {
+                Modifier.border(BorderStroke(1.dp, lossColor().copy(alpha = 0.72f)), RoundedCornerShape(10.dp))
+            } else {
+                Modifier
+            },
+        ),
         alt = true,
         contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 7.dp, vertical = 6.dp),
     ) {
@@ -4713,6 +5514,9 @@ private fun SaleRowCard(
                         overflow = TextOverflow.Ellipsis,
                     )
                     CompactStatusBadge(label = row.label, tone = visual.colors.neutral)
+                    if (limitIssue != null) {
+                        CompactStatusBadge(label = limitIssue.title, tone = lossColor())
+                    }
                 }
                 Text(
                     text = row.displayNumber,
@@ -4721,6 +5525,23 @@ private fun SaleRowCard(
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
+                if (limitIssue != null) {
+                    Text(
+                        text = limitIssue.detail,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = lossColor(),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                } else if (remaining != null) {
+                    Text(
+                        text = "Disponible ${formatWholeAmount(remaining)}",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = visual.colors.muted,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
             }
             Text(
                 text = formatMoney(row.amount),
@@ -5244,6 +6065,56 @@ internal fun activeTypeCode(lottery: LotteryCatalogItem?, classicMode: String, p
     }
 }
 
+internal fun usesConfiguredSaleLimits(role: UserRole): Boolean {
+    return role == UserRole.CASHIER || role == UserRole.ADMIN
+}
+
+private fun noConfiguredSaleLimits(): CashierSalesLimitInputs {
+    return CashierSalesLimitInputs(
+        daySale = 0.0,
+        quiniela = 0.0,
+        pale = 0.0,
+        superPale = 0.0,
+        tripleta = 0.0,
+        pick3Straight = 0.0,
+        pick3Box = 0.0,
+        pick4Straight = 0.0,
+        pick4Box = 0.0,
+    )
+}
+
+internal fun resolveVentaPosLiteControlContract(
+    role: UserRole,
+    viewportWidthDp: Int,
+    viewportHeightDp: Int,
+    posLiteEnabled: Boolean,
+): VentaPosLiteControlContract {
+    val compactViewport = viewportWidthDp <= 480 || viewportHeightDp <= 720
+    val canControl = role == UserRole.CASHIER || role == UserRole.ADMIN
+    return VentaPosLiteControlContract(
+        visible = canControl && compactViewport,
+        enabled = canControl,
+        label = "POS Lite",
+        togglesPersistedMode = true,
+        reserveBottomSafePadding = compactViewport,
+        hideStatsBadges = posLiteEnabled || compactViewport,
+        maxKeypadHeightDp = if (compactViewport) 300 else 360,
+    )
+}
+
+private fun resolveConfiguredSaleLimits(
+    repository: LocalCashierSalesLimitRepository,
+    role: UserRole,
+    ownerId: String?,
+    session: ActiveSession?,
+): CashierSalesLimitInputs {
+    return when (role) {
+        UserRole.ADMIN -> repository.getAdminSelfLimits(ownerId) ?: noConfiguredSaleLimits()
+        UserRole.CASHIER -> session?.let { repository.getUserLimits(ownerId, it) } ?: repository.getDefaultLimits(ownerId)
+        else -> noConfiguredSaleLimits()
+    }
+}
+
 internal fun resolveSaleLimitBadgeMain(
     role: UserRole,
     classicMode: String,
@@ -5252,7 +6123,7 @@ internal fun resolveSaleLimitBadgeMain(
     sold: Double = 0.0,
     pending: Double = 0.0,
 ): String {
-    if (role != UserRole.CASHIER) return "Sin tope"
+    if (!usesConfiguredSaleLimits(role)) return "Sin tope"
     val limit = when (classicMode.uppercase(Locale.US)) {
         "Q" -> limits.quiniela
         "P" -> limits.pale
@@ -5272,7 +6143,7 @@ private fun resolveSaleLimitBadgeMain(
     sold: Double = 0.0,
     pending: Double = 0.0,
 ): String {
-    if (role != UserRole.CASHIER) return "Sin tope"
+    if (!usesConfiguredSaleLimits(role)) return "Sin tope"
     val limit = resolveSaleLimitValue(lottery, classicMode, pickMode, limits)
     return formatSaleLimitBadge(limit, sold, pending)
 }
@@ -5282,7 +6153,7 @@ internal fun resolveSaleLimitBadgeMain(
     row: SaleLimitRemainingRow?,
     currentAmount: Double? = null,
 ): String? {
-    if (role != UserRole.CASHIER) return "Sin tope"
+    if (!usesConfiguredSaleLimits(role)) return "Sin tope"
     if (row == null) return null
     val pending = resolveSaleLimitPendingPreview(
         stagedPending = row.pending,
@@ -5297,13 +6168,66 @@ internal fun resolveSaleLimitBadgeTone(
     pending: Double = 0.0,
 ): SaleLimitBadgeTone {
     if (limit <= 0.0) return SaleLimitBadgeTone.GREEN
-    return if (sold > 0.0 || pending > 0.0) SaleLimitBadgeTone.RED else SaleLimitBadgeTone.GREEN
+    val remaining = limit - sold - pending
+    return if (remaining <= 0.0) SaleLimitBadgeTone.RED else SaleLimitBadgeTone.GREEN
 }
 
 internal fun resolveSaleLimitPendingPreview(
     stagedPending: Double,
     currentAmount: Double?,
-): Double = stagedPending + (currentAmount ?: 0.0).coerceAtLeast(0.0)
+): Double = stagedPending
+
+internal fun resolveSaleLimitPreviewOverage(
+    remainingLabel: String?,
+    requestedAmount: Double?,
+    hasActivePlay: Boolean = true,
+): Double? {
+    if (!hasActivePlay) return null
+    val remaining = remainingLabel
+        ?.replace(",", "")
+        ?.toDoubleOrNull()
+        ?: return null
+    val requested = requestedAmount?.takeIf { it > 0.0 } ?: return null
+    return (requested - remaining).takeIf { it > 0.0 }
+}
+
+internal fun resolveSaleLimitBadgeSub(
+    role: UserRole,
+    remainingLabel: String?,
+    requestedAmount: Double?,
+    overage: Double?,
+    hasActivePlay: Boolean = true,
+): String {
+    val scope = if (role == UserRole.CASHIER) "tope" else "admin"
+    if (!hasActivePlay || remainingLabel.isNullOrBlank() || remainingLabel == "Sin tope" || remainingLabel == "—") {
+        return if (hasActivePlay) scope else "Escribe número"
+    }
+    if (overage != null) {
+        return "$remainingLabel · Excede ${formatWholeAmount(overage)}"
+    }
+    return remainingLabel
+}
+
+internal fun buildSaleLimitAdvisoryMessage(messages: List<String?>): String {
+    val details = messages
+        .filterNotNull()
+        .map { it.trim() }
+        .filter { it.isNotBlank() }
+        .distinct()
+        .joinToString(" · ")
+        .ifBlank { "Tope pendiente de confirmar" }
+    return "Aviso de límite: $details. La jugada queda en la lista y el servidor la confirmará al vender."
+}
+
+internal fun buildSaleLimitBlockedMessage(messages: List<String?>): String {
+    return messages
+        .filterNotNull()
+        .map { it.trim() }
+        .filter { it.isNotBlank() }
+        .distinct()
+        .joinToString(" · ")
+        .ifBlank { "Límite agotado" }
+}
 
 private fun resolveSaleLimitValue(
     lottery: LotteryCatalogItem?,
@@ -5327,6 +6251,134 @@ private fun resolveSaleLimitValue(
 private fun formatSaleLimitBadge(limit: Double, sold: Double = 0.0, pending: Double = 0.0): String {
     if (limit <= 0.0) return "Sin tope"
     return formatWholeAmount((limit - sold - pending).coerceAtLeast(0.0))
+}
+
+private fun resolveSaleLimitValue(
+    playType: String,
+    limits: CashierSalesLimitInputs,
+): Double {
+    return when (playType.trim().uppercase(Locale.US)) {
+        "Q" -> limits.quiniela
+        "P" -> limits.pale
+        "SP" -> limits.superPale
+        "T" -> limits.tripleta
+        "P3" -> limits.pick3Straight
+        "P3BOX", "P3B" -> limits.pick3Box
+        "P4" -> limits.pick4Straight
+        "P4BOX", "P4B" -> limits.pick4Box
+        else -> 0.0
+    }
+}
+
+private fun buildSaleLimitSoldOutMessage(
+    scope: String,
+    lotteryName: String,
+    bucket: com.lotterynet.pro.core.sales.SaleExposureLimitBucket,
+    limit: Double,
+    sold: Double,
+    pending: Double,
+    amount: Double,
+): String {
+    val available = (limit - sold - pending).coerceAtLeast(0.0)
+    val playLabel = saleLimitPlayLabel(bucket.playType)
+    return if (available <= 0.0) {
+        "$scope agotado · $lotteryName · $playLabel · Nº ${bucket.number}"
+    } else {
+        "$scope: quedan ${formatWholeAmount(available)} · $lotteryName · $playLabel · Nº ${bucket.number}. Esta jugada es de ${formatWholeAmount(amount)}"
+    }
+}
+
+private fun saleLimitPlayLabel(playType: String): String {
+    return when (playType.trim().uppercase(Locale.US)) {
+        "Q" -> "Quiniela"
+        "P" -> "Pale"
+        "SP" -> "Super Pale"
+        "T" -> "Tripleta"
+        "P3" -> "Pick 3"
+        "P3BOX", "P3B" -> "Pick 3 Box"
+        "P4" -> "Pick 4"
+        "P4BOX", "P4B" -> "Pick 4 Box"
+        else -> playType.ifBlank { "Jugada" }
+    }
+}
+
+internal data class SaleRowLimitIssue(
+    val title: String,
+    val detail: String,
+)
+
+internal fun resolveSaleLimitRemaining(
+    row: SaleStagedRow,
+    limitRows: List<SaleLimitRemainingRow>,
+): Double? {
+    val bucket = resolveSaleExposureLimitBucket(row.playType, row.number, row.lotteryId)
+    return limitRows.firstOrNull { candidate ->
+        candidate.playType == bucket.playType &&
+            candidate.number == bucket.number &&
+            candidate.lotteryId == bucket.lotteryId
+    }?.remaining
+}
+
+internal fun resolveSaleRowLimitIssue(
+    row: SaleStagedRow,
+    limitRows: List<SaleLimitRemainingRow>,
+): SaleRowLimitIssue? {
+    val bucket = resolveSaleExposureLimitBucket(row.playType, row.number, row.lotteryId)
+    val limitRow = limitRows.firstOrNull { candidate ->
+        candidate.playType == bucket.playType &&
+            candidate.number == bucket.number &&
+            candidate.lotteryId == bucket.lotteryId
+    } ?: return null
+    if (!limitRow.overLimit) return null
+    val displayNumber = row.displayNumber.ifBlank { row.number }
+    return SaleRowLimitIssue(
+        title = "Límite agotado",
+        detail = "${row.lotteryName} · ${saleLimitPlayLabel(row.playType)} · $displayNumber",
+    )
+}
+
+internal fun isSaleLimitExhaustedMessage(message: String?): Boolean {
+    val normalized = message.orEmpty()
+        .lowercase(Locale.US)
+        .replace("í", "i")
+    return normalized.contains("limite agotado") ||
+        normalized.contains("limite personal agotado") ||
+        normalized.contains("limite administrativo agotado") ||
+        normalized.contains("numero lleno") ||
+        normalized.contains("pool agotado") ||
+        normalized.contains("tope global") ||
+        normalized.contains("tope diario")
+}
+
+private fun enrichSaleLimitBackendMessage(
+    message: String,
+    stagedRows: List<SaleStagedRow>,
+): String {
+    if (!isSaleLimitExhaustedMessage(message) || stagedRows.isEmpty()) return message
+
+    val normalized = message.lowercase(Locale.US).replace("í", "i")
+    val scope = when {
+        normalized.contains("personal") -> "Límite agotado"
+        normalized.contains("administrativo") -> "Límite agotado"
+        normalized.contains("pool") -> "Límite de pool agotado"
+        else -> "Límite agotado"
+    }
+    // A generic backend rejection cannot be safely attributed to every staged
+    // row. Keep the message scoped instead of making unrelated numbers appear
+    // exhausted. A single staged row is safe to identify explicitly.
+    val detail = stagedRows.firstOrNull { row ->
+        val displayNumber = row.displayNumber.ifBlank { row.number }
+        val hasNumber = displayNumber.isNotBlank() && message.contains(displayNumber, ignoreCase = true)
+        val hasLottery = row.lotteryName.isNotBlank() && message.contains(row.lotteryName, ignoreCase = true)
+        hasNumber && (hasLottery || stagedRows.size == 1)
+    }?.let { row ->
+        val displayNumber = row.displayNumber.ifBlank { row.number }
+        "${row.lotteryName} · ${saleLimitPlayLabel(row.playType)} · $displayNumber"
+    } ?: stagedRows.singleOrNull()?.let { row ->
+        val displayNumber = row.displayNumber.ifBlank { row.number }
+        "${row.lotteryName} · ${saleLimitPlayLabel(row.playType)} · $displayNumber"
+    }
+    return if (detail.isNullOrBlank()) scope else "$scope · $detail"
 }
 
 private fun secondaryActionLabel(
@@ -5480,15 +6532,10 @@ private fun parseSaleResultDrawUtcMs(
 ): Long? {
     val normalizedDate = normalizeSaleResultDateKey(dateKey) ?: return null
     val date = runCatching {
-        LocalDate.parse(normalizedDate, DateTimeFormatter.ofPattern("dd-MM-yyyy", Locale.US))
+        LocalDate.parse(normalizedDate, SALE_RESULT_DATE_FORMATTER)
     }.getOrNull() ?: return null
     val normalizedTime = drawTime.trim().uppercase(Locale.US)
-    val time = listOf(
-        DateTimeFormatter.ofPattern("h:mm a", Locale.US),
-        DateTimeFormatter.ofPattern("hh:mm a", Locale.US),
-        DateTimeFormatter.ofPattern("H:mm", Locale.US),
-        DateTimeFormatter.ofPattern("HH:mm", Locale.US),
-    ).firstNotNullOfOrNull { formatter ->
+    val time = SALE_RESULT_TIME_FORMATTERS.firstNotNullOfOrNull { formatter ->
         runCatching { LocalTime.parse(normalizedTime, formatter) }.getOrNull()
     } ?: return null
     val zone = runCatching { ZoneId.of(zoneId) }.getOrNull() ?: return null
@@ -5497,14 +6544,24 @@ private fun parseSaleResultDrawUtcMs(
 
 private fun normalizeSaleResultDateKey(dateKey: String): String? {
     val value = dateKey.trim()
-    val iso = Regex("""^(\d{4})-(\d{2})-(\d{2})$""").matchEntire(value)
+    val iso = SALE_RESULT_ISO_DATE_REGEX.matchEntire(value)
     if (iso != null) {
         val (year, month, day) = iso.destructured
         return "$day-$month-$year"
     }
-    val local = Regex("""^(\d{2})-(\d{2})-(\d{4})$""").matchEntire(value)
+    val local = SALE_RESULT_LOCAL_DATE_REGEX.matchEntire(value)
     return local?.value
 }
+
+private val SALE_RESULT_DATE_FORMATTER: DateTimeFormatter = DateTimeFormatter.ofPattern("dd-MM-yyyy", Locale.US)
+private val SALE_RESULT_TIME_FORMATTERS: List<DateTimeFormatter> = listOf(
+    DateTimeFormatter.ofPattern("h:mm a", Locale.US),
+    DateTimeFormatter.ofPattern("hh:mm a", Locale.US),
+    DateTimeFormatter.ofPattern("H:mm", Locale.US),
+    DateTimeFormatter.ofPattern("HH:mm", Locale.US),
+)
+private val SALE_RESULT_ISO_DATE_REGEX = Regex("""^(\d{4})-(\d{2})-(\d{2})$""")
+private val SALE_RESULT_LOCAL_DATE_REGEX = Regex("""^(\d{2})-(\d{2})-(\d{4})$""")
 
 private fun remoteNjPickLegacySaleId(rawId: String, lotteryName: String?): String? {
     val text = "$rawId ${lotteryName.orEmpty()}".uppercase(Locale.US)

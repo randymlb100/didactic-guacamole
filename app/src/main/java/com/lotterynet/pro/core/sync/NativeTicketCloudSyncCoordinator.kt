@@ -115,30 +115,84 @@ class NativeTicketCloudSyncCoordinator(
         }
     }
 
+    fun flushOwners(ownerKeys: Set<String>, banca: String?): NativeTicketCloudSyncResult {
+        val normalizedOwners = ownerKeys.mapNotNull { it.trim().takeIf(String::isNotBlank) }.distinct()
+        if (normalizedOwners.isEmpty()) {
+            return NativeTicketCloudSyncResult(false, "No hay banca/admin para subir tickets.")
+        }
+        val results = normalizedOwners.map { flushOwner(it, banca) }
+        return NativeTicketCloudSyncResult(
+            ok = results.all { it.ok },
+            message = results.joinToString(" · ") { it.message },
+            pushedCount = results.sumOf { it.pushedCount },
+            pulledCount = results.sumOf { it.pulledCount },
+        )
+    }
+
     override fun flushOwnerLocalSnapshot(ownerKey: String, banca: String?): NativeTicketCloudSyncResult {
-        return flushOwner(ownerKey, banca)
+        return runCatching {
+            val normalizedOwner = ownerKey.trim()
+            if (normalizedOwner.isBlank()) {
+                return NativeTicketCloudSyncResult(false, "No hay banca/admin para subir tickets.")
+            }
+            val remoteSnapshot = fetchRecentAuthoritativeSnapshot(normalizedOwner, forceFresh = true)
+            val deletedIds = remoteSnapshot.deletedIds
+            val merged = reconcileMonotonicTickets(
+                existing = salesRepository.getAllTickets()
+                    .filter { ticket -> matchesOwner(ticket, normalizedOwner) },
+                remote = remoteSnapshot.tickets,
+                deletedIds = deletedIds,
+                completeScope = false,
+            )
+            persistMonotonicTicketReconciliation(
+                salesRepository = salesRepository,
+                reconciled = merged,
+                remote = remoteSnapshot.tickets,
+                deletedIds = deletedIds,
+            )
+            NativeTicketCloudSyncResult(
+                ok = true,
+                message = "Tickets confirmados con el servidor.",
+                pushedCount = 0,
+                pulledCount = remoteSnapshot.tickets.size,
+            )
+        }.getOrElse { error ->
+            NativeTicketCloudSyncResult(false, error.message ?: "No se pudo sincronizar tickets.")
+        }
     }
 
     private fun resolveOwnerKey(ticket: TicketRecord): String {
-        return ticket.adminId?.takeIf { it.isNotBlank() }
-            ?: ticket.adminUser?.takeIf { it.isNotBlank() }
-            ?: ticket.sellerId.orEmpty()
+        return resolveTicketSyncOwnerKey(ticket)
     }
 
     private fun matchesOwner(ticket: TicketRecord, ownerKey: String): Boolean {
         return matchesNativeTicketSyncOwner(ticket, ownerKey)
     }
 
-    private fun fetchRecentAuthoritativeSnapshot(ownerKey: String): NativeTicketRemoteSnapshot {
+    private fun fetchRecentAuthoritativeSnapshot(ownerKey: String, forceFresh: Boolean = false): NativeTicketRemoteSnapshot {
         val (fromDate, toDate) = recentAuthoritativeDayRange()
         return remoteStore.fetchSnapshot(
             ownerKey = ownerKey,
             fromDate = fromDate,
             toDate = toDate,
             limit = RECENT_AUTHORITATIVE_TICKET_LIMIT,
+            forceRefresh = forceFresh,
         )
     }
 
+}
+
+internal fun resolveTicketSyncOwnerKey(ticket: TicketRecord): String {
+    return ticket.adminId?.takeIf { it.isNotBlank() }
+        ?: ticket.adminUser?.takeIf { it.isNotBlank() }
+        ?: ticket.sellerId?.takeIf { it.isNotBlank() }
+        ?: ticket.sellerUser?.takeIf { it.isNotBlank() }.orEmpty()
+}
+
+internal fun resolveTicketSyncOwnerKeys(tickets: List<TicketRecord>): Set<String> {
+    return tickets.mapNotNull { ticket ->
+        resolveTicketSyncOwnerKey(ticket).takeIf { it.isNotBlank() }
+    }.toSet()
 }
 
 private fun sameTicketIdentity(left: TicketRecord, right: TicketRecord): Boolean {

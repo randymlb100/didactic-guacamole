@@ -89,7 +89,7 @@ class UserAccountsFormattingTest {
     @Test
     fun `supervisor admin view labels split crowded operations`() {
         assertEquals(
-            listOf("Crear", "Grupo", "Credenciales"),
+            listOf("Crear", "Resumen", "Equipo", "Acceso"),
             supervisorAdminViewLabels(),
         )
     }
@@ -339,6 +339,11 @@ class UserAccountsFormattingTest {
     }
 
     @Test
+    fun `supervisor commission parser accepts explicit zero`() {
+        assertEquals(0.0, parseSupervisorGroupCommission("0") ?: -1.0, 0.0001)
+    }
+
+    @Test
     fun `supervisor credential share text stays clean and hides technical secrets`() {
         val supervisor = UserAccount(
             id = "SUP-1",
@@ -486,6 +491,20 @@ class UserAccountsFormattingTest {
     }
 
     @Test
+    fun `cashier selector shows edited names without sorting by edited names`() {
+        val accounts = listOf(
+            UserAccount(id = "CAJ-03", user = "bancay03", role = UserRole.CASHIER, displayName = "Ana"),
+            UserAccount(id = "CAJ-01", user = "bancay01", role = UserRole.CASHIER, displayName = "Zoe"),
+            UserAccount(id = "CAJ-02", user = "bancay02", role = UserRole.CASHIER, displayName = "Carlos"),
+        )
+
+        val options = cashierSelectorOptions(accounts)
+
+        assertEquals(listOf(ALL_CASHIER_LIMITS_ID, "CAJ-01", "CAJ-02", "CAJ-03"), options.map { it.id })
+        assertEquals(listOf("Valores globales", "Zoe", "Carlos", "Ana"), options.map { it.label })
+    }
+
+    @Test
     fun `admin visible cashier details never show all cashier cards at once`() {
         val accounts = listOf(
             UserAccount(id = "admin", user = "admin1", role = UserRole.ADMIN, displayName = "Banca Central"),
@@ -518,6 +537,16 @@ class UserAccountsFormattingTest {
     fun `cashier prize section label explains that premios are payout settings`() {
         assertEquals("Pago premios", cashierPrizeSectionLabel())
         assertTrue(cashierPrizeSectionPurpose().contains("paga", ignoreCase = true))
+    }
+
+    @Test
+    fun `cashier pool section label keeps the global by-jugada meaning explicit`() {
+        assertEquals("Pool global por jugada", cashierPoolSectionLabel())
+        assertTrue(cashierPoolSectionPurpose().contains("tipo de jugada", ignoreCase = true))
+        assertEquals(
+            listOf("Quiniela", "Pale", "Super Pale", "Tripleta", "Pick 3 Straight", "Pick 3 Box", "Pick 4 Straight", "Pick 4 Box"),
+            cashierPoolFieldLabels(),
+        )
     }
 
     @Test

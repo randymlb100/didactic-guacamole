@@ -232,7 +232,7 @@ class LotteryClosePolicy(
 
     private fun parseClockMinutes(raw: String): Int {
         val text = raw.trim().uppercase()
-        val match = Regex("""(\d{1,2}):(\d{2})(?:\s*(AM|PM))?""").find(text) ?: return 23 * 60 + 59
+        val match = CLOCK_MINUTES_REGEX.find(text) ?: return 23 * 60 + 59
         var hour = match.groupValues[1].toInt()
         val minute = match.groupValues[2].toInt()
         val meridiem = match.groupValues.getOrNull(3).orEmpty()
@@ -269,5 +269,6 @@ class LotteryClosePolicy(
     private companion object {
         const val PRE_DRAW_CLOSE_MINUTES = 5
         const val ADMIN_AFTER_CLOSE_GRACE_MINUTES = 10
+        val CLOCK_MINUTES_REGEX = Regex("""(\d{1,2}):(\d{2})(?:\s*(AM|PM))?""")
     }
 }

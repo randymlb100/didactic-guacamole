@@ -1,6 +1,6 @@
 import type { UserAccount, AuditLog, TicketRecord } from '../../types';
 import { isSupabaseConfigured, supabase } from '../supabaseClient';
-import { fetchAuditLogs } from './queries';
+import { clearUsersFetchCache, fetchAuditLogs } from './queries';
 import { STATIC_LOTTERIES } from './lotteries';
 import { mapAccountToRemoteUser } from '../userMapping';
 import { getValidAccessToken } from '../authSession';
@@ -358,11 +358,15 @@ export const saveAllUsers = async (users: UserAccount[]): Promise<void> => {
         headers: authHeaders(),
         body: { action: 'upsert', payload },
       });
-      if (!error) return;
+      if (!error) {
+        clearUsersFetchCache();
+        return;
+      }
     } catch (e) {
       logError('Failed to save through Edge Function, saving locally', e);
     }
   }
 
   localStorage.setItem('lotterynet_users', JSON.stringify(users));
+  clearUsersFetchCache();
 };

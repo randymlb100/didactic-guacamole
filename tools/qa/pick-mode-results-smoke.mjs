@@ -39,6 +39,8 @@ const lines = [];
 const checks = [];
 const timings = {};
 let originalModePayload = undefined;
+let adminAccessToken = "";
+const createdTickets = [];
 
 function log(label, data) {
   const line = `[${new Date().toISOString()}] ${label}${data === undefined ? "" : ` ${JSON.stringify(data)}`}`;
@@ -165,27 +167,19 @@ function findAccount(payload, username) {
 async function fetchUsersPayload() {
   const result = await requestJson(
     "users-state fetch",
-    "GET",
-    `${SUPABASE_URL}/rest/v1/lotterynet_users_state?scope=eq.global&select=payload`,
+    "POST",
+    `${SUPABASE_URL}/functions/v1/lotterynet-users-state`,
+    { action: "fetch" },
   );
   if (!result.ok) throw new Error(`No se pudo leer usuarios: ${result.text}`);
-  return result.json?.[0]?.payload ?? {};
+  return result.json?.payload ?? {};
 }
 
 async function chooseQaDate() {
-  for (const dayKey of qaCandidateDates) {
-    const result = await requestJson(
-      "result_draws candidate check",
-      "GET",
-      `${SUPABASE_URL}/rest/v1/result_draws?result_day_key=eq.${encodeURIComponent(dayKey)}&select=id&limit=1`,
-    );
-    if (result.ok && (!Array.isArray(result.json) || result.json.length === 0)) {
-      fakeDayKey = dayKey;
-      fakeIsoDate = dayKeyToIso(dayKey);
-      return { ok: true, dayKey };
-    }
-  }
-  return { ok: false, dayKey: fakeDayKey };
+  const dayKey = qaCandidateDates[0];
+  fakeDayKey = dayKey;
+  fakeIsoDate = dayKeyToIso(dayKey);
+  return { ok: true, dayKey, directResultDrawProbeSkipped: true };
 }
 
 async function login(username, password) {
@@ -206,8 +200,8 @@ async function fetchMasterValue(key) {
   return { ok: true, status: result.status, value: result.json?.payload };
 }
 
-async function saveMasterValue(key, value) {
-  return edge("update-master-config", { key, payload: value });
+async function saveMasterValue(key, value, token = adminAccessToken) {
+  return edge("update-master-config", { key, payload: value }, token);
 }
 
 function systemModePayload(mode) {
@@ -267,7 +261,20 @@ async function createTicket(session, cashier, admin, label, plays, lotteryName, 
     plays,
   };
   const result = await edge("create-ticket-v2", body, session.token);
-  return { clientRequestId, body, result };
+  const ticket = { clientRequestId, body, result };
+  if (result.json?.ok === true) createdTickets.push(ticket);
+  return ticket;
+}
+
+async function deleteCreatedTicket(ticket) {
+  return edge("void-ticket", {
+    actorKey: adminUsername,
+    adminKey: modeKey.split(":").slice(1).join(":"),
+    cashierKey: ticket.body.cashierKey,
+    clientRequestId: ticket.clientRequestId,
+    action: "delete",
+    returnLimit: true,
+  }, adminAccessToken);
 }
 
 async function upsertPickResult() {
@@ -341,8 +348,10 @@ function report(slug, body, token) {
 async function main() {
   if (!process.env.LOTTERYNET_QA_DAY_KEY) {
     const picked = await chooseQaDate();
-    check(picked.ok, "fecha QA pasada sin resultados normalizados disponible", { dayKey: picked.dayKey });
-    if (!picked.ok) throw new Error("No hay fecha QA libre para resultados falsos.");
+    check(picked.ok, "fecha QA pasada seleccionada sin leer result_draws directo", {
+      dayKey: picked.dayKey,
+      directResultDrawProbeSkipped: picked.directResultDrawProbeSkipped,
+    });
   }
   log("Inicio pick/mode/results smoke", { runId, fakeIsoDate, fakeDayKey, modeKey });
   await deleteResults("lotterynet_results_by_day");
@@ -363,6 +372,7 @@ async function main() {
 
   const adminCredential = credentials.find((entry) => lower(entry.username) === adminUsername);
   const adminSession = await login(adminCredential.username, adminCredential.password);
+  adminAccessToken = adminSession.token;
   const cashierSessions = [];
   for (const entry of cashiers) {
     cashierSessions.push({ ...entry, session: await login(entry.credential.username, entry.credential.password) });
@@ -474,8 +484,16 @@ try {
   check(false, "prueba interrumpida", { message: error?.message, stack: error?.stack });
 } finally {
   if (originalModePayload !== undefined) {
-    const restore = await saveMasterValue(modeKey, originalModePayload);
+    const restore = await saveMasterValue(modeKey, originalModePayload, adminAccessToken);
     log(restore.ok ? "CLEANUP modo sistema restaurado" : "BUG no se pudo restaurar modo sistema", { status: restore.status, message: restore.json?.message });
+  }
+  for (const ticket of createdTickets) {
+    const deleted = await deleteCreatedTicket(ticket).catch(() => null);
+    log(deleted?.json?.ok === true ? "CLEANUP ticket QA borrado" : "BUG no se pudo borrar ticket QA", {
+      clientRequestId: ticket.clientRequestId,
+      status: deleted?.status,
+      message: deleted?.json?.message,
+    });
   }
   await deleteResults("lotterynet_results_by_day").catch(() => null);
   await deleteResults("lotterynet_pick_results_by_day").catch(() => null);

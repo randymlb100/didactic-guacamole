@@ -115,16 +115,25 @@ class PrizeValidationEngine(
         result: LotteryResult,
         prizeConfig: PrizeTableConfig,
     ): PlayPrizeResolution {
-        val multiplier = when (digits) {
-            result.first -> "1" to prizeConfig.q1.toDouble()
-            result.second -> "2" to prizeConfig.q2.toDouble()
-            result.third -> "3" to prizeConfig.q3.toDouble()
-            else -> null
+        val hitPositions = mutableListOf<String>()
+        var payout = 0.0
+
+        if (digits == result.first) {
+            hitPositions += "1"
+            payout += amount * prizeConfig.q1.toDouble()
         }
-        return if (multiplier != null) {
-            val (hitPosition, value) = multiplier
-            val payout = amount * value
-            PlayPrizeResolution(payout, 1, true, winningDetail(amount, digits, "Q", result, hitPosition, payout))
+        if (digits == result.second) {
+            hitPositions += "2"
+            payout += amount * prizeConfig.q2.toDouble()
+        }
+        if (digits == result.third) {
+            hitPositions += "3"
+            payout += amount * prizeConfig.q3.toDouble()
+        }
+
+        return if (hitPositions.isNotEmpty()) {
+            val hitPosition = hitPositions.joinToString(",")
+            PlayPrizeResolution(payout, hitPositions.size, true, winningDetail(amount, digits, "Q", result, hitPosition, payout))
         } else {
             PlayPrizeResolution(relevantRowsFound = true)
         }

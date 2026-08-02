@@ -4,6 +4,8 @@ import com.lotterynet.pro.core.config.SupabaseConfig
 import com.lotterynet.pro.core.model.TicketRecord
 import com.lotterynet.pro.core.remote.SupabaseEdgeClient
 import com.lotterynet.pro.core.remote.isSupabaseAuthRequired
+import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.FutureTask
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
@@ -13,6 +15,9 @@ import org.json.JSONArray
 import org.json.JSONObject
 
 private const val REMOTE_UPDATED_AT_CACHE_TTL_MS = 30_000L
+private const val REMOTE_SNAPSHOT_CACHE_TTL_MS = 10_000L
+private const val REMOTE_FRESH_UPDATED_AT_CACHE_TTL_MS = 10_000L
+private const val RECENT_AUTHORITATIVE_TICKET_LIMIT = 1000
 
 data class NativeTicketRemoteSnapshot(
     val tickets: List<TicketRecord> = emptyList(),
@@ -28,11 +33,18 @@ class NativeTicketRemoteStore(
     private val bearerTokenProvider: (() -> String?)? = null,
     private val bearerTokenRefresher: (() -> String?)? = null,
 ) : TicketRemoteStampStore {
+    companion object {
+        private val sharedRefreshGovernor = TicketRefreshGovernor()
+    }
+
+    private val refreshGovernor = sharedRefreshGovernor
+
     fun fetchSnapshot(
         ownerKey: String,
         fromDate: String? = null,
         toDate: String? = null,
         limit: Int? = null,
+        forceRefresh: Boolean = false,
     ): NativeTicketRemoteSnapshot {
         val key = normalizedRemoteOwnerKey(ownerKey) ?: return NativeTicketRemoteSnapshot()
         val normalizedFromDate = fromDate?.trim()?.takeIf { it.isNotBlank() }
@@ -41,6 +53,7 @@ class NativeTicketRemoteStore(
         val isBoundedOperationalRead =
             normalizedFromDate != null && normalizedToDate != null && normalizedLimit != null
         val authToken = authTokenOrNull()
+        val authScope = if (authToken != null) "auth" else "anon"
         val request = JSONObject()
             .put("action", "fetch")
             .put("ownerKey", key)
@@ -48,7 +61,18 @@ class NativeTicketRemoteStore(
             .put("processPrizeDays", JSONArray(currentPrizeProcessDays()))
         normalizedFromDate?.let { request.put("fromDate", it) }
         normalizedToDate?.let { request.put("toDate", it) }
-        normalizedLimit?.let { request.put("limit", it) }
+            normalizedLimit?.let { request.put("limit", it) }
+        val requestKey = buildTicketListRequestKey(request, authToken)
+        if (!forceRefresh && refreshGovernor.shouldReuse(ticketSnapshotGovernorKey(key, authScope))) {
+            readTicketSnapshotCache(requestKey)?.let { cached ->
+                return cached
+            }
+        }
+        if (forceRefresh) {
+            clearTicketSnapshotMemoryCache(key)
+            clearTicketFreshUpdatedAtCache(key)
+            invalidateTicketUpdatedAtCache(key)
+        }
         val response = if (isBoundedOperationalRead) {
             request
                 .put("includeOfficialStamp", true)
@@ -70,16 +94,19 @@ class NativeTicketRemoteStore(
             source = response.optString("source").ifBlank { null },
         )
         val parsed = parseWebTicketRemotePayload(payload.toRawJsonString())
-        return NativeTicketRemoteSnapshot(
+        val snapshot = NativeTicketRemoteSnapshot(
             tickets = parsed.tickets,
             deletedIds = parsed.deletedIds,
             completeScope = response.optBoolean("completeScope", false),
             source = response.optString("source").ifBlank { null },
         )
+        cacheTicketSnapshot(requestKey, snapshot)
+        refreshGovernor.mark(ticketSnapshotGovernorKey(key, authScope), System.currentTimeMillis())
+        return snapshot
     }
 
     fun fetchTickets(ownerKey: String): List<TicketRecord> {
-        return fetchSnapshot(ownerKey).tickets
+        return fetchRecentAuthoritativeSnapshot(ownerKey).tickets
     }
 
     fun fetchDeltaTickets(
@@ -123,11 +150,13 @@ class NativeTicketRemoteStore(
             authToken,
         )
         invalidateTicketUpdatedAtCache(key)
+        clearTicketSnapshotMemoryCache(key)
+        clearTicketFreshUpdatedAtCache(key)
     }
 
     fun upsertTickets(ownerKey: String, tickets: List<TicketRecord>, banca: String? = null) {
         val key = ownerKey.trim().takeIf { it.isNotBlank() } ?: return
-        val existingDeletedIds = fetchSnapshot(key).deletedIds
+        val existingDeletedIds = fetchRecentAuthoritativeSnapshot(key).deletedIds
         upsertSnapshot(key, tickets, existingDeletedIds, banca)
     }
 
@@ -145,20 +174,39 @@ class NativeTicketRemoteStore(
         }
     }
 
-    fun fetchUpdatedAtFresh(ownerKey: String): String? {
+    fun fetchUpdatedAtFresh(ownerKey: String, forceFresh: Boolean = false): String? {
         val key = ownerKey.trim().takeIf { it.isNotBlank() } ?: return null
-        invalidateTicketUpdatedAtCache(key)
-        return fetchUpdatedAt(key)
+        val authScope = "anon"
+        if (!forceFresh) {
+            readTicketFreshUpdatedAtCache(key)?.let { return it }
+        }
+        if (!forceFresh && refreshGovernor.shouldReuse(ticketUpdatedAtGovernorKey(key, authScope))) {
+            readTicketUpdatedAtCache(key)?.let { cached ->
+                cacheTicketFreshUpdatedAt(key, cached)
+                return cached
+            }
+        }
+        if (forceFresh) {
+            invalidateTicketUpdatedAtCache(key)
+            clearTicketFreshUpdatedAtCache(key)
+        }
+        return fetchUpdatedAt(key).also { fresh ->
+            cacheTicketFreshUpdatedAt(key, fresh)
+        }
     }
 
     private fun invokeTicketList(payload: JSONObject, authToken: String?): JSONObject {
         val requiresAuth = bearerTokenProvider != null && payload.optString("action") != "updated-at"
-        if (!requiresAuth && authToken == null) {
-            payload.put("includeOfficialStamp", false)
-            return edgeClient.invoke("get-ticket-list", payload)
-        }
         val token = authToken ?: bearerTokenRefresher?.invoke()?.takeIf { it.isNotBlank() }
-        return invokeAuthenticatedTicketList(payload, token, canRefreshAfterFailure = authToken != null)
+        val requestKey = buildTicketListRequestKey(payload, if (requiresAuth) token else null)
+        return coalescedTicketList(requestKey) {
+            if (!requiresAuth && token == null) {
+                payload.put("includeOfficialStamp", false)
+                edgeClient.invoke("get-ticket-list", payload)
+            } else {
+                invokeAuthenticatedTicketList(payload, token, canRefreshAfterFailure = authToken != null)
+            }
+        }
     }
 
     private fun invokeAuthenticatedTicketList(
@@ -190,6 +238,16 @@ class NativeTicketRemoteStore(
 
     private fun authTokenOrNull(): String? = bearerTokenProvider?.invoke()?.takeIf { it.isNotBlank() }
 
+    private fun fetchRecentAuthoritativeSnapshot(ownerKey: String): NativeTicketRemoteSnapshot {
+        val (fromDate, toDate) = recentAuthoritativeDayRange()
+        return fetchSnapshot(
+            ownerKey = ownerKey,
+            fromDate = fromDate,
+            toDate = toDate,
+            limit = RECENT_AUTHORITATIVE_TICKET_LIMIT,
+        )
+    }
+
     private fun currentPrizeProcessDays(): List<String> {
         return listOf(ticketRemoteDateOffset(0), ticketRemoteDateOffset(-1)).distinct()
     }
@@ -204,6 +262,42 @@ class NativeTicketRemoteStore(
     }
 }
 
+private val ticketListInFlightRequests = ConcurrentHashMap<String, FutureTask<JSONObject>>()
+
+private fun buildTicketListRequestKey(payload: JSONObject, bearerToken: String?): String {
+    return listOf(
+        "get-ticket-list",
+        payload.optString("ownerKey").trim().lowercase(Locale.US).ifBlank { "unknown-owner" },
+        authScopeKey(bearerToken),
+        payload.toString(),
+    ).joinToString("|")
+}
+
+private fun authScopeKey(bearerToken: String?): String {
+    return if (bearerToken.isNullOrBlank()) "anon" else "auth"
+}
+
+private fun coalescedTicketList(
+    requestKey: String,
+    block: () -> JSONObject,
+): JSONObject {
+    while (true) {
+        val existing = ticketListInFlightRequests[requestKey]
+        if (existing != null) return existing.get()
+
+        val task = FutureTask { block() }
+        val previous = ticketListInFlightRequests.putIfAbsent(requestKey, task)
+        if (previous == null) {
+            try {
+                task.run()
+                return task.get()
+            } finally {
+                ticketListInFlightRequests.remove(requestKey, task)
+            }
+        }
+    }
+}
+
 internal fun normalizedRemoteOwnerKey(value: String?): String? {
     val clean = value?.trim().orEmpty()
     if (clean.isBlank()) return null
@@ -211,6 +305,12 @@ internal fun normalizedRemoteOwnerKey(value: String?): String? {
     if (lower == "null" || lower == "undefined") return null
     return clean
 }
+
+private fun ticketSnapshotGovernorKey(ownerKey: String, authScope: String): String =
+    ticketRefreshGovernorKey(ownerKey, requestType = "snapshot", authScope = authScope)
+
+private fun ticketUpdatedAtGovernorKey(ownerKey: String, authScope: String): String =
+    ticketRefreshGovernorKey(ownerKey, requestType = "updated-at", authScope = authScope)
 
 private fun ticketRemoteDateOffset(offsetDays: Int): String {
     val calendar = Calendar.getInstance(TimeZone.getTimeZone("America/Santo_Domingo"))
@@ -227,17 +327,36 @@ internal data class TicketUpdatedAtCacheEntry(
 )
 
 private var ticketUpdatedAtMemoryCache = mutableMapOf<String, TicketUpdatedAtCacheEntry>()
+private var ticketFreshUpdatedAtMemoryCache = mutableMapOf<String, TicketUpdatedAtCacheEntry>()
+private val ticketSnapshotMemoryCache = ConcurrentHashMap<String, TicketSnapshotCacheEntry>()
 
 internal fun clearTicketUpdatedAtMemoryCache() {
     ticketUpdatedAtMemoryCache = mutableMapOf()
+    ticketFreshUpdatedAtMemoryCache = mutableMapOf()
+    ticketSnapshotMemoryCache.clear()
 }
 
 internal fun invalidateTicketUpdatedAtCache(ownerKey: String) {
     ticketUpdatedAtMemoryCache.remove(ownerKey)
 }
 
+/**
+ * Realtime means the next read must observe the event, not a locally cached
+ * freshness stamp or snapshot. This only invalidates local caches; it does
+ * not change the remote contract or force an extra request by itself.
+ */
+internal fun invalidateTicketRealtimeCaches(ownerKey: String) {
+    invalidateTicketUpdatedAtCache(ownerKey)
+    clearTicketFreshUpdatedAtCache(ownerKey)
+    clearTicketSnapshotMemoryCache(ownerKey)
+}
+
 internal fun cacheTicketUpdatedAt(ownerKey: String, updatedAt: String?, nowMs: Long = System.currentTimeMillis()) {
     ticketUpdatedAtMemoryCache[ownerKey] = TicketUpdatedAtCacheEntry(updatedAt = updatedAt, cachedAtMs = nowMs)
+}
+
+internal fun cacheTicketFreshUpdatedAt(ownerKey: String, updatedAt: String?, nowMs: Long = System.currentTimeMillis()) {
+    ticketFreshUpdatedAtMemoryCache[ownerKey] = TicketUpdatedAtCacheEntry(updatedAt = updatedAt, cachedAtMs = nowMs)
 }
 
 internal fun readTicketUpdatedAtCache(
@@ -258,4 +377,72 @@ internal fun readTicketUpdatedAtCacheEntry(
         ticketUpdatedAtMemoryCache.remove(ownerKey)
         null
     }
+}
+
+internal fun readTicketFreshUpdatedAtCache(
+    ownerKey: String,
+    nowMs: Long = System.currentTimeMillis(),
+): String? {
+    val entry = ticketFreshUpdatedAtMemoryCache[ownerKey] ?: return null
+    return if (nowMs - entry.cachedAtMs <= REMOTE_FRESH_UPDATED_AT_CACHE_TTL_MS) {
+        entry.updatedAt
+    } else {
+        ticketFreshUpdatedAtMemoryCache.remove(ownerKey)
+        null
+    }
+}
+
+internal data class TicketSnapshotCacheEntry(
+    val snapshot: NativeTicketRemoteSnapshot,
+    val cachedAtMs: Long,
+)
+
+internal fun cacheTicketSnapshot(
+    requestKey: String,
+    snapshot: NativeTicketRemoteSnapshot,
+    nowMs: Long = System.currentTimeMillis(),
+) {
+    ticketSnapshotMemoryCache[requestKey] = TicketSnapshotCacheEntry(snapshot = snapshot, cachedAtMs = nowMs)
+}
+
+internal fun readTicketSnapshotCache(
+    requestKey: String,
+    nowMs: Long = System.currentTimeMillis(),
+): NativeTicketRemoteSnapshot? {
+    val entry = ticketSnapshotMemoryCache[requestKey] ?: return null
+    return if (nowMs - entry.cachedAtMs <= REMOTE_SNAPSHOT_CACHE_TTL_MS) {
+        entry.snapshot
+    } else {
+        ticketSnapshotMemoryCache.remove(requestKey)
+        null
+    }
+}
+
+internal fun clearTicketSnapshotMemoryCache(ownerKey: String? = null) {
+    val normalized = ownerKey?.trim().orEmpty()
+    if (normalized.isBlank()) {
+        ticketSnapshotMemoryCache.clear()
+        return
+    }
+    ticketSnapshotMemoryCache.entries.removeIf { (requestKey, _) ->
+        requestKey.contains("|$normalized|", ignoreCase = true) ||
+            requestKey.contains("|ownerKey=$normalized", ignoreCase = true)
+    }
+}
+
+private fun recentAuthoritativeDayRange(): Pair<String, String> {
+    val zone = TimeZone.getTimeZone("America/Santo_Domingo")
+    val format = SimpleDateFormat("yyyy-MM-dd", Locale.US).apply { timeZone = zone }
+    val today = Calendar.getInstance(zone)
+    val yesterday = (today.clone() as Calendar).apply { add(Calendar.DAY_OF_YEAR, -1) }
+    return format.format(yesterday.time) to format.format(today.time)
+}
+
+internal fun clearTicketFreshUpdatedAtCache(ownerKey: String? = null) {
+    val normalized = ownerKey?.trim().orEmpty()
+    if (normalized.isBlank()) {
+        ticketFreshUpdatedAtMemoryCache = mutableMapOf()
+        return
+    }
+    ticketFreshUpdatedAtMemoryCache.remove(normalized)
 }

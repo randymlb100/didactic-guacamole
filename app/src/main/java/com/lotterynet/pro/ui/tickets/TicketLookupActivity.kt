@@ -2,6 +2,8 @@ package com.lotterynet.pro.ui.tickets
 
 import android.content.Intent
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.widget.Toast
 import androidx.activity.compose.setContent
 import androidx.appcompat.app.AppCompatActivity
@@ -16,16 +18,31 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.ArrowDropDown
 import androidx.compose.material.icons.rounded.ContentCopy
 import androidx.compose.material.icons.rounded.DeleteForever
+import androidx.compose.material.icons.rounded.Event
+import androidx.compose.material.icons.rounded.FilterList
 import androidx.compose.material.icons.rounded.Paid
 import androidx.compose.material.icons.rounded.QrCodeScanner
 import androidx.compose.material.icons.rounded.Search
+import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material3.Icon
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.DatePicker
+import androidx.compose.material3.DatePickerDialog
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -53,12 +70,21 @@ import com.lotterynet.pro.core.model.LotteryTerritory
 import com.lotterynet.pro.core.model.TicketRecord
 import com.lotterynet.pro.core.model.UserAccount
 import com.lotterynet.pro.core.model.UserRole
+import com.lotterynet.pro.core.model.dominicanDayKey
 import com.lotterynet.pro.core.model.isPaidStatus
 import com.lotterynet.pro.core.model.isPendingWinnerStatus
 import com.lotterynet.pro.core.operations.buildUserActorLabelLookup
 import com.lotterynet.pro.core.operations.filterTicketsForOperationalScope
 import com.lotterynet.pro.core.operations.resolveTicketActorLabel
 import com.lotterynet.pro.core.sales.SupabaseTicketBackendClient
+import com.lotterynet.pro.core.realtime.LotterynetRealtimeClient
+import com.lotterynet.pro.core.realtime.LotterynetRealtimeOrchestrator
+import com.lotterynet.pro.core.sync.NativeOperationalSyncCoordinator
+import com.lotterynet.pro.core.sync.NativeTicketCloudSyncCoordinator
+import com.lotterynet.pro.core.sync.NativeTicketRemoteStore
+import com.lotterynet.pro.core.sync.NativeTicketSyncQueueRepository
+import com.lotterynet.pro.core.sync.invalidateTicketRealtimeCaches
+import com.lotterynet.pro.core.sync.resolveOperationalRealtimeOwnerKeys
 import com.lotterynet.pro.core.sync.isTerminalCancelTicketStatus
 import com.lotterynet.pro.core.storage.LocalSalesRepository
 import com.lotterynet.pro.core.storage.LocalSessionRepository
@@ -74,11 +100,10 @@ import com.lotterynet.pro.ui.common.CompactEmptyState
 import com.lotterynet.pro.ui.common.CompactPanel
 import com.lotterynet.pro.ui.common.CompactStatusBadge
 import com.lotterynet.pro.ui.common.NativeBottomTab
+import com.lotterynet.pro.ui.common.QuickFilterChip
 import com.lotterynet.pro.ui.common.ScreenChromeAction
 import com.lotterynet.pro.ui.common.ScreenChromeSpec
-import com.lotterynet.pro.ui.common.SectionHeader
 import com.lotterynet.pro.ui.common.openBottomTab
-import com.lotterynet.pro.ui.common.resolveAdaptiveScreenContract
 import com.lotterynet.pro.ui.common.rememberLotteryNetVisualSpec
 import com.lotterynet.pro.ui.navigation.NativeDestination
 import com.lotterynet.pro.ui.navigation.normalizeTicketLookupModeForRole
@@ -86,13 +111,31 @@ import com.lotterynet.pro.ui.navigation.redirectIfNativeDestinationBlocked
 import com.lotterynet.pro.ui.sales.resolveSalesStartupSystemModeConfig
 import com.lotterynet.pro.ui.theme.LotteryNetComposeTheme
 import java.text.SimpleDateFormat
+import java.time.LocalDate
 import java.util.Date
 import java.util.Locale
 import java.util.TimeZone
+import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.concurrent.thread
 import org.json.JSONObject
 
 class TicketLookupActivity : AppCompatActivity() {
+    private val lookupRefreshHandler = Handler(Looper.getMainLooper())
+    private val realtimeClient = LotterynetRealtimeClient()
+    private val realtimeSubscriptions = mutableListOf<LotterynetRealtimeClient.SubscriptionHandle>()
+    private val lookupSyncInFlight = AtomicBoolean(false)
+    private lateinit var lookupSession: ActiveSession
+    private lateinit var lookupSalesRepository: LocalSalesRepository
+    private lateinit var operationalSyncCoordinator: NativeOperationalSyncCoordinator
+    private var allTicketsState by mutableStateOf<List<TicketRecord>>(emptyList())
+    private var deletedTicketIdsState by mutableStateOf<Set<String>>(emptySet())
+    private val realtimeOrchestrator = LotterynetRealtimeOrchestrator(
+        onTicketOwnerChanged = { ownerKey ->
+            invalidateTicketRealtimeCaches(ownerKey)
+            scheduleRealtimeLookupRefresh()
+        },
+    )
+    private val realtimeLookupRefreshRunnable = Runnable { refreshLookupFromRealtime() }
     private val qrLauncher = registerForActivityResult(ScanContract()) { result ->
         val contents = result.contents?.trim().orEmpty()
         if (contents.isNotBlank()) {
@@ -109,12 +152,27 @@ class TicketLookupActivity : AppCompatActivity() {
             return
         }
         checkNotNull(session)
+        lookupSession = session
         val usersRepository = LocalUsersRepository(this)
         usersRepository.touchSession(session)
         val lookupMode = LookupMode.from(normalizeTicketLookupModeForRole(session.role, intent?.getStringExtra(EXTRA_MODE)))
+        val requestedCashierKey = intent?.getStringExtra(EXTRA_CASHIER_KEY)?.trim().orEmpty()
         val salesRepository = LocalSalesRepository(this)
-        val allTickets = salesRepository.getAllTickets()
-        val deletedTicketIds = salesRepository.getDeletedTicketIds()
+        lookupSalesRepository = salesRepository
+        allTicketsState = salesRepository.getAllTickets()
+        deletedTicketIdsState = salesRepository.getDeletedTicketIds()
+        val remoteStore = NativeTicketRemoteStore(
+            bearerTokenProvider = { SupabaseSessionTokenProvider(LocalSessionRepository(this)).freshAccessToken() },
+            bearerTokenRefresher = { SupabaseSessionTokenProvider(LocalSessionRepository(this)).forceFreshAccessToken() },
+        )
+        operationalSyncCoordinator = NativeOperationalSyncCoordinator(
+            ticketGateway = NativeTicketCloudSyncCoordinator(
+                salesRepository = salesRepository,
+                queueRepository = NativeTicketSyncQueueRepository(this),
+                remoteStore = remoteStore,
+            ),
+            remoteStampStore = remoteStore,
+        )
         val cashiers = usersRepository.getCashiers()
         val systemModeConfig = resolveSalesStartupSystemModeConfig(
             session = session,
@@ -132,7 +190,6 @@ class TicketLookupActivity : AppCompatActivity() {
 
         setContent {
             LotteryNetComposeTheme {
-                var allTicketsState by remember { mutableStateOf(allTickets) }
                 var query by rememberSaveable { mutableStateOf(intent?.getStringExtra(EXTRA_INITIAL_QUERY).orEmpty()) }
                 var qrValue by remember { mutableStateOf("") }
                 var autoScanStarted by rememberSaveable { mutableStateOf(false) }
@@ -151,14 +208,14 @@ class TicketLookupActivity : AppCompatActivity() {
                         query = scanned
                     }
                 }
-                val tickets = remember(query, allTicketsState, cashiers, lookupMode, deletedTicketIds, systemModeConfig) {
+                val tickets = remember(query, allTicketsState, cashiers, lookupMode, deletedTicketIdsState, systemModeConfig, requestedCashierKey) {
                     filterLookupTicketsForSession(
                         session = session,
                         tickets = allTicketsState,
                         cashiers = cashiers,
                         mode = lookupMode,
                         query = query,
-                        deletedTicketIds = deletedTicketIds,
+                        deletedTicketIds = deletedTicketIdsState,
                         systemModeConfig = systemModeConfig,
                     )
                 }
@@ -174,6 +231,7 @@ class TicketLookupActivity : AppCompatActivity() {
                     role = session.role,
                     mode = lookupMode,
                     bancaName = session.banca ?: "LotteryNet",
+                    requestedCashierKey = requestedCashierKey,
                     query = query,
                     tickets = tickets,
                     actorLabelsByKey = buildUserActorLabelLookup(cashiers),
@@ -181,9 +239,9 @@ class TicketLookupActivity : AppCompatActivity() {
                     onScanQr = { launchQrScanner() },
                     isPayingAll = payingAll,
                     payAllProgress = payAllProgress,
-                    onPayAll = {
+                    onPayAll = { visibleTickets ->
                         if (payingAll) return@TicketLookupRoute
-                        val pendingTickets = tickets.filter(::isLookupBulkPayableTicket)
+                        val pendingTickets = visibleTickets.filter(::isLookupBulkPayableTicket)
                         if (pendingTickets.isEmpty()) {
                             Toast.makeText(this, "No hay premios pendientes para pagar.", Toast.LENGTH_SHORT).show()
                             return@TicketLookupRoute
@@ -249,7 +307,7 @@ class TicketLookupActivity : AppCompatActivity() {
                         val resolution = resolveTicketOpenRequest(
                             requestedTicket = ticket,
                             currentTickets = salesRepository.getAllTickets(),
-                            deletedTicketIds = salesRepository.getDeletedTicketIds(),
+                            deletedTicketIds = deletedTicketIdsState,
                         )
                         val currentTicket = resolution.ticket
                         if (currentTicket == null) {
@@ -259,6 +317,62 @@ class TicketLookupActivity : AppCompatActivity() {
                         openOfficialTicket(currentTicket)
                     },
                 )
+            }
+        }
+        subscribeRealtime()
+    }
+
+    override fun onResume() {
+        super.onResume()
+        refreshLookupLocalState()
+        // Catch up with the authoritative yesterday/today window when entering
+        // or returning to Cobro. The shared sync governor prevents duplicate
+        // requests, while Realtime continues to handle changes while visible.
+        refreshLookupFromRealtime()
+    }
+
+    override fun onDestroy() {
+        lookupRefreshHandler.removeCallbacks(realtimeLookupRefreshRunnable)
+        realtimeSubscriptions.forEach { it.close() }
+        realtimeSubscriptions.clear()
+        realtimeClient.shutdown()
+        super.onDestroy()
+    }
+
+    private fun refreshLookupLocalState() {
+        if (!::lookupSalesRepository.isInitialized) return
+        allTicketsState = lookupSalesRepository.getAllTickets()
+        deletedTicketIdsState = lookupSalesRepository.getDeletedTicketIds()
+    }
+
+    private fun subscribeRealtime() {
+        if (!realtimeClient.isConfigured() || realtimeSubscriptions.isNotEmpty()) return
+        val tokenProvider = SupabaseSessionTokenProvider(LocalSessionRepository(this))
+        resolveTicketLookupRealtimeOwnerKeys(lookupSession).forEach { ownerKey ->
+            realtimeSubscriptions += realtimeClient.subscribeTicketOwnerSignals(
+                ownerKey = ownerKey,
+                bearerTokenProvider = { tokenProvider.freshAccessToken() },
+                onEvent = realtimeOrchestrator::onEvent,
+            )
+        }
+    }
+
+    private fun scheduleRealtimeLookupRefresh() {
+        lookupRefreshHandler.removeCallbacks(realtimeLookupRefreshRunnable)
+        lookupRefreshHandler.postDelayed(realtimeLookupRefreshRunnable, LOOKUP_REALTIME_DEBOUNCE_MS)
+    }
+
+    private fun refreshLookupFromRealtime() {
+        if (!::operationalSyncCoordinator.isInitialized || !lookupSyncInFlight.compareAndSet(false, true)) return
+        thread(name = "ticket-lookup-realtime-sync") {
+            runCatching {
+                resolveTicketLookupRealtimeOwnerKeys(lookupSession).forEach { ownerKey ->
+                    operationalSyncCoordinator.refreshOwnerFromRealtime(ownerKey, lookupSession.banca)
+                }
+            }
+            runOnUiThread {
+                refreshLookupLocalState()
+                lookupSyncInFlight.set(false)
             }
         }
     }
@@ -277,6 +391,7 @@ class TicketLookupActivity : AppCompatActivity() {
 
     companion object {
         const val EXTRA_MODE = "ticket_lookup_mode"
+        const val EXTRA_CASHIER_KEY = "ticket_lookup_cashier_key"
         const val EXTRA_INITIAL_QUERY = "ticket_lookup_query"
         const val EXTRA_AUTO_SCAN = "ticket_lookup_auto_scan"
     }
@@ -345,8 +460,8 @@ internal enum class LookupMode(
         officialModeKey = "buscar",
     ),
     PAY(
-        title = "Cobro de ticket",
-        subtitle = "Busca un ganador pendiente o pagado y abre el ticket oficial para cobro.",
+        title = "Cobros · Buscar ganador",
+        subtitle = "Busca ganadores por fecha del premio y abre el ticket oficial para cobrar.",
         emptyLabel = "No hay tickets para cobro con este filtro.",
         icon = Icons.Rounded.Paid,
         officialModeKey = "pagar",
@@ -458,6 +573,87 @@ private fun filterTickets(
         .toList()
 }
 
+internal fun filterTicketLookupPaymentView(
+    tickets: List<TicketRecord>,
+    mode: LookupMode,
+    query: String,
+    dateFilter: String,
+    statusFilter: String,
+    todayDayKey: String,
+): List<TicketRecord> {
+    if (mode != LookupMode.PAY || query.trim().isNotBlank()) return tickets
+    val today = runCatching { LocalDate.parse(todayDayKey) }.getOrNull()
+    val yesterdayKey = today?.minusDays(1)?.toString()
+    return tickets.filter { ticket ->
+        val ticketDayKey = dominicanDayKey(ticket.createdAtEpochMs)
+        val dateMatches = when (dateFilter) {
+            "today" -> ticketDayKey == todayDayKey
+            "yesterday" -> yesterdayKey != null && ticketDayKey == yesterdayKey
+            else -> dateFilter.removePrefix("date:").takeIf { it != dateFilter }?.let { ticketDayKey == it } ?: true
+        }
+        val statusMatches = when (statusFilter) {
+            "pending" -> isLookupBulkPayableTicket(ticket)
+            "paid" -> ticket.isPaidStatus()
+            else -> true
+        }
+        dateMatches && statusMatches
+    }
+}
+
+internal fun filterTicketLookupToolbarTickets(
+    tickets: List<TicketRecord>,
+    dateFilter: String,
+    statusFilter: String,
+    todayDayKey: String,
+): List<TicketRecord> {
+    val today = runCatching { LocalDate.parse(todayDayKey) }.getOrNull()
+    val yesterdayKey = today?.minusDays(1)?.toString()
+    return tickets.filter { ticket ->
+        val ticketDayKey = dominicanDayKey(ticket.createdAtEpochMs)
+        val dateMatches = when (dateFilter) {
+            "today" -> ticketDayKey == todayDayKey
+            "yesterday" -> yesterdayKey != null && ticketDayKey == yesterdayKey
+            else -> dateFilter.removePrefix("date:").takeIf { it != dateFilter }?.let { ticketDayKey == it } ?: true
+        }
+        val statusMatches = when (statusFilter) {
+            "paid" -> ticket.isPaidStatus()
+            "unpaid" -> !ticket.isPaidStatus()
+            else -> true
+        }
+        dateMatches && statusMatches
+    }
+}
+
+private fun lookupStatusLabel(value: String): String = when (value) {
+    "pending" -> "Pendientes"
+    "paid" -> "Pagados"
+    else -> "Todos"
+}
+
+private fun ticketStatusLabel(value: String): String = when (value) {
+    "paid" -> "Pagados"
+    "unpaid" -> "No pagados"
+    else -> "Todos"
+}
+
+internal fun ticketLookupPaymentDateOptions(): List<QuickFilterChip> = listOf(
+    QuickFilterChip("today", "Hoy"),
+    QuickFilterChip("yesterday", "Ayer"),
+    QuickFilterChip("all", "Todos"),
+)
+
+internal fun ticketLookupPaymentDateLabel(dateKey: String): String {
+    val date = parseTicketDateKey(dateKey)?.timeInMillis ?: return "Fecha exacta"
+    return SimpleDateFormat("dd MMM yyyy", Locale.forLanguageTag("es-DO")).format(Date(date))
+        .replaceFirstChar { it.uppercase(Locale.forLanguageTag("es-DO")) }
+}
+
+internal fun ticketLookupPaymentStatusOptions(): List<QuickFilterChip> = listOf(
+    QuickFilterChip("pending", "Pendientes"),
+    QuickFilterChip("paid", "Pagados"),
+    QuickFilterChip("all", "Todos"),
+)
+
 internal fun ticketMatchesDuplicateSystemMode(
     ticket: TicketRecord,
     config: AdminSystemModeConfig,
@@ -530,10 +726,12 @@ private fun resolveLookupDuplicateLotteries(
 }
 
 @Composable
+@OptIn(ExperimentalMaterial3Api::class)
 private fun TicketLookupRoute(
     role: UserRole,
     mode: LookupMode,
     bancaName: String,
+    requestedCashierKey: String,
     query: String,
     tickets: List<TicketRecord>,
     actorLabelsByKey: Map<String, String>,
@@ -541,14 +739,115 @@ private fun TicketLookupRoute(
     onScanQr: () -> Unit,
     isPayingAll: Boolean,
     payAllProgress: String,
-    onPayAll: () -> Unit,
+    onPayAll: (List<TicketRecord>) -> Unit,
     onDuplicateTicket: (TicketRecord) -> Unit,
     onOpenTicket: (TicketRecord) -> Unit,
 ) {
     val context = LocalContext.current
     val visual = rememberLotteryNetVisualSpec()
-    val adaptive = resolveAdaptiveScreenContract(visual.windowMode)
     val layout = remember(visual.windowMode) { resolveTicketCollectionLayout(visual.windowMode) }
+    val todayDayKey = remember { dominicanDayKey(System.currentTimeMillis()) }
+    val cashierOptions = remember(actorLabelsByKey) {
+        actorLabelsByKey.entries
+            .filter { it.key.isNotBlank() && it.value.isNotBlank() }
+            .groupBy { it.value.trim().lowercase(Locale.getDefault()) }
+            .values
+            .mapNotNull { entries ->
+                entries.minWithOrNull(
+                    compareBy<Map.Entry<String, String>> { entry ->
+                        // Prefer the readable username over the technical CAJ-* id.
+                        entry.key.trim().uppercase(Locale.US).startsWith("CAJ-")
+                    }.thenBy { it.key.lowercase(Locale.getDefault()) },
+                )
+            }
+            .sortedBy { it.value.lowercase(Locale.getDefault()) }
+    }
+    var showFilters by rememberSaveable { mutableStateOf(false) }
+    var showSearch by rememberSaveable { mutableStateOf(false) }
+    var selectedCashierKey by rememberSaveable { mutableStateOf("") }
+    var ticketDateFilter by rememberSaveable { mutableStateOf("all") }
+    var ticketExactDate by rememberSaveable { mutableStateOf(todayDayKey) }
+    var ticketStatusFilter by rememberSaveable { mutableStateOf("all") }
+    var paymentDateFilter by rememberSaveable { mutableStateOf("today") }
+    var paymentExactDate by rememberSaveable { mutableStateOf(todayDayKey) }
+    var showDatePicker by rememberSaveable { mutableStateOf(false) }
+    var paymentStatusFilter by rememberSaveable { mutableStateOf("pending") }
+    var cashierMenuExpanded by rememberSaveable { mutableStateOf(false) }
+    var dateMenuExpanded by rememberSaveable { mutableStateOf(false) }
+    var statusMenuExpanded by rememberSaveable { mutableStateOf(false) }
+    val visibleTickets = remember(
+        tickets,
+        mode,
+        query,
+        selectedCashierKey,
+        ticketDateFilter,
+        ticketExactDate,
+        ticketStatusFilter,
+        paymentDateFilter,
+        paymentStatusFilter,
+        todayDayKey,
+        requestedCashierKey,
+    ) {
+        val dateFiltered = if (mode == LookupMode.PAY) {
+            filterTicketLookupPaymentView(
+                tickets = tickets,
+                mode = mode,
+                query = query,
+                dateFilter = paymentDateFilter,
+                statusFilter = paymentStatusFilter,
+                todayDayKey = todayDayKey,
+            )
+        } else {
+            filterTicketLookupToolbarTickets(
+                tickets = tickets,
+                dateFilter = ticketDateFilter,
+                statusFilter = ticketStatusFilter,
+                todayDayKey = todayDayKey,
+            )
+        }
+        dateFiltered.filter { ticket ->
+            val requestedMatches = requestedCashierKey.isBlank() ||
+                ticket.sellerId.equals(requestedCashierKey, ignoreCase = true) ||
+                ticket.sellerUser.equals(requestedCashierKey, ignoreCase = true)
+            val selectedMatches = selectedCashierKey.isBlank() ||
+                ticket.sellerId.equals(selectedCashierKey, ignoreCase = true) ||
+                ticket.sellerUser.equals(selectedCashierKey, ignoreCase = true)
+            requestedMatches && selectedMatches
+        }
+    }
+    if (showDatePicker) {
+        val pickerState = rememberDatePickerState(
+            initialSelectedDateMillis = ticketDateKeyToPickerUtcMillis(
+                if (mode == LookupMode.PAY) paymentExactDate else ticketExactDate,
+            ),
+        )
+        DatePickerDialog(
+            onDismissRequest = { showDatePicker = false },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        pickerState.selectedDateMillis?.let {
+                            val selectedDate = pickerUtcMillisToTicketDateKey(it)
+                            if (mode == LookupMode.PAY) {
+                                paymentExactDate = selectedDate
+                                paymentDateFilter = "date:$selectedDate"
+                            } else {
+                                ticketExactDate = selectedDate
+                                ticketDateFilter = "date:$selectedDate"
+                            }
+                        }
+                        showDatePicker = false
+                    },
+                    enabled = pickerState.selectedDateMillis != null,
+                ) { Text("Aplicar") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDatePicker = false }) { Text("Cancelar") }
+            },
+        ) {
+            DatePicker(state = pickerState, showModeToggle = false)
+        }
+    }
     Scaffold(
         modifier = Modifier.fillMaxSize(),
         containerColor = visual.colors.background,
@@ -586,69 +885,252 @@ private fun TicketLookupRoute(
                     onOpenMenu = { com.lotterynet.pro.ui.common.openShellMenu(context) },
                 )
                 Spacer(modifier = Modifier.height(6.dp))
-                CompactPanel(
-                    alt = true,
-                    contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 10.dp, vertical = layout.headerPaddingVerticalDp.dp),
+                val pendingPayCount = visibleTickets.count(::isLookupBulkPayableTicket)
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    val pendingPayCount = tickets.count(::isLookupBulkPayableTicket)
-                    SectionHeader(
-                        title = "Abrir ticket",
-                        meta = if (mode == LookupMode.PAY && pendingPayCount > 0) {
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        FilterChip(
+                            selected = showSearch || query.isNotBlank(),
+                            onClick = { showSearch = !showSearch },
+                            label = { Text("Buscar") },
+                            leadingIcon = { Icon(Icons.Rounded.Search, contentDescription = null) },
+                        )
+                        FilterChip(
+                            selected = showFilters,
+                            onClick = { showFilters = !showFilters },
+                            label = { Text("Filtros") },
+                            leadingIcon = { Icon(Icons.Rounded.FilterList, contentDescription = null) },
+                        )
+                    }
+                    Text(
+                        text = if (mode == LookupMode.PAY && pendingPayCount > 0) {
                             "$pendingPayCount pendiente(s)"
                         } else {
-                            "${tickets.size} coincidencias"
+                            "${visibleTickets.size} ticket(s)"
                         },
+                        style = MaterialTheme.typography.labelMedium,
+                        color = visual.colors.muted,
                     )
+                }
+                AnimatedVisibility(visible = showSearch) {
                     OutlinedTextField(
                         value = query,
                         onValueChange = onQueryChange,
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 8.dp),
                         singleLine = true,
                         leadingIcon = { Icon(Icons.Rounded.Search, contentDescription = null) },
+                        trailingIcon = {
+                            IconButton(
+                                onClick = {
+                                    onQueryChange("")
+                                    showSearch = false
+                                },
+                            ) {
+                                Icon(Icons.Rounded.Close, contentDescription = "Cerrar búsqueda")
+                            }
+                        },
                         label = { Text("Buscar ticket, serial o usuario") },
                     )
-                    if (mode == LookupMode.PAY) {
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Row(
+                }
+                AnimatedVisibility(visible = showFilters) {
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        LazyRow(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.spacedBy(8.dp),
-                            verticalAlignment = Alignment.CenterVertically,
                         ) {
-                            CompactActionButton(
-                                label = if (isPayingAll) "Pagando $payAllProgress" else "Paga todo",
-                                onClick = onPayAll,
-                                enabled = pendingPayCount > 0 && !isPayingAll,
-                                modifier = Modifier.weight(1f),
-                                icon = Icons.Rounded.Paid,
-                                tone = ActionTone.Primary,
-                            )
-                            CompactStatusBadge(
-                                label = if (pendingPayCount > 0) "$pendingPayCount pendientes" else "Sin pendientes",
-                                tone = if (pendingPayCount > 0) visual.colors.results else visual.colors.gain,
-                            )
+                            item {
+                                androidx.compose.foundation.layout.Box {
+                                    FilterChip(
+                                        selected = selectedCashierKey.isNotBlank(),
+                                        onClick = { cashierMenuExpanded = true },
+                                        label = {
+                                            Text(
+                                                if (selectedCashierKey.isBlank()) "Cajero: Todos"
+                                                else "Cajero: ${actorLabelsByKey[selectedCashierKey] ?: selectedCashierKey}",
+                                            )
+                                        },
+                                        leadingIcon = { Icon(Icons.Rounded.ArrowDropDown, contentDescription = null) },
+                                    )
+                                    DropdownMenu(
+                                        expanded = cashierMenuExpanded,
+                                        onDismissRequest = { cashierMenuExpanded = false },
+                                    ) {
+                                        DropdownMenuItem(
+                                            text = { Text("Todos") },
+                                            onClick = {
+                                                selectedCashierKey = ""
+                                                cashierMenuExpanded = false
+                                            },
+                                        )
+                                        cashierOptions.forEach { (key, label) ->
+                                            DropdownMenuItem(
+                                                text = { Text(label) },
+                                                onClick = {
+                                                    selectedCashierKey = key
+                                                    cashierMenuExpanded = false
+                                                },
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                            item {
+                                androidx.compose.foundation.layout.Box {
+                                    FilterChip(
+                                        selected = if (mode == LookupMode.PAY) paymentDateFilter != "today" else ticketDateFilter != "all",
+                                        onClick = { dateMenuExpanded = true },
+                                        label = {
+                                            Text(
+                                                if (mode == LookupMode.PAY) {
+                                                    if (paymentDateFilter.startsWith("date:")) "Fecha: ${ticketLookupPaymentDateLabel(paymentExactDate)}" else "Fecha: Hoy"
+                                                } else {
+                                                    when {
+                                                        ticketDateFilter.startsWith("date:") -> "Fecha: ${ticketLookupPaymentDateLabel(ticketExactDate)}"
+                                                        ticketDateFilter == "today" -> "Fecha: Hoy"
+                                                        ticketDateFilter == "yesterday" -> "Fecha: Ayer"
+                                                        else -> "Fecha: Todas"
+                                                    }
+                                                },
+                                            )
+                                        },
+                                        leadingIcon = { Icon(Icons.Rounded.Event, contentDescription = null) },
+                                    )
+                                    DropdownMenu(
+                                        expanded = dateMenuExpanded,
+                                        onDismissRequest = { dateMenuExpanded = false },
+                                    ) {
+                                        listOf("today" to "Hoy", "yesterday" to "Ayer", "all" to "Todas").forEach { (id, label) ->
+                                            DropdownMenuItem(
+                                                text = { Text(label) },
+                                                onClick = {
+                                                    if (mode == LookupMode.PAY) paymentDateFilter = id else ticketDateFilter = id
+                                                    dateMenuExpanded = false
+                                                },
+                                            )
+                                        }
+                                        DropdownMenuItem(
+                                            text = { Text("Fecha exacta") },
+                                            onClick = {
+                                                dateMenuExpanded = false
+                                                showDatePicker = true
+                                            },
+                                        )
+                                    }
+                                }
+                            }
+                            item {
+                                androidx.compose.foundation.layout.Box {
+                                    val statusValue = if (mode == LookupMode.PAY) paymentStatusFilter else ticketStatusFilter
+                                    FilterChip(
+                                        selected = statusValue != if (mode == LookupMode.PAY) "pending" else "all",
+                                        onClick = { statusMenuExpanded = true },
+                                        label = { Text(if (mode == LookupMode.PAY) "Estado: ${lookupStatusLabel(paymentStatusFilter)}" else "Estado: ${ticketStatusLabel(ticketStatusFilter)}") },
+                                        leadingIcon = { Icon(Icons.Rounded.Paid, contentDescription = null) },
+                                    )
+                                    DropdownMenu(
+                                        expanded = statusMenuExpanded,
+                                        onDismissRequest = { statusMenuExpanded = false },
+                                    ) {
+                                        val options = if (mode == LookupMode.PAY) {
+                                            listOf("pending" to "Pendientes", "paid" to "Pagados", "all" to "Todos")
+                                        } else {
+                                            listOf("all" to "Todos", "paid" to "Pagados", "unpaid" to "No pagados")
+                                        }
+                                        options.forEach { (id, label) ->
+                                            DropdownMenuItem(
+                                                text = { Text(label) },
+                                                onClick = {
+                                                    if (mode == LookupMode.PAY) paymentStatusFilter = id else ticketStatusFilter = id
+                                                    statusMenuExpanded = false
+                                                },
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        if (mode == LookupMode.PAY) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                CompactActionButton(
+                                    label = if (isPayingAll) "Pagando $payAllProgress" else "Paga todo",
+                                    onClick = { onPayAll(visibleTickets) },
+                                    enabled = pendingPayCount > 0 && !isPayingAll,
+                                    modifier = Modifier.weight(1f),
+                                    icon = Icons.Rounded.Paid,
+                                    tone = ActionTone.Primary,
+                                )
+                                CompactStatusBadge(
+                                    label = if (pendingPayCount > 0) "$pendingPayCount pendientes" else "Sin pendientes",
+                                    tone = if (pendingPayCount > 0) visual.colors.results else visual.colors.gain,
+                                )
+                            }
                         }
                     }
                 }
                 Spacer(modifier = Modifier.height(6.dp))
-                if (tickets.isEmpty()) {
-                    CompactEmptyState(mode.emptyLabel)
-                } else {
-                    LazyColumn(
-                        modifier = Modifier.weight(1f, fill = true),
-                        verticalArrangement = Arrangement.spacedBy(layout.listSpacingDp.dp),
-                        contentPadding = androidx.compose.foundation.layout.PaddingValues(bottom = visual.sizes.screenPaddingV),
-                    ) {
-                        items(tickets, key = { it.id }) { ticket ->
-                            TicketLookupRow(
-                                ticket = ticket,
-                                mode = mode,
-                                actorLabelsByKey = actorLabelsByKey,
-                                onOpen = { onOpenTicket(ticket) },
-                                onDuplicate = { onDuplicateTicket(ticket) },
-                            )
-                        }
-                    }
-                }
+                TicketLookupResults(
+                    modifier = Modifier.weight(1f, fill = true),
+                    visibleTickets = visibleTickets,
+                    mode = mode,
+                    paymentDateFilter = if (mode == LookupMode.PAY) paymentDateFilter else ticketDateFilter,
+                    paymentExactDate = if (mode == LookupMode.PAY) paymentExactDate else ticketExactDate,
+                    layout = layout,
+                    actorLabelsByKey = actorLabelsByKey,
+                    onOpenTicket = onOpenTicket,
+                    onDuplicateTicket = onDuplicateTicket,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun TicketLookupResults(
+    modifier: Modifier,
+    visibleTickets: List<TicketRecord>,
+    mode: LookupMode,
+    paymentDateFilter: String,
+    paymentExactDate: String,
+    layout: TicketCollectionLayoutContract,
+    actorLabelsByKey: Map<String, String>,
+    onOpenTicket: (TicketRecord) -> Unit,
+    onDuplicateTicket: (TicketRecord) -> Unit,
+) {
+    if (visibleTickets.isEmpty()) {
+        CompactEmptyState(
+            modifier = modifier,
+            message = if (mode == LookupMode.PAY && paymentDateFilter.startsWith("date:")) {
+                "No hay tickets ganadores para ${ticketLookupPaymentDateLabel(paymentExactDate)}."
+            } else {
+                mode.emptyLabel
+            },
+        )
+    } else {
+        LazyColumn(
+            modifier = modifier,
+            verticalArrangement = Arrangement.spacedBy(layout.listSpacingDp.dp),
+            contentPadding = androidx.compose.foundation.layout.PaddingValues(bottom = 8.dp),
+        ) {
+            items(visibleTickets, key = { it.id }) { ticket ->
+                TicketLookupRow(
+                    ticket = ticket,
+                    mode = mode,
+                    actorLabelsByKey = actorLabelsByKey,
+                    onOpen = { onOpenTicket(ticket) },
+                    onDuplicate = { onDuplicateTicket(ticket) },
+                )
             }
         }
     }
@@ -692,9 +1174,9 @@ private fun TicketLookupRow(
                     maxLines = 1,
                 )
                 Text(
-                    text = "${resolveTicketActorLabel(ticket, actorLabelsByKey, fallback = "sin usuario")} · ${lookupAmountLabel(ticket)}",
+                    text = "${resolveTicketActorLabel(ticket, actorLabelsByKey, fallback = "sin usuario")} · ${lookupAmountLabel(ticket, mode)}",
                     style = MaterialTheme.typography.bodySmall,
-                    color = visual.colors.actionPrimary,
+                    color = if (mode == LookupMode.PAY) visual.colors.warning else visual.colors.actionPrimary,
                     fontWeight = FontWeight.Bold,
                     maxLines = 1,
                 )
@@ -739,7 +1221,11 @@ internal fun lookupStatusLabel(ticket: TicketRecord): String {
     }
 }
 
-internal fun lookupAmountLabel(ticket: TicketRecord): String {
+internal fun lookupAmountLabel(ticket: TicketRecord, mode: LookupMode = LookupMode.SEARCH): String {
+    if (mode == LookupMode.PAY) {
+        return ticket.totalPrize.takeIf { it > 0.0 }?.let { "Premio ganado: ${formatTicketMoney(it)}" }
+            ?: "Premio pendiente de confirmar"
+    }
     val amount = ticket.totalPrize.takeIf { it > 0.0 && !ticket.isPaidStatus() } ?: ticket.total
     return formatTicketMoney(amount)
 }
@@ -749,3 +1235,16 @@ private fun lookupDateTime(epochMs: Long): String {
         timeZone = TimeZone.getTimeZone("America/Santo_Domingo")
     }.format(Date(epochMs))
 }
+
+internal fun resolveTicketLookupRealtimeOwnerKeys(session: ActiveSession?): List<String> {
+    session ?: return emptyList()
+    if (session.role == UserRole.CASHIER || session.role == UserRole.SUPERVISOR) {
+        val adminOwnerKey = listOf(session.adminId, session.adminUser)
+            .mapNotNull { it?.trim()?.takeIf(String::isNotBlank) }
+            .firstOrNull()
+        if (adminOwnerKey != null) return listOf(adminOwnerKey)
+    }
+    return resolveOperationalRealtimeOwnerKeys(session)
+}
+
+private const val LOOKUP_REALTIME_DEBOUNCE_MS = 300L

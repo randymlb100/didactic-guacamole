@@ -3,6 +3,7 @@ package com.lotterynet.pro.ui.master
 import android.content.Intent
 import android.os.Bundle
 import android.widget.Toast
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.foundation.BorderStroke
@@ -23,7 +24,9 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.AdminPanelSettings
+import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.DeleteForever
+import androidx.compose.material.icons.rounded.Extension
 import androidx.compose.material.icons.rounded.Groups
 import androidx.compose.material.icons.rounded.Key
 import androidx.compose.material.icons.rounded.LockOpen
@@ -48,11 +51,11 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.font.FontFamily
@@ -70,17 +73,25 @@ import com.lotterynet.pro.core.master.IssuedCredentialServerVerifier
 import com.lotterynet.pro.core.master.MasterBankManager
 import com.lotterynet.pro.core.master.MasterCloudSyncCoordinator
 import com.lotterynet.pro.core.master.MasterCloudSyncResult
+import com.lotterynet.pro.core.master.MasterRechargeFundUpdateCoordinator
+import com.lotterynet.pro.core.master.MasterRechargeFundUpdateResult
+import com.lotterynet.pro.core.master.MasterRechargeBalanceUpdateCoordinator
 import com.lotterynet.pro.core.master.MasterServerProbeResult
 import com.lotterynet.pro.core.master.MasterServerStatusChecker
 import com.lotterynet.pro.core.master.MasterUserManager
+import com.lotterynet.pro.core.master.SupabaseMasterConfigRemoteStore
 import com.lotterynet.pro.core.diagnostics.NativeCrashReporter
 import com.lotterynet.pro.core.auth.SupabaseSessionTokenProvider
 import com.lotterynet.pro.core.model.AuditEntry
 import com.lotterynet.pro.core.model.SystemAlert
 import com.lotterynet.pro.core.model.UserAccount
 import com.lotterynet.pro.core.model.UserRole
+import com.lotterynet.pro.core.operations.cashierDisplayLabel
+import com.lotterynet.pro.core.realtime.LotterynetRealtimeClient
 import com.lotterynet.pro.core.recharge.recargasrapidas.RecargasRapidasBackendClient
 import com.lotterynet.pro.core.recharge.recargasrapidas.RecargasRapidasCredentialScope
+import com.lotterynet.pro.core.sync.TicketRefreshGovernor
+import com.lotterynet.pro.core.sync.ticketRefreshGovernorKey
 import com.lotterynet.pro.core.storage.LocalAlertsRepository
 import com.lotterynet.pro.core.storage.LocalAuditRepository
 import com.lotterynet.pro.core.storage.LocalCashierSalesLimitRepository
@@ -98,6 +109,7 @@ import com.lotterynet.pro.ui.common.CompactPanel
 import com.lotterynet.pro.ui.common.CompactSegmentedSelector
 import com.lotterynet.pro.ui.common.CompactStatusBadge
 import com.lotterynet.pro.ui.common.CompactTextInput
+import com.lotterynet.pro.ui.common.CurrentScopeDropdownCard
 import com.lotterynet.pro.ui.common.LotteryNetWindowMode
 import com.lotterynet.pro.ui.common.MetricStrip
 import com.lotterynet.pro.ui.common.MetricStripItem
@@ -117,6 +129,7 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 
@@ -177,19 +190,11 @@ internal enum class MasterBankFilter(val label: String) {
 }
 
 internal fun masterDashboardSectionTitles(): List<String> {
-    return listOf("Bancas", "Credenciales", "Servidor/Nube", "Recargas Master", "Auditoría")
-}
-
-private enum class MasterDashboardSection(val id: String, val label: String) {
-    BANKS("banks", "Bancas"),
-    RECHARGES("recharges", "Recargas"),
-    SERVER("server", "Servidor"),
-    CREDENTIALS("credentials", "Claves"),
-    AUDIT("audit", "Auditoría"),
+    return masterPrimaryDestinations().map(MasterDestination::label)
 }
 
 private fun masterDashboardSectionOptions(): List<QuickFilterChip> =
-    MasterDashboardSection.entries.map { QuickFilterChip(it.id, it.label) }
+    masterPrimaryDestinations().map { QuickFilterChip(it.id, it.label) }
 
 internal fun masterBankFilterOptions(): List<QuickFilterChip> {
     return MasterBankFilter.entries.map { filter -> QuickFilterChip(filter.name, filter.label) }
@@ -237,6 +242,9 @@ class MasterDashboardActivity : AppCompatActivity() {
         val deletedUsersRepository = LocalUsersDeletedRepository(this)
         val serverStatusChecker = MasterServerStatusChecker()
         val sessionTokenProvider = SupabaseSessionTokenProvider(LocalSessionRepository(this))
+        val usersRemoteStore = SupabaseUsersRemoteStore(
+            bearerTokenProvider = { sessionTokenProvider.freshAccessToken() },
+        )
         val masterCloudSyncCoordinator = MasterCloudSyncCoordinator(
             usersRepository = usersRepository,
             deletedRepository = deletedUsersRepository,
@@ -246,12 +254,23 @@ class MasterDashboardActivity : AppCompatActivity() {
             masterConfigRepository = masterConfigRepository,
             rechargeLimitRepository = rechargeLimitRepository,
             cashierSalesLimitRepository = cashierSalesLimitRepository,
-            usersRemoteStore = SupabaseUsersRemoteStore(
+            backendStore = SupabaseMasterConfigRemoteStore(
                 bearerTokenProvider = { sessionTokenProvider.freshAccessToken() },
             ),
+            usersRemoteStore = usersRemoteStore,
+        )
+        val rechargeFundCoordinator = MasterRechargeFundUpdateCoordinator(
+            writeLocal = usersRepository::updateAccount,
+            writeRemote = usersRemoteStore::updateMasterRechargeFund,
+        )
+        val rechargeBalanceCoordinator = MasterRechargeBalanceUpdateCoordinator(
+            writeLocal = usersRepository::updateAccount,
+            writeRemote = usersRemoteStore::updateRechargeBalance,
         )
         val recargasRapidasBackend = RecargasRapidasBackendClient()
-        val userPasswordBackendClient = UserPasswordBackendClient()
+        val userPasswordBackendClient = UserPasswordBackendClient(
+            bearerTokenProvider = { sessionTokenProvider.freshAccessToken() },
+        )
         val credentialServerVerifier = IssuedCredentialServerVerifier(usersRepository)
         val manager = MasterBankManager(usersRepository, deletedUsersRepository)
         val userManager = MasterUserManager(usersRepository)
@@ -318,6 +337,7 @@ class MasterDashboardActivity : AppCompatActivity() {
                     },
                     onOpenCreate = { startSafeNativeDestination(this, session.role, NativeDestination.MASTER_CREATE_BANK) },
                     onOpenAudit = { startSafeNativeDestination(this, session.role, NativeDestination.ADMIN_AUDIT) },
+                    onOpenModules = { startSafeNativeDestination(this, session.role, NativeDestination.MASTER_SERVICES_GAMES) },
                     onSaveMasterRecargaLimit = { value ->
                         val current = rechargeLimitRepository.getSettings()
                         rechargeLimitRepository.saveSettings(current.copy(masterPerTx = value))
@@ -508,40 +528,66 @@ class MasterDashboardActivity : AppCompatActivity() {
                             queueMasterAutoSync(if (result.admin.active) "activar banca" else "bloquear banca")
                         }
                     },
-                    onSaveBankRechargeAccess = { admin, enabled, amount ->
-                        val updated = updateMasterRechargeAccess(admin, enabled = enabled, amount = amount)
-                        usersRepository.updateAccount(updated)
-                        val timestampLabel = auditTimestamp()
-                        auditRepository.saveEntries(
-                            listOf(
-                                AuditEntry(
-                                    timestampLabel = timestampLabel,
-                                    user = session.username,
-                                    role = session.role.name.lowercase(Locale.US),
-                                    action = if (enabled) "ACTIVAR_RECARGAS_ADMIN" else "BLOQUEAR_RECARGAS_ADMIN",
-                                    detail = "${updated.banca ?: updated.user}: ${masterRechargeAccessLabel(updated.rechargesEnabled, updated.rechargesAssignedBalance, updated.rechargesBalance)}",
+                    onSaveBankRechargeAccess = { admin, enabled, amount, onComplete ->
+                        Thread {
+                            val result = rechargeFundCoordinator.update(admin, enabled, amount)
+                            val mutation = when (result) {
+                                is MasterRechargeFundUpdateResult.Confirmed -> {
+                                    val updated = result.account
+                                    val timestampLabel = auditTimestamp()
+                                    auditRepository.saveEntries(
+                                        listOf(
+                                            AuditEntry(
+                                                timestampLabel = timestampLabel,
+                                                user = session.username,
+                                                role = session.role.name.lowercase(Locale.US),
+                                                action = if (enabled) "ACTIVAR_RECARGAS_ADMIN" else "ACTUALIZAR_FONDO_RECARGAS_ADMIN",
+                                                detail = "${updated.banca ?: updated.user}: servidor confirmó ${masterMoney(result.receipt.persistedAmount)}",
+                                            )
+                                        ) + auditRepository.getEntries()
+                                    )
+                                    MasterDashboardMutation(
+                                        admins = sortMasterAdminsByCreation(usersRepository.getAdmins()),
+                                        cashiers = usersRepository.getCashiers(),
+                                        status = masterFundSaveStatusLabel(MasterFundSaveState.CONFIRMED, result.receipt.persistedAmount),
+                                    )
+                                }
+                                is MasterRechargeFundUpdateResult.Rejected -> MasterDashboardMutation(
+                                    admins = sortMasterAdminsByCreation(usersRepository.getAdmins()),
+                                    cashiers = usersRepository.getCashiers(),
+                                    status = masterFundSaveStatusLabel(MasterFundSaveState.ROLLED_BACK, amount),
                                 )
-                            ) + auditRepository.getEntries()
-                        )
-                        alertsRepository.saveAlerts(
-                            listOf(
-                                SystemAlert(
-                                    id = "alert-${System.currentTimeMillis()}",
-                                    timestampLabel = timestampLabel,
-                                    type = "master_admin_recargas",
-                                    message = "${updated.banca ?: updated.user}: ${masterRechargeAccessLabel(updated.rechargesEnabled, updated.rechargesAssignedBalance, updated.rechargesBalance)}.",
-                                    level = if (enabled) "info" else "warning",
-                                    read = false,
+                                is MasterRechargeFundUpdateResult.RolledBack -> MasterDashboardMutation(
+                                    admins = sortMasterAdminsByCreation(usersRepository.getAdmins()),
+                                    cashiers = usersRepository.getCashiers(),
+                                    status = "${masterFundSaveStatusLabel(MasterFundSaveState.ROLLED_BACK, amount)}: ${result.error.message ?: "servidor no disponible"}",
                                 )
-                            ) + alertsRepository.getAlerts()
-                        )
-                        MasterDashboardMutation(
-                            admins = sortMasterAdminsByCreation(usersRepository.getAdmins()),
-                            cashiers = usersRepository.getCashiers(),
-                            status = "${updated.banca ?: updated.user}: ${masterRechargeAccessLabel(updated.rechargesEnabled, updated.rechargesAssignedBalance, updated.rechargesBalance)}.",
-                        ).also {
-                            queueMasterAutoSync("guardar acceso recargas admin")
-                        }
+                            }
+                            runOnUiThread { onComplete(mutation) }
+                        }.start()
+                    },
+                    onAddBankRechargeBalance = { admin, amount, onComplete ->
+                        Thread {
+                            val result = rechargeBalanceCoordinator.add(admin, amount)
+                            val mutation = when (result) {
+                                is MasterRechargeFundUpdateResult.Confirmed -> MasterDashboardMutation(
+                                    admins = sortMasterAdminsByCreation(usersRepository.getAdmins()),
+                                    cashiers = usersRepository.getCashiers(),
+                                    status = "Saldo agregado: ${masterMoney(result.receipt.persistedAmount)} disponibles.",
+                                )
+                                is MasterRechargeFundUpdateResult.Rejected -> MasterDashboardMutation(
+                                    admins = sortMasterAdminsByCreation(usersRepository.getAdmins()),
+                                    cashiers = usersRepository.getCashiers(),
+                                    status = "Saldo no confirmado; se restauró el valor anterior.",
+                                )
+                                is MasterRechargeFundUpdateResult.RolledBack -> MasterDashboardMutation(
+                                    admins = sortMasterAdminsByCreation(usersRepository.getAdmins()),
+                                    cashiers = usersRepository.getCashiers(),
+                                    status = "No se agregó saldo: ${result.error.message ?: "servidor no disponible"}",
+                                )
+                            }
+                            runOnUiThread { onComplete(mutation) }
+                        }.start()
                     },
                     onSaveBankRecargasRapidasCredentials = { admin, username, password ->
                         val backendStatus = runCatching {
@@ -691,6 +737,7 @@ class MasterDashboardActivity : AppCompatActivity() {
                     onChangePassword = { idOrUser, password ->
                         val target = usersRepository.findByIdOrUser(idOrUser)
                             ?: throw IllegalArgumentException("No se encontró el usuario.")
+                        val previousUsersPayload = usersRepository.exportPayloadJson()
                         runBlocking {
                             withContext(Dispatchers.IO) {
                                 userPasswordBackendClient.changePassword(
@@ -701,7 +748,7 @@ class MasterDashboardActivity : AppCompatActivity() {
                             }
                         }
                         val result = userManager.changePassword(idOrUser, password)
-                        ensureCredentialJwtOrRollback(usersRepository.exportPayloadJson(), listOf(result.credential))
+                        ensureCredentialJwtOrRollback(previousUsersPayload, listOf(result.credential))
                         val timestampLabel = auditTimestamp()
                         auditRepository.saveEntries(
                             listOf(
@@ -738,6 +785,18 @@ class MasterDashboardActivity : AppCompatActivity() {
                     },
                     onChangeCashierGroupPassword = { admin, password ->
                         val previousUsersPayload = usersRepository.exportPayloadJson()
+                        val backendResult = runBlocking {
+                            withContext(Dispatchers.IO) {
+                                userPasswordBackendClient.changeCashierGroupPassword(
+                                    session = session,
+                                    admin = admin,
+                                    newPassword = password,
+                                )
+                            }
+                        }
+                        if (!backendResult.payloadConfirmed) {
+                            throw IllegalStateException("El servidor no confirmó el cambio grupal.")
+                        }
                         val result = userManager.changeCashierGroupPassword(admin.id, password)
                         syncCredentialChangeOrRollback(previousUsersPayload, "cambiar clave de cajeros")
                         ensureCredentialJwtOrRollback(previousUsersPayload, result.credentials)
@@ -859,6 +918,7 @@ private fun MasterDashboardRoute(
     onBack: () -> Unit,
     onOpenCreate: () -> Unit,
     onOpenAudit: () -> Unit,
+    onOpenModules: () -> Unit,
     onSaveMasterRecargaLimit: (Double) -> Double,
     onProbeServer: ((MasterServerProbeResult) -> Unit) -> Unit,
     onCheckRecargasRapidasWallet: ((String) -> Unit) -> Unit,
@@ -866,7 +926,8 @@ private fun MasterDashboardRoute(
     onSyncCloud: ((MasterCloudSyncResult, MasterDashboardMutation) -> Unit) -> Unit,
     onRefreshRemote: ((MasterCloudSyncResult, MasterDashboardMutation) -> Unit) -> Unit,
     onToggleBank: (UserAccount) -> MasterDashboardMutation,
-    onSaveBankRechargeAccess: (UserAccount, Boolean, Double) -> MasterDashboardMutation,
+    onSaveBankRechargeAccess: (UserAccount, Boolean, Double, (MasterDashboardMutation) -> Unit) -> Unit,
+    onAddBankRechargeBalance: (UserAccount, Double, (MasterDashboardMutation) -> Unit) -> Unit,
     onSaveBankRecargasRapidasCredentials: (UserAccount, String, String) -> MasterDashboardMutation,
     onDeleteBank: (UserAccount) -> MasterDashboardMutation,
     onRegenerateCredentials: (UserAccount) -> MasterDashboardMutation,
@@ -886,10 +947,10 @@ private fun MasterDashboardRoute(
     var pendingPasswordChange by remember { mutableStateOf<UserAccount?>(null) }
     var pendingCashierGroupPasswordChange by remember { mutableStateOf<UserAccount?>(null) }
     var pendingCredentialReset by remember { mutableStateOf<UserAccount?>(null) }
-    var expandedBankIds by remember { mutableStateOf<Set<String>>(emptySet()) }
+    var masterActionBusy by remember { mutableStateOf<String?>(null) }
     var selectedAdminId by rememberSaveable { mutableStateOf("") }
     var selectedBankFilterName by rememberSaveable { mutableStateOf(MasterBankFilter.ALL.name) }
-    var selectedMasterSectionId by rememberSaveable { mutableStateOf(MasterDashboardSection.BANKS.id) }
+    var selectedMasterSectionId by rememberSaveable { mutableStateOf(MasterDestination.OVERVIEW.id) }
     var masterRecargaLimitDraft by rememberSaveable { mutableStateOf(formatPlainAmount(initialMasterRecargaLimit)) }
     var serverProbeStatus by remember { mutableStateOf("Sin validar servidor todavía.") }
     var serverProbeDetail by remember { mutableStateOf("El chequeo usa el servidor y la configuración remota.") }
@@ -901,8 +962,14 @@ private fun MasterDashboardRoute(
     var cloudSyncBusy by remember { mutableStateOf(false) }
     var remoteRefreshBusy by remember { mutableStateOf(false) }
     var autoRemoteHydrated by rememberSaveable { mutableStateOf(false) }
+    var savingFundAdminIds by remember { mutableStateOf<Set<String>>(emptySet()) }
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
+    val realtimeClient = remember { LotterynetRealtimeClient() }
+    val realtimeTokenProvider = remember(context) {
+        SupabaseSessionTokenProvider(LocalSessionRepository(context))
+    }
+    val remoteRefreshGovernor = remember { TicketRefreshGovernor(requestCooldownMs = MASTER_DASHBOARD_REMOTE_REFRESH_DEDUP_MS) }
 
     val selectedBankFilter = remember(selectedBankFilterName) {
         MasterBankFilter.entries.firstOrNull { it.name == selectedBankFilterName } ?: MasterBankFilter.ALL
@@ -915,6 +982,25 @@ private fun MasterDashboardRoute(
     }
     val activeBanks = remember(adminState) { adminState.count { it.active } }
     val blockedBanks = remember(adminState) { adminState.count { !it.active } }
+    val selectedDestination = remember(selectedMasterSectionId) {
+        masterPrimaryDestinations().firstOrNull { it.id == selectedMasterSectionId }
+            ?: MasterDestination.OVERVIEW
+    }
+    val dashboardBusy = cloudSyncBusy || remoteRefreshBusy || serverProbeBusy || rrWalletBusy
+    val statusBadge = resolveMasterStatusBadge(
+        busy = dashboardBusy,
+        statusMessage = status,
+    )
+    val returnToOverviewOrExit = {
+        if (selectedMasterSectionId == MasterDestination.OVERVIEW.id) {
+            onBack()
+        } else {
+            selectedMasterSectionId = MasterDestination.OVERVIEW.id
+        }
+    }
+    BackHandler(enabled = selectedMasterSectionId != MasterDestination.OVERVIEW.id) {
+        selectedMasterSectionId = MasterDestination.OVERVIEW.id
+    }
 
     fun applyMutation(mutation: MasterDashboardMutation) {
         adminState = mutation.admins
@@ -929,8 +1015,10 @@ private fun MasterDashboardRoute(
         if (nextId != selectedAdminId) selectedAdminId = nextId
     }
 
-    LaunchedEffect(adminState.isEmpty(), autoRemoteHydrated) {
-        if (adminState.isEmpty() && !autoRemoteHydrated && !remoteRefreshBusy) {
+    val actionScope = rememberCoroutineScope()
+
+    LaunchedEffect(autoRemoteHydrated) {
+        if (!autoRemoteHydrated && !remoteRefreshBusy) {
             autoRemoteHydrated = true
             remoteRefreshBusy = true
             onRefreshRemote { result, mutation ->
@@ -945,6 +1033,13 @@ private fun MasterDashboardRoute(
     DisposableEffect(lifecycleOwner, autoRemoteHydrated) {
         val observer = LifecycleEventObserver { _, event ->
             if (event == Lifecycle.Event.ON_RESUME && autoRemoteHydrated && !remoteRefreshBusy && !cloudSyncBusy) {
+                if (shouldSkipMasterDashboardRemoteRefresh(
+                        governor = remoteRefreshGovernor,
+                        requestType = "master-dashboard:resume",
+                        authScope = "master",
+                        force = false,
+                    )
+                ) return@LifecycleEventObserver
                 remoteRefreshBusy = true
                 onRefreshRemote { result, mutation ->
                     remoteRefreshBusy = false
@@ -957,6 +1052,33 @@ private fun MasterDashboardRoute(
         lifecycleOwner.lifecycle.addObserver(observer)
         onDispose {
             lifecycleOwner.lifecycle.removeObserver(observer)
+        }
+    }
+
+    DisposableEffect(Unit) {
+        val subscriptions = if (realtimeClient.isConfigured()) {
+            realtimeClient.subscribeUsersStateSignals(
+                bearerTokenProvider = { realtimeTokenProvider.freshAccessToken() },
+            ) {
+                if (shouldSkipMasterDashboardRemoteRefresh(
+                        governor = remoteRefreshGovernor,
+                        requestType = "master-dashboard:realtime",
+                        authScope = "master",
+                        force = false,
+                    )
+                ) return@subscribeUsersStateSignals
+                onRefreshRemote { result, mutation ->
+                    serverProbeStatus = result.message
+                    serverProbeDetail = result.detail
+                    applyMutation(mutation)
+                }
+            }
+        } else {
+            emptyList()
+        }
+        onDispose {
+            subscriptions.forEach { it.close() }
+            realtimeClient.shutdown()
         }
     }
 
@@ -1010,6 +1132,7 @@ private fun MasterDashboardRoute(
     }
 
     pendingCredentialReset?.let { admin ->
+        val actionKey = "regenerate:${admin.id}"
         AlertDialog(
             onDismissRequest = { pendingCredentialReset = null },
             title = { Text("Generar claves nuevas") },
@@ -1018,12 +1141,26 @@ private fun MasterDashboardRoute(
             },
             confirmButton = {
                 CompactActionButton(
-                    label = "Generar",
+                    label = if (masterActionBusy == actionKey) "Generando..." else "Generar",
                     onClick = {
-                        applyMutation(onRegenerateCredentials(admin))
-                        pendingCredentialReset = null
+                        if (masterActionBusy == null) {
+                            masterActionBusy = actionKey
+                            actionScope.launch {
+                                try {
+                                    val mutation = withContext(Dispatchers.IO) {
+                                        onRegenerateCredentials(admin)
+                                    }
+                                    applyMutation(mutation)
+                                    pendingCredentialReset = null
+                                } catch (error: Throwable) {
+                                    status = error.message ?: "No se pudieron generar las claves."
+                                } finally {
+                                    masterActionBusy = null
+                                }
+                            }
+                        }
                     },
-                    active = true,
+                    active = masterActionBusy == null,
                     icon = Icons.Rounded.Key,
                 )
             },
@@ -1036,6 +1173,7 @@ private fun MasterDashboardRoute(
     pendingAddCashiers?.let { admin ->
         var countText by rememberSaveable(admin.id) { mutableStateOf("1") }
         var prefixText by rememberSaveable(admin.id) { mutableStateOf(admin.cashierPrefix.orEmpty()) }
+        val actionKey = "add:${admin.id}"
         AlertDialog(
             onDismissRequest = { pendingAddCashiers = null },
             title = { Text("Agregar cajeros") },
@@ -1058,15 +1196,26 @@ private fun MasterDashboardRoute(
             },
             confirmButton = {
                 CompactActionButton(
-                    label = "Agregar",
+                    label = if (masterActionBusy == actionKey) "Agregando..." else "Agregar",
                     onClick = {
-                        runCatching {
-                            onAddCashiers(admin, countText.toIntOrNull() ?: 1, prefixText)
-                        }.onSuccess(::applyMutation)
-                            .onFailure { status = it.message ?: "No se pudieron agregar cajeros." }
-                        pendingAddCashiers = null
+                        if (masterActionBusy == null) {
+                            masterActionBusy = actionKey
+                            actionScope.launch {
+                                try {
+                                    val mutation = withContext(Dispatchers.IO) {
+                                        onAddCashiers(admin, countText.toIntOrNull() ?: 1, prefixText)
+                                    }
+                                    applyMutation(mutation)
+                                    pendingAddCashiers = null
+                                } catch (error: Throwable) {
+                                    status = error.message ?: "No se pudieron agregar cajeros."
+                                } finally {
+                                    masterActionBusy = null
+                                }
+                            }
+                        }
                     },
-                    active = true,
+                    active = masterActionBusy == null,
                     icon = Icons.Rounded.Groups,
                 )
             },
@@ -1078,6 +1227,7 @@ private fun MasterDashboardRoute(
 
     pendingPasswordChange?.let { account ->
         var passwordText by rememberSaveable(account.id) { mutableStateOf("") }
+        val actionKey = "password:${account.id}"
         AlertDialog(
             onDismissRequest = { pendingPasswordChange = null },
             title = { Text("Cambiar clave") },
@@ -1095,15 +1245,26 @@ private fun MasterDashboardRoute(
             },
             confirmButton = {
                 CompactActionButton(
-                    label = "Guardar",
+                    label = if (masterActionBusy == actionKey) "Guardando..." else "Guardar",
                     onClick = {
-                        runCatching {
-                            onChangePassword(account.user, passwordText)
-                        }.onSuccess(::applyMutation)
-                            .onFailure { status = it.message ?: "No se pudo cambiar la clave." }
-                        pendingPasswordChange = null
+                        if (masterActionBusy == null) {
+                            masterActionBusy = actionKey
+                            actionScope.launch {
+                                try {
+                                    val mutation = withContext(Dispatchers.IO) {
+                                        onChangePassword(account.user, passwordText)
+                                    }
+                                    applyMutation(mutation)
+                                    pendingPasswordChange = null
+                                } catch (error: Throwable) {
+                                    status = error.message ?: "No se pudo cambiar la clave."
+                                } finally {
+                                    masterActionBusy = null
+                                }
+                            }
+                        }
                     },
-                    active = true,
+                    active = masterActionBusy == null,
                     icon = Icons.Rounded.Key,
                 )
             },
@@ -1115,6 +1276,7 @@ private fun MasterDashboardRoute(
 
     pendingCashierGroupPasswordChange?.let { admin ->
         var passwordText by rememberSaveable(admin.id) { mutableStateOf("") }
+        val actionKey = "group-password:${admin.id}"
         val cashierCount = cashierState.count {
             it.adminId == admin.id ||
                 it.adminUser.equals(admin.user, true) ||
@@ -1137,15 +1299,26 @@ private fun MasterDashboardRoute(
             },
             confirmButton = {
                 CompactActionButton(
-                    label = "Guardar",
+                    label = if (masterActionBusy == actionKey) "Guardando..." else "Guardar",
                     onClick = {
-                        runCatching {
-                            onChangeCashierGroupPassword(admin, passwordText)
-                        }.onSuccess(::applyMutation)
-                            .onFailure { status = it.message ?: "No se pudo cambiar la clave de los cajeros." }
-                        pendingCashierGroupPasswordChange = null
+                        if (masterActionBusy == null) {
+                            masterActionBusy = actionKey
+                            actionScope.launch {
+                                try {
+                                    val mutation = withContext(Dispatchers.IO) {
+                                        onChangeCashierGroupPassword(admin, passwordText)
+                                    }
+                                    applyMutation(mutation)
+                                    pendingCashierGroupPasswordChange = null
+                                } catch (error: Throwable) {
+                                    status = error.message ?: "No se pudo cambiar la clave de los cajeros."
+                                } finally {
+                                    masterActionBusy = null
+                                }
+                            }
+                        }
                     },
-                    active = true,
+                    active = masterActionBusy == null,
                     icon = Icons.Rounded.Key,
                 )
             },
@@ -1177,31 +1350,121 @@ private fun MasterDashboardRoute(
         ) {
             item {
                 MasterCompactHeader(
-                    title = "Panel Master",
-                    subtitle = "Bancas · Administración compacta",
-                    onBack = onBack,
+                    title = "Centro Master",
+                    subtitle = "${selectedDestination.label} · Administración",
+                    onBack = returnToOverviewOrExit,
                 )
             }
             item {
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
                     CompactStatusBadge(
-                        label = if (cloudSyncBusy || remoteRefreshBusy || serverProbeBusy) "Sincronizando" else "Sincronizado",
-                        tone = if (blockedBanks > 0) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
+                        label = statusBadge.label,
+                        tone = when (statusBadge.kind) {
+                            MasterStatusKind.ERROR -> MaterialTheme.colorScheme.error
+                            MasterStatusKind.WARNING -> MaterialTheme.colorScheme.tertiary
+                            MasterStatusKind.INFO -> MaterialTheme.colorScheme.secondary
+                            MasterStatusKind.SUCCESS -> MaterialTheme.colorScheme.primary
+                            MasterStatusKind.NEUTRAL -> MaterialTheme.colorScheme.outline
+                        },
                     )
                 }
             }
             item {
-                CompactSegmentedSelector(
-                    options = masterDashboardSectionOptions(),
+                CurrentScopeDropdownCard(
+                    title = "Área de administración",
+                    value = selectedDestination.label,
                     selectedId = selectedMasterSectionId,
+                    options = masterDashboardSectionOptions().map { it.id to it.label },
                     onSelected = { selectedMasterSectionId = it },
-                    columns = 3,
-                    modifier = Modifier.fillMaxWidth(),
+                    subtitle = "Bancas, módulos, sistema y seguridad en un solo selector.",
+                    actionLabel = "Cambiar",
+                    tone = ActionTone.IntenseBlue,
                 )
             }
-            if (selectedMasterSectionId == MasterDashboardSection.BANKS.id) item {
+            if (selectedMasterSectionId == MasterDestination.OVERVIEW.id) item {
                 CompactPanel {
-                    SectionHeader(title = "Bancas", meta = "${cashiers.size} cajeros")
+                    SectionHeader(title = "Resumen administrativo", meta = "Vista general del negocio")
+                    val summaryMetrics = listOf(
+                        MetricStripItem("Bancas", admins.size.toString(), visual.colors.admin),
+                        MetricStripItem("Activas", activeBanks.toString(), visual.colors.gain),
+                        MetricStripItem("Cajeros", cashiers.size.toString(), visual.colors.finance),
+                        MetricStripItem("Bloqueadas", blockedBanks.toString(), if (blockedBanks > 0) MaterialTheme.colorScheme.error else visual.colors.neutral),
+                    )
+                    if (layout.compactSummary) {
+                        MetricStrip(summaryMetrics.take(2))
+                        MetricStrip(summaryMetrics.drop(2))
+                    } else {
+                        MetricStrip(summaryMetrics)
+                    }
+                    if (admins.isEmpty()) {
+                        Surface(
+                            modifier = Modifier
+                                .fillMaxWidth(),
+                            shape = RoundedCornerShape(12.dp),
+                            color = MaterialTheme.colorScheme.surfaceContainerLow,
+                        ) {
+                            Column(
+                                modifier = Modifier.padding(14.dp),
+                                verticalArrangement = Arrangement.spacedBy(8.dp),
+                            ) {
+                                Text(
+                                    "Todavía no hay bancas",
+                                    style = MaterialTheme.typography.titleSmall,
+                                    fontWeight = FontWeight.Bold,
+                                )
+                                Text(
+                                    "Crea la primera banca para comenzar a administrar admins, cajeros y módulos.",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = visual.colors.muted,
+                                )
+                                CompactActionButton(
+                                    label = "Crear primera banca",
+                                    onClick = onOpenCreate,
+                                    icon = Icons.Rounded.Add,
+                                    modifier = Modifier.fillMaxWidth(),
+                                    tone = ActionTone.Primary,
+                                )
+                            }
+                        }
+                    }
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        CompactStatusBadge(
+                            label = if (activeBanks > 0) "Bancas activas" else "Sin bancas activas",
+                            tone = if (activeBanks > 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
+                        )
+                        CompactStatusBadge(
+                            label = if (blockedBanks > 0) "Revisar bloqueadas" else "Sin alertas",
+                            tone = if (blockedBanks > 0) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
+                        )
+                    }
+                    SectionHeader(title = "Accesos rápidos", meta = "Administración por responsabilidad")
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+                        CompactActionButton("Bancas", onClick = { selectedMasterSectionId = MasterDestination.BANKS.id }, modifier = Modifier.weight(1f), icon = Icons.Rounded.Storefront, tone = ActionTone.Success)
+                        CompactActionButton("Módulos", onClick = { selectedMasterSectionId = MasterDestination.MODULES.id }, modifier = Modifier.weight(1f), icon = Icons.Rounded.Extension, tone = ActionTone.Secondary)
+                    }
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+                        CompactActionButton("Sistema", onClick = { selectedMasterSectionId = MasterDestination.SYSTEM.id }, modifier = Modifier.weight(1f), icon = Icons.Rounded.Wallet, tone = ActionTone.Warning)
+                        CompactActionButton("Seguridad", onClick = { selectedMasterSectionId = MasterDestination.SECURITY.id }, modifier = Modifier.weight(1f), icon = Icons.Rounded.Key, tone = ActionTone.Secondary)
+                    }
+                    Text(
+                        if (cloudSyncBusy || remoteRefreshBusy || serverProbeBusy) "Hay una operación técnica en curso." else "Los datos visibles corresponden al último estado confirmado local/remoto.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = visual.colors.muted,
+                    )
+                }
+            }
+            if (selectedMasterSectionId == MasterDestination.BANKS.id) item {
+                CompactPanel {
+                    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+                        SectionHeader(title = "Bancas", meta = "${cashiers.size} cajeros", modifier = Modifier.weight(1f))
+                        CompactStatusBadge(
+                            label = if (blockedBanks > 0) "Atención" else "Operativo",
+                            tone = if (blockedBanks > 0) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
+                        )
+                    }
                     val masterMetrics = listOf(
                         MetricStripItem("Bancas", admins.size.toString(), visual.colors.admin),
                         MetricStripItem("Activas", activeBanks.toString(), visual.colors.gain),
@@ -1246,9 +1509,73 @@ private fun MasterDashboardRoute(
                     }
                 }
             }
-            if (selectedMasterSectionId == MasterDashboardSection.RECHARGES.id) item {
+            if (selectedMasterSectionId == MasterDestination.MODULES.id) item {
+                CompactPanel {
+                    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+                        SectionHeader(
+                            title = "Módulos",
+                            meta = "Acceso por admin y cajero",
+                            modifier = Modifier.weight(1f),
+                        )
+                        CompactStatusBadge(
+                            label = "Control Master",
+                            tone = MaterialTheme.colorScheme.primary,
+                        )
+                    }
+                    Text(
+                        "Activa cada módulo y elige primero el admin; después aparecerán únicamente sus cajeros.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = visual.colors.muted,
+                    )
+                    masterModuleEntries().forEach { module ->
+                        Surface(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable(onClick = onOpenModules),
+                            shape = RoundedCornerShape(12.dp),
+                            color = MaterialTheme.colorScheme.surfaceContainerLow,
+                        ) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 10.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Rounded.Extension,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.primary,
+                                )
+                                Text(
+                                    text = module.label,
+                                    modifier = Modifier.padding(start = 10.dp).weight(1f),
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    fontWeight = FontWeight.SemiBold,
+                                )
+                                Text(
+                                    text = "Configurar",
+                                    style = MaterialTheme.typography.labelMedium,
+                                    color = MaterialTheme.colorScheme.primary,
+                                )
+                            }
+                        }
+                    }
+                    CompactActionButton(
+                        label = "Administrar accesos",
+                        onClick = onOpenModules,
+                        icon = Icons.Rounded.Extension,
+                        modifier = Modifier.fillMaxWidth(),
+                        active = true,
+                    )
+                }
+            }
+            if (selectedMasterSectionId == MasterDestination.SYSTEM.id) item {
                 CompactPanel(alt = true) {
-                    SectionHeader(title = "Recargas master", meta = masterRechargeProviderLabel())
+                    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+                        SectionHeader(title = "Recargas master", meta = masterRechargeProviderLabel(), modifier = Modifier.weight(1f))
+                        CompactStatusBadge(
+                            label = if ((masterRecargaLimitDraft.toDoubleOrNull() ?: 0.0) > 0.0) "Configurado" else "Sin tope",
+                            tone = if ((masterRecargaLimitDraft.toDoubleOrNull() ?: 0.0) > 0.0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
+                        )
+                    }
                     CompactTextInput(
                         label = "Tope master",
                         value = masterRecargaLimitDraft,
@@ -1305,9 +1632,15 @@ private fun MasterDashboardRoute(
                     Text(masterRecargasRapidasCredentialHelpText(), style = MaterialTheme.typography.bodySmall, color = visual.colors.muted)
                 }
             }
-            if (selectedMasterSectionId == MasterDashboardSection.SERVER.id || selectedMasterSectionId == MasterDashboardSection.AUDIT.id) item {
+            if (selectedMasterSectionId == MasterDestination.SYSTEM.id) item {
                 CompactPanel {
-                    SectionHeader(title = "Servidor y nube", meta = if (cloudSyncBusy || remoteRefreshBusy || serverProbeBusy) "En curso" else "Listo")
+                    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+                        SectionHeader(title = "Servidor y nube", meta = if (cloudSyncBusy || remoteRefreshBusy || serverProbeBusy) "En curso" else "Listo", modifier = Modifier.weight(1f))
+                        CompactStatusBadge(
+                            label = if (cloudSyncBusy || remoteRefreshBusy || serverProbeBusy) "En curso" else "Listo",
+                            tone = if (cloudSyncBusy || remoteRefreshBusy || serverProbeBusy) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.primary,
+                        )
+                    }
                     if (layout.splitServerActions) {
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
                             CompactActionButton(
@@ -1408,18 +1741,29 @@ private fun MasterDashboardRoute(
                         color = if (serverProbeStatus == "Servidor disponible.") MaterialTheme.colorScheme.primary else visual.colors.muted,
                     )
                     Text(serverProbeDetail, style = MaterialTheme.typography.bodySmall, color = visual.colors.muted)
-                    if (selectedMasterSectionId == MasterDashboardSection.AUDIT.id) {
-                        CompactActionButton(
-                            "Abrir auditoría",
-                            onClick = onOpenAudit,
-                            icon = Icons.Rounded.QueryStats,
-                            modifier = Modifier.fillMaxWidth(),
-                            tone = ActionTone.Warning,
-                        )
-                    }
                 }
             }
-            if (selectedMasterSectionId == MasterDashboardSection.CREDENTIALS.id || issuedCredentials.isNotEmpty()) {
+            if (selectedMasterSectionId == MasterDestination.SECURITY.id) item {
+                CompactPanel {
+                    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+                        SectionHeader(title = "Auditoría", meta = "Cambios administrativos", modifier = Modifier.weight(1f))
+                        CompactStatusBadge(label = "Registro", tone = MaterialTheme.colorScheme.tertiary)
+                    }
+                    Text(
+                        "Consulta quién cambió bancas, credenciales, fondos y configuración, con fecha y resultado de la operación.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = visual.colors.muted,
+                    )
+                    CompactActionButton(
+                        "Abrir historial de auditoría",
+                        onClick = onOpenAudit,
+                        icon = Icons.Rounded.QueryStats,
+                        modifier = Modifier.fillMaxWidth(),
+                        tone = ActionTone.Warning,
+                    )
+                }
+            }
+            if (selectedMasterSectionId == MasterDestination.SECURITY.id || issuedCredentials.isNotEmpty()) {
                 item {
                     CompactPanel(alt = true) {
                         val credentialsTitle = issuedCredentialsMode?.title ?: "Credenciales emitidas"
@@ -1460,7 +1804,7 @@ private fun MasterDashboardRoute(
                     }
                 }
             }
-            if (selectedMasterSectionId == MasterDashboardSection.BANKS.id && filteredAdmins.isEmpty()) {
+            if (selectedMasterSectionId == MasterDestination.BANKS.id && filteredAdmins.isEmpty()) {
                 item {
                     CompactPanel {
                         Box(
@@ -1473,7 +1817,7 @@ private fun MasterDashboardRoute(
                         }
                     }
                 }
-            } else if (selectedMasterSectionId == MasterDashboardSection.BANKS.id) {
+            } else if (selectedMasterSectionId == MasterDestination.BANKS.id) {
                 selectedAdmin?.let { selected ->
                     item(key = "selected-admin-${selected.id}") {
                         val admin = selected
@@ -1487,7 +1831,24 @@ private fun MasterDashboardRoute(
                         cashierCount = bankCashiers.size,
                         onToggle = { pendingToggle = admin },
                         onSaveRechargeAccess = { enabled, amount ->
-                            applyMutation(onSaveBankRechargeAccess(admin, enabled, amount))
+                            if (admin.id !in savingFundAdminIds) {
+                                savingFundAdminIds = savingFundAdminIds + admin.id
+                                status = masterFundSaveStatusLabel(MasterFundSaveState.SAVING, amount)
+                                onSaveBankRechargeAccess(admin, enabled, amount) { mutation ->
+                                    savingFundAdminIds = savingFundAdminIds - admin.id
+                                    applyMutation(mutation)
+                                }
+                            }
+                        },
+                        onAddRechargeBalance = { amount ->
+                            if (admin.id !in savingFundAdminIds) {
+                                savingFundAdminIds = savingFundAdminIds + admin.id
+                                status = "Agregando saldo…"
+                                onAddBankRechargeBalance(admin, amount) { mutation ->
+                                    savingFundAdminIds = savingFundAdminIds - admin.id
+                                    applyMutation(mutation)
+                                }
+                            }
                         },
                         onSaveRecargasRapidasCredentials = { username, password ->
                             applyMutation(onSaveBankRecargasRapidasCredentials(admin, username, password))
@@ -1497,18 +1858,11 @@ private fun MasterDashboardRoute(
                         onAddCashiers = { pendingAddCashiers = admin },
                         onChangePassword = { pendingPasswordChange = admin },
                         cashiers = bankCashiers,
-                        cashiersExpanded = expandedBankIds.contains(admin.id),
-                        onToggleCashiers = {
-                            expandedBankIds = if (expandedBankIds.contains(admin.id)) {
-                                expandedBankIds - admin.id
-                            } else {
-                                expandedBankIds + admin.id
-                            }
-                        },
                         onChangeCashierPassword = { cashier -> pendingPasswordChange = cashier },
                         onChangeAllCashiersPassword = { pendingCashierGroupPasswordChange = admin },
                         compact = layout.compactBanks,
                         shortActionLabels = layout.shortBankActionLabels,
+                        fundSaveBusy = admin.id in savingFundAdminIds,
                     )
                     }
                 }
@@ -1527,8 +1881,8 @@ private fun MasterCompactHeader(
     Surface(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(0.dp),
-        color = Color(0xFF062A57),
-        contentColor = Color.White,
+        color = MaterialTheme.colorScheme.primary,
+        contentColor = MaterialTheme.colorScheme.onPrimary,
         tonalElevation = 0.dp,
         shadowElevation = 0.dp,
     ) {
@@ -1537,12 +1891,17 @@ private fun MasterCompactHeader(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            Text("☰", modifier = Modifier.clickable(onClick = onBack), style = MaterialTheme.typography.headlineSmall, color = Color.White)
-            Column(modifier = Modifier.weight(1f)) {
-                Text(title, style = MaterialTheme.typography.headlineSmall, color = Color.White, fontWeight = FontWeight.Bold)
-                Text(subtitle, style = MaterialTheme.typography.bodyMedium, color = Color.White.copy(alpha = 0.82f), fontWeight = FontWeight.Bold)
+            IconButton(onClick = onBack) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Rounded.ArrowBack,
+                    contentDescription = "Volver al inicio Master",
+                    tint = MaterialTheme.colorScheme.onPrimary,
+                )
             }
-            Text("⋮", style = MaterialTheme.typography.headlineSmall, color = Color.White)
+            Column(modifier = Modifier.weight(1f)) {
+                Text(title, style = MaterialTheme.typography.headlineSmall, color = MaterialTheme.colorScheme.onPrimary, fontWeight = FontWeight.Bold)
+                Text(subtitle, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.82f), fontWeight = FontWeight.Bold)
+            }
         }
     }
 }
@@ -1644,22 +2003,25 @@ private fun MasterBankRow(
     cashierCount: Int,
     onToggle: () -> Unit,
     onSaveRechargeAccess: (Boolean, Double) -> Unit,
+    onAddRechargeBalance: (Double) -> Unit,
     onSaveRecargasRapidasCredentials: (String, String) -> Unit,
     onDelete: () -> Unit,
     onRegenerate: () -> Unit,
     onAddCashiers: () -> Unit,
     onChangePassword: () -> Unit,
     cashiers: List<UserAccount>,
-    cashiersExpanded: Boolean,
-    onToggleCashiers: () -> Unit,
     onChangeCashierPassword: (UserAccount) -> Unit,
     onChangeAllCashiersPassword: () -> Unit,
     compact: Boolean,
     shortActionLabels: Boolean,
+    fundSaveBusy: Boolean,
 ) {
     val visual = rememberLotteryNetVisualSpec()
-    var rechargeAmountDraft by rememberSaveable(admin.id, admin.rechargesBalance) {
-        mutableStateOf(formatPlainAmount(admin.rechargesBalance))
+    var rechargeAmountDraft by rememberSaveable(admin.id, admin.rechargesAssignedBalance) {
+        mutableStateOf(formatPlainAmount(admin.rechargesAssignedBalance))
+    }
+    var rechargeBalanceTopUpDraft by rememberSaveable(admin.id, admin.rechargesBalance) {
+        mutableStateOf("0")
     }
     var rrUsernameDraft by rememberSaveable(admin.id, admin.recargasRapidasUsername) {
         mutableStateOf(admin.recargasRapidasUsername.orEmpty())
@@ -1667,6 +2029,12 @@ private fun MasterBankRow(
     var rrPasswordDraft by rememberSaveable(admin.id, admin.recargasRapidasUsername) {
         mutableStateOf("")
     }
+    var selectedDetailAreaName by rememberSaveable(admin.id) {
+        mutableStateOf(MasterBankDetailArea.OVERVIEW.name)
+    }
+    val selectedDetailArea = MasterBankDetailArea.entries.firstOrNull {
+        it.name == selectedDetailAreaName
+    } ?: MasterBankDetailArea.OVERVIEW
     CompactPanel {
         Column(
             verticalArrangement = Arrangement.spacedBy(8.dp),
@@ -1699,30 +2067,44 @@ private fun MasterBankRow(
                 maxLines = if (compact) 1 else 2,
                 overflow = TextOverflow.Ellipsis,
             )
-            if (compact) {
+            CompactSegmentedSelector(
+                options = MasterBankDetailArea.entries.map { area ->
+                    QuickFilterChip(id = area.name, label = area.label)
+                },
+                selectedId = selectedDetailArea.name,
+                onSelected = { selectedDetailAreaName = it },
+                columns = 2,
+                modifier = Modifier.fillMaxWidth(),
+            )
+            if (selectedDetailArea == MasterBankDetailArea.OVERVIEW && compact) {
                 Text(
                     "Cajeros $cashierCount · ${admin.territory ?: "RD"} · ${masterRechargeAccessLabel(admin.rechargesEnabled, admin.rechargesAssignedBalance, admin.rechargesBalance)}",
                     style = MaterialTheme.typography.bodySmall,
                     color = visual.colors.ink,
                     fontFamily = FontFamily.Monospace,
                 )
-            } else {
+            } else if (selectedDetailArea == MasterBankDetailArea.OVERVIEW) {
                 Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxWidth()) {
                     Text("Cajeros: $cashierCount", style = MaterialTheme.typography.bodySmall, color = visual.colors.ink, modifier = Modifier.weight(1f))
                     Text("Territorio: ${admin.territory ?: "RD"}", style = MaterialTheme.typography.bodySmall, color = visual.colors.ink, modifier = Modifier.weight(1f))
                     Text(masterRechargeAccessLabel(admin.rechargesEnabled, admin.rechargesAssignedBalance, admin.rechargesBalance), style = MaterialTheme.typography.bodySmall, color = visual.colors.ink, fontFamily = FontFamily.Monospace, modifier = Modifier.weight(1f))
                 }
             }
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+            if (selectedDetailArea == MasterBankDetailArea.FUNDS) {
+                SectionHeader(
+                    title = "Fondos y recargas",
+                    meta = "Cambios confirmados por servidor",
+                )
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
                 CompactTextInput(
-                    label = "Fondo cartera",
+                    label = "Nuevo fondo asignado",
                     value = rechargeAmountDraft,
                     onValueChange = { next -> rechargeAmountDraft = next.filter { it.isDigit() || it == '.' } },
                     modifier = Modifier.weight(1f),
                     keyboardType = KeyboardType.Decimal,
                 )
                 CompactActionButton(
-                    if (admin.rechargesEnabled) "Bloq. rec." else "Act. rec.",
+                    if (fundSaveBusy) "Guardando…" else if (admin.rechargesEnabled) "Bloq. rec." else "Act. rec.",
                     onClick = {
                         onSaveRechargeAccess(
                             !admin.rechargesEnabled,
@@ -1732,16 +2114,17 @@ private fun MasterBankRow(
                     modifier = Modifier.weight(1f),
                     icon = if (admin.rechargesEnabled) Icons.Rounded.WarningAmber else Icons.Rounded.LockOpen,
                     tone = if (admin.rechargesEnabled) ActionTone.Warning else ActionTone.Success,
+                    enabled = !fundSaveBusy,
                 )
-            }
-            val fundSummary = masterRechargeFundSummary(admin.rechargesAssignedBalance, admin.rechargesBalance)
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
-                Text(fundSummary.assignedLabel, style = MaterialTheme.typography.bodySmall, color = visual.colors.ink, fontFamily = FontFamily.Monospace, modifier = Modifier.weight(1f))
-                Text(fundSummary.availableLabel, style = MaterialTheme.typography.bodySmall, color = visual.colors.ink, fontFamily = FontFamily.Monospace, modifier = Modifier.weight(1f))
-                Text(fundSummary.soldLabel, style = MaterialTheme.typography.bodySmall, color = visual.colors.muted, fontFamily = FontFamily.Monospace, modifier = Modifier.weight(1f))
-            }
-            CompactActionButton(
-                "Guardar fondo",
+                }
+                val fundSummary = masterRechargeFundSummary(admin.rechargesAssignedBalance, admin.rechargesBalance)
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+                    Text(fundSummary.assignedLabel, style = MaterialTheme.typography.bodySmall, color = visual.colors.ink, fontFamily = FontFamily.Monospace, modifier = Modifier.weight(1f))
+                    Text(fundSummary.availableLabel, style = MaterialTheme.typography.bodySmall, color = visual.colors.ink, fontFamily = FontFamily.Monospace, modifier = Modifier.weight(1f))
+                    Text(fundSummary.soldLabel, style = MaterialTheme.typography.bodySmall, color = visual.colors.muted, fontFamily = FontFamily.Monospace, modifier = Modifier.weight(1f))
+                }
+                CompactActionButton(
+                if (fundSaveBusy) "Guardando fondo…" else "Reemplazar fondo",
                 onClick = {
                     onSaveRechargeAccess(
                         admin.rechargesEnabled,
@@ -1750,25 +2133,45 @@ private fun MasterBankRow(
                 },
                 modifier = Modifier.fillMaxWidth(),
                 icon = Icons.Rounded.AdminPanelSettings,
-            )
-            SectionHeader(
-                title = "Recargas Rapidas",
-                meta = masterRecargasRapidasCredentialLabel(admin),
-            )
-            CompactTextInput(
+                enabled = !fundSaveBusy,
+                )
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+                CompactTextInput(
+                    label = "Agregar al saldo",
+                    value = rechargeBalanceTopUpDraft,
+                    onValueChange = { next -> rechargeBalanceTopUpDraft = next.filter { it.isDigit() || it == '.' } },
+                    modifier = Modifier.weight(1f),
+                    keyboardType = KeyboardType.Decimal,
+                )
+                CompactActionButton(
+                    "Agregar",
+                    onClick = {
+                        onAddRechargeBalance(rechargeBalanceTopUpDraft.toDoubleOrNull()?.coerceAtLeast(0.0) ?: 0.0)
+                        rechargeBalanceTopUpDraft = "0"
+                    },
+                    modifier = Modifier.weight(1f),
+                    icon = Icons.Rounded.Add,
+                    enabled = !fundSaveBusy && (rechargeBalanceTopUpDraft.toDoubleOrNull() ?: 0.0) > 0.0,
+                )
+                }
+                SectionHeader(
+                    title = "Recargas Rapidas",
+                    meta = masterRecargasRapidasCredentialLabel(admin),
+                )
+                CompactTextInput(
                 label = "Usuario Recargas Rapidas",
                 value = rrUsernameDraft,
                 onValueChange = { rrUsernameDraft = it.trim().take(80) },
                 modifier = Modifier.fillMaxWidth(),
-            )
-            CompactTextInput(
+                )
+                CompactTextInput(
                 label = if (admin.recargasRapidasUsername.isNullOrBlank()) "Clave Recargas Rapidas" else "Nueva clave opcional",
                 value = rrPasswordDraft,
                 onValueChange = { rrPasswordDraft = it.take(120) },
                 modifier = Modifier.fillMaxWidth(),
                 visualTransformation = PasswordVisualTransformation(),
-            )
-            CompactActionButton(
+                )
+                CompactActionButton(
                 "Guardar cuenta RR",
                 onClick = {
                     onSaveRecargasRapidasCredentials(rrUsernameDraft, rrPasswordDraft)
@@ -1776,27 +2179,30 @@ private fun MasterBankRow(
                 },
                 modifier = Modifier.fillMaxWidth(),
                 icon = Icons.Rounded.Key,
-            )
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
-                CompactActionButton(masterCredentialResetActionLabel(shortActionLabels), onClick = onRegenerate, modifier = Modifier.weight(1f), icon = Icons.Rounded.Key, tone = ActionTone.Warning)
-                CompactActionButton(if (shortActionLabels) "+Caj." else "Agregar cajeros", onClick = onAddCashiers, modifier = Modifier.weight(1f), icon = Icons.Rounded.Groups)
-                CompactActionButton(if (shortActionLabels) "Clave" else "Cambiar clave", onClick = onChangePassword, modifier = Modifier.weight(1f), icon = Icons.Rounded.Key)
+                )
             }
-            CompactActionButton(
-                "${masterCashierDropdownActionLabel(shortActionLabels)} $cashierCount",
-                onClick = onToggleCashiers,
-                modifier = Modifier.fillMaxWidth(),
-                icon = Icons.Rounded.Groups,
-            )
-            if (cashiersExpanded) {
-                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            if (selectedDetailArea == MasterBankDetailArea.CASHIERS) {
+                SectionHeader(
+                    title = "Cajeros",
+                    meta = "$cashierCount asignados",
+                )
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+                    CompactActionButton(
+                        if (shortActionLabels) "+Caj." else "Agregar cajeros",
+                        onClick = onAddCashiers,
+                        modifier = Modifier.weight(1f),
+                        icon = Icons.Rounded.Groups,
+                        active = true,
+                    )
                     CompactActionButton(
                         masterCashierGroupPasswordActionLabel(shortActionLabels),
                         onClick = onChangeAllCashiersPassword,
-                        modifier = Modifier.fillMaxWidth(),
-                        active = cashiers.isNotEmpty(),
+                        modifier = Modifier.weight(1f),
                         icon = Icons.Rounded.Key,
+                        enabled = cashiers.isNotEmpty(),
                     )
+                }
+                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                     if (cashiers.isEmpty()) {
                         Text("Esta banca no tiene cajeros.", style = MaterialTheme.typography.bodySmall, color = visual.colors.muted)
                     } else {
@@ -1808,7 +2214,7 @@ private fun MasterBankRow(
                             ) {
                                 Column(modifier = Modifier.weight(1f)) {
                                     Text(
-                                        cashier.displayName ?: cashier.user,
+                                        cashierDisplayLabel(cashier),
                                         style = MaterialTheme.typography.bodySmall,
                                         color = visual.colors.ink,
                                         maxLines = 1,
@@ -1831,7 +2237,27 @@ private fun MasterBankRow(
                     }
                 }
             }
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+            if (selectedDetailArea == MasterBankDetailArea.SECURITY) {
+                SectionHeader(
+                    title = "Seguridad de la banca",
+                    meta = "Claves y acciones sensibles",
+                )
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+                    CompactActionButton(
+                        masterCredentialResetActionLabel(shortActionLabels),
+                        onClick = onRegenerate,
+                        modifier = Modifier.weight(1f),
+                        icon = Icons.Rounded.Key,
+                        tone = ActionTone.Warning,
+                    )
+                    CompactActionButton(
+                        if (shortActionLabels) "Clave" else "Cambiar clave",
+                        onClick = onChangePassword,
+                        modifier = Modifier.weight(1f),
+                        icon = Icons.Rounded.Key,
+                    )
+                }
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
                 CompactActionButton(
                     if (admin.active) {
                         if (shortActionLabels) "Bloq." else "Bloquear"
@@ -1844,6 +2270,7 @@ private fun MasterBankRow(
                     tone = if (admin.active) ActionTone.Danger else ActionTone.Success,
                 )
                 CompactActionButton(if (shortActionLabels) "Borra" else "Borrar", onClick = onDelete, modifier = Modifier.weight(1f), icon = Icons.Rounded.DeleteForever, tone = ActionTone.Danger)
+                }
             }
         }
     }
@@ -1878,6 +2305,26 @@ private fun MasterIssuedCredentialRow(
     }
 }
 
+private const val MASTER_DASHBOARD_REMOTE_REFRESH_DEDUP_MS = 15_000L
+
+internal fun shouldSkipMasterDashboardRemoteRefresh(
+    governor: TicketRefreshGovernor,
+    requestType: String,
+    authScope: String,
+    force: Boolean,
+    nowEpochMs: Long = System.currentTimeMillis(),
+): Boolean {
+    if (force) return false
+    return governor.shouldReuse(
+        ticketRefreshGovernorKey(
+            ownerKey = "master-dashboard",
+            requestType = requestType,
+            authScope = authScope,
+        ),
+        nowMs = nowEpochMs,
+    )
+}
+
 private fun formatPlainAmount(value: Double): String {
     return if (value <= 0.0) "0" else com.lotterynet.pro.core.format.formatWholeAmount(value)
 }
@@ -1909,6 +2356,24 @@ internal fun updateMasterRecargasRapidasCredentialStatus(
 }
 
 internal fun masterRechargeProviderLabel(): String = "Recargas Rapidas por admin"
+
+internal enum class MasterFundSaveState {
+    SAVING,
+    CONFIRMED,
+    ROLLED_BACK,
+}
+
+internal fun masterFundSaveStatusLabel(state: MasterFundSaveState, amount: Double): String {
+    return when (state) {
+        MasterFundSaveState.SAVING -> "Guardando fondo…"
+        MasterFundSaveState.CONFIRMED -> "Servidor confirmó ${masterMoney(amount)}"
+        MasterFundSaveState.ROLLED_BACK -> "No se guardó; se restauró el fondo anterior"
+    }
+}
+
+internal fun shouldShowRechargeFundAmount(role: UserRole): Boolean {
+    return role == UserRole.MASTER || role == UserRole.ADMIN
+}
 
 internal fun masterRecargasRapidasCredentialLabel(admin: UserAccount): String {
     return if (!admin.recargasRapidasUsername.isNullOrBlank()) {
@@ -1945,9 +2410,9 @@ internal fun masterRechargeFundSummary(
     val normalizedAvailable = available.coerceAtLeast(0.0)
     val sold = (normalizedAssigned - normalizedAvailable).coerceAtLeast(0.0)
     return MasterRechargeFundSummary(
-        assignedLabel = "Fondo ${masterMoney(normalizedAssigned)}",
-        availableLabel = "Disponible ${masterMoney(normalizedAvailable)}",
-        soldLabel = "Vendido ${masterMoney(sold)}",
+        assignedLabel = "Base asignada ${masterMoney(normalizedAssigned)}",
+        availableLabel = "Saldo restante ${masterMoney(normalizedAvailable)}",
+        soldLabel = "Consumido ${masterMoney(sold)}",
     )
 }
 
@@ -1958,7 +2423,7 @@ internal fun masterRechargeAccessLabel(
 ): String {
     return if (enabled) {
         val summary = masterRechargeFundSummary(assigned, available)
-        "${summary.assignedLabel} · queda ${masterMoney(available.coerceAtLeast(0.0))}"
+        "${summary.assignedLabel} · ${summary.availableLabel}"
     } else {
         "Bloqueada"
     }

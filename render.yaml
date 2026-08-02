@@ -34,3 +34,23 @@ services:
       - key: SPORTS_ODDS_SYNC_LIMIT
         value: "25"
 
+  - type: cron
+    name: lotterynet-sports-results-sync
+    env: python
+    plan: starter
+    schedule: "*/5 8-23 * * *"
+    buildCommand: pip install -r requirements.txt
+    startCommand: python tools/render/sync_sports_results.py
+    autoDeploy: true
+    envVars:
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_KEY
+        sync: false
+      - key: LOTTERYNET_ADMIN_SHARED_SECRET
+        sync: false
+      - key: SPORTS_RESULTS_SYNC_ENABLED
+        value: "false"
+      - key: SPORTS_RESULTS_SYNC_LIMIT
+        value: "50"
+

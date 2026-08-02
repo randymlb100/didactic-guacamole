@@ -70,7 +70,12 @@ class ThermalTicketRendererTest {
         )
 
         assertEquals(6, chunks.size)
-        assertTrue(chunks.all { chunk -> chunk.contains("MONTO LOTERIA") })
+        assertTrue(chunks.all { chunk -> !chunk.contains("MONTO LOTERIA") })
+        assertTrue(chunks.all { chunk ->
+            chunk.lines()
+                .map { ThermalLineStyling.parse(it).text }
+                .none { it.startsWith("SUBTOTAL") }
+        })
         assertTrue(chunks.all { chunk -> chunk.lines().count() < 90 })
     }
 
@@ -143,7 +148,8 @@ class ThermalTicketRendererTest {
             prefs = ThermalPrinterPrefs(showOriginal = true),
         )
 
-        assertTrue(output.contains("[[LOTTERY|large]]ANGUILA PM / KING PM"))
+        assertTrue(output.contains("ANGUILA TARDE"))
+        assertTrue(output.contains("KING NOC"))
         assertTrue(output.lines().any { line ->
             ThermalLineStyling.parse(line).text == "JUGADA               MONTO"
         })
@@ -198,7 +204,7 @@ class ThermalTicketRendererTest {
             prefs = ThermalPrinterPrefs(showOriginal = true),
         )
 
-        assertTrue(output.contains("ANGUILA AM"))
+        assertTrue(output.contains("ANGUILA MANANA"))
         assertFalse(output.contains("TICKET TERMICO"))
         assertFalse(output.contains("MAÑANA"))
         assertFalse(output.contains("TÉRMICO"))
@@ -211,6 +217,30 @@ class ThermalTicketRendererTest {
         assertEquals("ANGUILA PM", formatThermalLotteryName("Anguila Noche"))
         assertEquals("HAITI BOLET 11:30 AM", formatThermalLotteryName("Haiti Bolet 11:30 AM"))
         assertEquals("HAITI BOLET 6:30 PM", formatThermalLotteryName("Haiti Bolet 6:30 PM"))
+    }
+
+    @Test
+    fun `thermal ticket keeps new york tarde and noche distinct`() {
+        val ticket = TicketRecord(
+            id = "ticket-new-york-variants",
+            serial = "NY-200",
+            plays = listOf(
+                PlayItem(number = "12", playType = "Q", amount = 20.0, lotteryName = "New York Tarde"),
+                PlayItem(number = "25", playType = "Q", amount = 30.0, lotteryName = "New York Noche"),
+            ),
+            total = 50.0,
+        )
+
+        val output = ThermalTicketRenderer().renderTicket(
+            ticket = ticket,
+            bancaName = "Banca Central",
+            prefs = ThermalPrinterPrefs(paperWidth = "58"),
+        )
+        val visibleLines = output.lines().map { ThermalLineStyling.parse(it).text }
+
+        assertTrue(visibleLines.any { it.contains("NEW YORK TARDE") })
+        assertTrue(visibleLines.any { it.contains("NEW YORK NOCHE") })
+        assertFalse(visibleLines.any { it.contains("NEW YORK PM") })
     }
 
     @Test
@@ -329,8 +359,8 @@ class ThermalTicketRendererTest {
         )
         val visibleLines = output.lines().map { ThermalLineStyling.parse(it).text }
 
-        assertTrue(visibleLines.any { it.startsWith("P3 852S") && it.endsWith("5") })
-        assertTrue(visibleLines.any { it.startsWith("P3BOX 852B") && it.endsWith("5") })
+        assertTrue(visibleLines.any { it.startsWith("P3 852") && it.endsWith("5") })
+        assertTrue(visibleLines.any { it.startsWith("P3BOX 852") && it.endsWith("5") })
         assertFalse(visibleLines.any { it.contains("852SS") || it.contains("852BB") })
     }
 
@@ -490,10 +520,11 @@ class ThermalTicketRendererTest {
         val lines = output.lines()
         val visibleLines = lines.map { ThermalLineStyling.parse(it).text }
 
-        assertTrue(visibleLines.contains("ANGUILA AM"))
-        assertTrue(visibleLines.contains("ANGUILA PM"))
+        assertTrue(visibleLines.contains("ANGUILA MANANA"))
+        assertTrue(visibleLines.contains("ANGUILA TARDE"))
         assertTrue(visibleLines.contains("HAITI BOLET 11:30 AM"))
         assertTrue(visibleLines.contains("HAITI BOLET 6:30 PM"))
+        assertTrue(visibleLines.contains("NEW YORK NOCHE"))
         assertTrue(lines.any { it.startsWith("[[TITLE|tall]]BANCA YUNIEL SRL") })
         assertFalse(lines.any { it.startsWith("[[TITLE|large]]BANCA YUNIEL SRL") })
         assertTrue(lines.any { it.startsWith("[[TOTAL|tall]]TOTAL") && it.endsWith("515") })
@@ -575,8 +606,37 @@ class ThermalTicketRendererTest {
         )
         val visibleLines = output.lines().map { ThermalLineStyling.parse(it).text }
 
-        assertTrue(visibleLines.any { it.startsWith("MONTO LOTERIA") && it.endsWith("200") })
-        assertTrue(visibleLines.any { it.startsWith("MONTO LOTERIA") && it.endsWith("100") })
+        assertTrue(visibleLines.any { it.startsWith("SUBTOTAL") && it.endsWith("200") })
+        assertTrue(visibleLines.any { it.startsWith("SUBTOTAL") && it.endsWith("100") })
+    }
+
+    @Test
+    fun `thermal pick ticket uses readable labels and hides subtotal for one lottery`() {
+        val ticket = TicketRecord(
+            id = "ticket-pick-clean",
+            serial = "LN-PICK",
+            plays = listOf(
+                PlayItem(number = "842", playType = "PICK3_BOX", amount = 1.0, lotteryName = "NJ Pick 3 AM"),
+                PlayItem(number = "087", playType = "PICK3_STRAIGHT", amount = 7.0, lotteryName = "NJ Pick 3 AM"),
+            ),
+            total = 8.0,
+        )
+
+        val output = ThermalTicketRenderer().renderTicket(
+            ticket = ticket,
+            bancaName = "Banca Central",
+            prefs = ThermalPrinterPrefs(paperWidth = "58"),
+            printMark = TicketPrintMark.COPIA,
+        )
+        val visibleLines = output.lines().map { ThermalLineStyling.parse(it).text }
+
+        assertFalse(output.contains("PICK3_BOX"))
+        assertFalse(output.contains("PICK3_STRAIGHT"))
+        assertFalse(output.contains("MONTO LOTERIA"))
+        assertTrue(visibleLines.any { it.startsWith("P3BOX 842") && it.endsWith("1") })
+        assertTrue(visibleLines.any { it.startsWith("P3 087") && it.endsWith("7") })
+        assertFalse(visibleLines.any { it.startsWith("SUBTOTAL") })
+        assertTrue(visibleLines.any { it.startsWith("TOTAL") && it.endsWith("8") })
     }
 
     @Test
@@ -607,7 +667,7 @@ class ThermalTicketRendererTest {
     }
 
     @Test
-    fun `compact share ticket uses three columns and lottery subtotals for large tickets`() {
+    fun `compact share ticket uses two columns and lottery subtotals for large tickets`() {
         val ticket = TicketRecord(
             id = "ticket-large-share",
             serial = "LN1BOA8F40EF99",
@@ -634,15 +694,73 @@ class ThermalTicketRendererTest {
         assertTrue(visibleLines.contains("LOTEKA"))
         assertTrue(visibleLines.contains("LEIDSA"))
         assertTrue(visibleLines.contains("ANGUILA 9PM"))
-        assertEquals(3, visibleLines.count { it.trim().startsWith("SUBTOTAL") && it.endsWith("2,200") })
-        assertTrue(visibleLines.contains("RESUMEN"))
+        assertFalse(visibleLines.contains("RESUMEN"))
+        assertFalse(visibleLines.any { it.trim().startsWith("SUBTOTAL") })
         assertTrue(visibleLines.any { it.startsWith("JUGADAS") && it.endsWith("33") })
         assertTrue(visibleLines.any { it.startsWith("TOTAL A JUGAR") && it.endsWith("6,600") })
         assertTrue(visibleLines.any { line ->
-            line.contains("Q 12") && line.contains("Q 25") && line.contains("Q 36") && line.length == 42
+            line.contains("Q 12") && line.contains("Q 25") && line.contains("|") && line.length >= 64
         })
         assertTrue(visibleLines.any { it.trim().startsWith("VERIFICACION:") })
         assertEquals(List(4) { "" }, visibleLines.takeLast(4))
+    }
+
+    @Test
+    fun `compact share ticket removes resumen and uses wider layout for very large tickets`() {
+        val ticket = TicketRecord(
+            id = "ticket-very-large-share",
+            serial = "LN1BOA8F40EF99",
+            plays = listOf("Loteka", "Leidsa", "Anguila 9PM").flatMap { lottery ->
+                listOf("12", "25", "36", "39", "45", "46", "56", "58", "63", "64", "93").map { number ->
+                    PlayItem(
+                        number = number,
+                        playType = "Q",
+                        amount = 200.0,
+                        lotteryName = lottery,
+                    )
+                }
+            },
+            total = 6_600.0,
+            sellerUser = "bancay01",
+        )
+
+        val output = ThermalTicketRenderer().renderCompactShareText(
+            ticket = ticket,
+            bancaName = "1-Banca elsenol",
+        )
+        val visibleLines = output.lines().map { ThermalLineStyling.parse(it).text }
+
+        assertFalse(visibleLines.contains("RESUMEN"))
+        assertFalse(visibleLines.any { it.trim().startsWith("SUBTOTAL") })
+        assertTrue(visibleLines.any { it.startsWith("TOTAL A JUGAR") && it.endsWith("6,600") })
+        assertTrue(visibleLines.maxOf { it.length } >= 64)
+    }
+
+    @Test
+    fun `compact share ticket widens for multiple lotteries even with few plays`() {
+        val ticket = TicketRecord(
+            id = "ticket-small-multi-lottery",
+            serial = "LN-SMALL-MULTI",
+            plays = listOf(
+                PlayItem(number = "12", playType = "Q", amount = 20.0, lotteryName = "Leidsa"),
+                PlayItem(number = "25", playType = "Q", amount = 30.0, lotteryName = "New York Tarde"),
+            ),
+            total = 50.0,
+            sellerUser = "bancay01",
+        )
+
+        val output = ThermalTicketRenderer().renderCompactShareText(
+            ticket = ticket,
+            bancaName = "1-Banca elsenol",
+        )
+        val visibleLines = output.lines().map { ThermalLineStyling.parse(it).text }
+
+        assertTrue(visibleLines.contains("LEIDSA"))
+        assertTrue(visibleLines.contains("NEW YORK TARDE"))
+        assertTrue(visibleLines.any { it.trim().startsWith("SUBTOTAL") })
+        assertTrue(visibleLines.any { it.contains("Q 12") && it.contains("|") && it.length in 58..60 })
+        assertTrue(visibleLines.any { it.contains("Q 25") && it.contains("|") && it.length in 58..60 })
+        assertTrue(visibleLines.any { it.startsWith("TOTAL A JUGAR") && it.endsWith("50") })
     }
 
     @Test
@@ -674,12 +792,12 @@ class ThermalTicketRendererTest {
         assertTrue(visibleLines.any { it.startsWith("JUGADAS") && it.endsWith("99") })
         assertTrue(visibleLines.any { it.startsWith("TOTAL A JUGAR") && it.endsWith("149") })
         assertTrue(visibleLines.any { line ->
-            line.contains("Q 50") && line.contains("51") && line.length == 42
+            line.contains("Q 50") && line.contains("51") && line.length >= 64
         })
         assertTrue(
             visibleLines
                 .filterNot { it == "QR" }
-                .all { it.length <= 42 },
+                .all { it.length <= 64 },
         )
         assertEquals("QR", visibleLines.dropLast(4).last())
         assertEquals(List(4) { "" }, visibleLines.takeLast(4))

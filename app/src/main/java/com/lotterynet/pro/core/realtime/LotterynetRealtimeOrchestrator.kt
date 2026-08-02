@@ -14,7 +14,7 @@ class LotterynetRealtimeOrchestrator(
 
     fun onEvent(event: LotterynetRealtimeEvent) {
         val gateKey = buildString {
-            append(event.table)
+            append(event.topic ?: event.table)
             append('|')
             append(event.filterValue.orEmpty())
         }
@@ -23,11 +23,29 @@ class LotterynetRealtimeOrchestrator(
         if (last != null && now - last < coalesceWindowMs) return
         lastDispatchMs[gateKey] = now
 
+        event.topic?.let { topic ->
+            when {
+                topic.startsWith(TICKET_OWNER_TOPIC_PREFIX) -> {
+                    topic.removePrefix(TICKET_OWNER_TOPIC_PREFIX).takeIf { it.isNotBlank() }?.let(onTicketOwnerChanged)
+                    return
+                }
+                topic.startsWith(RESULTS_TOPIC_PREFIX) -> {
+                    topic.removePrefix(RESULTS_TOPIC_PREFIX).takeIf { it.isNotBlank() }?.let(onResultsCacheChanged)
+                    return
+                }
+            }
+        }
+
         when (event.table) {
             "lotterynet_users_state" -> onUsersChanged()
             "lotterynet_master_state" -> event.filterValue?.let(onMasterKeyChanged)
             "lotterynet_tickets_by_owner" -> event.filterValue?.let(onTicketOwnerChanged)
             "result_draws" -> event.filterValue?.let(onResultsCacheChanged)
         }
+    }
+
+    private companion object {
+        const val TICKET_OWNER_TOPIC_PREFIX = "ln:tickets:owner:"
+        const val RESULTS_TOPIC_PREFIX = "ln:results:"
     }
 }

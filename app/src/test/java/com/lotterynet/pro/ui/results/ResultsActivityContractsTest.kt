@@ -15,6 +15,7 @@ import com.lotterynet.pro.core.results.PickResultIdentityResolver
 import com.lotterynet.pro.core.repository.HolidayCalendarRepository
 import com.lotterynet.pro.core.repository.TrustedClockRepository
 import com.lotterynet.pro.core.render.resultsRenderCacheKey
+import com.lotterynet.pro.core.sync.TicketRefreshGovernor
 import com.lotterynet.pro.core.storage.AdminSystemModeConfig
 import com.lotterynet.pro.ui.common.LotteryNetWindowMode
 import kotlinx.coroutines.CancellationException
@@ -29,6 +30,21 @@ import org.junit.Test
 import java.time.Instant
 
 class ResultsActivityContractsTest {
+    @Test
+    fun `results date picker converts historical date keys through utc`() {
+        val millis = resultsDateKeyToPickerUtcMillis("04-06-2026")
+
+        assertEquals("04-06-2026", pickerUtcMillisToResultsDateKey(millis))
+    }
+
+    @Test
+    fun `results date picker blocks future days`() {
+        val todayMillis = resultsDateKeyToPickerUtcMillis("18-06-2026")
+        val futureMillis = resultsDateKeyToPickerUtcMillis("19-06-2026")
+
+        assertTrue(isSelectableResultsPickerDate(todayMillis, todayMillis))
+        assertFalse(isSelectableResultsPickerDate(futureMillis, todayMillis))
+    }
 
     @Test
     fun `phone results keeps filters actions and rows compact`() {
@@ -62,7 +78,7 @@ class ResultsActivityContractsTest {
     }
 
     @Test
-    fun `results refresh timeout is treated as reportable failure`() {
+    fun `automatic results refresh timeout uses cached fallback without sentry noise`() {
         val timeout = runCatching {
             runBlocking {
                 withTimeout(1L) {
@@ -72,7 +88,7 @@ class ResultsActivityContractsTest {
                 }
             }
         }.exceptionOrNull() ?: error("Expected timeout")
-        assertTrue(shouldReportResultsRefreshError(timeout))
+        assertFalse(shouldReportResultsRefreshError(timeout))
     }
 
     @Test
@@ -99,9 +115,74 @@ class ResultsActivityContractsTest {
     }
 
     @Test
+    fun `results reconcile signature stays stable across fetch time changes`() {
+        val left = listOf(
+            LotteryResult(
+                lotteryId = "L-1",
+                date = "27-04-2026",
+                first = "01",
+                status = "published",
+                fetchedAtEpochMs = 1_000L,
+            ),
+        )
+        val right = listOf(
+            LotteryResult(
+                lotteryId = "L-1",
+                date = "27-04-2026",
+                first = "01",
+                status = "published",
+                fetchedAtEpochMs = 9_999L,
+            ),
+        )
+
+        assertEquals(resultsReconcileSignature(left), resultsReconcileSignature(right))
+    }
+
+    @Test
+    fun `results reconcile signature changes when result content changes`() {
+        val before = listOf(LotteryResult(lotteryId = "L-1", date = "27-04-2026", first = "01"))
+        val after = listOf(LotteryResult(lotteryId = "L-1", date = "27-04-2026", first = "02"))
+
+        assertNotEquals(resultsReconcileSignature(before), resultsReconcileSignature(after))
+    }
+
+    @Test
     fun `results auto refresh uses server friendly fallback delay`() {
         assertEquals(60_000L, resolveResultsAutoRefreshDelayMs(realtimeEnabled = false))
         assertEquals(60_000L, resolveResultsAutoRefreshDelayMs(realtimeEnabled = true))
+    }
+
+    @Test
+    fun `results remote refresh dedupes repeated same date bursts but force still runs`() {
+        val governor = TicketRefreshGovernor(requestCooldownMs = 10_000L)
+
+        assertFalse(
+            shouldSkipResultsRemoteRefresh(
+                governor = governor,
+                date = "2026-07-09",
+                reason = "auto-refresh",
+                force = false,
+                nowEpochMs = 1_000L,
+            ),
+        )
+        assertTrue(
+            shouldSkipResultsRemoteRefresh(
+                governor = governor,
+                date = "2026-07-09",
+                reason = "auto-refresh",
+                force = false,
+                nowEpochMs = 4_000L,
+            ),
+        )
+        assertFalse(
+            shouldSkipResultsRemoteRefresh(
+                governor = governor,
+                date = "2026-07-09",
+                reason = "manual-refresh",
+                force = true,
+                nowEpochMs = 4_000L,
+            ),
+        )
     }
 
     @Test

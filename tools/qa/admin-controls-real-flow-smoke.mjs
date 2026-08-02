@@ -143,27 +143,14 @@ async function login(username, password) {
 }
 
 async function fetchUsersPayload() {
-  const result = await requestJson(
-    "users-state fetch",
-    "GET",
-    `${SUPABASE_URL}/rest/v1/lotterynet_users_state?scope=eq.global&select=payload`,
-  );
+  const result = await edge("lotterynet-users-state", { action: "fetch" });
   if (!result.ok) throw new Error(`No se pudo leer usuarios: ${result.text}`);
-  return result.json?.[0]?.payload ?? {};
+  return result.json?.payload ?? {};
 }
 
 async function saveUsersPayload(payload, token = adminSession?.token ?? API_KEY) {
-  const direct = await requestJson(
-    "users-state upsert",
-    "POST",
-    `${SUPABASE_URL}/rest/v1/lotterynet_users_state?on_conflict=scope`,
-    { scope: "global", payload, updated_at: new Date().toISOString() },
-    API_KEY,
-    { Prefer: "resolution=merge-duplicates,return=minimal" },
-  );
-  if (direct.ok) return;
   const result = await edge("lotterynet-users-state", { action: "upsert", payload }, token);
-  if (!result.ok || result.json?.ok === false) throw new Error(`No se pudo guardar usuarios: REST=${direct.text} EDGE=${result.text}`);
+  if (!result.ok || result.json?.ok === false) throw new Error(`No se pudo guardar usuarios: EDGE=${result.text}`);
 }
 
 async function fetchMasterValue(key) {
@@ -173,17 +160,8 @@ async function fetchMasterValue(key) {
 }
 
 async function updateMasterValue(key, payload) {
-  const result = await edge("update-master-config", { key, payload });
-  if (result.ok && result.json?.ok !== false) return result;
-  const direct = await requestJson(
-    `master-state upsert ${key}`,
-    "POST",
-    `${SUPABASE_URL}/rest/v1/lotterynet_master_state?on_conflict=config_key`,
-    { config_key: key, payload, updated_at: new Date().toISOString() },
-    API_KEY,
-    { Prefer: "resolution=merge-duplicates,return=minimal" },
-  );
-  if (!direct.ok) throw new Error(`No se pudo guardar ${key}: EDGE=${result.text} REST=${direct.text}`);
+  const result = await edge("update-master-config", { key, payload }, adminSession?.token ?? API_KEY);
+  if (!result.ok || result.json?.ok === false) throw new Error(`No se pudo guardar ${key}: EDGE=${result.text}`);
   return result;
 }
 

@@ -2,7 +2,10 @@ package com.lotterynet.pro.core.storage
 
 import android.content.Context
 import androidx.core.content.edit
+import com.lotterynet.pro.core.model.ActiveSession
+import com.lotterynet.pro.core.model.UserAccount
 import org.json.JSONObject
+import java.util.Locale
 
 data class CashierSalesLimitInputs(
     val daySale: Double = 10000.0,
@@ -28,6 +31,25 @@ fun decodeCashierSalesLimitInputs(payload: String?): CashierSalesLimitInputs {
     return decodeCashierSalesLimitInputs(defaults)
 }
 
+fun decodeCashierPoolLimitInputs(payload: String?): CashierSalesLimitInputs {
+    val root = payload
+        ?.let { runCatching { JSONObject(it) }.getOrNull() }
+        ?: return CashierSalesLimitInputs()
+    val pool = root.optJSONObject("pool") ?: return CashierSalesLimitInputs(
+        daySale = 0.0,
+        payout = 0.0,
+        quiniela = 0.0,
+        pale = 0.0,
+        superPale = 0.0,
+        tripleta = 0.0,
+        pick3Straight = 0.0,
+        pick3Box = 0.0,
+        pick4Straight = 0.0,
+        pick4Box = 0.0,
+    )
+    return decodeCashierSalesLimitInputs(pool)
+}
+
 fun decodeCashierSalesLimitInputs(json: JSONObject?): CashierSalesLimitInputs {
     json ?: return CashierSalesLimitInputs()
     return CashierSalesLimitInputs(
@@ -46,9 +68,60 @@ fun decodeCashierSalesLimitInputs(json: JSONObject?): CashierSalesLimitInputs {
 
 fun decodeCashierUserSalesLimitInputs(payload: String?, username: String?): CashierSalesLimitInputs? {
     val userKey = username?.takeIf { it.isNotBlank() } ?: return null
+    return decodeCashierUserSalesLimitInputs(payload, listOf(userKey))
+}
+
+fun decodeCashierUserSalesLimitInputs(payload: String?, account: UserAccount?): CashierSalesLimitInputs? {
+    return decodeCashierUserSalesLimitInputs(payload, resolveCashierLimitLookupKeys(account))
+}
+
+fun decodeCashierUserSalesLimitInputs(payload: String?, userKeys: Collection<String>): CashierSalesLimitInputs? {
+    val cleanKeys = userKeys
+        .map { it.trim() }
+        .filter { it.isNotBlank() }
+        .distinct()
+    if (cleanKeys.isEmpty()) return null
     val root = payload?.let { runCatching { JSONObject(it) }.getOrNull() } ?: return null
-    val row = root.optJSONObject("byUser")?.optJSONObject(userKey) ?: return null
-    return decodeCashierSalesLimitInputs(row)
+    val byUser = root.optJSONObject("byUser") ?: return null
+    cleanKeys.forEach { key ->
+        byUser.optJSONObject(key)?.let { return decodeCashierSalesLimitInputs(it) }
+    }
+    val normalizedKeys = cleanKeys.map { it.lowercase(Locale.US) }.toSet()
+    val iterator = byUser.keys()
+    while (iterator.hasNext()) {
+        val key = iterator.next()
+        if (key.trim().lowercase(Locale.US) in normalizedKeys) {
+            byUser.optJSONObject(key)?.let { return decodeCashierSalesLimitInputs(it) }
+        }
+    }
+    return null
+}
+
+internal fun resolveCashierLimitLookupKeys(account: UserAccount?): List<String> {
+    if (account == null) return emptyList()
+    return listOfNotNull(
+        account.id.takeIf { it.isNotBlank() },
+        account.user.takeIf { it.isNotBlank() },
+        account.displayName?.takeIf { it.isNotBlank() },
+        account.authUserId?.takeIf { it.isNotBlank() },
+        account.adminId?.takeIf { it.isNotBlank() },
+        account.adminUser?.takeIf { it.isNotBlank() },
+        account.ownerName?.takeIf { it.isNotBlank() },
+        account.banca?.takeIf { it.isNotBlank() },
+        account.cashierPrefix?.takeIf { it.isNotBlank() },
+        account.recargasRapidasUsername?.takeIf { it.isNotBlank() },
+    ).distinct()
+}
+
+internal fun resolveCashierLimitLookupKeys(session: ActiveSession?): List<String> {
+    if (session == null) return emptyList()
+    return listOfNotNull(
+        session.username.takeIf { it.isNotBlank() },
+        session.userId.takeIf { it.isNotBlank() },
+        session.adminId?.takeIf { it.isNotBlank() },
+        session.adminUser?.takeIf { it.isNotBlank() },
+        session.authUserId?.takeIf { it.isNotBlank() },
+    ).distinct()
 }
 
 fun buildCashierLimitPayloadWithDefault(
@@ -59,6 +132,17 @@ fun buildCashierLimitPayloadWithDefault(
         ?.let { runCatching { JSONObject(it) }.getOrNull() }
         ?: JSONObject()
     current.put("defaults", limits.toJson())
+    return current.toString()
+}
+
+fun buildCashierLimitPayloadWithPool(
+    currentPayload: String?,
+    limits: CashierSalesLimitInputs,
+): String {
+    val current = currentPayload
+        ?.let { runCatching { JSONObject(it) }.getOrNull() }
+        ?: JSONObject()
+    current.put("pool", limits.toJson())
     return current.toString()
 }
 
@@ -153,6 +237,21 @@ class LocalCashierSalesLimitRepository(
         prefs.edit { putString(storageKey, payload) }
     }
 
+    fun getPoolLimits(ownerId: String?): CashierSalesLimitInputs {
+        val key = ownerId?.takeIf { it.isNotBlank() } ?: return CashierSalesLimitInputs()
+        return decodeCashierPoolLimitInputs(prefs.getString(SalesStorageKeys.CASHIER_LIMITS_PREFIX + key, null))
+    }
+
+    fun savePoolLimits(ownerId: String?, limits: CashierSalesLimitInputs) {
+        val key = ownerId?.takeIf { it.isNotBlank() } ?: return
+        val storageKey = SalesStorageKeys.CASHIER_LIMITS_PREFIX + key
+        val payload = buildCashierLimitPayloadWithPool(
+            currentPayload = prefs.getString(storageKey, null),
+            limits = limits,
+        )
+        prefs.edit { putString(storageKey, payload) }
+    }
+
     fun exportPayload(ownerId: String?): String {
         val key = ownerId?.takeIf { it.isNotBlank() } ?: return encodeCashierSalesLimitInputs(CashierSalesLimitInputs())
         return prefs.getString(SalesStorageKeys.CASHIER_LIMITS_PREFIX + key, null)
@@ -162,6 +261,14 @@ class LocalCashierSalesLimitRepository(
     fun buildPayloadWithDefaultLimits(ownerId: String?, limits: CashierSalesLimitInputs): String {
         val key = ownerId?.takeIf { it.isNotBlank() } ?: return encodeCashierSalesLimitInputs(limits)
         return buildCashierLimitPayloadWithDefault(
+            currentPayload = prefs.getString(SalesStorageKeys.CASHIER_LIMITS_PREFIX + key, null),
+            limits = limits,
+        )
+    }
+
+    fun buildPayloadWithPoolLimits(ownerId: String?, limits: CashierSalesLimitInputs): String {
+        val key = ownerId?.takeIf { it.isNotBlank() } ?: return encodeCashierSalesLimitInputs(limits)
+        return buildCashierLimitPayloadWithPool(
             currentPayload = prefs.getString(SalesStorageKeys.CASHIER_LIMITS_PREFIX + key, null),
             limits = limits,
         )
@@ -211,6 +318,48 @@ class LocalCashierSalesLimitRepository(
         val defaults = decodeCashierSalesLimitInputs(root.optJSONObject("defaults"))
         val row = root.optJSONObject("byUser")?.optJSONObject(userKey) ?: return defaults
         return decodeCashierSalesLimitInputs(row)
+    }
+
+    fun getUserLimits(ownerId: String?, account: UserAccount): CashierSalesLimitInputs {
+        val ownerKey = ownerId?.takeIf { it.isNotBlank() } ?: return CashierSalesLimitInputs()
+        val raw = prefs.getString(SalesStorageKeys.CASHIER_LIMITS_PREFIX + ownerKey, null)
+        val root = raw?.let { runCatching { JSONObject(it) }.getOrNull() } ?: return getDefaultLimits(ownerKey)
+        val defaults = decodeCashierSalesLimitInputs(root.optJSONObject("defaults"))
+        val byUser = root.optJSONObject("byUser") ?: return defaults
+        val aliasKeys = resolveCashierLimitLookupKeys(account)
+        aliasKeys.forEach { key ->
+            byUser.optJSONObject(key)?.let { return decodeCashierSalesLimitInputs(it) }
+        }
+        val normalizedKeys = aliasKeys.map { it.lowercase(Locale.US) }.toSet()
+        val iterator = byUser.keys()
+        while (iterator.hasNext()) {
+            val key = iterator.next()
+            if (key.trim().lowercase(Locale.US) in normalizedKeys) {
+                byUser.optJSONObject(key)?.let { return decodeCashierSalesLimitInputs(it) }
+            }
+        }
+        return defaults
+    }
+
+    fun getUserLimits(ownerId: String?, session: ActiveSession): CashierSalesLimitInputs {
+        val ownerKey = ownerId?.takeIf { it.isNotBlank() } ?: return CashierSalesLimitInputs()
+        val raw = prefs.getString(SalesStorageKeys.CASHIER_LIMITS_PREFIX + ownerKey, null)
+        val root = raw?.let { runCatching { JSONObject(it) }.getOrNull() } ?: return getDefaultLimits(ownerKey)
+        val defaults = decodeCashierSalesLimitInputs(root.optJSONObject("defaults"))
+        val byUser = root.optJSONObject("byUser") ?: return defaults
+        val aliasKeys = resolveCashierLimitLookupKeys(session)
+        aliasKeys.forEach { key ->
+            byUser.optJSONObject(key)?.let { return decodeCashierSalesLimitInputs(it) }
+        }
+        val normalizedKeys = aliasKeys.map { it.lowercase(Locale.US) }.toSet()
+        val iterator = byUser.keys()
+        while (iterator.hasNext()) {
+            val key = iterator.next()
+            if (key.trim().lowercase(Locale.US) in normalizedKeys) {
+                byUser.optJSONObject(key)?.let { return decodeCashierSalesLimitInputs(it) }
+            }
+        }
+        return defaults
     }
 
     fun getUserLimitsOrNull(ownerId: String?, username: String?): CashierSalesLimitInputs? {

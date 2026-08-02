@@ -2,7 +2,6 @@ package com.lotterynet.pro.core.users
 
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.json.JSONArray
@@ -35,6 +34,34 @@ class SupabaseUsersRemoteStoreTest {
         assertEquals("upsert", request.getString("action"))
         assertEquals(0, request.getJSONObject("payload").getJSONArray("admins").length())
         assertEquals(0, request.getJSONObject("payload").getJSONArray("cajeros").length())
+    }
+
+    @Test
+    fun `users state function payload marks explicit commission overrides`() {
+        val request = buildUsersStateFunctionPayload(
+            "upsert",
+            "{\"admins\":[],\"cajeros\":[]}",
+            commissionOverrideKeys = setOf(" CAJ-1 ", "cajero01", ""),
+        )
+
+        val keys = request.getJSONArray("commissionOverrideKeys")
+        assertEquals(2, keys.length())
+        assertEquals("caj-1", keys.getString(0))
+        assertEquals("cajero01", keys.getString(1))
+    }
+
+    @Test
+    fun `master recharge fund request carries exact amount and target bank`() {
+        val request = buildMasterRechargeFundPayload(
+            accountId = "adm-1",
+            enabled = true,
+            amount = 4_037.0,
+        )
+
+        assertEquals("update-recharge-fund", request.getString("action"))
+        assertEquals("adm-1", request.getString("accountId"))
+        assertTrue(request.getBoolean("enabled"))
+        assertEquals(4_037.0, request.getDouble("amount"), 0.0)
     }
 
     @Test
@@ -75,117 +102,67 @@ class SupabaseUsersRemoteStoreTest {
     }
 
     @Test
-    fun `direct users state fetch returns raw users payload`() {
-        val client = SupabaseUsersStateClient(
-            requestFetcher = { method, path, _, _, _ ->
-                assertEquals("GET", method)
-                assertTrue(path.contains("/rest/v1/lotterynet_users_state"))
-                assertTrue(path.contains("scope=eq.global"))
-                200 to JSONArray().put(
-                    JSONObject().put(
-                        "payload",
-                        JSONObject()
-                            .put("admins", JSONArray())
-                            .put("cajeros", JSONArray()),
-                    )
-                ).toString()
-            }
-        )
-
-        val payload = JSONObject(client.fetchUsersPayload() ?: error("missing payload"))
-
-        assertEquals(0, payload.getJSONArray("admins").length())
-        assertEquals(0, payload.getJSONArray("cajeros").length())
-    }
-
-    @Test
-    fun `direct users state fetch returns null when row is missing`() {
-        val client = SupabaseUsersStateClient(
-            requestFetcher = { _, _, _, _, _ -> 200 to "[]" }
-        )
-
-        assertNull(client.fetchUsersPayload())
-    }
-
-    @Test
-    fun `direct users state upsert posts global scope`() {
-        var capturedBody: String? = null
-        val client = SupabaseUsersStateClient(
-            requestFetcher = { method, path, body, _, _ ->
-                assertEquals("POST", method)
-                assertEquals("/rest/v1/lotterynet_users_state?on_conflict=scope", path)
-                capturedBody = body
-                201 to ""
-            }
-        )
-
-        client.upsertUsersPayload("{\"admins\":[],\"cajeros\":[]}")
-
-        val row = JSONObject(capturedBody ?: error("missing request body"))
-        assertEquals("global", row.getString("scope"))
-        assertEquals(0, row.getJSONObject("payload").getJSONArray("admins").length())
-        assertEquals(0, row.getJSONObject("payload").getJSONArray("cajeros").length())
-    }
-
-    @Test
-    fun `fetch prefers direct Supabase state before legacy fallbacks`() {
+    fun `fetch prefers edge users state before render fallback`() {
         clearUsersPayloadMemoryCache()
         val payload = resolveUsersPayloadFetch(
             fetchLegacy = { "{\"source\":\"legacy\"}" },
-            fetchDirect = { "{\"source\":\"direct\"}" },
             fetchRender = { "{\"source\":\"render\"}" },
         )
 
-        assertEquals("direct", JSONObject(payload ?: error("missing payload")).getString("source"))
+        assertEquals("legacy", JSONObject(payload ?: error("missing payload")).getString("source"))
+    }
+
+    @Test
+    fun `fetch falls back to render users state when edge is unavailable`() {
+        clearUsersPayloadMemoryCache()
+        val payload = resolveUsersPayloadFetch(
+            fetchLegacy = { null },
+            fetchRender = { "{\"source\":\"render\"}" },
+        )
+
+        assertEquals("render", JSONObject(payload ?: error("missing payload")).getString("source"))
     }
 
     @Test
     fun `users payload memory cache avoids repeated remote fetches`() {
         clearUsersPayloadMemoryCache()
-        var directCalls = 0
+        var edgeCalls = 0
 
         val first = resolveUsersPayloadFetch(
             fetchLegacy = {
+                edgeCalls += 1
                 "{\"source\":\"legacy\"}"
-            },
-            fetchDirect = {
-                directCalls += 1
-                "{\"source\":\"direct\"}"
             },
             fetchRender = { "{\"source\":\"render\"}" },
         )
         val second = resolveUsersPayloadFetch(
             fetchLegacy = {
+                edgeCalls += 1
                 "{\"source\":\"legacy-2\"}"
-            },
-            fetchDirect = {
-                directCalls += 1
-                "{\"source\":\"direct-2\"}"
             },
             fetchRender = { "{\"source\":\"render-2\"}" },
         )
 
-        assertEquals("direct", JSONObject(first ?: error("missing first payload")).getString("source"))
-        assertEquals("direct", JSONObject(second ?: error("missing second payload")).getString("source"))
-        assertEquals(1, directCalls)
+        assertEquals("legacy", JSONObject(first ?: error("missing first payload")).getString("source"))
+        assertEquals("legacy", JSONObject(second ?: error("missing second payload")).getString("source"))
+        assertEquals(1, edgeCalls)
         clearUsersPayloadMemoryCache()
     }
 
     @Test
-    fun `save writes every available users mirror so another server sees cashier mode`() {
+    fun `save writes edge users state and render mirror so another server sees cashier mode`() {
         val calls = mutableListOf<String>()
 
         persistUsersPayload(
             saveLegacy = { calls += "legacy" },
-            saveDirect = { calls += "direct" },
             saveRender = { calls += "render" },
         )
 
-        assertEquals(listOf("direct", "legacy", "render"), calls)
+        assertEquals(listOf("legacy", "render"), calls)
     }
 
     @Test
-    fun `save succeeds when direct fails but render mirror accepts users payload`() {
+    fun `save succeeds when edge fails but render mirror accepts users payload`() {
         val calls = mutableListOf<String>()
 
         persistUsersPayload(
@@ -193,13 +170,9 @@ class SupabaseUsersRemoteStoreTest {
                 calls += "legacy"
                 throw IllegalStateException("legacy unavailable")
             },
-            saveDirect = {
-                calls += "direct"
-                throw IllegalStateException("direct unavailable")
-            },
             saveRender = { calls += "render" },
         )
 
-        assertEquals(listOf("direct", "legacy", "render"), calls)
+        assertEquals(listOf("legacy", "render"), calls)
     }
 }

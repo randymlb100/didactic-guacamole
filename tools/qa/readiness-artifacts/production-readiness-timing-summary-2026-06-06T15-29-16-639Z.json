@@ -1,0 +1,676 @@
+{
+  "ok": true,
+  "warningCount": 0,
+  "runId": "readiness1780759756639",
+  "checkedAt": "2026-06-06T15:29:34.971Z",
+  "supabaseUrl": "https://unhoulkujbtsypccpirc.supabase.co",
+  "loops": 1,
+  "writeProbe": true,
+  "appProbe": false,
+  "todayDayKey": "06-06-2026",
+  "qaDayKey": "22-04-2026",
+  "timings": {
+    "users-state edge fetch": {
+      "calls": 1,
+      "minMs": 645,
+      "p50Ms": 645,
+      "p95Ms": 645,
+      "maxMs": 645
+    },
+    "login podero02": {
+      "calls": 1,
+      "minMs": 1043,
+      "p50Ms": 1043,
+      "p95Ms": 1043,
+      "maxMs": 1043
+    },
+    "login bancae01": {
+      "calls": 1,
+      "minMs": 1176,
+      "p50Ms": 1176,
+      "p95Ms": 1176,
+      "maxMs": 1176
+    },
+    "login bancae02": {
+      "calls": 1,
+      "minMs": 1107,
+      "p50Ms": 1107,
+      "p95Ms": 1107,
+      "maxMs": 1107
+    },
+    "direct REST blocked lotterynet_users_state": {
+      "calls": 1,
+      "minMs": 340,
+      "p50Ms": 340,
+      "p95Ms": 340,
+      "maxMs": 340
+    },
+    "direct REST blocked lotterynet_kv": {
+      "calls": 1,
+      "minMs": 146,
+      "p50Ms": 146,
+      "p95Ms": 146,
+      "maxMs": 146
+    },
+    "direct REST blocked tickets": {
+      "calls": 1,
+      "minMs": 442,
+      "p50Ms": 442,
+      "p95Ms": 442,
+      "maxMs": 442
+    },
+    "direct REST blocked result_draws": {
+      "calls": 1,
+      "minMs": 148,
+      "p50Ms": 148,
+      "p95Ms": 148,
+      "maxMs": 148
+    },
+    "users-state anonymous upsert blocked": {
+      "calls": 1,
+      "minMs": 331,
+      "p50Ms": 331,
+      "p95Ms": 331,
+      "maxMs": 331
+    },
+    "users-state edge fetch loop": {
+      "calls": 1,
+      "minMs": 325,
+      "p50Ms": 325,
+      "p95Ms": 325,
+      "maxMs": 325
+    },
+    "master system_modes fetch loop": {
+      "calls": 1,
+      "minMs": 348,
+      "p50Ms": 348,
+      "p95Ms": 348,
+      "maxMs": 348
+    },
+    "master cashier_limits fetch loop": {
+      "calls": 1,
+      "minMs": 312,
+      "p50Ms": 312,
+      "p95Ms": 312,
+      "maxMs": 312
+    },
+    "master disabled lotteries fetch loop": {
+      "calls": 1,
+      "minMs": 312,
+      "p50Ms": 312,
+      "p95Ms": 312,
+      "maxMs": 312
+    },
+    "results status edge loop": {
+      "calls": 1,
+      "minMs": 394,
+      "p50Ms": 394,
+      "p95Ms": 394,
+      "maxMs": 394
+    },
+    "results full edge loop": {
+      "calls": 1,
+      "minMs": 292,
+      "p50Ms": 292,
+      "p95Ms": 292,
+      "maxMs": 292
+    },
+    "ticket updated-at anonymous loop": {
+      "calls": 1,
+      "minMs": 334,
+      "p50Ms": 334,
+      "p95Ms": 334,
+      "maxMs": 334
+    },
+    "ticket delta admin loop": {
+      "calls": 1,
+      "minMs": 647,
+      "p50Ms": 647,
+      "p95Ms": 647,
+      "maxMs": 647
+    },
+    "ticket list admin loop": {
+      "calls": 1,
+      "minMs": 737,
+      "p50Ms": 737,
+      "p95Ms": 737,
+      "maxMs": 737
+    },
+    "ticket summary admin loop": {
+      "calls": 1,
+      "minMs": 454,
+      "p50Ms": 454,
+      "p95Ms": 454,
+      "maxMs": 454
+    },
+    "admin report loop": {
+      "calls": 1,
+      "minMs": 369,
+      "p50Ms": 369,
+      "p95Ms": 369,
+      "maxMs": 369
+    },
+    "cashier report loop": {
+      "calls": 1,
+      "minMs": 494,
+      "p50Ms": 494,
+      "p95Ms": 494,
+      "maxMs": 494
+    },
+    "ticket delta cashier2 loop": {
+      "calls": 1,
+      "minMs": 490,
+      "p50Ms": 490,
+      "p95Ms": 490,
+      "maxMs": 490
+    },
+    "master system_modes original": {
+      "calls": 1,
+      "minMs": 341,
+      "p50Ms": 341,
+      "p95Ms": 341,
+      "maxMs": 341
+    },
+    "master system_modes open for write probe": {
+      "calls": 1,
+      "minMs": 499,
+      "p50Ms": 499,
+      "p95Ms": 499,
+      "maxMs": 499
+    },
+    "create-ticket valid": {
+      "calls": 1,
+      "minMs": 765,
+      "p50Ms": 765,
+      "p95Ms": 765,
+      "maxMs": 765
+    },
+    "ticket visible delta admin attempt 1": {
+      "calls": 1,
+      "minMs": 628,
+      "p50Ms": 628,
+      "p95Ms": 628,
+      "maxMs": 628
+    },
+    "ticket visible list admin attempt 1": {
+      "calls": 1,
+      "minMs": 1689,
+      "p50Ms": 1689,
+      "p95Ms": 1689,
+      "maxMs": 1689
+    },
+    "master system_modes block Q03": {
+      "calls": 1,
+      "minMs": 561,
+      "p50Ms": 561,
+      "p95Ms": 561,
+      "maxMs": 561
+    },
+    "master system_modes fetch after block": {
+      "calls": 1,
+      "minMs": 306,
+      "p50Ms": 306,
+      "p95Ms": 306,
+      "maxMs": 306
+    },
+    "create-ticket blocked-q03": {
+      "calls": 1,
+      "minMs": 517,
+      "p50Ms": 517,
+      "p95Ms": 517,
+      "maxMs": 517
+    },
+    "cashier forbidden system mode save": {
+      "calls": 1,
+      "minMs": 317,
+      "p50Ms": 317,
+      "p95Ms": 317,
+      "maxMs": 317
+    },
+    "master system_modes restore original": {
+      "calls": 1,
+      "minMs": 530,
+      "p50Ms": 530,
+      "p95Ms": 530,
+      "maxMs": 530
+    },
+    "cleanup void readiness1780759756639-valid": {
+      "calls": 1,
+      "minMs": 1248,
+      "p50Ms": 1248,
+      "p95Ms": 1248,
+      "maxMs": 1248
+    }
+  },
+  "checks": [
+    {
+      "ok": true,
+      "label": "archivo privado de credenciales disponible",
+      "data": {
+        "path": "C:/Users/Randy Cordero/Documents/LotteryNet-Secrets/[redacted]"
+      }
+    },
+    {
+      "ok": true,
+      "label": "credenciales de prueba legibles",
+      "data": {
+        "count": 11
+      }
+    },
+    {
+      "ok": true,
+      "label": "usuarios base admin/cajero existen en servidor",
+      "data": {
+        "adminId": "ADM-C5FFB0",
+        "adminUser": "podero02",
+        "cashierId": "CAJ-E4A14B",
+        "cashierUser": "bancae01",
+        "cashier2": true,
+        "supervisor": "sup720869"
+      }
+    },
+    {
+      "ok": true,
+      "label": "credenciales admin/cajero disponibles",
+      "data": {
+        "admin": true,
+        "cashier1": true,
+        "cashier2": true,
+        "supervisor": false
+      }
+    },
+    {
+      "ok": true,
+      "label": "login real admin/cajero OK",
+      "data": {
+        "adminStatus": 200,
+        "cashierStatus": 200,
+        "cashier2Ok": true,
+        "supervisorOk": null
+      }
+    },
+    {
+      "ok": true,
+      "label": "IDs y aliases base son resolubles",
+      "data": {
+        "adminKeys": [
+          "ADM-C5FFB0",
+          "podero02",
+          "podero02"
+        ],
+        "cashierKeys": [
+          "CAJ-E4A14B",
+          "bancae01",
+          "bancae01",
+          "ADM-C5FFB0",
+          "podero02"
+        ]
+      }
+    },
+    {
+      "ok": true,
+      "label": "tabla lotterynet_users_state cerrada por REST publico",
+      "data": {
+        "status": 401,
+        "elapsedMs": 340
+      }
+    },
+    {
+      "ok": true,
+      "label": "tabla lotterynet_kv cerrada por REST publico",
+      "data": {
+        "status": 401,
+        "elapsedMs": 146
+      }
+    },
+    {
+      "ok": true,
+      "label": "tabla tickets cerrada por REST publico",
+      "data": {
+        "status": 401,
+        "elapsedMs": 442
+      }
+    },
+    {
+      "ok": true,
+      "label": "tabla result_draws cerrada por REST publico",
+      "data": {
+        "status": 401,
+        "elapsedMs": 148
+      }
+    },
+    {
+      "ok": true,
+      "label": "users-state upsert anonimo bloqueado",
+      "data": {
+        "status": 401,
+        "message": "Sesion invalida."
+      }
+    },
+    {
+      "ok": true,
+      "label": "configuracion system_modes se lee antes del rollback",
+      "data": {
+        "key": "system_modes:ADM-C5FFB0"
+      }
+    },
+    {
+      "ok": true,
+      "label": "admin puede guardar modos por Edge",
+      "data": {
+        "status": 200
+      }
+    },
+    {
+      "ok": true,
+      "label": "ticket QA valido se crea por create-ticket-v2",
+      "data": {
+        "status": 200,
+        "code": "LN-99D5B9-A46B5E",
+        "elapsedMs": 765
+      }
+    },
+    {
+      "ok": true,
+      "label": "ticket aparece en delta de admin",
+      "data": {
+        "attempts": 1
+      }
+    },
+    {
+      "ok": true,
+      "label": "ticket aparece en seccion Tickets por lista",
+      "data": {
+        "attempts": 1
+      }
+    },
+    {
+      "ok": true,
+      "label": "admin guarda bloqueo de numero Q 03",
+      "data": {
+        "status": 200
+      }
+    },
+    {
+      "ok": true,
+      "label": "servidor recuerda bloqueo Q 03 al leer limpio",
+      "data": {
+        "rows": 1
+      }
+    },
+    {
+      "ok": true,
+      "label": "cajero no puede vender numero bloqueado",
+      "data": {
+        "status": 409,
+        "message": "Quiniela 03 esta bloqueada por administracion."
+      }
+    },
+    {
+      "ok": true,
+      "label": "cajero no puede cambiar configuracion admin",
+      "data": {
+        "status": 403,
+        "message": "Admin role required."
+      }
+    },
+    {
+      "ok": true,
+      "label": "rollback system_modes restaurado",
+      "data": {
+        "status": 200
+      }
+    },
+    {
+      "ok": true,
+      "label": "ticket QA limpiado",
+      "data": {
+        "clientRequestId": "readiness1780759756639-valid",
+        "status": 200,
+        "message": "Ticket borrado del servidor"
+      }
+    },
+    {
+      "ok": true,
+      "label": "prueba ADB omitida por configuracion",
+      "data": {
+        "env": "LOTTERYNET_READINESS_APP=0"
+      }
+    }
+  ],
+  "warnings": [],
+  "httpEvents": [
+    {
+      "label": "users-state edge fetch",
+      "status": 200,
+      "ok": true,
+      "elapsedMs": 645,
+      "message": ""
+    },
+    {
+      "label": "login podero02",
+      "status": 200,
+      "ok": true,
+      "elapsedMs": 1043,
+      "message": ""
+    },
+    {
+      "label": "login bancae01",
+      "status": 200,
+      "ok": true,
+      "elapsedMs": 1176,
+      "message": ""
+    },
+    {
+      "label": "login bancae02",
+      "status": 200,
+      "ok": true,
+      "elapsedMs": 1107,
+      "message": ""
+    },
+    {
+      "label": "direct REST blocked lotterynet_users_state",
+      "status": 401,
+      "ok": false,
+      "elapsedMs": 340,
+      "message": "permission denied for table lotterynet_users_state"
+    },
+    {
+      "label": "direct REST blocked lotterynet_kv",
+      "status": 401,
+      "ok": false,
+      "elapsedMs": 146,
+      "message": "permission denied for table lotterynet_kv"
+    },
+    {
+      "label": "direct REST blocked tickets",
+      "status": 401,
+      "ok": false,
+      "elapsedMs": 442,
+      "message": "permission denied for table tickets"
+    },
+    {
+      "label": "direct REST blocked result_draws",
+      "status": 401,
+      "ok": false,
+      "elapsedMs": 148,
+      "message": "permission denied for table result_draws"
+    },
+    {
+      "label": "users-state anonymous upsert blocked",
+      "status": 401,
+      "ok": false,
+      "elapsedMs": 331,
+      "message": "Sesion invalida."
+    },
+    {
+      "label": "users-state edge fetch loop",
+      "status": 200,
+      "ok": true,
+      "elapsedMs": 325,
+      "message": ""
+    },
+    {
+      "label": "master system_modes fetch loop",
+      "status": 200,
+      "ok": true,
+      "elapsedMs": 348,
+      "message": ""
+    },
+    {
+      "label": "master cashier_limits fetch loop",
+      "status": 200,
+      "ok": true,
+      "elapsedMs": 312,
+      "message": ""
+    },
+    {
+      "label": "master disabled lotteries fetch loop",
+      "status": 200,
+      "ok": true,
+      "elapsedMs": 312,
+      "message": ""
+    },
+    {
+      "label": "results status edge loop",
+      "status": 200,
+      "ok": true,
+      "elapsedMs": 394,
+      "message": ""
+    },
+    {
+      "label": "results full edge loop",
+      "status": 200,
+      "ok": true,
+      "elapsedMs": 292,
+      "message": ""
+    },
+    {
+      "label": "ticket updated-at anonymous loop",
+      "status": 200,
+      "ok": true,
+      "elapsedMs": 334,
+      "message": ""
+    },
+    {
+      "label": "ticket delta admin loop",
+      "status": 200,
+      "ok": true,
+      "elapsedMs": 647,
+      "message": ""
+    },
+    {
+      "label": "ticket list admin loop",
+      "status": 200,
+      "ok": true,
+      "elapsedMs": 737,
+      "message": ""
+    },
+    {
+      "label": "ticket summary admin loop",
+      "status": 200,
+      "ok": true,
+      "elapsedMs": 454,
+      "message": ""
+    },
+    {
+      "label": "admin report loop",
+      "status": 200,
+      "ok": true,
+      "elapsedMs": 369,
+      "message": ""
+    },
+    {
+      "label": "cashier report loop",
+      "status": 200,
+      "ok": true,
+      "elapsedMs": 494,
+      "message": ""
+    },
+    {
+      "label": "ticket delta cashier2 loop",
+      "status": 200,
+      "ok": true,
+      "elapsedMs": 490,
+      "message": ""
+    },
+    {
+      "label": "master system_modes original",
+      "status": 200,
+      "ok": true,
+      "elapsedMs": 341,
+      "message": ""
+    },
+    {
+      "label": "master system_modes open for write probe",
+      "status": 200,
+      "ok": true,
+      "elapsedMs": 499,
+      "message": ""
+    },
+    {
+      "label": "create-ticket valid",
+      "status": 200,
+      "ok": true,
+      "elapsedMs": 765,
+      "message": "Ticket valido"
+    },
+    {
+      "label": "ticket visible delta admin attempt 1",
+      "status": 200,
+      "ok": true,
+      "elapsedMs": 628,
+      "message": ""
+    },
+    {
+      "label": "ticket visible list admin attempt 1",
+      "status": 200,
+      "ok": true,
+      "elapsedMs": 1689,
+      "message": ""
+    },
+    {
+      "label": "master system_modes block Q03",
+      "status": 200,
+      "ok": true,
+      "elapsedMs": 561,
+      "message": ""
+    },
+    {
+      "label": "master system_modes fetch after block",
+      "status": 200,
+      "ok": true,
+      "elapsedMs": 306,
+      "message": ""
+    },
+    {
+      "label": "create-ticket blocked-q03",
+      "status": 409,
+      "ok": false,
+      "elapsedMs": 517,
+      "message": "Quiniela 03 esta bloqueada por administracion."
+    },
+    {
+      "label": "cashier forbidden system mode save",
+      "status": 403,
+      "ok": false,
+      "elapsedMs": 317,
+      "message": "Admin role required."
+    },
+    {
+      "label": "master system_modes restore original",
+      "status": 200,
+      "ok": true,
+      "elapsedMs": 530,
+      "message": ""
+    },
+    {
+      "label": "cleanup void readiness1780759756639-valid",
+      "status": 200,
+      "ok": true,
+      "elapsedMs": 1248,
+      "message": "Ticket borrado del servidor"
+    }
+  ],
+  "logFile": "/C:/Users/Randy Cordero/Desktop/lotterynet_android/tools/qa/readiness-artifacts/production-readiness-timing-2026-06-06T15-29-16-639Z.log"
+}

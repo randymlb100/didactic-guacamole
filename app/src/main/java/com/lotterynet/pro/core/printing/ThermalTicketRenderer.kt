@@ -70,6 +70,22 @@ internal fun formatThermalLotteryName(raw: String): String {
     return listOfNotNull(base, period).joinToString(" ").trim().take(30)
 }
 
+private fun thermalLotteryDisplayName(raw: String): String {
+    val normalized = Normalizer.normalize(raw.trim().ifBlank { "Loteria" }, Normalizer.Form.NFD)
+        .replace(Regex("\\p{Mn}+"), "")
+        .uppercase(Locale.getDefault())
+        .replace("LOTERIA ", "")
+        .replace(" LOTTERY", "")
+        .replace(" LOTERIA", "")
+        .replace(Regex("\\s+"), " ")
+        .trim()
+    return normalized.take(30)
+}
+
+private fun thermalLotteryGroupKey(raw: String): String {
+    return thermalLotteryDisplayName(raw)
+}
+
 internal data class ThermalStyledLine(
     val text: String,
     val style: ThermalLineStyle,
@@ -214,16 +230,22 @@ internal object ThermalLineStyling {
 }
 
 class ThermalTicketRenderer {
+    private data class CompactShareLayout(
+        val width: Int,
+        val columnCount: Int,
+        val abbreviateLotteryNames: Boolean,
+    )
+
     fun renderCompactShareBitmap(
         ticket: TicketRecord,
         bancaName: String,
         drawTimesByLottery: Map<String, String> = emptyMap(),
     ): Bitmap {
-        val shareWidth = resolveCompactShareLineWidth(ticket)
+        val layout = resolveCompactShareLayout(ticket)
         val prefs = ThermalPrinterPrefs(
             paperWidth = "80",
-            widthMode = if (shareWidth > 42) "custom" else "wide",
-            customChars = shareWidth.toString(),
+            widthMode = if (layout.width > 42) "custom" else "wide",
+            customChars = layout.width.toString(),
             headerScale = "compact",
             serialScale = "compact",
             lotteryScale = "compact",
@@ -250,23 +272,27 @@ class ThermalTicketRenderer {
         bancaName: String,
         drawTimesByLottery: Map<String, String> = emptyMap(),
     ): String {
-        val width = resolveCompactShareLineWidth(ticket)
-        val useAbbreviatedLotteryNames = width > 42
+        val layout = resolveCompactShareLayout(ticket)
+        val width = layout.width
+        val useAbbreviatedLotteryNames = layout.abbreviateLotteryNames
         val lines = mutableListOf<String>()
         val serial = ticket.serial?.takeIf { it.isNotBlank() } ?: ticket.id
         val sellerLabel = ticket.sellerUser?.takeIf { it.isNotBlank() }
             ?: ticket.adminUser?.takeIf { it.isNotBlank() }
         val groupedPlays = ticket.plays.groupBy { play ->
-            val primary = formatThermalLotteryName(play.lotteryName.orEmpty().ifBlank { "Loteria" })
+            val primary = thermalLotteryGroupKey(play.lotteryName.orEmpty())
             val secondary = play.secondaryLotteryName.orEmpty().trim()
             val primaryLabel = compactShareLotteryName(primary, useAbbreviatedLotteryNames)
             val secondaryLabel = secondary
                 .takeIf { it.isNotBlank() }
-                ?.let { compactShareLotteryName(formatThermalLotteryName(it), useAbbreviatedLotteryNames) }
+                ?.let { compactShareLotteryName(thermalLotteryGroupKey(it), useAbbreviatedLotteryNames) }
             if (secondaryLabel != null) "$primaryLabel / $secondaryLabel" else primaryLabel
         }
         val groupSubtotals = groupedPlays.mapValues { (_, plays) -> plays.sumOf { it.amount } }
-        val showLotterySubtotals = groupSubtotals.size > 1
+        val showLotterySubtotals = groupSubtotals.size > 1 && ticket.plays.size < 30
+        val columnCount = layout.columnCount
+        val columnSeparator = if (columnCount > 1) " | " else ""
+        val cellWidth = ((width - (columnSeparator.length * (columnCount - 1))) / columnCount).coerceAtLeast(1)
 
         lines += center(bancaName.uppercase(Locale.getDefault()).take(width), width)
         lines += center("ORIGINAL - ACTIVO", width)
@@ -283,12 +309,15 @@ class ThermalTicketRenderer {
         groupedPlays.forEach { (lotteryName, plays) ->
             lines += ThermalLineStyling.lottery(lotteryName.take(width), "compact")
             lines += "${plays.size} JUGADAS"
-            lines += compactThreeColumnHeader(width)
-            val cellWidth = (width - 2) / 3
-            plays.chunked(3).forEach { row ->
-                lines += row.map { play -> compactPlayCell(play, cellWidth) }
-                    .joinToString(" ")
-                    .padEnd(width)
+            lines += compactColumnsHeader(width, columnCount)
+            plays.chunked(columnCount).forEach { row ->
+                val rowCells = row.map { play -> compactPlayCell(play, cellWidth) }
+                val paddedCells = if (rowCells.size < columnCount) {
+                    rowCells + List(columnCount - rowCells.size) { compactEmptyCell(cellWidth) }
+                } else {
+                    rowCells
+                }
+                lines += paddedCells.joinToString(columnSeparator).padEnd(width)
             }
             if (showLotterySubtotals) {
                 val subtotalText = "SUBTOTAL ${lotteryName.take(12)}: ${formatThermalMoney(groupSubtotals.getValue(lotteryName))}"
@@ -297,20 +326,7 @@ class ThermalTicketRenderer {
             }
         }
 
-        if (showLotterySubtotals) {
-            lines += ThermalLineStyling.bold("RESUMEN", "compact")
-            groupSubtotals.forEach { (lotteryName, subtotal) ->
-                lines += ThermalLineStyling.playMoneyRow(
-                    lotteryName.take((width * 0.62f).toInt()),
-                    formatThermalMoney(subtotal),
-                    width,
-                    "compact",
-                )
-            }
-            lines += divider(width, "minimal")
-        } else {
-            lines += divider(width, "minimal")
-        }
+        lines += divider(width, "minimal")
 
         val totalToPlay = ticket.total.takeIf { it > 0.0 } ?: ticket.plays.sumOf { it.amount }
         lines += ThermalLineStyling.bold(alignMoney("JUGADAS", ticket.plays.size.toDouble(), width), "compact")
@@ -323,8 +339,6 @@ class ThermalTicketRenderer {
         }
 
         lines += ThermalLineStyling.qr(buildTicketQrPayload(ticket, securityCode))
-        lines += ""
-        lines += ""
         lines += ""
         lines += ""
         lines += ""
@@ -436,16 +450,25 @@ class ThermalTicketRenderer {
         sellerLabel?.let { lines += padRight("VENDEDOR:", 10) + it.take(width - 10) }
         lines += divider(width, prefs.separator)
 
-        ticket.plays.groupBy { play ->
-            val primary = formatThermalLotteryName(play.lotteryName.orEmpty().ifBlank { "Loteria" })
+        val groupedTicketPlays = ticket.plays.groupBy { play ->
+            val primary = thermalLotteryGroupKey(play.lotteryName.orEmpty())
             val secondary = play.secondaryLotteryName.orEmpty().trim()
-            if (secondary.isNotBlank()) "$primary / ${formatThermalLotteryName(secondary)}" else primary
-        }.forEach { (lotteryName, plays) ->
-            lines += ThermalLineStyling.lottery(lotteryName, strongScale(prefs.lotteryScale))
+            if (secondary.isNotBlank()) "$primary / ${thermalLotteryGroupKey(secondary)}" else primary
+        }
+        val showPlayedLotterySubtotals = groupedTicketPlays.size > 1
+        groupedTicketPlays.forEach { (lotteryName, plays) ->
+            lines += ThermalLineStyling.lottery(
+                compactShareLotteryName(lotteryName, prefs.paperWidth == "58"),
+                strongScale(prefs.lotteryScale),
+            )
             if (prefs.showDrawTime) {
-                drawTimesByLottery[lotteryName.substringBefore(" / ")]?.takeIf { it.isNotBlank() }?.let {
-                    lines += "Juega $it"
-                }
+                plays.firstOrNull()
+                    ?.lotteryName
+                    ?.trim()
+                    ?.takeIf { it.isNotBlank() }
+                    ?.let(drawTimesByLottery::get)
+                    ?.takeIf { it.isNotBlank() }
+                    ?.let { lines += "Juega $it" }
             }
             lines += tableHeader(width)
             plays.forEach { play ->
@@ -458,7 +481,12 @@ class ThermalTicketRenderer {
                     compact = plays.size >= 20,
                 )
             }
-            lines += ThermalLineStyling.playMoneyRow("MONTO LOTERIA", formatThermalMoney(plays.sumOf { it.amount }), width)
+            if (showPlayedLotterySubtotals) {
+                lines += ThermalLineStyling.bold(
+                    alignMoney("SUBTOTAL", plays.sumOf { it.amount }, width),
+                    "compact",
+                )
+            }
             lines += divider(width, "minimal")
         }
 
@@ -481,7 +509,7 @@ class ThermalTicketRenderer {
                 .forEach { (_, details) ->
                     val first = details.first()
                     val groupPrize = details.sumOf { it.payoutAmount }
-                    thermalWrapWords(formatThermalLotteryName(first.lotteryName), width).forEach { line ->
+                    thermalWrapWords(thermalLotteryDisplayName(first.lotteryName), width).forEach { line ->
                         lines += ThermalLineStyling.lottery(line, "compact")
                     }
                     val resultLine = "RESULTADO ${first.resultNumber.ifBlank { "-" }}"
@@ -647,6 +675,20 @@ class ThermalTicketRenderer {
     }
 
     private fun winningHitLabel(raw: String): String {
+        val tokens = raw
+            .split(',', '|')
+            .map { it.trim() }
+            .filter { it.isNotBlank() }
+        if (tokens.isEmpty()) return "ganadora"
+        val labels = tokens.map(::winningSingleHitLabel)
+        return when (labels.size) {
+            1 -> labels.single()
+            2 -> "${labels[0]} y ${labels[1]}"
+            else -> labels.dropLast(1).joinToString(", ") + " y " + labels.last()
+        }
+    }
+
+    private fun winningSingleHitLabel(raw: String): String {
         return when (raw.trim().lowercase(Locale.US)) {
             "1" -> "primera"
             "2" -> "segunda"
@@ -928,9 +970,10 @@ class ThermalTicketRenderer {
         )
     }
 
-    private fun compactThreeColumnHeader(width: Int): String {
-        val cellWidth = (width - 2) / 3
-        return List(3) { compactHeaderCell(cellWidth) }.joinToString(" ")
+    private fun compactColumnsHeader(width: Int, columns: Int): String {
+        val separator = if (columns > 1) " | " else ""
+        val cellWidth = ((width - (separator.length * (columns - 1))) / columns).coerceAtLeast(1)
+        return List(columns) { compactHeaderCell(cellWidth) }.joinToString(separator).padEnd(width)
     }
 
     private fun compactPlayCell(play: com.lotterynet.pro.core.model.PlayItem, width: Int): String {
@@ -945,64 +988,60 @@ class ThermalTicketRenderer {
         return "$safeLabel ${amount.padStart(amountWidth)}".take(width).padEnd(width)
     }
 
+    private fun compactEmptyCell(width: Int): String {
+        return " ".repeat(width)
+    }
+
     private fun compactHeaderCell(width: Int): String {
         val amountWidth = 5.coerceAtMost((width / 2).coerceAtLeast(4))
         val labelWidth = (width - amountWidth - 1).coerceAtLeast(1)
         return "JUGADA".take(labelWidth).padEnd(labelWidth) + " " + "MONTO".take(amountWidth).padStart(amountWidth)
     }
 
-    private fun resolveCompactShareLineWidth(ticket: TicketRecord): Int {
-        val lotteryCount = ticket.plays
+    private fun resolveCompactShareLayout(ticket: TicketRecord): CompactShareLayout {
+        val playCount = ticket.plays.size
+        val distinctLotteryCount = ticket.plays
             .map { play ->
-                listOf(play.lotteryName, play.secondaryLotteryName)
-                    .filterNotNull()
-                    .joinToString("/")
-                    .ifBlank { "Loteria" }
+                listOfNotNull(play.lotteryName, play.secondaryLotteryName)
+                    .joinToString(" / ")
+                    .trim()
             }
+            .filter { it.isNotBlank() }
+            .map { thermalLotteryGroupKey(it) }
             .distinct()
             .size
-        return when {
-            ticket.plays.size >= 100 || lotteryCount >= 6 -> 60
-            ticket.plays.size >= 70 || lotteryCount >= 4 -> 52
+        val longestLotteryName = ticket.plays
+            .flatMap { play -> listOfNotNull(play.lotteryName, play.secondaryLotteryName) }
+            .map { thermalLotteryDisplayName(it).length }
+            .maxOrNull()
+            ?: 0
+        val needsWideShare = playCount >= 12 || distinctLotteryCount >= 2 || longestLotteryName >= 16
+        val width = when {
+            playCount >= 30 || distinctLotteryCount >= 3 || longestLotteryName >= 24 -> 64
+            needsWideShare -> 58
             else -> 42
         }
+        val columnCount = if (needsWideShare) 2 else 3
+        return CompactShareLayout(
+            width = width,
+            columnCount = columnCount,
+            abbreviateLotteryNames = !needsWideShare,
+        )
     }
 
     private fun compactShareLotteryName(name: String, abbreviated: Boolean): String {
-        if (!abbreviated) return name
-        val normalized = name.uppercase(Locale.US).replace(Regex("\\s+"), " ").trim()
-        val time = Regex("""\b(\d{1,2})(?::(\d{2}))?\s*(AM|PM)\b""").find(normalized)?.let { match ->
-            val hour = match.groupValues[1]
-            val minute = match.groupValues[2].takeIf { it.isNotBlank() }
-            val suffix = match.groupValues[3]
-            if (minute == null || minute == "00") "$hour$suffix" else "$hour:$minute$suffix"
-        } ?: when {
-            Regex("\\b(AM|DIA|MANANA)\\b").containsMatchIn(normalized) -> "AM"
-            Regex("\\b(PM|TARDE|NOCHE)\\b").containsMatchIn(normalized) -> "PM"
-            else -> null
+        val normalized = thermalLotteryDisplayName(name)
+        return if (!abbreviated) {
+            normalized
+        } else {
+            normalized.take(24)
         }
-        val prefix = when {
-            "LOTEKA" in normalized -> "LK"
-            "LEIDSA" in normalized -> "LEIDSA"
-            "NACIONAL" in normalized -> "LN"
-            "ANGUIL" in normalized -> "ANG"
-            "KING" in normalized -> "KING"
-            "PRIMERA" in normalized -> "PRI"
-            "LA SUERTE" in normalized -> "SUERTE"
-            "REAL" in normalized -> "REAL"
-            "NEW YORK" in normalized -> "NY"
-            "FLORIDA" in normalized -> "FL"
-            else -> normalized.split(" ").filter { it.isNotBlank() }.take(2).joinToString(" ") { it.take(4) }
-        }
-        return listOfNotNull(prefix, time).joinToString(" ").take(24)
     }
 
     private fun formatThermalPlayNumber(number: String, playType: String): String {
-        val normalizedPlayType = playType.uppercase(Locale.getDefault())
+        val normalizedPlayType = normalizePickPlayType(playType) ?: playType.uppercase(Locale.getDefault())
         if (normalizedPlayType in setOf("P3", "P3BOX", "P4", "P4BOX")) {
-            val cleaned = number.filter(Char::isDigit).ifBlank { number }
-            val suffix = if (normalizedPlayType.endsWith("BOX")) "B" else "S"
-            return if (cleaned.endsWith(suffix, ignoreCase = true)) cleaned else cleaned + suffix
+            return number.filter(Char::isDigit).ifBlank { number }
         }
         if (normalizedPlayType != "T") {
             return formatPlayDisplayNumber(number, playType)
@@ -1164,23 +1203,49 @@ class ThermalTicketRenderer {
     }
 
     private fun playTypeText(playType: String, labelMode: String): String {
+        val normalizedPick = normalizePickPlayType(playType)
         val label = playTypeLabel(playType)
         return when (labelMode) {
             "full" -> label
             "double" -> label.take(2).uppercase(Locale.getDefault())
-            else -> playType.uppercase(Locale.getDefault())
+            else -> when (normalizedPick) {
+                "P3", "P3BOX", "P4", "P4BOX" -> normalizedPick
+                else -> abbreviatedPlayType(playType)
+            }
         }
     }
 
     private fun playTypeLabel(playType: String): String {
-        return when (playType.uppercase(Locale.getDefault())) {
+        return when (normalizePickPlayType(playType) ?: playType.uppercase(Locale.getDefault())) {
             "Q" -> "Quiniela"
             "P" -> "Pale"
             "T" -> "Tripleta"
             "SP" -> "Super Pale"
-            "P3" -> "Pick 3"
-            "P4" -> "Pick 4"
+            "P3" -> "Pick 3 Straight"
+            "P3BOX" -> "Pick 3 Box"
+            "P4" -> "Pick 4 Straight"
+            "P4BOX" -> "Pick 4 Box"
             else -> playType
+        }
+    }
+
+    private fun normalizePickPlayType(playType: String): String? {
+        return when (playType.uppercase(Locale.US).replace(" ", "_").replace("-", "_")) {
+            "P3", "P3S", "PICK3", "PICK_3", "PICK3_STRAIGHT", "PICK_3_STRAIGHT" -> "P3"
+            "P3BOX", "P3_BOX", "PICK3_BOX", "PICK_3_BOX" -> "P3BOX"
+            "P4", "P4S", "PICK4", "PICK_4", "PICK4_STRAIGHT", "PICK_4_STRAIGHT" -> "P4"
+            "P4BOX", "P4_BOX", "PICK4_BOX", "PICK_4_BOX" -> "P4BOX"
+            else -> null
+        }
+    }
+
+    private fun abbreviatedPlayType(playType: String): String {
+        return when (playType.uppercase(Locale.US).replace(" ", "_").replace("-", "_")) {
+            "Q", "QUINIELA" -> "Q"
+            "P", "PALE" -> "P"
+            "T", "TRIPLETA" -> "T"
+            "SP", "SUPER_PALE", "SUPERPALE" -> "SP"
+            else -> playType.uppercase(Locale.US).ifBlank { "-" }
         }
     }
 

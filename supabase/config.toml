@@ -12,6 +12,9 @@ verify_jwt = false
 [functions.lotterynet-users-state]
 verify_jwt = false
 
+[functions.auth-legacy-login]
+verify_jwt = false
+
 [functions.admin-master-state]
 verify_jwt = false
 
@@ -37,6 +40,8 @@ verify_jwt = true
 verify_jwt = true
 
 [functions.get-ticket-list]
+# Kept false only for legacy APK compatibility: handler allows anonymous action=updated-at
+# without includeOfficialStamp and requires a verified user JWT for every other path.
 verify_jwt = false
 
 [functions.get-ticket-delta]
@@ -45,13 +50,22 @@ verify_jwt = true
 [functions.get-ticket-summary]
 verify_jwt = true
 
+[functions.get-sale-limit-exposure]
+verify_jwt = true
+
 [functions.get-results-status]
+verify_jwt = true
+
+[functions.get-results-v2]
 verify_jwt = true
 
 [functions.sports-get-board]
 verify_jwt = false
 
 [functions.sports-sync-odds]
+verify_jwt = false
+
+[functions.sports-sync-results]
 verify_jwt = false
 
 [functions.sports-sync-team-assets]
@@ -85,10 +99,16 @@ verify_jwt = true
 verify_jwt = true
 
 [functions.change-user-password]
-verify_jwt = false
+verify_jwt = true
 
 [functions.admin-user-command]
 verify_jwt = true
 
 [functions.update-master-config]
+verify_jwt = true
+
+[functions.register-push-token]
+verify_jwt = true
+
+[functions.send-operational-push]
 verify_jwt = false

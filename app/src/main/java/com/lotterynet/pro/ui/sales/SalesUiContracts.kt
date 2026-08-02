@@ -1,5 +1,8 @@
 package com.lotterynet.pro.ui.sales
 
+import com.lotterynet.pro.core.delivery.TicketDeliveryMode
+import com.lotterynet.pro.core.delivery.TicketDeliveryPolicy
+import com.lotterynet.pro.core.export.NativeBitmapExport
 import com.lotterynet.pro.core.model.LotteryCatalogItem
 import com.lotterynet.pro.core.model.LotteryCloseDecision
 import com.lotterynet.pro.core.model.PickPlayMode
@@ -38,6 +41,11 @@ internal data class SaleThermalPrintResult(
     val openPrinterSettings: Boolean,
 )
 
+internal enum class SaleTicketShareRenderKind {
+    OFFICIAL_COMPACT,
+    THERMAL_COMPACT,
+}
+
 internal data class SaleSaveGateDecision(
     val canStartSave: Boolean,
     val message: String? = null,
@@ -48,6 +56,15 @@ internal data class SaleSubmissionIdentity(
     val fingerprint: String,
     val createdAtEpochMs: Long,
 )
+
+internal const val SALE_LIMIT_REMOTE_EXPOSURE_CACHE_TTL_MS: Long = 8_000L
+
+internal fun isFreshSaleLimitExposureCache(
+    cachedAtEpochMs: Long,
+    nowEpochMs: Long = System.currentTimeMillis(),
+): Boolean {
+    return nowEpochMs - cachedAtEpochMs <= SALE_LIMIT_REMOTE_EXPOSURE_CACHE_TTL_MS
+}
 
 internal fun resolveSaleSaveGate(
     isSaveInFlight: Boolean,
@@ -109,6 +126,14 @@ internal fun resolveSaleSubmissionIdentity(
     )
 }
 
+internal fun resolveSaleValidationBearerToken(
+    warmedToken: String?,
+    fallbackTokenProvider: () -> String?,
+): String? {
+    return warmedToken?.takeIf { it.isNotBlank() }
+        ?: fallbackTokenProvider().takeIf { !it.isNullOrBlank() }
+}
+
 internal enum class SaleThermalPrintTarget {
     BLUETOOTH,
     INTEGRATED,
@@ -150,6 +175,22 @@ internal fun resolveSaleThermalPrintResult(success: Boolean, message: String): S
 
 internal fun shouldRenderSaleDeliveryBitmapPreview(ticket: TicketRecord): Boolean {
     return false
+}
+
+internal fun shouldUseOfficialPagedShareBitmap(ticket: TicketRecord): Boolean {
+    val estimatedHeightPx = NativeBitmapExport.estimateOfficialTicketBitmapHeight(ticket)
+    return TicketDeliveryPolicy.resolveDecision(ticket, estimatedHeightPx).mode != TicketDeliveryMode.SINGLE_IMAGE
+}
+
+internal fun resolveSaleTicketShareRenderKind(
+    ticket: TicketRecord,
+    estimatedHeightPx: Int,
+): SaleTicketShareRenderKind {
+    return if (TicketDeliveryPolicy.shouldRenderPreviewBitmap(ticket, estimatedHeightPx)) {
+        SaleTicketShareRenderKind.OFFICIAL_COMPACT
+    } else {
+        SaleTicketShareRenderKind.THERMAL_COMPACT
+    }
 }
 
 internal fun resolveCashierStartupPlan(): CashierStartupPlan {

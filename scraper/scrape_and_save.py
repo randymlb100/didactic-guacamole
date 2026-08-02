@@ -117,13 +117,16 @@ US_PICK_SUNDAY_NO_DRAW_ROWS = [
     {"id": "US-P3-TX-PICK-3-EVENING", "state": "Texas", "stateCode": "TX", "game": "pick3", "gameName": "Pick 3", "draw": "Evening Draw"},
     {"id": "US-P3-TX-PICK-3-MORNING", "state": "Texas", "stateCode": "TX", "game": "pick3", "gameName": "Pick 3", "draw": "Morning Draw"},
     {"id": "US-P3-TX-PICK-3-NIGHT", "state": "Texas", "stateCode": "TX", "game": "pick3", "gameName": "Pick 3", "draw": "Night Draw"},
+    {"id": "US-P3-WV-DAILY-3-DAY", "state": "West Virginia", "stateCode": "WV", "game": "pick3", "gameName": "Daily 3", "draw": "Day Draw"},
     {"id": "US-P4-AR-CASH-4-MIDDAY", "state": "Arkansas", "stateCode": "AR", "game": "pick4", "gameName": "Cash 4", "draw": "Midday Draw"},
     {"id": "US-P4-SC-PICK-4-MIDDAY", "state": "South Carolina", "stateCode": "SC", "game": "pick4", "gameName": "Pick 4", "draw": "Midday Draw"},
     {"id": "US-P4-TN-CASH-4-DAY", "state": "Tennessee", "stateCode": "TN", "game": "pick4", "gameName": "Cash 4", "draw": "Day Draw"},
+    {"id": "US-P4-TN-CASH-4-MORNING", "state": "Tennessee", "stateCode": "TN", "game": "pick4", "gameName": "Cash 4", "draw": "Morning Draw"},
     {"id": "US-P4-TX-DAILY-4-DAY", "state": "Texas", "stateCode": "TX", "game": "pick4", "gameName": "Daily 4", "draw": "Day Draw"},
     {"id": "US-P4-TX-DAILY-4-EVENING", "state": "Texas", "stateCode": "TX", "game": "pick4", "gameName": "Daily 4", "draw": "Evening Draw"},
     {"id": "US-P4-TX-DAILY-4-MORNING", "state": "Texas", "stateCode": "TX", "game": "pick4", "gameName": "Daily 4", "draw": "Morning Draw"},
     {"id": "US-P4-TX-DAILY-4-NIGHT", "state": "Texas", "stateCode": "TX", "game": "pick4", "gameName": "Daily 4", "draw": "Night Draw"},
+    {"id": "US-P4-WV-DAILY-4-DAY", "state": "West Virginia", "stateCode": "WV", "game": "pick4", "gameName": "Daily 4", "draw": "Day Draw"},
 ]
 
 US_STATE_CODES = {
@@ -533,7 +536,7 @@ async def async_supabase_kv_save(cache_key, value, client=None, label="Supabase 
         return await async_supabase_rest_post(
             rpc_url,
             payload=rpc_payload,
-            headers=supabase_rest_headers(extra={
+            headers=supabase_write_headers(extra={
                 "Content-Type": "application/json",
                 "Prefer": "return=minimal",
             }),
@@ -549,7 +552,7 @@ async def async_supabase_kv_save(cache_key, value, client=None, label="Supabase 
         resp = await async_supabase_rest_patch(
             update_url,
             payload=update_payload,
-            headers=supabase_rest_headers(extra={
+            headers=supabase_write_headers(extra={
                 "Content-Type": "application/json",
                 "Prefer": "return=minimal",
             }),
@@ -565,7 +568,7 @@ async def async_supabase_kv_save(cache_key, value, client=None, label="Supabase 
     return await async_supabase_rest_post(
         f"{SUPABASE_URL}/rest/v1/lotterynet_kv",
         payload=json.dumps({"key": cache_key, "value": value, "upd": now}).encode("utf-8"),
-        headers=supabase_rest_headers(extra={
+        headers=supabase_write_headers(extra={
             "Content-Type": "application/json",
             "Prefer": "resolution=merge-duplicates,return=minimal",
         }),
@@ -645,7 +648,9 @@ def should_fail_without_supabase_key(supabase_key, env=None):
 
 def get_dr_now():
     """Current Dominican Republic time (AST / UTC-4)."""
-    return datetime.datetime.utcnow() - datetime.timedelta(hours=4)
+    # Keep the existing naive local-time contract while avoiding deprecated utcnow().
+    utc_now = datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None)
+    return utc_now - datetime.timedelta(hours=4)
 
 def get_et_now():
     return datetime.datetime.now(ZoneInfo("America/New_York"))
@@ -2756,6 +2761,12 @@ def _king_api_date(date_str):
         return str(date_str)
 
 
+def _king_session_matches_date(session_date, requested_api_date):
+    """Compare King API timestamps without treating optional milliseconds as different dates."""
+    normalize = lambda value: str(value or "").replace(".000Z", "Z")
+    return normalize(session_date) == normalize(requested_api_date)
+
+
 async def _async_fetch_king_results(date_str, client=None):
     """Fetch King Lottery results from the JSON API used by the current site."""
     c = client or get_http_client()
@@ -2786,12 +2797,19 @@ async def _async_fetch_king_results(date_str, client=None):
                 continue
             result_id = "23" if "día" in normalized or "dia" in normalized else "24"
             sessions = item.get("sessions") or []
-            requested_api_date = _king_api_date(date_str).replace(".000Z", "Z")
+            requested_api_date = _king_api_date(date_str)
             session = next(
-                (candidate for candidate in sessions if str(candidate.get("date") or "") == requested_api_date),
+                (
+                    candidate
+                    for candidate in sessions
+                    if _king_session_matches_date(candidate.get("date"), requested_api_date)
+                ),
                 {},
             )
-            if not session and str((item.get("lastSession") or {}).get("date") or "") == requested_api_date:
+            if not session and _king_session_matches_date(
+                (item.get("lastSession") or {}).get("date"),
+                requested_api_date,
+            ):
                 session = item.get("lastSession") or {}
             score = session.get("score") or []
             values = score[0] if score and isinstance(score[0], list) else score
@@ -2862,6 +2880,100 @@ def loterias_dominicanas_api_date_iso(date_str):
     return dr_midnight.astimezone(datetime.timezone.utc).isoformat().replace("+00:00", "Z")
 
 
+def parse_loterias_dominicanas_session_date(raw):
+    text = str(raw or "").strip()
+    if not text:
+        return None
+
+    normalized = text.replace("Z", "+00:00")
+    try:
+        return datetime.datetime.fromisoformat(normalized).date()
+    except ValueError:
+        pass
+
+    for fmt in (
+        "%m/%d/%Y %H:%M:%S",
+        "%m/%d/%Y %I:%M:%S %p",
+        "%m/%d/%Y",
+        "%d-%m-%Y",
+        "%Y-%m-%d",
+    ):
+        try:
+            return datetime.datetime.strptime(text, fmt).date()
+        except ValueError:
+            continue
+    return None
+
+
+def parse_loterias_dominicanas_sessions_payload(site_payload, sessions_payload, date_str, wanted_ids=None):
+    results = []
+    seen_ids = set()
+    wanted = {str(value) for value in (wanted_ids or [])}
+    target_date = None
+    try:
+        target_date = datetime.datetime.strptime(str(date_str), "%d-%m-%Y").date()
+    except ValueError:
+        return results
+
+    game_names = {}
+    for company in (site_payload or {}).get("siteCompanies") or []:
+        for site_game in company.get("siteGames") or []:
+            title = str(site_game.get("title") or "").strip().lower()
+            game_id = str(site_game.get("game_id") or "").strip()
+            if game_id and title:
+                game_names[game_id] = title
+
+    for item in sessions_payload if isinstance(sessions_payload, list) else []:
+        game_id = str(item.get("game_id") or "").strip()
+        title = game_names.get(game_id, "")
+        match = LOTTERY_MAP.get(title)
+        if not match and "king lottery" in title:
+            is_day = "día" in title or "dia" in title or "day" in title or "12:30" in title
+            match = {
+                "id": "23" if is_day else "24",
+                "name": "King Lottery Día" if is_day else "King Lottery Noche",
+            }
+        if not match or match["id"] in seen_ids:
+            continue
+        if wanted and match["id"] not in wanted:
+            continue
+
+        sessions = item.get("sessions") or []
+        candidates = list(sessions)
+        last_session = item.get("lastSession") or {}
+        if last_session:
+            candidates.append(last_session)
+
+        chosen_session = None
+        for session in candidates:
+            session_date = parse_loterias_dominicanas_session_date(session.get("date"))
+            if session_date == target_date:
+                chosen_session = session
+                break
+        if not chosen_session:
+            continue
+
+        numbers = []
+        for score_row in chosen_session.get("score") or []:
+            for value in score_row or []:
+                text = str(value or "").strip()
+                if re.fullmatch(r"\d{1,2}", text):
+                    numbers.append(text.zfill(2))
+
+        if len(numbers) < 3:
+            continue
+
+        results.append({
+            "id": match["id"],
+            "name": match["name"],
+            "date": date_str,
+            "number": "-".join(numbers),
+        })
+        seen_ids.add(match["id"])
+
+    return results
+
+
 def parse_loterias_dominicanas_api_site(payload, date_str, wanted_ids=None):
     results = []
     seen_ids = set()
@@ -2913,21 +3025,25 @@ async def _async_fetch_loterias_dominicanas_api_results(date_str, wanted_ids=Non
     if not api_date:
         return []
     c = client or get_http_client()
-    url = (
-        "https://api.loteriasdominicanas.com/dominicana/sites/env"
-        f"?date={urllib.parse.quote(api_date, safe='')}&limit=2"
-    )
+    env_url = "https://api.loteriasdominicanas.com/dominicana/sites/env"
+    sessions_url = "https://api.loteriasdominicanas.com/dominicana/sessions?date=" + urllib.parse.quote(api_date, safe="")
     try:
-        resp = await async_http_get(url, client=c, accept_json=True)
+        env_resp, sessions_resp = await asyncio.gather(
+            async_http_get(env_url, client=c, accept_json=True),
+            async_http_get(sessions_url, client=c, accept_json=True),
+        )
     except Exception as e:
         logger.warning("LoteriasDominicanas API error for %s: %s", date_str, e)
         return []
     try:
-        payload = resp.json()
+        site_payload = env_resp.json()
+        sessions_payload = sessions_resp.json()
     except Exception as e:
         logger.warning("LoteriasDominicanas API JSON parse error for %s: %s", date_str, e)
         return []
-    rows = parse_loterias_dominicanas_api_site(payload, date_str, wanted_ids=wanted_ids)
+    rows = parse_loterias_dominicanas_sessions_payload(site_payload, sessions_payload, date_str, wanted_ids=wanted_ids)
+    if not rows:
+        rows = parse_loterias_dominicanas_api_site(site_payload, date_str, wanted_ids=wanted_ids)
     for row in rows:
         logger.info("LoteriasDominicanas API [%s] %s: %s", row["id"], row["name"], row["number"])
     return rows
@@ -3462,7 +3578,11 @@ async def _async_main():
     else:
         target_dates = default_scrape_dates()
 
-    logger.info("Syncing dates: %s (UTC now=%s)", ", ".join(target_dates), datetime.datetime.utcnow().strftime("%H:%M"))
+    logger.info(
+        "Syncing dates: %s (UTC now=%s)",
+        ", ".join(target_dates),
+        datetime.datetime.now(datetime.timezone.utc).strftime("%H:%M"),
+    )
     client = get_http_client()
 
     for idx, target_date in enumerate(target_dates):

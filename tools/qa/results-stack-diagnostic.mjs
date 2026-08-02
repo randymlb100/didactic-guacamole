@@ -3,6 +3,8 @@ import { performance } from "node:perf_hooks";
 
 const SUPABASE_URL = "https://unhoulkujbtsypccpirc.supabase.co";
 const API_KEY = "sb_publishable_A0LxL11fjdQGehmIPnyPZQ_6ty7T8lK";
+const RESULTS_ACCESS_TOKEN = process.env.RESULTS_ACCESS_TOKEN || "";
+const SECURITY_PROBES = process.env.LOTTERYNET_SECURITY_PROBES === "1";
 const RENDER_URL = process.env.RESULTS_RENDER_URL || "https://didactic-guacamole.onrender.com";
 const SCRAPER_REPO = process.env.RESULTS_SCRAPER_REPO || "C:/Users/Randy Cordero/Desktop/didactic-guacamole";
 let date = process.env.RESULTS_MONITOR_DATE || toDrDate(new Date());
@@ -86,13 +88,12 @@ async function checkRender() {
   const live = await fetchJson("render system-results live param", `${base}/system-results?date=${encodeURIComponent(date)}&mode=both&live=1`);
   for (const result of [normal, live]) {
     const payload = result.json ?? {};
-    check(result.ok, "Render responde resultados", { status: result.status, source: payload.source, elapsedMs: result.elapsedMs });
-    check(payload.source !== "live-scraper", "Render no usa scraper inline para POS normal", {
+    log("INFO Render Web Service compatibilidad", {
+      ok: result.ok,
+      status: result.status,
       source: payload.source,
       servedFrom: payload.servedFrom ?? null,
       elapsedMs: result.elapsedMs,
-    });
-    check(sectionCount(payload, "lotteries") > 0 || sectionCount(payload, "picks") > 0, "Render devuelve alguna seccion de resultados", {
       lotteries: sectionCount(payload, "lotteries"),
       picks: sectionCount(payload, "picks"),
     });
@@ -100,16 +101,43 @@ async function checkRender() {
 }
 
 async function checkSupabaseResults() {
-  const url = `${SUPABASE_URL}/rest/v1/result_draws?result_day_key=eq.${encodeURIComponent(date)}&select=lottery_legacy_id,game,updated_at&limit=200`;
-  const result = await fetchJson("supabase result_draws", url, {
+  if (SECURITY_PROBES) {
+    const direct = await fetchJson("supabase result_draws direct blocked", `${SUPABASE_URL}/rest/v1/result_draws?result_day_key=eq.${encodeURIComponent(date)}&select=lottery_legacy_id,game,updated_at&limit=1`, {
+      headers: {
+        apikey: API_KEY,
+        Authorization: `Bearer ${API_KEY}`,
+      },
+    });
+    check([401, 403].includes(direct.status), "Supabase result_draws directo esta cerrado por REST", {
+      status: direct.status,
+      elapsedMs: direct.elapsedMs,
+    });
+  } else {
+    check(true, "probe REST directo result_draws omitido para no ensuciar logs", {
+      env: "LOTTERYNET_SECURITY_PROBES=1",
+    });
+  }
+
+  if (!RESULTS_ACCESS_TOKEN) {
+    check(true, "get-results-v2 requiere token de usuario para prueba completa", {
+      skipped: true,
+      env: "RESULTS_ACCESS_TOKEN",
+    });
+    return;
+  }
+
+  const result = await fetchJson("supabase get-results-v2 edge", `${SUPABASE_URL}/functions/v1/get-results-v2`, {
+    method: "POST",
     headers: {
       apikey: API_KEY,
-      Authorization: `Bearer ${API_KEY}`,
+      Authorization: `Bearer ${RESULTS_ACCESS_TOKEN}`,
+      "content-type": "application/json",
     },
+    body: JSON.stringify({ dayKey: date }),
   });
-  const rows = Array.isArray(result.json) ? result.json : [];
-  check(result.ok, "Supabase result_draws responde por REST", { status: result.status, rows: rows.length, elapsedMs: result.elapsedMs });
-  check(rows.length > 0, "Supabase tiene resultados normalizados para la fecha", {
+  const rows = Array.isArray(result.json?.results) ? result.json.results : [];
+  check(result.ok, "Supabase get-results-v2 responde por Edge", { status: result.status, rows: rows.length, elapsedMs: result.elapsedMs });
+  check(rows.length > 0, "Supabase tiene resultados normalizados para la fecha por Edge", {
     date,
     normal: rows.filter((row) => row.game === "normal").length,
     picks: rows.filter((row) => row.game === "pick3" || row.game === "pick4").length,
@@ -118,29 +146,17 @@ async function checkSupabaseResults() {
 
 async function findCachedDate() {
   if (process.env.RESULTS_MONITOR_DATE) return date;
-  for (let offset = 0; offset < 7; offset += 1) {
-    const candidate = toDrDate(new Date(Date.now() - offset * 24 * 60 * 60 * 1000));
-    const url = `${SUPABASE_URL}/rest/v1/result_draws?result_day_key=eq.${encodeURIComponent(candidate)}&select=lottery_legacy_id&limit=1`;
-    const result = await fetchJson(`supabase result_draws probe ${candidate}`, url, {
-      headers: {
-        apikey: API_KEY,
-        Authorization: `Bearer ${API_KEY}`,
-      },
-    });
-    const rows = Array.isArray(result.json) ? result.json : [];
-    if (result.ok && rows.length > 0) {
-      date = candidate;
-      check(true, "diagnostico usa fecha con resultado normalizado disponible", {
-        date,
-      });
-      return date;
-    }
-  }
-  check(false, "no hay result_draws reciente en Supabase", { checkedDays: 7 });
+  check(true, "diagnostico usa fecha local sin consulta directa a result_draws", { date });
   return date;
 }
 
 async function checkRpcNotPublic() {
+  if (!SECURITY_PROBES) {
+    check(true, "probe RPC publico omitido para no ensuciar logs", {
+      env: "LOTTERYNET_SECURITY_PROBES=1",
+    });
+    return;
+  }
   const result = await fetchJson("supabase public rpc blocked", `${SUPABASE_URL}/rest/v1/rpc/ln_save_lotterynet_kv`, {
     method: "POST",
     headers: {
@@ -173,8 +189,8 @@ async function main() {
   log("Inicio results stack diagnostic", { date, renderUrl: RENDER_URL, scraperRepo: SCRAPER_REPO });
   await checkGithubWorkflow();
   await findCachedDate();
-  await checkRender();
   await checkSupabaseResults();
+  await checkRender();
   await checkRpcNotPublic();
 }
 

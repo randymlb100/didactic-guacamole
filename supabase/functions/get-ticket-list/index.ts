@@ -8,6 +8,7 @@ import {
   type AuthenticatedActor,
 } from "../_shared/lotterynet-admin.ts";
 import { captureEdgeError } from "../_shared/sentry-edge.ts";
+import { redisGetJson, redisSetJson } from "../_shared/upstash-redis.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -19,8 +20,14 @@ type JsonMap = Record<string, unknown>;
 type SupabaseAdminClient = ReturnType<typeof createClient<any, "public", any>>;
 const MAX_PRIZE_PROCESS_DAYS = 2;
 const UPDATED_AT_STAMP_CACHE_TTL_MS = 5_000;
+const OWNER_SNAPSHOT_CACHE_TTL_MS = 30_000;
 const ownerUpdatedAtStampCache = new Map<string, { updatedAt: string | null; cachedAtMs: number }>();
+const ownerSnapshotPayloadCache = new Map<string, { updatedAt: string | null; cachedAtMs: number; payload: JsonMap }>();
 type DateRangeFilter = { from: string; to: string };
+type CachedOwnerSnapshot = {
+  updatedAt: string | null;
+  payload: JsonMap;
+};
 
 function json(status: number, body: unknown): Response {
   return new Response(JSON.stringify(body ?? {}), {
@@ -93,11 +100,24 @@ function prizeDaysFromBody(body: JsonMap): string[] {
 }
 
 async function processPendingPrizes(admin: SupabaseAdminClient, body: JsonMap): Promise<JsonMap[]> {
-  if (body.processPendingPrizes === false) return [];
-  if (!bool(body.processPendingPrizes) && !bool(body.processPrizeJobs) && !body.processPrizeDays) return [];
+  // The client sends processPendingPrizes=false together with explicit prize days.
+  // Treat the requested days as authoritative so prize jobs still get processed.
   const days = prizeDaysFromBody(body);
+  if (days.length === 0) return [];
+  const { data: pendingDays, error: pendingError } = await admin
+    .from("result_reconcile_jobs")
+    .select("result_day_key")
+    .eq("status", "pending")
+    .in("result_day_key", days);
+  if (pendingError) {
+    console.warn("get-ticket-list prize precheck failed", { message: pendingError.message, days });
+  }
+  const daysToProcess = Array.from(new Set((Array.isArray(pendingDays) ? pendingDays : [])
+    .map((row) => clean((row as JsonMap).result_day_key))
+    .filter(Boolean)));
+  if (daysToProcess.length === 0) return [];
   const results: JsonMap[] = [];
-  for (const day of days) {
+  for (const day of daysToProcess) {
     const { data, error } = await admin.rpc("lotterynet_process_result_reconcile_jobs_for_day", {
       p_result_day_key: day,
       p_job_limit: 4,
@@ -194,6 +214,27 @@ function isoDayToLabel(value: string): string {
   return `${date}-${month}-${year}`;
 }
 
+function isoDaySequence(from: string, to: string): string[] {
+  const start = Date.parse(`${from}T00:00:00.000Z`);
+  const end = Date.parse(`${to}T00:00:00.000Z`);
+  if (!Number.isFinite(start) || !Number.isFinite(end) || end < start) return [];
+  const days: string[] = [];
+  for (let cursor = start; cursor <= end; cursor += 24 * 60 * 60 * 1000) {
+    days.push(new Date(cursor).toISOString().slice(0, 10));
+  }
+  return days;
+}
+
+function dateRangeAliases(range: DateRangeFilter | null): { isoDays: string[]; legacyDays: string[] } {
+  if (!range) return { isoDays: [], legacyDays: [] };
+  const isoDays = isoDaySequence(range.from, range.to);
+  const legacyDays = isoDays.map(isoDayToLabel).filter(Boolean);
+  return {
+    isoDays: Array.from(new Set(isoDays)),
+    legacyDays: Array.from(new Set(legacyDays)),
+  };
+}
+
 function ticketDrawDayIso(ticket: unknown): string {
   const row = ticketRow(ticket);
   return isoDayKey(row.drawDateKey) ||
@@ -208,6 +249,8 @@ function ticketDrawDayIso(ticket: unknown): string {
 function dateRangeFromBody(body: JsonMap): DateRangeFilter | null {
   const from = isoDayKey(body.fromDate ?? body.fromDay ?? body.from ?? body.dateFrom);
   const to = isoDayKey(body.toDate ?? body.toDay ?? body.to ?? body.dateTo);
+  const dayKey = isoDayKey(body.dayKey ?? body.day ?? body.dateKey);
+  if (!from && !to && dayKey) return { from: dayKey, to: dayKey };
   if (!from || !to) return null;
   return from <= to ? { from, to } : { from: to, to: from };
 }
@@ -584,6 +627,55 @@ async function safeSnapshotUpdatedAtForOwner(
   }
 }
 
+function ownerSnapshotCacheKey(ownerKey: string, updatedAt: string | null): string {
+  return `${ownerKey.trim().toLowerCase()}:${clean(updatedAt) || "none"}`;
+}
+
+async function readCachedOwnerSnapshot(
+  admin: SupabaseAdminClient,
+  ownerKey: string,
+  options: { useCache?: boolean } = {},
+): Promise<CachedOwnerSnapshot> {
+  const stamp = await safeSnapshotUpdatedAtForOwner(admin, ownerKey, { useCache: true });
+  const cacheKey = ownerSnapshotCacheKey(ownerKey, stamp.updatedAt);
+  const now = Date.now();
+  if (options.useCache) {
+    const memoryCached = ownerSnapshotPayloadCache.get(cacheKey);
+    if (memoryCached && now - memoryCached.cachedAtMs <= OWNER_SNAPSHOT_CACHE_TTL_MS) {
+      return { updatedAt: memoryCached.updatedAt, payload: memoryCached.payload };
+    }
+
+    const redisCached = await redisGetJson<{ cachedAtMs: number; updatedAt: string | null; payload: JsonMap }>(cacheKey);
+    if (
+      redisCached &&
+      typeof redisCached === "object" &&
+      typeof redisCached.cachedAtMs === "number" &&
+      now - redisCached.cachedAtMs <= OWNER_SNAPSHOT_CACHE_TTL_MS &&
+      redisCached.payload &&
+      typeof redisCached.payload === "object"
+    ) {
+      ownerSnapshotPayloadCache.set(cacheKey, redisCached);
+      return { updatedAt: redisCached.updatedAt ?? stamp.updatedAt, payload: redisCached.payload };
+    }
+  }
+
+  const { data, error } = await admin
+    .from("lotterynet_tickets_by_owner")
+    .select("payload,updated_at")
+    .eq("owner_key", ownerKey)
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+
+  const updatedAt = clean((data as JsonMap | null)?.updated_at) || stamp.updatedAt;
+  const payload = payloadObject((data as JsonMap | null)?.payload);
+  const cachedValue = { cachedAtMs: Date.now(), updatedAt, payload };
+  ownerSnapshotPayloadCache.set(ownerSnapshotCacheKey(ownerKey, updatedAt), cachedValue);
+  if (options.useCache) {
+    await redisSetJson(ownerSnapshotCacheKey(ownerKey, updatedAt), cachedValue, Math.ceil(OWNER_SNAPSHOT_CACHE_TTL_MS / 1000));
+  }
+  return { updatedAt, payload };
+}
+
 async function latestUpdatedAtForOwner(
   admin: SupabaseAdminClient,
   ownerKey: string,
@@ -669,6 +761,15 @@ async function officialTicketsForOwner(
   const since = serverRange?.from ?? new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString();
   const selectColumns = "id,client_request_id,ticket_code,total_amount,monto,status,estado,payout_amount,admin_key,cashier_key,lottery_name,lottery_endpoint,draw_date_real,draw_date,legacy_day_key,server_created_at,created_at,updated_at";
   const rowLimit = officialTicketQueryLimit(limit, dateRange);
+  const aliases = dateRangeAliases(dateRange);
+  const dateClauses = [
+    ...aliases.isoDays.map((day) => `draw_date_real.eq.${day}`),
+    ...aliases.isoDays.map((day) => `draw_date.eq.${day}`),
+    ...aliases.isoDays.map((day) => `legacy_day_key.eq.${day}`),
+    ...aliases.legacyDays.map((day) => `draw_date.eq.${day}`),
+    ...aliases.legacyDays.map((day) => `legacy_day_key.eq.${day}`),
+  ];
+  const dateFilter = dateClauses.length > 0 ? dateClauses.join(",") : "";
   const fetchByColumn = async (column: "admin_key" | "cashier_key"): Promise<JsonMap[]> => {
     let query = admin
       .from("tickets")
@@ -678,8 +779,8 @@ async function officialTicketsForOwner(
       .gte("server_created_at", since)
       .order("server_created_at", { ascending: false })
       .limit(rowLimit);
-    if (serverRange?.to) {
-      query = query.lt("server_created_at", serverRange.to);
+    if (dateFilter) {
+      query = query.or(dateFilter);
     }
     const { data, error } = await query;
     if (error) throw new Error(error.message);
@@ -696,8 +797,8 @@ async function officialTicketsForOwner(
         .gte("server_created_at", since)
         .order("server_created_at", { ascending: false })
         .limit(rowLimit);
-      if (serverRange?.to) {
-        query = query.lt("server_created_at", serverRange.to);
+      if (dateFilter) {
+        query = query.or(dateFilter);
       }
       const { data, error } = await query;
       if (error) throw new Error(error.message);
@@ -824,14 +925,8 @@ Deno.serve(async (req: Request) => {
       });
     }
 
-    const { data, error } = await admin
-      .from("lotterynet_tickets_by_owner")
-      .select("payload,updated_at")
-      .eq("owner_key", ownerKey)
-      .maybeSingle();
-    if (error) throw new Error(error.message);
-
-    const basePayload = payloadObject((data as JsonMap | null)?.payload);
+    const snapshot = await readCachedOwnerSnapshot(admin, ownerKey, { useCache: true });
+    const basePayload = payloadObject(snapshot.payload);
 
     if (action === "upsert") {
       const incomingPayload = payloadObject(body.payload);
@@ -887,7 +982,7 @@ Deno.serve(async (req: Request) => {
         ok: true,
         ownerKey,
         payload,
-        updatedAt: (data as JsonMap | null)?.updated_at ?? null,
+        updatedAt: snapshot.updatedAt ?? null,
         prizeReconcile: [],
         source: "snapshot",
         completeScope: false,
@@ -923,7 +1018,7 @@ Deno.serve(async (req: Request) => {
       ok: true,
       ownerKey,
       payload,
-      updatedAt: (data as JsonMap | null)?.updated_at ?? null,
+      updatedAt: snapshot.updatedAt ?? null,
       prizeReconcile,
       source: "authoritative",
       completeScope,

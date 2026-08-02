@@ -57,14 +57,16 @@ class NativeChromeContractsTest {
     }
 
     @Test
-    fun `overflow contract keeps tighter lists shorter on phone modes`() {
+    fun `overflow contract gives phone dropdowns enough room for long selectors`() {
         val tight = resolveOverflowLayoutContract(LotteryNetWindowMode.POS_TIGHT)
         val phone = resolveOverflowLayoutContract(LotteryNetWindowMode.POS)
 
-        assertEquals(132.dp, tight.dropdownMaxHeight)
-        assertEquals(156.dp, phone.dropdownMaxHeight)
+        assertEquals(280.dp, tight.dropdownMaxHeight)
+        assertEquals(320.dp, phone.dropdownMaxHeight)
         assertEquals(280.dp, tight.dropdownMaxWidth)
         assertEquals(320.dp, phone.dropdownMaxWidth)
+        assertTrue(tight.dropdownMaxHeight >= 280.dp)
+        assertTrue(phone.dropdownMaxHeight > tight.dropdownMaxHeight)
         assertTrue(tight.listMaxHeightFraction < phone.listMaxHeightFraction)
         assertTrue(tight.sheetMaxHeightFraction < 0.9f)
     }

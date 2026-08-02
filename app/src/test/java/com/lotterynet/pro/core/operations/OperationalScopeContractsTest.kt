@@ -4,6 +4,7 @@ import com.lotterynet.pro.core.model.ActiveSession
 import com.lotterynet.pro.core.model.TicketRecord
 import com.lotterynet.pro.core.model.UserAccount
 import com.lotterynet.pro.core.model.UserRole
+import com.lotterynet.pro.core.sync.resolveOperationalOwnerKey
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
@@ -217,5 +218,81 @@ class OperationalScopeContractsTest {
         val visible = filterCashiersForSession(session, listOf(other, assigned))
 
         assertEquals(listOf("banca01"), visible.map { it.user })
+    }
+
+    @Test
+    fun `admin sees server hydrated tickets even when local cashier cache is incomplete`() {
+        val session = ActiveSession(
+            role = UserRole.ADMIN,
+            userId = "auth-user-id",
+            username = "nicola01",
+            adminId = null,
+            adminUser = null,
+            banca = "Banca yuniel",
+        )
+        val moreno = UserAccount(
+            id = "CAJ-AFF865",
+            user = "moreno",
+            displayName = "Banca moreno",
+            role = UserRole.CASHIER,
+            adminId = "ADM-163C38",
+            adminUser = "nicola01",
+            banca = "Banca yuniel",
+        )
+        val serverTicketFromOtherCashier = TicketRecord(
+            id = "native-1780756508449",
+            serial = "LN-D9C097-13FA33",
+            sellerId = "CAJ-D3BDF0",
+            sellerUser = "CAJ-D3BDF0",
+            adminId = "ADM-163C38",
+            adminUser = "auth-user-id",
+            role = UserRole.CASHIER,
+        )
+
+        val visible = filterTicketsForOperationalScope(
+            session = session,
+            tickets = listOf(serverTicketFromOtherCashier),
+            cashiers = listOf(moreno),
+        )
+
+        assertEquals(listOf("native-1780756508449"), visible.map { it.id })
+    }
+
+    @Test
+    fun `cashier clean install hydrates and scopes by cashier identity before admin owner`() {
+        val session = ActiveSession(
+            role = UserRole.CASHIER,
+            userId = "CAJ-AF4874",
+            username = "cajero-af",
+            adminId = "ADM-163C38",
+            adminUser = "nicola01",
+            authUserId = "auth-cashier-af",
+            banca = "Banca yuniel",
+        )
+        val ownServerTicket = TicketRecord(
+            id = "native-1780750776220",
+            serial = "LN-46FAB9-BC35FF",
+            sellerId = "CAJ-AF4874",
+            sellerUser = "CAJ-AF4874",
+            adminId = "ADM-163C38",
+            adminUser = "nicola01",
+            role = UserRole.CASHIER,
+            status = "PERDEDOR",
+            total = 46.0,
+        )
+        val otherTicket = ownServerTicket.copy(
+            id = "other-cashier",
+            sellerId = "CAJ-AFF865",
+            sellerUser = "moreno",
+        )
+
+        val visible = filterTicketsForOperationalScope(
+            session = session,
+            tickets = listOf(otherTicket, ownServerTicket),
+            cashiers = emptyList(),
+        )
+
+        assertEquals("CAJ-AF4874", resolveOperationalOwnerKey(session))
+        assertEquals(listOf("native-1780750776220"), visible.map { it.id })
     }
 }

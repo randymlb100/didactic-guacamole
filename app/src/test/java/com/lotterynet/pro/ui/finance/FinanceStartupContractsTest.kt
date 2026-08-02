@@ -28,4 +28,10 @@ class FinanceStartupContractsTest {
         assertTrue(plan.afterFirstFrameWork.contains(FinanceStartupWork.LOAD_HISTORY))
         assertTrue(plan.afterFirstFrameWork.contains(FinanceStartupWork.HYDRATE_REMOTE_DATA))
     }
+
+    @Test
+    fun `finance remote hydration waits for first paint`() {
+        assertTrue(FINANCE_STARTUP_REMOTE_DELAY_MS >= 300L)
+        assertTrue(FINANCE_STARTUP_REMOTE_DELAY_MS <= 750L)
+    }
 }

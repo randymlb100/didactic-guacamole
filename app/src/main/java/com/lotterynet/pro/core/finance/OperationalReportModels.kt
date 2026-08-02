@@ -4,6 +4,7 @@ import com.lotterynet.pro.core.model.ActiveSession
 import com.lotterynet.pro.core.model.UserAccount
 import com.lotterynet.pro.core.model.UserRole
 import com.lotterynet.pro.core.operations.filterCashiersForSession
+import com.lotterynet.pro.core.operations.cashierDisplayLabel
 import com.lotterynet.pro.core.operations.cashierSortLabel
 import com.lotterynet.pro.core.operations.naturalCashierNumber
 import com.lotterynet.pro.core.operations.sortCashierAccountsNatural
@@ -119,6 +120,9 @@ fun buildOperationalReportActorFilters(
     cashiers: List<UserAccount>,
     supervisors: List<UserAccount> = emptyList(),
 ): List<OperationalReportActorFilter> {
+    if (session.role == UserRole.CASHIER) {
+        return listOf(buildOwnCashierReportFilter(session, cashiers))
+    }
     if (session.role != UserRole.ADMIN && session.role != UserRole.SUPERVISOR) return emptyList()
     return buildList {
         add(OperationalReportActorFilter.All)
@@ -133,9 +137,70 @@ fun buildOperationalReportActorFilters(
         sortCashierAccountsNatural(filterCashiersForSession(session, cashiers))
             .filter { it.active }
             .forEach { cashier ->
-                add(OperationalReportActorFilter.Cashier(cashier.id, cashier.displayName ?: cashier.user))
+                add(OperationalReportActorFilter.Cashier(cashier.id, cashierDisplayLabel(cashier)))
             }
     }
+}
+
+fun resolveOperationalReportSelectedFilter(
+    filters: List<OperationalReportActorFilter>,
+    selected: OperationalReportActorFilter,
+): OperationalReportActorFilter {
+    return filters.firstOrNull { it.key == selected.key }
+        ?: filters.firstOrNull()
+        ?: OperationalReportActorFilter.All
+}
+
+/**
+ * Keeps an explicitly selected cashier stable while the account list is
+ * refreshed. The server still enforces the session scope and cashier key;
+ * this only prevents a transient bootstrap result from silently switching
+ * the UI to the first/global filter.
+ */
+fun resolveOperationalReportFilterForRefresh(
+    filters: List<OperationalReportActorFilter>,
+    selected: OperationalReportActorFilter,
+    forcedCashierKey: String? = null,
+): OperationalReportActorFilter {
+    val forcedCashier = forcedCashierKey?.let { key ->
+        filters.firstOrNull { filter ->
+            filter is OperationalReportActorFilter.Cashier && filter.actorKey == key
+        }
+    }
+    if (forcedCashier != null) return forcedCashier
+    if (selected is OperationalReportActorFilter.Cashier) return selected
+    return resolveOperationalReportSelectedFilter(filters, selected)
+}
+
+private fun buildOwnCashierReportFilter(
+    session: ActiveSession,
+    cashiers: List<UserAccount>,
+): OperationalReportActorFilter.Cashier {
+    val account = cashiers.firstOrNull { cashier -> sessionMatchesCashier(session, cashier) }
+    return if (account != null) {
+        OperationalReportActorFilter.Cashier(account.id, cashierDisplayLabel(account))
+    } else {
+        val key = session.username.ifBlank { session.userId }
+        OperationalReportActorFilter.Cashier(key, key)
+    }
+}
+
+private fun sessionMatchesCashier(
+    session: ActiveSession,
+    cashier: UserAccount,
+): Boolean {
+    val sessionKeys = listOfNotNull(
+        session.userId,
+        session.username,
+        session.authUserId,
+    ).map { it.trim().lowercase(Locale.US) }.filter { it.isNotBlank() }.toSet()
+    if (sessionKeys.isEmpty()) return false
+    return listOfNotNull(
+        cashier.id,
+        cashier.user,
+        cashier.displayName,
+        cashier.authUserId,
+    ).any { it.trim().lowercase(Locale.US) in sessionKeys }
 }
 
 private fun sortOperationalAccountsNatural(accounts: List<UserAccount>): List<UserAccount> {

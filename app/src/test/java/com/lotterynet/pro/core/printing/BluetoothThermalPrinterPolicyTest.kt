@@ -2,6 +2,7 @@ package com.lotterynet.pro.core.printing
 
 import com.lotterynet.pro.core.perf.PosPerformanceBudget
 import com.lotterynet.pro.core.model.ThermalPrinterPrefs
+import java.lang.reflect.InvocationTargetException
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -18,6 +19,15 @@ class BluetoothThermalPrinterPolicyTest {
     }
 
     @Test
+    fun `bluetooth reconnect plan retries cold printers without waiting forever`() {
+        val plan = BluetoothThermalPrinter.connectionRetryPlan()
+
+        assertEquals(3, plan.maxRounds)
+        assertTrue(plan.firstRetryDelayMs in 700L..1_200L)
+        assertTrue(plan.maxRetryDelayMs <= 2_500L)
+    }
+
+    @Test
     fun `long ticket with qr receives larger bluetooth write window and drain delay`() {
         val content = (1..120).joinToString("\n") { "[[PLAY_NUMBER|tall]]Q ${it.toString().padStart(2, '0')}        100" } +
             "\n[[QR]]LN|NAT-LONG|SEC|12000|1777072400000"
@@ -29,6 +39,16 @@ class BluetoothThermalPrinterPolicyTest {
         assertTrue(policy.writeTimeoutMs <= 18_000L)
         assertTrue(BluetoothThermalPrinter.resolvePrinterDrainDelayMs(content) >= 1_200L)
         assertTrue(BluetoothThermalPrinter.resolvePrinterDrainDelayMs(content) <= 2_500L)
+    }
+
+    @Test
+    fun `final paper feed is compact but keeps cut room`() {
+        val shortTicket = "LINEA 1\nLINEA 2\nTOTAL 100"
+        val longTicket = (1..140).joinToString("\n") { "Q ${it.toString().padStart(2, '0')} 100" } +
+            "\n[[QR]]LN|NAT-LONG|SEC|12000|1777072400000"
+
+        assertEquals(2, BluetoothThermalPrinter.resolveFinalFeedLines(shortTicket))
+        assertEquals(3, BluetoothThermalPrinter.resolveFinalFeedLines(longTicket))
     }
 
     @Test
@@ -77,6 +97,15 @@ class BluetoothThermalPrinterPolicyTest {
         assertTrue(text.contains("Prueba de impresora"))
         assertTrue(text.contains("Conexion Bluetooth OK"))
         assertTrue(text.contains("Banca Norte"))
+    }
+
+    @Test
+    fun `printer root cause unwraps reflection wrappers for cleaner diagnostics`() {
+        val root = IllegalStateException("Sunmi binder denied")
+        val wrapped = InvocationTargetException(InvocationTargetException(root))
+
+        assertEquals(root, wrapped.printerRootCause())
+        assertEquals("Sunmi binder denied", wrapped.printerSafeMessage("fallback"))
     }
 
     @Test

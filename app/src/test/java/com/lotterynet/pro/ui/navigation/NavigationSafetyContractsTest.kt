@@ -93,6 +93,7 @@ class NavigationSafetyContractsTest {
                 NativeDestination.RESULTS,
                 NativeDestination.RECHARGE,
                 NativeDestination.SPORTSBOOK,
+                NativeDestination.SERVICES_GAMES,
                 NativeDestination.PRINTER,
                 NativeDestination.ADMIN_WINNERS,
                 NativeDestination.USER_ACCOUNTS,
@@ -122,6 +123,7 @@ class NavigationSafetyContractsTest {
                 NativeDestination.RESULTS,
                 NativeDestination.RECHARGE,
                 NativeDestination.SPORTSBOOK,
+                NativeDestination.SERVICES_GAMES,
                 NativeDestination.PRINTER,
                 NativeDestination.SHELL_MENU,
             ),
@@ -131,6 +133,7 @@ class NavigationSafetyContractsTest {
             setOf(
                 NativeDestination.SHELL_MENU,
                 NativeDestination.MASTER_DASHBOARD,
+                NativeDestination.MASTER_SERVICES_GAMES,
                 NativeDestination.MASTER_CREATE_BANK,
                 NativeDestination.FINANCE,
                 NativeDestination.ADMIN_AUDIT,

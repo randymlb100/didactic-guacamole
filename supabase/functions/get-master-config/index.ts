@@ -1,9 +1,11 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { clean, corsHeaders, fetchKvValue, json, supabaseAdmin } from "../_shared/lotterynet-admin.ts";
+import { captureEdgeError } from "../_shared/sentry-edge.ts";
 
 function isAllowedKey(key: string): boolean {
   return /^(cashier_limits|cashier_prize_payouts|recharge_limits|admin_operational_limits|system_modes|manual_disabled_lotteries):[A-Za-z0-9_.:-]+$/.test(key) ||
     /^sportsbook:(global|actor:[A-Za-z0-9_.:-]+|admin:[A-Za-z0-9_.:-]+)$/.test(key) ||
+    /^(services|video_games):global$/.test(key) ||
     /^sys_[A-Za-z0-9_.:-]+$/.test(key);
 }
 
@@ -11,10 +13,12 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (req.method !== "POST") return json({ ok: false, message: "Metodo no permitido." }, 405);
 
+  let action = "";
+  let key = "";
   try {
     const body = await req.json().catch(() => ({}));
-    const action = clean(body.action || "fetch");
-    const key = clean(body.key);
+    action = clean(body.action || "fetch");
+    key = clean(body.key);
     if (action === "probe") return json({ ok: true });
     if (!key || !isAllowedKey(key)) return json({ ok: false, message: "Clave de configuracion invalida." }, 400);
 
@@ -33,6 +37,7 @@ Deno.serve(async (req) => {
     const fallback = data?.payload === undefined || data?.payload === null ? await fetchKvValue(key) : null;
     return json({ ok: true, key, payload: data?.payload ?? fallback ?? null, updatedAt: data?.updated_at ?? null });
   } catch (error) {
+    await captureEdgeError(error, { functionName: "get-master-config", operation: action, configKey: key });
     return json({ ok: false, message: error instanceof Error ? error.message : "No se pudo leer master config." }, 500);
   }
 });

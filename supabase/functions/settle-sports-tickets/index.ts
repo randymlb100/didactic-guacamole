@@ -42,8 +42,9 @@ async function handle(req: Request): Promise<Response> {
     return json({ ok: false, message: eventError?.message ?? "Evento deportivo no encontrado." }, 404);
   }
 
-  if (lower(event.status) !== "final") {
-    return json({ ok: false, message: "El evento no esta en estado final." }, 400);
+  const eventStatus = lower(event.status);
+  if (!["final", "cancelled"].includes(eventStatus)) {
+    return json({ ok: false, message: "El evento no esta terminado." }, 400);
   }
 
   const homeScore = number(event.home_score);
@@ -66,6 +67,17 @@ async function handle(req: Request): Promise<Response> {
 
   // 3. Process each leg
   for (const leg of legs) {
+    if (eventStatus === "cancelled") {
+      const { error: voidError } = await supabase
+        .from("sports_ticket_legs")
+        .update({ status: "void", result_payload: { settledAt: new Date().toISOString(), settledBy: "auto-settle-results", reason: "Evento cancelado" } })
+        .eq("id", leg.id)
+        .eq("status", "pending");
+      if (voidError) console.warn(`Error anulando leg ${leg.id}`, voidError.message);
+      else affectedTicketIds.add(leg.sports_ticket_id);
+      continue;
+    }
+
     const marketKey = lower(leg.market_key);
     const selectionKey = lower(leg.selection_key);
     const point = number(leg.point);
@@ -105,10 +117,11 @@ async function handle(req: Request): Promise<Response> {
           settledAt: new Date().toISOString(),
           homeScore,
           awayScore,
-          settledBy: "auto-settle-webhook",
+          settledBy: "auto-settle-results",
         },
       })
-      .eq("id", leg.id);
+      .eq("id", leg.id)
+      .eq("status", "pending");
 
     if (updateLegErr) {
       console.warn(`Error updating leg ${leg.id} status`, updateLegErr.message);
@@ -170,7 +183,8 @@ async function handle(req: Request): Promise<Response> {
         settled_at: settledAt,
         updated_at: settledAt,
       })
-      .eq("id", ticketId);
+      .eq("id", ticketId)
+      .eq("status", "pending");
 
     if (updateTicketErr) {
       console.warn(`Error updating ticket ${ticketId} status`, updateTicketErr.message);

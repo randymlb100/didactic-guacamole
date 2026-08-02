@@ -2,25 +2,30 @@ package com.lotterynet.pro.core.master
 
 import com.lotterynet.pro.core.config.SupabaseConfig
 import com.lotterynet.pro.core.remote.SupabaseEdgeClient
+import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.FutureTask
 import org.json.JSONObject
 
-private const val MASTER_REMOTE_CACHE_TTL_MS = 30_000L
+private const val MASTER_REMOTE_CACHE_TTL_MS = 300_000L
 
 class SupabaseMasterConfigRemoteStore(
     private val baseUrl: String = SupabaseConfig.URL,
     private val apiKey: String = SupabaseConfig.KEY,
     private val edgeClient: SupabaseEdgeClient = SupabaseEdgeClient(baseUrl, apiKey),
+    private val bearerTokenProvider: (() -> String?)? = null,
 ) : MasterConfigRemoteStore {
-    fun refreshValue(key: String): Any? = fetchValue(key)
+    fun refreshValue(key: String): Any? {
+        clearMasterMemoryCache(key)
+        return fetchValue(key)
+    }
 
     override fun probeAccess() {
-        edgeClient.invoke("get-master-config", JSONObject().put("action", "probe"))
+        invokeMasterConfig(JSONObject().put("action", "probe"))
     }
 
     override fun fetchValue(key: String): Any? {
         readMasterValueMemoryCache(key)?.let { return it }
-        return edgeClient.invoke(
-            "get-master-config",
+        return invokeMasterConfig(
             JSONObject()
                 .put("action", "fetch")
                 .put("key", key),
@@ -31,8 +36,7 @@ class SupabaseMasterConfigRemoteStore(
 
     override fun fetchUpdatedAt(key: String): String? {
         readMasterUpdatedAtMemoryCache(key)?.let { return it }
-        return edgeClient.invoke(
-            "get-master-config",
+        return invokeMasterConfig(
             JSONObject()
                 .put("action", "updated-at")
                 .put("key", key),
@@ -42,18 +46,66 @@ class SupabaseMasterConfigRemoteStore(
     }
 
     override fun upsertJsonValue(key: String, rawJsonValue: String) {
-        edgeClient.invoke(
+        edgeClient.invokeAuthenticated(
             "update-master-config",
             JSONObject()
                 .put("key", key)
                 .put("payload", JSONObject("{\"value\":$rawJsonValue}").opt("value")),
+            bearerTokenProvider?.invoke(),
         )
         clearMasterMemoryCache(key)
+    }
+
+    private fun invokeMasterConfig(payload: JSONObject): JSONObject {
+        val bearerToken = bearerTokenProvider?.invoke()?.takeIf { it.isNotBlank() }
+        return coalescedMasterConfig(
+            requestKey = buildMasterRequestKey(payload, bearerToken),
+        ) {
+            if (bearerToken == null) {
+                edgeClient.invoke("get-master-config", payload)
+            } else {
+                edgeClient.invokeAuthenticated("get-master-config", payload, bearerToken)
+            }
+        }
     }
 }
 
 private var masterValueMemoryCache = mutableMapOf<String, Pair<Any?, Long>>()
 private var masterUpdatedAtMemoryCache = mutableMapOf<String, Pair<String?, Long>>()
+private val masterConfigInFlightRequests = ConcurrentHashMap<String, FutureTask<JSONObject>>()
+
+private fun buildMasterRequestKey(payload: JSONObject, bearerToken: String?): String {
+    return listOf(
+        "get-master-config",
+        authScopeKey(bearerToken),
+        payload.toString(),
+    ).joinToString("|")
+}
+
+private fun authScopeKey(bearerToken: String?): String {
+    return if (bearerToken.isNullOrBlank()) "anon" else "auth"
+}
+
+private fun coalescedMasterConfig(
+    requestKey: String,
+    block: () -> JSONObject,
+): JSONObject {
+    while (true) {
+        val existing = masterConfigInFlightRequests[requestKey]
+        if (existing != null) return existing.get()
+
+        val task = FutureTask { block() }
+        val previous = masterConfigInFlightRequests.putIfAbsent(requestKey, task)
+        if (previous == null) {
+            try {
+                task.run()
+                return task.get()
+            } finally {
+                masterConfigInFlightRequests.remove(requestKey, task)
+            }
+        }
+    }
+}
 
 internal fun clearMasterMemoryCache(key: String? = null) {
     if (key == null) {

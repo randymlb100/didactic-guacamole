@@ -21,6 +21,7 @@ class SupabaseResultsRemoteStore(
     private val adminClient: ResultsAdminRemoteClient = ResultsAdminRemoteClient(),
     private val edgePayloadFetcher: ((String) -> Any?)? = null,
     private val renderPayloadFetcher: ((String, Boolean) -> Any?)? = null,
+    private val bearerTokenProvider: (() -> String?)? = null,
 ) {
     fun fetchResultsPayload(
         date: String,
@@ -64,6 +65,7 @@ class SupabaseResultsRemoteStore(
                 "get-results-v2",
                 JSONObject()
                     .put("date", date),
+                bearerToken = bearerTokenProvider?.invoke(),
             )
             extractResultPayload(response)
         }

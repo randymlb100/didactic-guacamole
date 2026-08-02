@@ -17,7 +17,7 @@ function asPayload(value: unknown): JsonMap {
 
 function normalizeMarketKey(value: unknown): string {
   const key = clean(value).toLowerCase();
-  return ["moneyline", "runline", "spread", "total", "first_half", "first_five"].includes(key) ? key : "";
+  return ["moneyline", "runline", "spread", "total"].includes(key) ? key : "";
 }
 
 function isPrimarySportsBetType(marketKey: string, betType: string, selectionLabel: string): boolean {
@@ -30,8 +30,6 @@ function isPrimarySportsBetType(marketKey: string, betType: string, selectionLab
     if (type && type !== "total" && type !== "totals") return false;
     return !/(corner|corners|card|cards|shot|shots|goal scorer|player|team total|1st half|first half)/.test(label);
   }
-  if (marketKey === "first_half") return type.includes("half");
-  if (marketKey === "first_five") return type.includes("5");
   return false;
 }
 
@@ -99,7 +97,22 @@ function normalizeTeamName(value: unknown): string {
 }
 
 function teamAssetLookupKey(sportKey: unknown, leagueTitle: unknown, teamName: unknown): string {
-  return `${clean(sportKey)}::${clean(leagueTitle)}::${normalizeTeamName(teamName)}`;
+  return `${normalizeTeamName(sportKey)}::${normalizeTeamName(leagueTitle)}::${normalizeTeamName(teamName)}`;
+}
+
+function sportTeamLookupKey(sportKey: unknown, teamName: unknown): string {
+  return `${normalizeTeamName(sportKey)}::${normalizeTeamName(teamName)}`;
+}
+
+function assetTeamNames(asset: JsonMap): string[] {
+  const source = asPayload(asset.source_payload);
+  return [
+    asset.team_name,
+    source.strTeam,
+    source.strTeamAlternate,
+    source.strTeamShort,
+    source.strTeamShortCode,
+  ].map(normalizeTeamName).filter(Boolean);
 }
 
 Deno.serve(async (req: Request) => {
@@ -166,16 +179,26 @@ Deno.serve(async (req: Request) => {
   const events = Array.isArray(data) ? data as JsonMap[] : [];
   const { data: assets } = await supabase
     .from("sports_team_assets")
-    .select("sport_key, league_title, team_name_normalized, logo_url, badge_url")
+    .select("sport_key, league_title, team_name, team_name_normalized, logo_url, badge_url, source_payload")
     .eq("provider", "thesportsdb");
   const assetUrlByKey = new Map<string, string>();
+  const assetUrlBySportTeam = new Map<string, string>();
+  const ambiguousSportTeams = new Set<string>();
   for (const asset of Array.isArray(assets) ? assets as JsonMap[] : []) {
     const url = clean(asset.logo_url || asset.badge_url);
     if (!url) continue;
-    assetUrlByKey.set(
-      `${clean(asset.sport_key)}::${clean(asset.league_title)}::${clean(asset.team_name_normalized)}`,
-      url,
-    );
+    for (const teamName of assetTeamNames(asset)) {
+      assetUrlByKey.set(teamAssetLookupKey(asset.sport_key, asset.league_title, teamName), url);
+      const sportTeamKey = sportTeamLookupKey(asset.sport_key, teamName);
+      if (ambiguousSportTeams.has(sportTeamKey)) continue;
+      const previous = assetUrlBySportTeam.get(sportTeamKey);
+      if (previous && previous !== url) {
+        assetUrlBySportTeam.delete(sportTeamKey);
+        ambiguousSportTeams.add(sportTeamKey);
+      } else {
+        assetUrlBySportTeam.set(sportTeamKey, url);
+      }
+    }
   }
 
   const games = events.map((event: JsonMap) => {
@@ -236,8 +259,12 @@ Deno.serve(async (req: Request) => {
         leagueTitle: clean(event.league_title),
         homeTeam: clean(event.home_team),
         awayTeam: clean(event.away_team),
-        homeTeamLogoUrl: assetUrlByKey.get(teamAssetLookupKey(event.sport_key, event.league_title, event.home_team)) || "",
-        awayTeamLogoUrl: assetUrlByKey.get(teamAssetLookupKey(event.sport_key, event.league_title, event.away_team)) || "",
+        homeTeamLogoUrl: assetUrlByKey.get(teamAssetLookupKey(event.sport_key, event.league_title, event.home_team))
+          || assetUrlBySportTeam.get(sportTeamLookupKey(event.sport_key, event.home_team))
+          || "",
+        awayTeamLogoUrl: assetUrlByKey.get(teamAssetLookupKey(event.sport_key, event.league_title, event.away_team))
+          || assetUrlBySportTeam.get(sportTeamLookupKey(event.sport_key, event.away_team))
+          || "",
         commenceTime: clean(event.commence_time),
         status: clean(event.status) || "scheduled",
       },

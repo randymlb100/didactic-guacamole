@@ -20,6 +20,10 @@ class UpdateRepository(
         session: ActiveSession?,
         forceNetwork: Boolean = false,
     ): OtaCheckResult = withContext(Dispatchers.IO) {
+        if (!LOTTERYNET_OTA_ENABLED) {
+            cache.clearCachedUpdate()
+            return@withContext OtaCheckResult.Success(OtaUpdateInfo(updateAvailable = false), fromCache = true)
+        }
         val cached = cache.getCachedUpdate()
         if (!forceNetwork && cached?.shouldInstall == true && cached.blocksCurrentBuild) {
             return@withContext OtaCheckResult.Success(cached, fromCache = true)
@@ -61,6 +65,7 @@ class UpdateRepository(
         status: String? = null,
         message: String? = null,
     ) = withContext(Dispatchers.IO) {
+        if (!LOTTERYNET_OTA_ENABLED) return@withContext
         val request = OtaCheckRequest(
             currentVersionCode = BuildConfig.VERSION_CODE,
             currentVersionName = BuildConfig.VERSION_NAME,

@@ -1,0 +1,108 @@
+{
+  "capturedAt": "2026-06-06T05:54:07.066329Z",
+  "projectId": "unhoulkujbtsypccpirc",
+  "source": "private.lotterynet_server_readiness_report()",
+  "releaseGate": {
+    "canRevokeDirectTableAccess": false,
+    "reason": "Keep legacy app compatibility until every direct Data API read is replaced by JWT Edge Functions and smoke-tested."
+  },
+  "cronJobs": [
+    {
+      "jobid": 6,
+      "active": true,
+      "jobname": "lotterynet-results-prize-watchdog",
+      "schedule": "*/2 * * * *"
+    },
+    {
+      "jobid": 3,
+      "active": true,
+      "jobname": "lotterynet-results-server-refresh",
+      "schedule": "* * * * *"
+    },
+    {
+      "jobid": 7,
+      "active": true,
+      "jobname": "lotterynet-safe-maintenance",
+      "schedule": "20 4 * * *"
+    }
+  ],
+  "maintenance": {
+    "ok": true,
+    "dryRun": true,
+    "deleted": {
+      "tickets": 0,
+      "otaUpdateLogs": 0,
+      "reconcileJobs": 0,
+      "resultCacheKeys": 0,
+      "resultHealthLogs": 0,
+      "ticketLimitReservations": 0
+    },
+    "candidates": {
+      "deletedTicketsWithoutPayments": 0
+    },
+    "retentionDays": {
+      "deletedTickets": 30,
+      "resultCache": 21,
+      "otaLogs": 30,
+      "healthLogs": 14,
+      "reconcileJobs": 14
+    }
+  },
+  "tableStatsHighlights": [
+    {
+      "table": "lotterynet_users_state",
+      "liveRows": 1,
+      "deadRows": 45,
+      "seqScans": 543858,
+      "indexScans": 196,
+      "note": "High direct scan count for a one-row compatibility table. Keep fallback until Edge-first cutover is verified, then revoke public direct read."
+    },
+    {
+      "table": "tickets",
+      "liveRows": 934,
+      "deadRows": 208,
+      "seqScans": 62054,
+      "indexScans": 200049,
+      "note": "Public SELECT still open for compatibility. Close only after ticket list/delta/detail flows are Edge/RPC-only."
+    },
+    {
+      "table": "result_draws",
+      "liveRows": 7555,
+      "deadRows": 357,
+      "seqScans": 12,
+      "indexScans": 360032,
+      "note": "Public read may be acceptable for visible results, but anon/authenticated mutation grants should be revoked after result hydration is verified."
+    },
+    {
+      "table": "ota_update_logs",
+      "liveRows": 21028,
+      "deadRows": 0,
+      "seqScans": 0,
+      "indexScans": 2,
+      "note": "Safe maintenance retention exists at 30 days."
+    }
+  ],
+  "publicExposureToReview": {
+    "tickets": [
+      "anon/authenticated SELECT, REFERENCES, TRIGGER, TRUNCATE grants",
+      "public SELECT policy: Enable read access for all users"
+    ],
+    "lotterynet_users_state": [
+      "anon/authenticated SELECT, REFERENCES, TRIGGER, TRUNCATE grants",
+      "anon/authenticated SELECT policy: LotteryNet compatibility read users"
+    ],
+    "lotterynet_kv": [
+      "anon/authenticated broad SELECT/INSERT/UPDATE/DELETE/REFERENCES/TRIGGER/TRUNCATE grants",
+      "public policies include deprecated auth.role() expressions"
+    ],
+    "result_draws": [
+      "anon/authenticated broad mutation grants",
+      "anon/authenticated SELECT policy: result_draws_read_all"
+    ],
+    "lotterynet_push_tokens": [
+      "deny-all RLS policy exists",
+      "anon/authenticated broad grants should still be tightened"
+    ]
+  },
+  "implementationDecision": "Do not revoke direct table access yet. First fix results-server-refresh latency/overlap, then close tables one-by-one after smoke tests and rollback notes."
+}

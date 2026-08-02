@@ -86,7 +86,8 @@ data class SportsbookBoardGame(
     val odds: List<SportsbookOdd> = emptyList(),
 ) {
     val isOpen: Boolean
-        get() = event.status == "open" || markets.any { it.status == "open" }
+        get() = event.status.trim().lowercase(Locale.US) == "open" ||
+            markets.any { it.status.trim().lowercase(Locale.US) == "open" }
 }
 
 data class SportsbookBoardSnapshot(

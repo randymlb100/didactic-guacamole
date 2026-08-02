@@ -272,6 +272,12 @@ def scrape_cached(date_key):
     return rows
 
 
+def scrape_cached_isolated(date_key):
+    """Run the synchronous scraper outside an async-aware WSGI request thread."""
+    with ThreadPoolExecutor(max_workers=1) as pool:
+        return pool.submit(scrape_cached, date_key).result()
+
+
 def set_lottery_scrape_cache(date_key, rows):
     _scrape_cache[date_key] = {"stored_at": time.time(), "rows": rows}
 
@@ -1094,7 +1100,7 @@ def run_system_scraper():
     }
     try:
         if mode in ("lottery", "both"):
-            lottery_rows = unique_sorted_results(scrape_cached(date_key))
+            lottery_rows = unique_sorted_results(scrape_cached_isolated(date_key))
             save_to_supabase(date_key, lottery_rows)
             payload["lotteries"] = {
                 "count": len(lottery_rows),

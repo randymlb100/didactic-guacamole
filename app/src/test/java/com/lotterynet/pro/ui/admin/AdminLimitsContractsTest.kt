@@ -53,7 +53,7 @@ class AdminLimitsContractsTest {
         assertEquals("Admin vende sin tope si está vacío", contract.emptyStateCopy)
         assertEquals(true, contract.adminSalesUnlimitedWhenEmpty)
         assertEquals(false, contract.cashierDefaultsAffectAdmin)
-        assertEquals(listOf("Mis límites", "Todos los cajeros", "Por cajero"), contract.scopeLabels)
+        assertEquals(listOf("Propio", "Global", "Por cajero"), contract.scopeLabels)
     }
 
     @Test
@@ -67,5 +67,38 @@ class AdminLimitsContractsTest {
     @Test
     fun `pos mode action keeps a simple system label`() {
         assertEquals("Modo POS", posModeActionLabel())
+    }
+
+    @Test
+    fun `limits screen groups sections into visible admin tabs`() {
+        assertEquals(
+            listOf("Resumen", "Pool de banca", "Límites de cajeros", "Límite propio del admin", "Cobros y recargas", "Modo POS"),
+            adminLimitsSectionOptions().map { it.label },
+        )
+    }
+
+    @Test
+    fun `limits overview keeps pool cashier admin cash and pos scopes separate`() {
+        val items = adminLimitsOverviewItems(
+            adminLimits = AdminOperationalLimits(cashierPayoutLimit = 1_000.0),
+            rechargeLimits = com.lotterynet.pro.core.storage.RechargeLimitSettings(globalPerTx = 500.0),
+            poolLimits = CashierSalesLimitInputs(quiniela = 10_000.0),
+            cashierLimits = CashierSalesLimitInputs(daySale = 2_000.0),
+            adminSelfLimits = CashierSalesLimitInputs(daySale = 3_000.0),
+            posModeEnabled = true,
+        )
+
+        assertEquals(
+            listOf(
+                AdminLimitsDestination.POOL,
+                AdminLimitsDestination.CASHIERS,
+                AdminLimitsDestination.ADMIN_SELF,
+                AdminLimitsDestination.CASH_AND_RECHARGES,
+                AdminLimitsDestination.POS,
+            ),
+            items.map { it.destination },
+        )
+        assertEquals("$ 2,000", items[1].effectiveValue)
+        assertEquals("Activo", items.last().effectiveValue)
     }
 }

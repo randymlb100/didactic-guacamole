@@ -3,6 +3,7 @@ package com.lotterynet.pro.ui.master
 import com.lotterynet.pro.core.master.IssuedCredential
 import com.lotterynet.pro.core.model.UserAccount
 import com.lotterynet.pro.core.model.UserRole
+import com.lotterynet.pro.core.sync.TicketRefreshGovernor
 import com.lotterynet.pro.ui.common.LotteryNetWindowMode
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -57,7 +58,7 @@ class MasterUiContractsTest {
     @Test
     fun `master dashboard groups sections by operational intent`() {
         assertEquals(
-            listOf("Bancas", "Credenciales", "Servidor/Nube", "Recargas Master", "Auditoría"),
+            listOf("Resumen", "Bancas", "Módulos", "Sistema", "Seguridad"),
             masterDashboardSectionTitles(),
         )
     }
@@ -146,6 +147,39 @@ class MasterUiContractsTest {
     }
 
     @Test
+    fun `master dashboard remote refresh dedupes repeated realtime and resume triggers`() {
+        val governor = TicketRefreshGovernor(requestCooldownMs = 10_000L)
+
+        assertFalse(
+            shouldSkipMasterDashboardRemoteRefresh(
+                governor = governor,
+                requestType = "master-dashboard:realtime",
+                authScope = "master",
+                force = false,
+                nowEpochMs = 1_000L,
+            ),
+        )
+        assertTrue(
+            shouldSkipMasterDashboardRemoteRefresh(
+                governor = governor,
+                requestType = "master-dashboard:realtime",
+                authScope = "master",
+                force = false,
+                nowEpochMs = 4_000L,
+            ),
+        )
+        assertFalse(
+            shouldSkipMasterDashboardRemoteRefresh(
+                governor = governor,
+                requestType = "master-dashboard:realtime",
+                authScope = "master",
+                force = true,
+                nowEpochMs = 4_000L,
+            ),
+        )
+    }
+
+    @Test
     fun `master dashboard share text includes issued cashier credentials`() {
         val text = buildMasterIssuedCredentialsShareText(
             title = "Claves nuevas generadas",
@@ -186,16 +220,33 @@ class MasterUiContractsTest {
     @Test
     fun `master recharge status label shows blocked or assigned pool`() {
         assertEquals("Bloqueada", masterRechargeAccessLabel(enabled = false, assigned = 10_000.0, available = 8_500.0))
-        assertEquals("Fondo $10,000 · queda $8,500", masterRechargeAccessLabel(enabled = true, assigned = 10_000.0, available = 8_500.0))
+        assertEquals(
+            "Base asignada $10,000 · Saldo restante $8,500",
+            masterRechargeAccessLabel(enabled = true, assigned = 10_000.0, available = 8_500.0),
+        )
     }
 
     @Test
     fun `master recharge status keeps assigned and available separated`() {
         val assigned = masterRechargeFundSummary(assigned = 500.0, available = 350.0)
 
-        assertEquals("Fondo $500", assigned.assignedLabel)
-        assertEquals("Disponible $350", assigned.availableLabel)
-        assertEquals("Vendido $150", assigned.soldLabel)
+        assertEquals("Base asignada $500", assigned.assignedLabel)
+        assertEquals("Saldo restante $350", assigned.availableLabel)
+        assertEquals("Consumido $150", assigned.soldLabel)
+    }
+
+    @Test
+    fun `master fund save status confirms exact server amount`() {
+        assertEquals("Guardando fondo…", masterFundSaveStatusLabel(MasterFundSaveState.SAVING, 4_037.0))
+        assertEquals("Servidor confirmó $4,037", masterFundSaveStatusLabel(MasterFundSaveState.CONFIRMED, 4_037.0))
+        assertEquals("No se guardó; se restauró el fondo anterior", masterFundSaveStatusLabel(MasterFundSaveState.ROLLED_BACK, 4_037.0))
+    }
+
+    @Test
+    fun `cashiers never see assigned recharge fund amount`() {
+        assertFalse(shouldShowRechargeFundAmount(UserRole.CASHIER))
+        assertTrue(shouldShowRechargeFundAmount(UserRole.MASTER))
+        assertTrue(shouldShowRechargeFundAmount(UserRole.ADMIN))
     }
 
     @Test

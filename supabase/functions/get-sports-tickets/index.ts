@@ -32,7 +32,7 @@ function metadataMatchesActor(metadata: JsonMap, actorKey: string, adminKey: str
     metadata.cashier_id,
     metadata.cashier_user,
   ].map(lower).filter(Boolean);
-  if (metadataValues.length === 0) return true;
+  if (metadataValues.length === 0) return false;
   const accepted = [actorKey, adminKey, cashierKey].map(lower).filter(Boolean);
   return accepted.some((value) => metadataValues.includes(value));
 }

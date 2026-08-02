@@ -47,7 +47,8 @@ class LocalUsersRepository(
         return (getAdmins() + getSupervisors() + getCashiers()).firstOrNull { account ->
             account.id.equals(needle, ignoreCase = true) ||
                 account.user.equals(needle, ignoreCase = true) ||
-                account.displayName.equals(needle, ignoreCase = true)
+                account.displayName.equals(needle, ignoreCase = true) ||
+                account.authUserId.equals(needle, ignoreCase = true)
         }
     }
 

@@ -14,6 +14,15 @@ test("void ticket delete path does not force heavy owner payload rebuild", () =>
   assert.match(migration, /replace\(/);
 });
 
+test("owner snapshot delete cleanup skips terminal snapshot recalculation", () => {
+  const migration = read("supabase/migrations/20260619171325_mark_owner_snapshot_delete_updates_as_skip_terminal_recalc.sql");
+
+  assert.match(migration, /ln_mark_owner_snapshots_ticket_deleted\(text\[\], text\[\]\)/);
+  assert.match(migration, /set_config\('lotterynet\.skip_preserve_terminal_ticket_state', 'on', true\)/);
+  assert.match(migration, /set_config\('lotterynet\.skip_terminal_ticket_recalculation', 'on', true\)/);
+  assert.doesNotMatch(migration, /jsonb_array_elements\(coalesce\(s\.payload->'tickets'/);
+});
+
 test("terminal snapshot preservation skips touch-only updates", () => {
   const migration = read("supabase/migrations/20260602144000_skip_terminal_snapshot_preserve_on_touch_only.sql");
 

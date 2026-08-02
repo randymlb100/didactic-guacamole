@@ -561,3 +561,28 @@ Pendiente inmediato:
 - Ajuste aplicado: si Odds API devuelve vacio cuando se pide con filtro de mercados, el servidor vuelve a pedir la foto completa y filtra localmente `moneyline`, `total`, `spread`, `first_half` y `first_five`.
 - Para no gastar el sandbox de Odds API durante pruebas, el cron quedo apagado por ambiente con `SPORTS_ODDS_SYNC_ENABLED=false`.
 - El script de Render quedo en modo opt-in: si `SPORTS_ODDS_SYNC_ENABLED` no esta activo, termina sin llamar a Odds API; en modo `smart` solo sincroniza en horas UTC permitidas por `SPORTS_ODDS_SYNC_UTC_HOURS`.
+
+### Estado de resultados y liquidacion - 2026-07-18
+
+- Se agrego `sports-sync-results`, separado de loteria normal y Pick.
+- Consulta `GET /v1/events/{event_id}/results` en odds-api.net usando `ODDS_API_KEY` solo en servidor.
+- Los resultados finales guardan `result_source`, `result_payload` y `result_updated_at` en `sports_events`.
+- Un evento cancelado se guarda como `cancelled` y sus piernas pendientes se marcan `void`; no se inventan marcadores.
+- Un resultado final dispara `settle-sports-tickets` por evento. Las actualizaciones usan estado pendiente como guardia para evitar doble liquidacion ante reintentos concurrentes.
+- Se agrego el cron independiente `lotterynet-sports-results-sync` en `render.yaml`, en modo opt-in mediante `SPORTS_RESULTS_SYNC_ENABLED`.
+- La validacion contractual Node paso 20/20 pruebas y `git diff --check` no encontro errores.
+
+Activacion controlada pendiente de despliegue:
+
+1. Aplicar la migracion `20260718120000_sports_results_provenance.sql`.
+2. Desplegar `sports-sync-results` y `settle-sports-tickets`.
+3. Configurar `SUPABASE_URL`, `SUPABASE_KEY`, `LOTTERYNET_ADMIN_SHARED_SECRET`, `SUPABASE_SERVICE_ROLE_KEY` y `ODDS_API_KEY` en Supabase/Render.
+4. Habilitar `SPORTS_RESULTS_SYNC_ENABLED=true` despues de una ejecucion manual supervisada.
+
+### Verificacion remota - 2026-07-18
+
+- Migracion `sports_results_provenance` aplicada en Supabase produccion.
+- `sports-sync-results` desplegada activa, version 1, con `verify_jwt=false` porque valida shared secret o JWT administrativo dentro del codigo.
+- `settle-sports-tickets` desplegada activa con la proteccion de reintentos y eventos cancelados.
+- Prueba HTTP sin credenciales respondio `403 Admin deportivo requerido`, confirmando que el sincronizador no queda publico.
+- El cron de Render conserva `SPORTS_RESULTS_SYNC_ENABLED=false`; no se ejecuta automaticamente hasta configurar secretos y supervisar la primera llamada.

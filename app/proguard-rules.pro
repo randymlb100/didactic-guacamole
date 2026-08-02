@@ -31,6 +31,11 @@
 # Diagnostics bridge for crash reporting keeps references stable.
 -keep class com.lotterynet.pro.core.diagnostics.** { *; }
 
+# WorkManager initializes through AndroidX Startup before Application.onCreate().
+# Its Room database implementation is loaded reflectively in release builds.
+-keep class androidx.work.impl.WorkDatabase_Impl { *; }
+-keep class androidx.work.impl.model.** { *; }
+
 # Bluetooth and vendor POS printer implementations vary by device firmware.
 -dontwarn android.bluetooth.**
 -dontwarn com.sunmi.**

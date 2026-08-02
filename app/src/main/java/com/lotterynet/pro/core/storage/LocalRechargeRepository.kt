@@ -82,24 +82,34 @@ class LocalRechargeRepository(
     }
 
     private fun saveDayRows(dayKey: String, rows: List<RechargeRecord>) {
+        val key = RechargeStorageKeys.RECHARGES_PREFIX + dayKey
+        val payload = JSONArray(orderRechargesForStableStorage(rows).map(::rechargeRecordToJson)).toString()
+        if (prefs.getString(key, null) == payload) return
         prefs.edit {
-            putString(
-                RechargeStorageKeys.RECHARGES_PREFIX + dayKey,
-                JSONArray(rows.map(::rechargeRecordToJson)).toString(),
-            )
+            putString(key, payload)
         }
     }
 
     private fun saveAllRows(rows: List<RechargeRecord>) {
-        val grouped = rows.groupBy { buildDayKeyFromEpoch(it.createdAtEpochMs) }
+        val grouped = orderRechargesForStableStorage(rows)
+            .groupBy { buildDayKeyFromEpoch(it.createdAtEpochMs) }
+            .toSortedMap()
+        val nextPayloads = grouped.mapValues { (_, dayRows) ->
+            JSONArray(dayRows.map(::rechargeRecordToJson)).toString()
+        }
+        val currentPayloads = prefs.all
+            .filterKeys { it.startsWith(RechargeStorageKeys.RECHARGES_PREFIX) }
+            .mapValues { (_, value) -> value as? String }
+        val nextStoredPayloads = nextPayloads.mapKeys { (dayKey, _) -> RechargeStorageKeys.RECHARGES_PREFIX + dayKey }
+        if (currentPayloads == nextStoredPayloads) return
         prefs.edit {
             prefs.all.keys
                 .filter { it.startsWith(RechargeStorageKeys.RECHARGES_PREFIX) }
                 .forEach(::remove)
-            grouped.forEach { (dayKey, dayRows) ->
+            nextPayloads.forEach { (dayKey, payload) ->
                 putString(
                     RechargeStorageKeys.RECHARGES_PREFIX + dayKey,
-                    JSONArray(dayRows.map(::rechargeRecordToJson)).toString(),
+                    payload,
                 )
             }
         }
@@ -114,6 +124,10 @@ class LocalRechargeRepository(
         format.timeZone = java.util.TimeZone.getTimeZone("America/Santo_Domingo")
         return format.format(java.util.Date(epochMs))
     }
+}
+
+internal fun orderRechargesForStableStorage(rows: List<RechargeRecord>): List<RechargeRecord> {
+    return rows.sortedWith(compareBy<RechargeRecord>({ it.createdAtEpochMs }, { it.id }))
 }
 
 internal fun rechargeRecordToJson(record: RechargeRecord): JSONObject {

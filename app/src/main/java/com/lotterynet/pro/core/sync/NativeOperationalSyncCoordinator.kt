@@ -195,6 +195,10 @@ internal fun resolveOperationalHydrationOwnerKeys(session: ActiveSession?): List
     return resolveCanonicalOwnerIdentity(session)?.canonicalOwnerKey?.let(::listOf) ?: emptyList()
 }
 
+internal fun resolveOperationalRealtimeOwnerKeys(session: ActiveSession?): List<String> {
+    return resolveOperationalHydrationOwnerKeys(session)
+}
+
 fun resolveOperationalOwnerKeys(session: ActiveSession?): List<String> {
     return resolveCanonicalOwnerIdentity(session)?.let { identity ->
         listOf(identity.canonicalOwnerKey) + identity.aliases

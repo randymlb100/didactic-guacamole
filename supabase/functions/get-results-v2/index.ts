@@ -1,5 +1,6 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { clean, corsHeaders, json, supabaseAdmin } from "../_shared/lotterynet-admin.ts";
+import { captureEdgeError } from "../_shared/sentry-edge.ts";
 
 function normalizeDayKey(value: unknown): string {
   const raw = clean(value);
@@ -32,9 +33,10 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (req.method !== "POST") return json({ ok: false, message: "Metodo no permitido." }, 405);
 
+  let dayKey = "";
   try {
     const body = await req.json().catch(() => ({}));
-    const dayKey = normalizeDayKey(body.dayKey ?? body.date);
+    dayKey = normalizeDayKey(body.dayKey ?? body.date);
     const { data, error } = await supabaseAdmin()
       .rpc("lotterynet_result_draws_payload", { p_raw_date: dayKey });
     if (error) throw error;
@@ -50,6 +52,7 @@ Deno.serve(async (req) => {
       count: results.length,
     });
   } catch (error) {
+    await captureEdgeError(error, { functionName: "get-results-v2", operation: "fetch", dayKey });
     return json({
       ok: false,
       message: error instanceof Error ? error.message : "No se pudo obtener resultados.",

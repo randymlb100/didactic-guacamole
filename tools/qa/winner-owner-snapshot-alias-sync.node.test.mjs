@@ -22,6 +22,10 @@ const optimizedPrizeSyncMigration = readFileSync(
   "supabase/migrations/20260602015748_optimize_prize_reconcile_owner_sync.sql",
   "utf8",
 );
+const narrowedOwnerReconcileMigration = readFileSync(
+  "supabase/migrations/20260619154500_narrow_owner_reconcile_candidates.sql",
+  "utf8",
+);
 
 test("winner owner sync uses admin/cashier aliases for realtime snapshots", () => {
   assert.match(migration, /lotterynet_users_state/);
@@ -118,4 +122,13 @@ test("optimized prize reconcile has bounded owner repair and fast lookup indexes
   assert.match(optimizedPrizeSyncMigration, /result_reconcile_jobs_day_pending_idx/);
   assert.match(optimizedPrizeSyncMigration, /lotterynet_reconcile_owner_tickets_for_day/);
   assert.match(optimizedPrizeSyncMigration, /p_owner_key/);
+});
+
+test("owner reconcile now scans only tickets that can actually win", () => {
+  assert.match(narrowedOwnerReconcileMigration, /lotterynet_ticket_item_can_win_against_draw/);
+  assert.match(narrowedOwnerReconcileMigration, /candidate_draws/);
+  assert.match(narrowedOwnerReconcileMigration, /exists \(/);
+  assert.match(narrowedOwnerReconcileMigration, /lotterynet_reconcile_owner_tickets_for_day/);
+  assert.match(narrowedOwnerReconcileMigration, /where ti\.ticket_id = t\.id/);
+  assert.match(narrowedOwnerReconcileMigration, /public\.result_draws rd/);
 });

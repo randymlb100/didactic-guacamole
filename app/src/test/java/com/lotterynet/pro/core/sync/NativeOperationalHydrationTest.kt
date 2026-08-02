@@ -221,7 +221,14 @@ class NativeOperationalHydrationTest {
 
     @Test
     fun `web sync payload publishes total premio alias for paid tickets`() {
-        val ticket = TicketRecord(id = "PAID-1", status = "paid", total = 25.0, totalPrize = 750.0, createdAtEpochMs = 200L)
+        val ticket = TicketRecord(
+            id = "PAID-1",
+            status = "paid",
+            total = 25.0,
+            totalPrize = 750.0,
+            createdAtEpochMs = 200L,
+            plays = listOf(PlayItem(number = "12", playType = "Q", amount = 25.0, lotteryName = "QA Lotería")),
+        )
 
         val json = ticketRecordToWebCompatibleJson(ticket, "Banca Central")
         val parsed = parseWebTicketsPayload("[${json}]")
@@ -258,7 +265,7 @@ class NativeOperationalHydrationTest {
             status = "active",
             total = 25.0,
             createdAtEpochMs = 300L,
-            plays = listOf(PlayItem(number = "12", playType = "Q", amount = 25.0)),
+            plays = listOf(PlayItem(number = "12", playType = "Q", amount = 25.0, lotteryName = "QA Lotería")),
         )
         val payload = buildWebTicketRemotePayload(
             tickets = listOf(visible),

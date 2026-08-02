@@ -8,6 +8,7 @@ import com.lotterynet.pro.core.storage.buildCashierLimitPayloadWithDefaultForUse
 import com.lotterynet.pro.core.storage.buildCashierLimitPayloadWithUser
 import com.lotterynet.pro.core.storage.decodeCashierUserSalesLimitInputs
 import com.lotterynet.pro.core.sync.cashierLimitRemoteKey
+import com.lotterynet.pro.core.sync.TicketRefreshGovernor
 import com.lotterynet.pro.core.model.ActiveSession
 import com.lotterynet.pro.core.model.LotteryTerritory
 import com.lotterynet.pro.core.model.LotteryCatalogItem
@@ -70,6 +71,150 @@ class AdminUiContractsTest {
     }
 
     @Test
+    fun `admin monitor remote refresh dedupes repeated owner day sync but allows force`() {
+        val governor = TicketRefreshGovernor(requestCooldownMs = 10_000L)
+
+        assertFalse(
+            shouldSkipAdminMonitorRemoteRefresh(
+                governor = governor,
+                ownerKey = "ADM-C5FFB0",
+                dayKey = "2026-07-09",
+                authScope = "ADMIN",
+                force = false,
+                nowEpochMs = 1_000L,
+            ),
+        )
+        assertTrue(
+            shouldSkipAdminMonitorRemoteRefresh(
+                governor = governor,
+                ownerKey = "adm-c5ffb0",
+                dayKey = "2026-07-09",
+                authScope = "admin",
+                force = false,
+                nowEpochMs = 4_000L,
+            ),
+        )
+        assertFalse(
+            shouldSkipAdminMonitorRemoteRefresh(
+                governor = governor,
+                ownerKey = "ADM-C5FFB0",
+                dayKey = "2026-07-09",
+                authScope = "ADMIN",
+                force = true,
+                nowEpochMs = 4_000L,
+            ),
+        )
+    }
+
+    @Test
+    fun `admin dashboard remote refresh dedupes repeated owner day sync but allows force`() {
+        val governor = TicketRefreshGovernor(requestCooldownMs = 10_000L)
+
+        assertFalse(
+            shouldSkipAdminDashboardRemoteRefresh(
+                governor = governor,
+                ownerKey = "ADM-C5FFB0",
+                dayKey = "2026-07-09",
+                authScope = "ADMIN",
+                force = false,
+                nowEpochMs = 1_000L,
+            ),
+        )
+        assertTrue(
+            shouldSkipAdminDashboardRemoteRefresh(
+                governor = governor,
+                ownerKey = "adm-c5ffb0",
+                dayKey = "2026-07-09",
+                authScope = "admin",
+                force = false,
+                nowEpochMs = 4_000L,
+            ),
+        )
+        assertFalse(
+            shouldSkipAdminDashboardRemoteRefresh(
+                governor = governor,
+                ownerKey = "ADM-C5FFB0",
+                dayKey = "2026-07-09",
+                authScope = "ADMIN",
+                force = true,
+                nowEpochMs = 4_000L,
+            ),
+        )
+    }
+
+    @Test
+    fun `admin winners remote refresh dedupes repeated owner group sync but allows force`() {
+        val governor = TicketRefreshGovernor(requestCooldownMs = 10_000L)
+
+        assertFalse(
+            shouldSkipAdminWinnersRemoteRefresh(
+                governor = governor,
+                ownerKey = "ADM-1|CAJ-1",
+                dayKey = "2026-07-09",
+                authScope = "ADMIN",
+                force = false,
+                nowEpochMs = 1_000L,
+            ),
+        )
+        assertTrue(
+            shouldSkipAdminWinnersRemoteRefresh(
+                governor = governor,
+                ownerKey = "adm-1|caj-1",
+                dayKey = "2026-07-09",
+                authScope = "admin",
+                force = false,
+                nowEpochMs = 4_000L,
+            ),
+        )
+        assertFalse(
+            shouldSkipAdminWinnersRemoteRefresh(
+                governor = governor,
+                ownerKey = "ADM-1|CAJ-1",
+                dayKey = "2026-07-09",
+                authScope = "ADMIN",
+                force = true,
+                nowEpochMs = 4_000L,
+            ),
+        )
+    }
+
+    @Test
+    fun `admin cashier detail remote refresh dedupes repeated actor sync but allows force`() {
+        val governor = TicketRefreshGovernor(requestCooldownMs = 10_000L)
+
+        assertFalse(
+            shouldSkipCashierDetailRemoteRefresh(
+                governor = governor,
+                ownerKey = "ADM-1",
+                actorId = "CAJ-1",
+                authScope = "ADMIN",
+                force = false,
+                nowEpochMs = 1_000L,
+            ),
+        )
+        assertTrue(
+            shouldSkipCashierDetailRemoteRefresh(
+                governor = governor,
+                ownerKey = "adm-1",
+                actorId = "caj-1",
+                authScope = "admin",
+                force = false,
+                nowEpochMs = 4_000L,
+            ),
+        )
+        assertFalse(
+            shouldSkipCashierDetailRemoteRefresh(
+                governor = governor,
+                ownerKey = "ADM-1",
+                actorId = "CAJ-1",
+                authScope = "ADMIN",
+                force = true,
+                nowEpochMs = 4_000L,
+            ),
+        )
+    }
+
+    @Test
     fun `admin dashboard hides recargas shortcut when master blocks access`() {
         assertFalse(resolveAdminSecondaryShortcutTitles(rechargeVisible = false).contains("Recargas"))
         assertTrue(resolveAdminSecondaryShortcutTitles(rechargeVisible = true).contains("Recargas"))
@@ -99,8 +244,32 @@ class AdminUiContractsTest {
     @Test
     fun `admin config separates lottery blocking from technical system section`() {
         assertEquals(
-            listOf("Ajustes rápidos", "Operación", "Caja", "Bloqueo de lotería", "Control de venta", "Sistema"),
+            listOf("Centro de ajustes", "Venta y POS", "Loterías y jugadas", "Caja y tickets", "Servidor y sincronización"),
             adminConfigSectionTitles(),
+        )
+    }
+
+    @Test
+    fun `lottery block area exposes single and global actions`() {
+        assertEquals(
+            listOf("Bloquear una lotería", "Bloquear todas las loterías"),
+            adminLotteryBlockActionLabels(),
+        )
+    }
+
+    @Test
+    fun `admin lottery schedule text shows draw and close time`() {
+        val lottery = adminBlockOption(
+            id = "5",
+            name = "Quiniela Real",
+            type = "Real",
+            closeTime = "12:55 PM",
+            drawTime = "12:55 PM",
+        )
+
+        assertEquals(
+            "Real · sorteo 12:55 PM · cierra 12:55 PM",
+            resolveAdminLotteryScheduleText(lottery),
         )
     }
 
@@ -196,7 +365,7 @@ class AdminUiContractsTest {
         val pickAdmin = applyAdminModeSegment(base, "pick")
         val bothCashier = applyCashierDefaultModeSegment(base, "both")
 
-        assertEquals(listOf("Operación", "Cajeros", "Servidor"), adminSystemGroupedSectionTitles())
+        assertEquals(listOf("Pantalla", "Admin", "Cajeros", "Sync y servidor"), adminSystemGroupedSectionTitles())
         assertEquals("lottery", resolveAdminModeSegment(base))
         assertEquals("pick", resolveAdminModeSegment(pickAdmin))
         assertEquals("both", resolveCashierDefaultModeSegment(bothCashier))
@@ -309,6 +478,20 @@ class AdminUiContractsTest {
     }
 
     @Test
+    fun `monitor lottery dropdown sorts by draw time before name`() {
+        val lotteries = listOf(
+            adminBlockOption("4", "Anguila Mediodia", "Anguila", drawTime = "1:00 PM"),
+            adminBlockOption("5", "Quiniela Real", "Real", drawTime = "12:55 PM"),
+            adminBlockOption("1", "La Primera Dia", "Primera", drawTime = "12:00 PM"),
+        )
+
+        assertEquals(
+            listOf("1", "5", "4"),
+            sortMonitorLotteriesByDrawOrder(lotteries).map { it.id },
+        )
+    }
+
+    @Test
     fun `monitor ticket filter removes plays from hidden modes`() {
         val ticket = TicketRecord(
             id = "t1",
@@ -359,6 +542,13 @@ class AdminUiContractsTest {
     }
 
     @Test
+    fun `lottery monitor ranking tab shows played number ranking`() {
+        assertTrue(shouldLotteryMonitorTabShowNumberRanking("ranking"))
+        assertTrue(shouldLotteryMonitorTabShowNumberRanking("plays"))
+        assertFalse(shouldLotteryMonitorTabShowNumberRanking("lotteries"))
+    }
+
+    @Test
     fun `phone admin monitor splits actions and compacts cards`() {
         val contract = resolveAdminMonitorLayout(LotteryNetWindowMode.POS)
 
@@ -373,12 +563,12 @@ class AdminUiContractsTest {
     fun `cashier monitor cards use dense operational rows instead of stacked metric cards`() {
         val contract = resolveCashierMonitorCardVisualContract()
 
-        assertTrue(contract.singleLineIdentity)
+        assertFalse(contract.singleLineIdentity)
         assertTrue(contract.inlineMetrics)
         assertTrue(contract.singleStatusIndicator)
         assertFalse(contract.stackedMetricCards)
-        assertTrue(contract.minTouchTargetDp >= 44)
-        assertTrue(contract.rowPaddingVerticalDp <= 8)
+        assertTrue(contract.minTouchTargetDp >= 64)
+        assertTrue(contract.rowPaddingVerticalDp >= 10)
     }
 
     @Test
@@ -427,7 +617,7 @@ class AdminUiContractsTest {
     @Test
     fun `admin limits are grouped by operational risk`() {
         assertEquals(
-            listOf("Mis límites de venta", "Límite de venta de cajeros", "Pagos", "Recargas", "Sistema"),
+            listOf("Mis límites de venta", "Límite de venta de cajeros", "Caja", "Sistema POS"),
             adminLimitSections().map { it.label },
         )
     }
@@ -533,6 +723,25 @@ class AdminUiContractsTest {
     }
 
     @Test
+    fun `cashier visual limits resolve by server id alias`() {
+        val defaults = CashierSalesLimitInputs(quiniela = 10_000.0, pale = 10_000.0)
+        val maniTaxiLimits = CashierSalesLimitInputs(quiniela = 4_000.0, pale = 4_000.0)
+        val payload = buildCashierLimitPayloadWithUser(
+            currentPayload = encodeCashierSalesLimitInputs(defaults),
+            username = "CAJ-AF4874",
+            limits = maniTaxiLimits,
+        )
+
+        val resolved = decodeCashierUserSalesLimitInputs(
+            payload = payload,
+            userKeys = listOf("bancay13", "CAJ-AF4874", "13-Banca mani taxi"),
+        )
+
+        assertEquals(maniTaxiLimits, resolved)
+        assertEquals(defaults, decodeCashierSalesLimitInputs(payload))
+    }
+
+    @Test
     fun `lottery monitor quiniela shows only played numbers ordered by sales desc`() {
         val rows = buildLotteryMonitorRows(
             tickets = listOf(
@@ -592,6 +801,22 @@ class AdminUiContractsTest {
         assertEquals(100.0, row.cashierAmount, 0.001)
         assertEquals(2_000.0, row.limitAmount ?: 0.0, 0.001)
         assertEquals(1_900.0, row.remainingAmount ?: 0.0, 0.001)
+    }
+
+    @Test
+    fun `lottery monitor selected cashier shows own scope label`() {
+        val rows = buildLotteryMonitorRows(
+            tickets = listOf(
+                monitorTicket("cashier-sale", "cajero1", PlayItem(number = "03", playType = "Q", amount = 100.0, lotteryId = "1", lotteryName = "La Primera Día")),
+            ),
+            lotteryId = "1",
+            view = LotteryMonitorPlayView.QUINIELA,
+            selectedCashierId = "cashier-1",
+            cashierSellerKeys = setOf("cashier-1", "cajero1"),
+            cashierLimits = CashierSalesLimitInputs(quiniela = 2_000.0),
+        )
+
+        assertEquals("Tope del cajero", rows.single().limitScopeLabel)
     }
 
     @Test
@@ -696,10 +921,14 @@ class AdminUiContractsTest {
             ),
             lotteryId = null,
             view = LotteryMonitorPlayView.QUINIELA,
+            cashierSellerKeys = setOf("cajero1", "cajero2"),
+            cashierLimits = CashierSalesLimitInputs(quiniela = 5_000.0),
         )
 
         assertEquals("11", rows.first().displayNumber)
         assertEquals(25.0, rows.first().amount, 0.001)
+        assertTrue(rows.first().remainingAmount != null)
+        assertEquals(4_975.0, rows.first().remainingAmount!!, 0.001)
     }
 
     @Test
@@ -875,12 +1104,13 @@ class AdminUiContractsTest {
         name: String,
         type: String,
         closeTime: String = "12:55 PM",
+        drawTime: String = "1:00 PM",
     ): LotteryCatalogItem {
         return LotteryCatalogItem(
             id = id,
             name = name,
             type = type,
-            baseDrawTime = "1:00 PM",
+            baseDrawTime = drawTime,
             baseCloseTime = closeTime,
             colorHex = "#000000",
         )

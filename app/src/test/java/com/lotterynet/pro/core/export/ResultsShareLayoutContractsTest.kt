@@ -196,7 +196,7 @@ class ResultsShareLayoutContractsTest {
     }
 
     @Test
-    fun `multi lottery results export splits into five poster pages when many rows are shared`() {
+    fun `multi lottery results export keeps fixed small pages when many rows are shared`() {
         val rows = (1..12).map { index ->
             ResultShareRow(
                 displayName = "Lotería $index",
@@ -208,9 +208,27 @@ class ResultsShareLayoutContractsTest {
 
         val chunks = NativeBitmapExport.chunkResultsRowsForPoster(rows)
 
-        assertEquals(5, chunks.size)
+        assertEquals(3, chunks.size)
         assertEquals(rows.size, chunks.sumOf { it.size })
-        assertTrue(chunks.all { it.size <= 3 })
+        assertTrue(chunks.all { it.size <= 4 })
+    }
+
+    @Test
+    fun `forty four lottery results keep every row in bounded pages`() {
+        val rows = (1..44).map { index ->
+            ResultShareRow(
+                displayName = "Lotería $index",
+                first = "01",
+                second = "02",
+                third = "03",
+            )
+        }
+
+        val chunks = NativeBitmapExport.chunkResultsRowsForPoster(rows)
+
+        assertEquals(11, chunks.size)
+        assertEquals(rows, chunks.flatten())
+        assertTrue(chunks.all { it.size <= 4 })
     }
 
     @Test

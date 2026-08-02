@@ -74,6 +74,25 @@ test("ticket summary uses foreground catch-up instead of blind resume sync", () 
   assert.match(summary, /TICKET_SUMMARY_FOREGROUND_CATCH_UP_THROTTLE_MS/);
 });
 
+test("ticket summary automatically reconciles pending local queue during normal catch-up", () => {
+  const summary = read("app/src/main/java/com/lotterynet/pro/ui/tickets/TicketSummaryActivity.kt");
+
+  assert.match(summary, /allowPendingFlush:\s*Boolean\s*=\s*true/);
+  assert.match(summary, /shouldFlushPendingTicketsBeforeHydration/);
+  assert.match(summary, /flushPendingTicketsForSession\(session\)/);
+  assert.match(summary, /resolveOperationalRealtimeOwnerKeys\(session\)\.ifEmpty\s*\{\s*listOf\(resolveOperationalOwnerKey\(session\)\)\s*\}/);
+  assert.match(summary, /ownerKeys\.forEach\s*\{\s*ownerKey\s*->\s*[\s\S]*flushOwner\(/);
+  assert.doesNotMatch(summary, /allowPendingFlush\s*=\s*false/);
+});
+
+test("operational ticket hydration uses only the canonical owner to avoid duplicate reads", () => {
+  const source = read("app/src/main/java/com/lotterynet/pro/core/sync/NativeOperationalSyncCoordinator.kt");
+
+  assert.match(source, /val ownerKeys = resolveOperationalHydrationOwnerKeys\(session\)/);
+  assert.match(source, /internal fun resolveOperationalHydrationOwnerKeys\(session: ActiveSession\?\): List<String> \{\s*return resolveCanonicalOwnerIdentity\(session\)\?\.canonicalOwnerKey\?\.let\(::listOf\) \?: emptyList\(\)\s*\}/);
+  assert.doesNotMatch(source, /resolveOperationalOwnerKeys\(session\)\.firstOrNull\(\)\?\.let\(::listOf\)\.orEmpty\(\)/);
+});
+
 test("admin winners uses foreground catch-up so missed realtime does not hide winners", () => {
   const winners = read("app/src/main/java/com/lotterynet/pro/ui/admin/AdminWinnersActivity.kt");
 

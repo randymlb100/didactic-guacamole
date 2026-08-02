@@ -17,10 +17,14 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.sizeIn
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -31,23 +35,20 @@ import androidx.compose.material.icons.rounded.FilterList
 import androidx.compose.material.icons.rounded.Lock
 import androidx.compose.material.icons.rounded.Paid
 import androidx.compose.material.icons.rounded.Print
+import androidx.compose.material.icons.rounded.QueryStats
 import androidx.compose.material.icons.rounded.SportsSoccer
 import androidx.compose.material.icons.rounded.Tune
 import androidx.compose.material.icons.rounded.Whatsapp
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -60,6 +61,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -67,6 +72,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.text.KeyboardOptions
 import coil3.compose.AsyncImage
+import com.lotterynet.pro.core.auth.SupabaseSessionTokenProvider
 import com.lotterynet.pro.core.export.NativeBitmapExport
 import com.lotterynet.pro.core.format.formatWholeMoney
 import com.lotterynet.pro.core.master.SupabaseMasterConfigRemoteStore
@@ -78,6 +84,7 @@ import com.lotterynet.pro.core.model.SportsbookMarketKey
 import com.lotterynet.pro.core.model.SportsbookOdd
 import com.lotterynet.pro.core.model.SportsbookSelection
 import com.lotterynet.pro.core.model.SportsbookTicketDraft
+import com.lotterynet.pro.core.model.SportsbookTicketLegRecord
 import com.lotterynet.pro.core.model.SportsbookTicketRecord
 import com.lotterynet.pro.core.model.SportsbookTicketSaleResult
 import com.lotterynet.pro.core.model.SportsbookTicketStatus
@@ -102,10 +109,14 @@ import com.lotterynet.pro.core.storage.encodeMasterSportsbookSettings
 import com.lotterynet.pro.core.storage.sportsbookRemoteKey
 import com.lotterynet.pro.core.storage.toFeatureConfig
 import com.lotterynet.pro.ui.common.AppTopBar
+import com.lotterynet.pro.ui.common.ActionTone
 import com.lotterynet.pro.ui.common.CompactActionButton
-import com.lotterynet.pro.ui.common.CompactAdaptiveGrid
 import com.lotterynet.pro.ui.common.CompactPanel
 import com.lotterynet.pro.ui.common.CompactStatusBadge
+import com.lotterynet.pro.ui.common.CurrentScopeDropdownCard
+import com.lotterynet.pro.ui.common.OperationalModalSheet
+import com.lotterynet.pro.ui.common.SearchableOptionSheet
+import com.lotterynet.pro.ui.common.SearchableSheetOption
 import com.lotterynet.pro.ui.common.ScreenChromeSpec
 import com.lotterynet.pro.ui.common.rememberLotteryNetVisualSpec
 import com.lotterynet.pro.ui.navigation.NativeDestination
@@ -115,6 +126,9 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.util.Locale
+import java.time.Instant
+import java.time.LocalDate
+import java.time.ZoneId
 import kotlin.concurrent.thread
 
 class SportsbookActivity : AppCompatActivity() {
@@ -127,17 +141,25 @@ class SportsbookActivity : AppCompatActivity() {
         val activeSession = session ?: return
         val configRepository = LocalMasterConfigRepository(this)
         val usersRepository = LocalUsersRepository(this)
-        val remoteStore = SupabaseMasterConfigRemoteStore()
+        val sessionTokenProvider = SupabaseSessionTokenProvider(LocalSessionRepository(this))
+        val remoteStore = SupabaseMasterConfigRemoteStore(
+            bearerTokenProvider = { sessionTokenProvider.freshAccessToken() },
+        )
         val boardStore = SportsbookBoardRemoteStore()
-        val ticketStore = SportsbookTicketRemoteStore()
+        val ticketStore = SportsbookTicketRemoteStore(
+            bearerTokenProvider = { sessionTokenProvider.freshAccessToken() },
+        )
         setContent {
             LotteryNetComposeTheme {
                 var settings by remember { mutableStateOf(configRepository.getSportsbookSettings()) }
                 var syncStatus by remember { mutableStateOf("Leyendo control Master...") }
                 var boardSnapshot by remember { mutableStateOf(SportsbookBoardSnapshot()) }
                 var boardStatus by remember { mutableStateOf("Tablero pendiente de sincronizar.") }
+                var boardLoading by remember { mutableStateOf(false) }
                 var ticketSnapshot by remember { mutableStateOf(SportsbookTicketSnapshot()) }
                 var ticketStatus by remember { mutableStateOf("Tickets deportivos pendientes de leer.") }
+                var ticketLoading by remember { mutableStateOf(false) }
+                var refreshNonce by remember { mutableStateOf(0) }
                 val userAccounts = remember { usersRepository.getAdmins() + usersRepository.getSupervisors() + usersRepository.getCashiers() }
                 val scope = rememberCoroutineScope()
                 LaunchedEffect(Unit) {
@@ -162,6 +184,7 @@ class SportsbookActivity : AppCompatActivity() {
                     settings.cashierEnabled,
                     settings.allowedActorKeys,
                     settings.cashierAdminKeys,
+                    refreshNonce,
                 ) {
                     val canLoadBoard = canLoadSportsbookBoard(
                         role = activeSession.role,
@@ -169,11 +192,17 @@ class SportsbookActivity : AppCompatActivity() {
                         actorKey = activeSession.userId.ifBlank { activeSession.username },
                         adminKey = activeSession.adminId ?: activeSession.adminUser,
                     )
-                    if (!canLoadBoard) return@LaunchedEffect
+                    if (!canLoadBoard) {
+                        boardLoading = false
+                        ticketLoading = false
+                        return@LaunchedEffect
+                    }
+                    boardLoading = true
+                    ticketLoading = true
                     boardStatus = "Buscando juegos cacheados..."
                     val nextBoard = withContext(Dispatchers.IO) {
                         runCatching {
-                            boardStore.fetchBoard(bearerToken = activeSession.authAccessToken)
+                            boardStore.fetchBoard(bearerToken = sessionTokenProvider.freshAccessToken())
                         }.getOrNull()
                     }
                     if (nextBoard != null) {
@@ -186,6 +215,7 @@ class SportsbookActivity : AppCompatActivity() {
                     } else {
                         boardStatus = "No se pudo leer el tablero deportivo."
                     }
+                    boardLoading = false
                     val nextTickets = withContext(Dispatchers.IO) {
                         runCatching { ticketStore.fetchTickets(activeSession) }.getOrNull()
                     }
@@ -195,6 +225,7 @@ class SportsbookActivity : AppCompatActivity() {
                     } else {
                         ticketStatus = "No se pudo leer tickets deportivos."
                     }
+                    ticketLoading = false
                 }
                 SportsbookRoute(
                     session = activeSession,
@@ -203,18 +234,25 @@ class SportsbookActivity : AppCompatActivity() {
                     syncStatus = syncStatus,
                     boardSnapshot = boardSnapshot,
                     boardStatus = boardStatus,
+                    boardLoading = boardLoading,
                     ticketSnapshot = ticketSnapshot,
                     ticketStatus = ticketStatus,
+                    ticketLoading = ticketLoading,
+                    onRetryBoard = { refreshNonce += 1 },
                     onCreateTicket = { draft ->
                         val sale = withContext(Dispatchers.IO) {
                             ticketStore.createTicket(activeSession, draft)
                         }
+                        val localTicket = buildSportsbookTicketRecordFromSale(activeSession, sale, draft.selections)
                         val nextTickets = withContext(Dispatchers.IO) {
                             runCatching { ticketStore.fetchTickets(activeSession) }.getOrNull()
                         }
                         if (nextTickets != null) {
-                            ticketSnapshot = nextTickets
-                            ticketStatus = "${nextTickets.tickets.size} ticket(s) deportivos leidos."
+                            ticketSnapshot = mergeSportsbookTicketSnapshot(nextTickets, localTicket)
+                            ticketStatus = "${ticketSnapshot.tickets.size} ticket(s) deportivos visibles."
+                        } else {
+                            ticketSnapshot = mergeSportsbookTicketSnapshot(ticketSnapshot, localTicket)
+                            ticketStatus = "Venta guardada; lista deportiva actualizada localmente."
                         }
                         sale
                     },
@@ -232,14 +270,14 @@ class SportsbookActivity : AppCompatActivity() {
                             whatsappOnly = whatsappOnly,
                         )
                     },
-                    onPrintThermalTicket = { ticket ->
+                    onPrintThermalTicket = { ticket, printMark ->
                         thread(name = "sportsbook-thermal-print") {
                             val prefs = LocalThermalPrinterRepository(this@SportsbookActivity).getPrefs()
                             val text = ThermalTicketRenderer().renderSportsbookTicket(
                                 ticket = ticket,
                                 bancaName = ticket.bancaName.ifBlank { activeSession.banca ?: "Deportes" },
                                 prefs = prefs,
-                                printMark = TicketPrintMark.COPIA,
+                                printMark = printMark,
                             )
                             val targetIntegrated = IntegratedThermalPrinter.isAvailable(this@SportsbookActivity)
                             val result = if (targetIntegrated) {
@@ -311,7 +349,6 @@ class SportsbookActivity : AppCompatActivity() {
 }
 
 @Composable
-@OptIn(ExperimentalMaterial3Api::class)
 private fun SportsbookRoute(
     session: ActiveSession,
     settings: MasterSportsbookSettings,
@@ -319,11 +356,14 @@ private fun SportsbookRoute(
     syncStatus: String,
     boardSnapshot: SportsbookBoardSnapshot,
     boardStatus: String,
+    boardLoading: Boolean,
     ticketSnapshot: SportsbookTicketSnapshot,
     ticketStatus: String,
+    ticketLoading: Boolean,
+    onRetryBoard: () -> Unit,
     onCreateTicket: suspend (SportsbookTicketDraft) -> SportsbookTicketSaleResult,
     onShareTicket: (SportsbookTicketRecord, Boolean) -> Unit,
-    onPrintThermalTicket: (SportsbookTicketRecord) -> Unit,
+    onPrintThermalTicket: (SportsbookTicketRecord, TicketPrintMark) -> Unit,
     onPayTicket: (SportsbookTicketRecord) -> Unit,
     onSaveSettings: (MasterSportsbookSettings) -> Unit,
     onBack: () -> Unit,
@@ -339,31 +379,32 @@ private fun SportsbookRoute(
         adminKey = session.adminId ?: session.adminUser,
     )
     var selectedLeague by remember { mutableStateOf(SportsbookBoardFilterOption.ALL.id) }
+    var selectedSport by remember { mutableStateOf(SportsbookBoardFilterOption.ALL.id) }
+    var selectedDate by remember { mutableStateOf(SportsbookBoardFilterOption.ALL.id) }
+    var selectedMarket by remember { mutableStateOf(SportsbookBoardFilterOption.ALL.id) }
     var selectedStatus by remember { mutableStateOf(SportsbookBoardFilterOption.OPEN.id) }
     var selectedGame by remember { mutableStateOf<SportsbookBoardGame?>(null) }
     var selections by remember { mutableStateOf<List<SportsbookSelection>>(emptyList()) }
     var stakeText by remember { mutableStateOf("") }
     var saleStatus by remember { mutableStateOf<String?>(null) }
     var lastSale by remember { mutableStateOf<SportsbookTicketSaleResult?>(null) }
+    var lastSaleSelections by remember { mutableStateOf<List<SportsbookSelection>>(emptyList()) }
     var selling by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
-    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-    if (selectedGame != null) {
-        ModalBottomSheet(
-            onDismissRequest = { selectedGame = null },
-            sheetState = sheetState,
-            containerColor = visual.colors.panel,
+    selectedGame?.let { game ->
+        OperationalModalSheet(
+            title = "Mercados deportivos",
+            subtitle = "${game.event.awayTeam} @ ${game.event.homeTeam}",
+            onDismiss = { selectedGame = null },
         ) {
             SportsbookGameSheet(
-                game = selectedGame ?: return@ModalBottomSheet,
+                game = game,
                 selectedOddsIds = selections.map { it.oddsId }.toSet(),
                 onOddSelected = { selection ->
                     selections = toggleSportsbookSelection(selections, selection)
                     saleStatus = "Seleccion agregada al ticket."
-                    selectedTab = "ticket"
                     selectedGame = null
                 },
-                onDismiss = { selectedGame = null },
             )
         }
     }
@@ -380,6 +421,7 @@ private fun SportsbookRoute(
                     showBottomNav = false,
                 ),
                 onOpenMenu = onBack,
+                applyStatusBarInsets = true,
             )
         },
         containerColor = visual.colors.background,
@@ -416,6 +458,10 @@ private fun SportsbookRoute(
                             selling = selling,
                             saleStatus = saleStatus,
                             lastSale = lastSale,
+                            lastSaleTicket = lastSale?.let { sale ->
+                                ticketSnapshot.tickets.firstOrNull { it.ticketCode == sale.ticketCode }
+                                    ?: buildSportsbookTicketRecordFromSale(session, sale, lastSaleSelections)
+                            },
                             onStakeChange = { stakeText = it.filter { char -> char.isDigit() || char == '.' }.take(8) },
                             onRemoveSelection = { oddsId ->
                                 selections = selections.filterNot { it.oddsId == oddsId }
@@ -426,10 +472,12 @@ private fun SportsbookRoute(
                                 stakeText = ""
                                 saleStatus = null
                                 lastSale = null
+                                lastSaleSelections = emptyList()
                             },
                             onSell = {
                                 val stake = stakeText.toDoubleOrNull() ?: 0.0
-                                val draft = SportsbookTicketDraft(selections = selections, stake = stake)
+                                val draftSelections = selections
+                                val draft = SportsbookTicketDraft(selections = draftSelections, stake = stake)
                                 selling = true
                                 saleStatus = "Validando en servidor..."
                                 scope.launch {
@@ -437,6 +485,7 @@ private fun SportsbookRoute(
                                     selling = false
                                     result.onSuccess { sale ->
                                         lastSale = sale
+                                        lastSaleSelections = draftSelections
                                         saleStatus = "Ticket vendido: ${sale.ticketCode}"
                                         selections = emptyList()
                                         stakeText = ""
@@ -445,10 +494,14 @@ private fun SportsbookRoute(
                                     }
                                 }
                             },
+                            onShareLastSaleTicket = { ticket -> onShareTicket(ticket, true) },
+                            onPrintLastSaleTicket = onPrintThermalTicket,
                         )
                         "cobros" -> SportsbookCollectionPreview(
                             tickets = ticketSnapshot.tickets,
                             ticketStatus = ticketStatus,
+                            ticketLoading = ticketLoading,
+                            onRetry = onRetryBoard,
                             onShareTicket = onShareTicket,
                             onPrintThermalTicket = onPrintThermalTicket,
                             onPayTicket = onPayTicket,
@@ -471,11 +524,26 @@ private fun SportsbookRoute(
                         else -> SportsbookBoardPreview(
                             boardSnapshot = boardSnapshot,
                             boardStatus = boardStatus,
+                            boardLoading = boardLoading,
+                            onRetry = onRetryBoard,
                             selectedLeague = selectedLeague,
                             onLeagueSelected = { selectedLeague = it },
+                            selectedSport = selectedSport,
+                            onSportSelected = { selectedSport = it },
+                            selectedDate = selectedDate,
+                            onDateSelected = { selectedDate = it },
+                            selectedMarket = selectedMarket,
+                            onMarketSelected = { selectedMarket = it },
                             selectedStatus = selectedStatus,
                             onStatusSelected = { selectedStatus = it },
                             onGameSelected = { selectedGame = it },
+                            selectedOddsIds = selections.map { it.oddsId }.toSet(),
+                            selections = selections,
+                            onOpenTicket = { selectedTab = "ticket" },
+                            onOddSelected = { selection ->
+                                selections = toggleSportsbookSelection(selections, selection)
+                                saleStatus = "Seleccion agregada al ticket."
+                            },
                         )
                     }
                 }
@@ -563,40 +631,100 @@ private fun SportsbookTabStrip(
     selected: String,
     onSelected: (String) -> Unit,
 ) {
-    CompactAdaptiveGrid(
-        itemCount = tabs.size,
-        columns = 3,
-        horizontalSpacing = 6.dp,
-        verticalSpacing = 6.dp,
-    ) { index, modifier ->
-        val tab = tabs[index]
-        CompactActionButton(
-            label = tab.label,
-            icon = tab.icon,
-            active = selected == tab.id,
-            onClick = { onSelected(tab.id) },
-            modifier = modifier,
-        )
-    }
+    val selectedTab = tabs.firstOrNull { it.id == selected } ?: tabs.first()
+    CurrentScopeDropdownCard(
+        title = "Vista deportiva",
+        value = selectedTab.label,
+        selectedId = selectedTab.id,
+        options = tabs.map { it.id to it.label },
+        onSelected = onSelected,
+        subtitle = when (selectedTab.id) {
+            "juegos" -> "Cartelera y cuotas disponibles"
+            "ticket" -> "Selecciones y monto de la apuesta"
+            "cobros" -> "Tickets ganadores por cobrar"
+            "finanza" -> "Resumen financiero deportivo"
+            "reportes" -> "Historial y resultados"
+            "control" -> "Controles administrativos"
+            "config" -> "Permisos y configuración"
+            else -> "Contenido deportivo"
+        },
+        actionLabel = "Cambiar",
+        tone = sportsbookTabTone(selectedTab.id, selected = true),
+    )
+}
+
+private fun sportsbookTabTone(tabId: String, selected: Boolean): ActionTone = when {
+    selected && tabId in setOf("juegos", "ticket") -> ActionTone.IntenseBlue
+    selected && tabId in setOf("cobros", "finanza", "reportes") -> ActionTone.Success
+    selected && tabId in setOf("control", "config") -> ActionTone.Purple
+    selected -> ActionTone.Primary
+    else -> ActionTone.Secondary
 }
 
 @Composable
 private fun SportsbookBoardPreview(
     boardSnapshot: SportsbookBoardSnapshot,
     boardStatus: String,
+    boardLoading: Boolean,
+    onRetry: () -> Unit,
     selectedLeague: String,
     onLeagueSelected: (String) -> Unit,
+    selectedSport: String,
+    onSportSelected: (String) -> Unit,
+    selectedDate: String,
+    onDateSelected: (String) -> Unit,
+    selectedMarket: String,
+    onMarketSelected: (String) -> Unit,
     selectedStatus: String,
     onStatusSelected: (String) -> Unit,
     onGameSelected: (SportsbookBoardGame) -> Unit,
+    selectedOddsIds: Set<String>,
+    selections: List<SportsbookSelection>,
+    onOpenTicket: () -> Unit,
+    onOddSelected: (SportsbookSelection) -> Unit,
 ) {
     val visual = rememberLotteryNetVisualSpec()
     val leagueOptions = remember(boardSnapshot.games) { buildSportsbookLeagueFilterOptions(boardSnapshot.games) }
+    val sportOptions = remember(boardSnapshot.games) { buildSportsbookSportFilterOptions(boardSnapshot.games) }
+    val dateOptions = remember { sportsbookDateFilterOptions() }
+    val marketOptions = remember(boardSnapshot.games) { buildSportsbookMarketFilterOptions(boardSnapshot.games) }
     val statusOptions = remember { sportsbookStatusFilterOptions() }
+    val safeSport = sportOptions.firstOrNull { it.id == selectedSport }?.id ?: SportsbookBoardFilterOption.ALL.id
+    val safeDate = dateOptions.firstOrNull { it.id == selectedDate }?.id ?: SportsbookBoardFilterOption.ALL.id
+    val safeMarket = marketOptions.firstOrNull { it.id == selectedMarket }?.id ?: SportsbookBoardFilterOption.ALL.id
     val safeLeague = leagueOptions.firstOrNull { it.id == selectedLeague }?.id ?: SportsbookBoardFilterOption.ALL.id
     val safeStatus = statusOptions.firstOrNull { it.id == selectedStatus }?.id ?: SportsbookBoardFilterOption.OPEN.id
-    val games = remember(boardSnapshot.games, safeLeague, safeStatus) {
-        filterSportsbookBoardGames(boardSnapshot.games, safeLeague, safeStatus)
+    val games = remember(boardSnapshot.games, safeSport, safeDate, safeMarket, safeLeague, safeStatus) {
+        filterSportsbookBoardGames(boardSnapshot.games, safeLeague, safeStatus, safeSport, safeDate, safeMarket)
+    }
+    var showFilters by remember { mutableStateOf(false) }
+    if (showFilters) {
+        OperationalModalSheet(
+            title = "Filtros de cartelera",
+            subtitle = "Deporte, fecha, mercado, liga y estado.",
+            onDismiss = { showFilters = false },
+            primaryActionLabel = "Aplicar",
+            onPrimaryAction = { showFilters = false },
+            contentScrollable = false,
+        ) {
+            SportsbookBoardFilterSheet(
+                leagueOptions = leagueOptions,
+                selectedLeague = safeLeague,
+                onLeagueSelected = onLeagueSelected,
+                sportOptions = sportOptions,
+                selectedSport = selectedSport,
+                onSportSelected = onSportSelected,
+                dateOptions = dateOptions,
+                selectedDate = selectedDate,
+                onDateSelected = onDateSelected,
+                marketOptions = marketOptions,
+                selectedMarket = selectedMarket,
+                onMarketSelected = onMarketSelected,
+                statusOptions = statusOptions,
+                selectedStatus = safeStatus,
+                onStatusSelected = onStatusSelected,
+            )
+        }
     }
     CompactPanel {
         Row(
@@ -614,13 +742,13 @@ private fun SportsbookBoardPreview(
             }
             Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                 Text(
-                    text = "Juegos disponibles",
+                    text = "Cartelera deportiva",
                     style = MaterialTheme.typography.titleMedium,
                     color = visual.colors.ink,
                     fontWeight = FontWeight.Black,
                 )
                 Text(
-                    text = boardStatus,
+                    text = "${selectedSportsbookFilterLabel(sportOptions, safeSport)} · ${selectedSportsbookFilterLabel(leagueOptions, safeLeague)} · ${selectedSportsbookFilterLabel(statusOptions, safeStatus)} · $boardStatus",
                     style = MaterialTheme.typography.bodySmall,
                     color = visual.colors.muted,
                     fontWeight = FontWeight.Bold,
@@ -628,26 +756,59 @@ private fun SportsbookBoardPreview(
                     overflow = TextOverflow.Ellipsis,
                 )
             }
-            CompactStatusBadge(label = "${games.size}", tone = visual.colors.actionPrimary)
+            if (boardLoading) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(20.dp),
+                    strokeWidth = 2.dp,
+                )
+            } else {
+                CompactStatusBadge(label = "${games.size}", tone = visual.colors.actionPrimary)
+            }
         }
-        Row(
+        LazyRow(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+            contentPadding = PaddingValues(vertical = 2.dp),
         ) {
-            SportsbookFilterDropdown(
-                label = "Liga",
-                selectedId = safeLeague,
-                options = leagueOptions,
-                onSelected = onLeagueSelected,
-                modifier = Modifier.weight(1f),
-            )
-            SportsbookFilterDropdown(
-                label = "Estado",
-                selectedId = safeStatus,
-                options = statusOptions,
-                onSelected = onStatusSelected,
-                modifier = Modifier.weight(1f),
-            )
+            item {
+                FilterChip(
+                    selected = false,
+                    onClick = { showFilters = true },
+                    label = { Text("Filtros") },
+                )
+            }
+            item {
+                SportsbookActiveFilterChip(
+                    label = "Deporte",
+                    value = selectedSportsbookFilterLabel(sportOptions, safeSport),
+                    active = safeSport != SportsbookBoardFilterOption.ALL.id,
+                    onClick = { showFilters = true },
+                )
+            }
+            item {
+                SportsbookActiveFilterChip(
+                    label = "Liga",
+                    value = selectedSportsbookFilterLabel(leagueOptions, safeLeague),
+                    active = safeLeague != SportsbookBoardFilterOption.ALL.id,
+                    onClick = { showFilters = true },
+                )
+            }
+            item {
+                SportsbookActiveFilterChip(
+                    label = "Fecha",
+                    value = selectedSportsbookFilterLabel(dateOptions, safeDate),
+                    active = safeDate != SportsbookBoardFilterOption.ALL.id,
+                    onClick = { showFilters = true },
+                )
+            }
+            item {
+                SportsbookActiveFilterChip(
+                    label = "Mercado",
+                    value = selectedSportsbookFilterLabel(marketOptions, safeMarket),
+                    active = safeMarket != SportsbookBoardFilterOption.ALL.id,
+                    onClick = { showFilters = true },
+                )
+            }
         }
         if (games.isEmpty()) {
             PreviewPanel(
@@ -658,53 +819,242 @@ private fun SportsbookBoardPreview(
                 ),
                 footer = "Cuando lleguen juegos, toca una fila para abrir mercados en modal sheet.",
             )
+            if (!boardLoading && boardStatus.contains("No se pudo", ignoreCase = true)) {
+                CompactActionButton(
+                    label = "Reintentar tablero",
+                    onClick = onRetry,
+                    icon = Icons.Rounded.QueryStats,
+                    modifier = Modifier.fillMaxWidth(),
+                    tone = ActionTone.Secondary,
+                )
+            }
         } else {
             games.take(12).forEachIndexed { index, game ->
                 if (index > 0) HorizontalDivider(color = visual.colors.border)
-                SportsbookGameRow(game = game, onClick = { onGameSelected(game) })
+                SportsbookGameRow(
+                    game = game,
+                    selectedOddsIds = selectedOddsIds,
+                    onOddSelected = onOddSelected,
+                    onOpenMarkets = { onGameSelected(game) },
+                )
+            }
+            if (games.size > 12) {
+                Text(
+                    text = "Mostrando 12 de ${games.size}. Usa filtros para reducir la cartelera.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = visual.colors.muted,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(top = 4.dp),
+                )
+            }
+        }
+        if (selections.isNotEmpty()) {
+            SportsbookCompactBetSlip(
+                selections = selections,
+                onOpenTicket = onOpenTicket,
+            )
+        }
+    }
+}
+
+@Composable
+private fun SportsbookActiveFilterChip(
+    label: String,
+    value: String,
+    active: Boolean,
+    onClick: () -> Unit,
+) {
+    FilterChip(
+        selected = active,
+        onClick = onClick,
+        label = {
+            Text(
+                text = if (active) "$label: $value" else label,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        },
+    )
+}
+
+@Composable
+private fun SportsbookCompactBetSlip(
+    selections: List<SportsbookSelection>,
+    onOpenTicket: () -> Unit,
+) {
+    val visual = rememberLotteryNetVisualSpec()
+    val combinedOdds = com.lotterynet.pro.core.model.calculateSportsbookCombinedDecimalOdds(selections)
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp),
+        color = visual.colors.actionPrimarySurface,
+        border = BorderStroke(1.dp, visual.colors.actionPrimary),
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 10.dp, vertical = 8.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                Text(
+                    text = "Boleto en preparación",
+                    style = MaterialTheme.typography.labelLarge,
+                    color = visual.colors.ink,
+                    fontWeight = FontWeight.Black,
+                )
+                Text(
+                    text = "${selections.size} selección(es) · cuota ${"%.2f".format(Locale.US, combinedOdds)}",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = visual.colors.muted,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+            CompactActionButton(
+                label = "Revisar",
+                icon = Icons.AutoMirrored.Rounded.ReceiptLong,
+                onClick = onOpenTicket,
+                tone = ActionTone.IntenseBlue,
+            )
+        }
+    }
+}
+
+@Composable
+private fun SportsbookBoardFilterSheet(
+    leagueOptions: List<SportsbookBoardFilterOption>,
+    selectedLeague: String,
+    onLeagueSelected: (String) -> Unit,
+    sportOptions: List<SportsbookBoardFilterOption>,
+    selectedSport: String,
+    onSportSelected: (String) -> Unit,
+    dateOptions: List<SportsbookBoardFilterOption>,
+    selectedDate: String,
+    onDateSelected: (String) -> Unit,
+    marketOptions: List<SportsbookBoardFilterOption>,
+    selectedMarket: String,
+    onMarketSelected: (String) -> Unit,
+    statusOptions: List<SportsbookBoardFilterOption>,
+    selectedStatus: String,
+    onStatusSelected: (String) -> Unit,
+) {
+    val visual = rememberLotteryNetVisualSpec()
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        Text(
+            text = "La app lee la cartelera cacheada del servidor. No llama Odds ni TheSportsDB desde Android.",
+            style = MaterialTheme.typography.bodySmall,
+            color = visual.colors.muted,
+            fontWeight = FontWeight.Bold,
+        )
+        CompactPanel(alt = true) {
+            SportsbookFilterSection(
+                title = "Fecha",
+                options = dateOptions,
+                selectedId = selectedDate,
+                onSelected = onDateSelected,
+            )
+        }
+        CompactPanel(alt = true) {
+            SportsbookFilterSection(
+                title = "Mercado",
+                options = marketOptions,
+                selectedId = selectedMarket,
+                onSelected = onMarketSelected,
+            )
+        }
+        CompactPanel(alt = true) {
+            SportsbookFilterSection(
+                title = "Estado",
+                options = statusOptions,
+                selectedId = selectedStatus,
+                onSelected = onStatusSelected,
+            )
+        }
+        CompactPanel {
+            SportsbookFilterSection(
+                title = "Deporte",
+                options = sportOptions,
+                selectedId = selectedSport,
+                onSelected = onSportSelected,
+            )
+        }
+        CompactPanel {
+            SportsbookFilterSection(
+                title = "Liga",
+                options = leagueOptions,
+                selectedId = selectedLeague,
+                onSelected = onLeagueSelected,
+            )
+        }
+    }
+}
+
+@Composable
+private fun SportsbookFilterSection(
+    title: String,
+    options: List<SportsbookBoardFilterOption>,
+    selectedId: String,
+    onSelected: (String) -> Unit,
+) {
+    val visual = rememberLotteryNetVisualSpec()
+    Column(verticalArrangement = Arrangement.spacedBy(7.dp)) {
+        Text(
+            text = title,
+            style = MaterialTheme.typography.labelLarge,
+            color = visual.colors.ink,
+            fontWeight = FontWeight.Black,
+        )
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxWidth()
+                .heightIn(max = 220.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp),
+        ) {
+            items(options, key = { it.id }) { option ->
+                SportsbookFilterOptionRow(
+                    option = option,
+                    selected = option.id == selectedId,
+                    onClick = { onSelected(option.id) },
+                )
             }
         }
     }
 }
 
 @Composable
-private fun SportsbookFilterDropdown(
-    label: String,
-    selectedId: String,
-    options: List<SportsbookBoardFilterOption>,
-    onSelected: (String) -> Unit,
-    modifier: Modifier = Modifier,
+private fun SportsbookFilterOptionRow(
+    option: SportsbookBoardFilterOption,
+    selected: Boolean,
+    onClick: () -> Unit,
 ) {
     val visual = rememberLotteryNetVisualSpec()
-    var expanded by remember { mutableStateOf(false) }
-    val selected = options.firstOrNull { it.id == selectedId } ?: options.first()
-    Box(modifier = modifier) {
-        CompactActionButton(
-            label = "$label: ${selected.label}",
-            icon = Icons.Rounded.ExpandMore,
-            active = expanded,
-            onClick = { expanded = true },
-            modifier = Modifier.fillMaxWidth(),
-        )
-        DropdownMenu(
-            expanded = expanded,
-            onDismissRequest = { expanded = false },
-            containerColor = visual.colors.panel,
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick),
+        shape = RoundedCornerShape(10.dp),
+        color = if (selected) visual.colors.actionPrimarySurface else visual.colors.financeSurface,
+        border = BorderStroke(1.dp, if (selected) visual.colors.actionPrimary else visual.colors.border),
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 10.dp, vertical = 9.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically,
         ) {
-            options.forEach { option ->
-                DropdownMenuItem(
-                    text = {
-                        Text(
-                            text = option.label,
-                            fontWeight = if (option.id == selectedId) FontWeight.Black else FontWeight.Bold,
-                            color = visual.colors.ink,
-                        )
-                    },
-                    onClick = {
-                        expanded = false
-                        onSelected(option.id)
-                    },
-                )
+            Text(
+                text = option.label,
+                style = MaterialTheme.typography.labelLarge,
+                color = visual.colors.ink,
+                fontWeight = FontWeight.Black,
+                modifier = Modifier.weight(1f),
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            if (selected) {
+                CompactStatusBadge(label = "Activo", tone = visual.colors.actionPrimary)
             }
         }
     }
@@ -713,51 +1063,146 @@ private fun SportsbookFilterDropdown(
 @Composable
 private fun SportsbookGameRow(
     game: SportsbookBoardGame,
-    onClick: () -> Unit,
+    selectedOddsIds: Set<String>,
+    onOddSelected: (SportsbookSelection) -> Unit,
+    onOpenMarkets: () -> Unit,
 ) {
     val visual = rememberLotteryNetVisualSpec()
     val event = game.event
+    val primaryMarket = sportsbookPrimaryMarketPreview(game)
     Surface(
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 5.dp)
-            .clickable(onClick = onClick),
+            .clickable(onClick = onOpenMarkets),
         shape = RoundedCornerShape(10.dp),
         color = visual.colors.panel,
         border = BorderStroke(1.dp, visual.colors.border),
     ) {
-        Row(
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 10.dp, vertical = 9.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalAlignment = Alignment.CenterVertically,
+            verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            SportsbookTeamPairLogos(game = game)
-            Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(5.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                SportsbookTeamPairLogos(game = game)
+                Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(5.dp)) {
+                    Text(
+                        text = "${event.awayTeam} @ ${event.homeTeam}",
+                        style = MaterialTheme.typography.labelLarge,
+                        color = visual.colors.ink,
+                        fontWeight = FontWeight.Black,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(5.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        CompactStatusBadge(label = "${game.markets.size} mercados", tone = visual.colors.neutral)
+                        CompactStatusBadge(label = "${game.odds.size} cuotas", tone = visual.colors.gain)
+                        if (event.homeTeamLogoUrl.isNullOrBlank() || event.awayTeamLogoUrl.isNullOrBlank()) {
+                            CompactStatusBadge(label = "logos cache", tone = visual.colors.warning)
+                        }
+                    }
+                }
+                Column(horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    CompactStatusBadge(
+                        label = sportsbookGameStatusLabel(game),
+                        tone = sportsbookGameStatusTone(game, visual),
+                    )
+                    CompactActionButton(
+                        label = "Mercados",
+                        icon = Icons.Rounded.SportsSoccer,
+                        onClick = onOpenMarkets,
+                        enabled = game.isOpen,
+                        tone = if (game.isOpen) ActionTone.IntenseBlue else ActionTone.Secondary,
+                    )
+                }
+            }
+            if (primaryMarket == null) {
                 Text(
-                    text = "${event.awayTeam} @ ${event.homeTeam}",
-                    style = MaterialTheme.typography.labelLarge,
-                    color = visual.colors.ink,
+                    text = "Sin cuotas abiertas. Abre mercados para ver detalle cacheado.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = visual.colors.muted,
+                    fontWeight = FontWeight.Bold,
+                )
+            } else {
+                val (market, odds) = primaryMarket
+                Text(
+                    text = market.title,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = visual.colors.muted,
                     fontWeight = FontWeight.Black,
-                    maxLines = 2,
+                    maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
                 Row(
-                    horizontalArrangement = Arrangement.spacedBy(5.dp),
-                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
                 ) {
-                    CompactStatusBadge(label = "${game.markets.size} mercados", tone = visual.colors.neutral)
-                    CompactStatusBadge(label = "${game.odds.size} cuotas", tone = visual.colors.gain)
+                    odds.take(3).forEach { odd ->
+                        SportsbookInlineOddButton(
+                            odd = odd,
+                            selected = odd.id in selectedOddsIds,
+                            onClick = { onOddSelected(buildSportsbookSelection(game, market, odd)) },
+                            modifier = Modifier.weight(1f),
+                        )
+                    }
+                    repeat((3 - odds.take(3).size).coerceAtLeast(0)) {
+                        Spacer(modifier = Modifier.weight(1f))
+                    }
                 }
             }
-            Column(horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                CompactStatusBadge(
-                    label = sportsbookGameStatusLabel(game),
-                    tone = if (game.isOpen) visual.colors.gain else visual.colors.warning,
-                )
-                CompactActionButton(label = "Ver", icon = Icons.Rounded.SportsSoccer, onClick = onClick)
+        }
+    }
+}
+
+@Composable
+private fun SportsbookInlineOddButton(
+    odd: SportsbookOdd,
+    selected: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val visual = rememberLotteryNetVisualSpec()
+        Surface(
+            modifier = modifier
+            .sizeIn(minWidth = 48.dp, minHeight = 48.dp)
+            .semantics {
+                role = Role.Button
+                this.selected = selected
             }
+            .clickable(onClick = onClick),
+        shape = RoundedCornerShape(9.dp),
+        color = if (selected) visual.colors.actionPrimarySurface else visual.colors.financeSurface,
+        border = BorderStroke(1.dp, if (selected) visual.colors.actionPrimary else visual.colors.border),
+    ) {
+        Column(
+            modifier = Modifier.padding(horizontal = 8.dp, vertical = 7.dp),
+            verticalArrangement = Arrangement.spacedBy(2.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Text(
+                text = odd.selectionLabel,
+                style = MaterialTheme.typography.labelSmall,
+                color = visual.colors.ink,
+                fontWeight = FontWeight.Black,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            Text(
+                text = "%.2f".format(Locale.US, odd.decimalOdds),
+                style = MaterialTheme.typography.labelLarge,
+                color = visual.colors.gain,
+                fontWeight = FontWeight.Black,
+                maxLines = 1,
+            )
         }
     }
 }
@@ -828,7 +1273,6 @@ private fun SportsbookGameSheet(
     game: SportsbookBoardGame,
     selectedOddsIds: Set<String>,
     onOddSelected: (SportsbookSelection) -> Unit,
-    onDismiss: () -> Unit,
 ) {
     val visual = rememberLotteryNetVisualSpec()
     val event = game.event
@@ -864,7 +1308,7 @@ private fun SportsbookGameSheet(
             }
             CompactStatusBadge(
                 label = sportsbookGameStatusLabel(game),
-                tone = if (game.isOpen) visual.colors.gain else visual.colors.warning,
+                tone = sportsbookGameStatusTone(game, visual),
             )
         }
         Row(
@@ -907,9 +1351,6 @@ private fun SportsbookGameSheet(
             ),
             footer = "Toca una cuota para mandarla al ticket. La venta se valida en el servidor antes de guardar.",
         )
-        TextButton(onClick = onDismiss, modifier = Modifier.align(Alignment.End)) {
-            Text("Cerrar", fontWeight = FontWeight.Black)
-        }
         Spacer(modifier = Modifier.height(8.dp))
     }
 }
@@ -1033,10 +1474,13 @@ private fun SportsbookTicketPreview(
     selling: Boolean,
     saleStatus: String?,
     lastSale: SportsbookTicketSaleResult?,
+    lastSaleTicket: SportsbookTicketRecord?,
     onStakeChange: (String) -> Unit,
     onRemoveSelection: (String) -> Unit,
     onClear: () -> Unit,
     onSell: () -> Unit,
+    onShareLastSaleTicket: (SportsbookTicketRecord) -> Unit,
+    onPrintLastSaleTicket: (SportsbookTicketRecord, TicketPrintMark) -> Unit,
 ) {
     val visual = rememberLotteryNetVisualSpec()
     val stake = stakeText.toDoubleOrNull() ?: 0.0
@@ -1112,6 +1556,12 @@ private fun SportsbookTicketPreview(
                 modifier = Modifier.weight(1f),
             )
         }
+        Text(
+            text = sportsbookTicketValidationMessage(session, selections, stake, selling),
+            style = MaterialTheme.typography.bodySmall,
+            color = if (canSell) visual.colors.gain else visual.colors.muted,
+            fontWeight = FontWeight.Bold,
+        )
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -1122,12 +1572,15 @@ private fun SportsbookTicketPreview(
                 active = canSell,
                 onClick = { if (canSell) onSell() },
                 modifier = Modifier.weight(1f),
+                tone = ActionTone.Success,
             )
             CompactActionButton(
                 label = "Limpiar",
                 icon = Icons.Rounded.FilterList,
                 onClick = onClear,
                 modifier = Modifier.weight(1f),
+                tone = ActionTone.Secondary,
+                enabled = selections.isNotEmpty() || stakeText.isNotBlank() || lastSale != null,
             )
         }
         saleStatus?.takeIf { it.isNotBlank() }?.let { status ->
@@ -1137,14 +1590,120 @@ private fun SportsbookTicketPreview(
             )
         }
         lastSale?.let { sale ->
-            PreviewPanel(
-                title = "Ultima venta",
-                rows = listOf(
-                    PreviewRow("Ticket", sale.ticketCode, sale.status.wireValue),
-                    PreviewRow("Monto", "Apostado ${formatWholeMoney(sale.stake)}", formatWholeMoney(sale.potentialPayout)),
-                    PreviewRow("Cuota", "Congelada por servidor", "%.2f".format(Locale.US, sale.decimalOdds)),
-                ),
-                footer = if (sale.duplicate) "El servidor detecto reintento y no duplico la venta." else "Guardado en finanza deportiva separada.",
+            SportsbookLastSalePanel(
+                sale = sale,
+                ticket = lastSaleTicket,
+                onShareTicket = onShareLastSaleTicket,
+                onPrintTicket = onPrintLastSaleTicket,
+            )
+        }
+    }
+}
+
+private fun sportsbookTicketValidationMessage(
+    session: ActiveSession,
+    selections: List<SportsbookSelection>,
+    stake: Double,
+    selling: Boolean,
+): String = when {
+    selling -> "Validando la venta deportiva con el servidor..."
+    session.role !in setOf(UserRole.ADMIN, UserRole.CASHIER) -> "Este perfil solo puede consultar Deportes."
+    selections.isEmpty() -> "Agrega al menos una cuota abierta."
+    selections.any { !selectionCanBeSold(it) } -> "Hay una selección cerrada o con cuota no disponible."
+    stake <= 0.0 -> "Escribe un monto mayor que cero."
+    else -> "Listo para validar cuota, permisos y límites en el servidor."
+}
+
+@Composable
+private fun SportsbookLastSalePanel(
+    sale: SportsbookTicketSaleResult,
+    ticket: SportsbookTicketRecord?,
+    onShareTicket: (SportsbookTicketRecord) -> Unit,
+    onPrintTicket: (SportsbookTicketRecord, TicketPrintMark) -> Unit,
+) {
+    val visual = rememberLotteryNetVisualSpec()
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(10.dp),
+        color = visual.colors.financeSurface,
+        border = BorderStroke(1.dp, visual.colors.gain),
+    ) {
+        Column(
+            modifier = Modifier.padding(horizontal = 10.dp, vertical = 10.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                    Text(
+                        text = "Ticket vendido",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = visual.colors.ink,
+                        fontWeight = FontWeight.Black,
+                    )
+                    Text(
+                        text = sale.ticketCode,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = visual.colors.muted,
+                        fontWeight = FontWeight.Black,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+                CompactStatusBadge(
+                    label = if (sale.duplicate) "Sin duplicar" else "Deportes",
+                    tone = visual.colors.gain,
+                )
+            }
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                SportsbookMetricBox(
+                    label = "Apostado",
+                    value = formatWholeMoney(sale.stake),
+                    modifier = Modifier.weight(1f),
+                )
+                SportsbookMetricBox(
+                    label = "Pago posible",
+                    value = formatWholeMoney(sale.potentialPayout),
+                    modifier = Modifier.weight(1f),
+                )
+            }
+            ticket?.let { record ->
+                val printMark = if (sale.duplicate) TicketPrintMark.COPIA else TicketPrintMark.ORIGINAL
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    CompactActionButton(
+                        label = if (sale.duplicate) "Imprimir copia" else "Imprimir térmico",
+                        icon = Icons.Rounded.Print,
+                        onClick = { onPrintTicket(record, printMark) },
+                        modifier = Modifier.weight(1f),
+                        tone = ActionTone.Secondary,
+                    )
+                    CompactActionButton(
+                        label = "Enviar WhatsApp",
+                        icon = Icons.Rounded.Whatsapp,
+                        onClick = { onShareTicket(record) },
+                        modifier = Modifier.weight(1f),
+                        tone = ActionTone.Success,
+                    )
+                }
+            }
+            Text(
+                text = if (ticket == null) {
+                    "Guardado en finanza deportiva separada. Refresca Reportes si necesitas copia."
+                } else {
+                    "Impresion original disponible aqui; las copias quedan en Reportes deportivos."
+                },
+                style = MaterialTheme.typography.bodySmall,
+                color = visual.colors.muted,
+                fontWeight = FontWeight.Bold,
             )
         }
     }
@@ -1191,9 +1750,11 @@ private fun SportsbookSelectionRow(
                 color = visual.colors.gain,
                 fontWeight = FontWeight.Black,
             )
-            TextButton(onClick = onRemove) {
-                Text("Quitar", fontWeight = FontWeight.Black)
-            }
+            CompactActionButton(
+                label = "Quitar",
+                onClick = onRemove,
+                tone = ActionTone.Danger,
+            )
         }
     }
 }
@@ -1237,8 +1798,10 @@ private fun SportsbookMetricBox(
 private fun SportsbookCollectionPreview(
     tickets: List<SportsbookTicketRecord>,
     ticketStatus: String,
+    ticketLoading: Boolean,
+    onRetry: () -> Unit,
     onShareTicket: (SportsbookTicketRecord, Boolean) -> Unit,
-    onPrintThermalTicket: (SportsbookTicketRecord) -> Unit,
+    onPrintThermalTicket: (SportsbookTicketRecord, TicketPrintMark) -> Unit,
     onPayTicket: (SportsbookTicketRecord) -> Unit,
 ) {
     val winners = tickets.filter { it.status == SportsbookTicketStatus.WON }
@@ -1253,6 +1816,22 @@ private fun SportsbookCollectionPreview(
         ),
         footer = ticketStatus,
     )
+    if (ticketLoading) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.Center,
+        ) {
+            CircularProgressIndicator(modifier = Modifier.size(24.dp), strokeWidth = 2.dp)
+        }
+    } else if (ticketStatus.contains("No se pudo", ignoreCase = true)) {
+        CompactActionButton(
+            label = "Reintentar tickets",
+            onClick = onRetry,
+            icon = Icons.Rounded.QueryStats,
+            modifier = Modifier.fillMaxWidth(),
+            tone = ActionTone.Secondary,
+        )
+    }
     if (winners.isNotEmpty()) {
         CompactPanel {
             Text(
@@ -1296,7 +1875,7 @@ private fun SportsbookReportPreview(
     tickets: List<SportsbookTicketRecord>,
     summary: SportsbookTicketSummary,
     onShareTicket: (SportsbookTicketRecord, Boolean) -> Unit,
-    onPrintThermalTicket: (SportsbookTicketRecord) -> Unit,
+    onPrintThermalTicket: (SportsbookTicketRecord, TicketPrintMark) -> Unit,
     onPayTicket: (SportsbookTicketRecord) -> Unit,
 ) {
     PreviewPanel(
@@ -1332,7 +1911,7 @@ private fun SportsbookReportPreview(
 private fun SportsbookTicketRow(
     ticket: SportsbookTicketRecord,
     onShareTicket: (SportsbookTicketRecord, Boolean) -> Unit,
-    onPrintThermalTicket: (SportsbookTicketRecord) -> Unit,
+    onPrintThermalTicket: (SportsbookTicketRecord, TicketPrintMark) -> Unit,
     onPayTicket: (SportsbookTicketRecord) -> Unit,
 ) {
     val visual = rememberLotteryNetVisualSpec()
@@ -1389,19 +1968,22 @@ private fun SportsbookTicketRow(
                         icon = Icons.Rounded.Paid,
                         onClick = { onPayTicket(ticket) },
                         modifier = Modifier.weight(1f),
+                        tone = ActionTone.Success,
                     )
                 }
                 CompactActionButton(
-                    label = "WhatsApp",
+                    label = "Enviar WhatsApp",
                     icon = Icons.Rounded.Whatsapp,
                     onClick = { onShareTicket(ticket, true) },
                     modifier = Modifier.weight(1f),
+                    tone = ActionTone.Success,
                 )
                 CompactActionButton(
-                    label = "Termico",
+                    label = "Imprimir térmico",
                     icon = Icons.Rounded.Print,
-                    onClick = { onPrintThermalTicket(ticket) },
+                    onClick = { onPrintThermalTicket(ticket, TicketPrintMark.COPIA) },
                     modifier = Modifier.weight(1f),
+                    tone = ActionTone.Secondary,
                 )
             }
         }
@@ -1524,7 +2106,7 @@ private fun SportsbookConfigPreview(
             selectedAdmin?.let { admin ->
                 SportsbookAccountPermissionRow(
                     title = admin.displayName ?: admin.user,
-                    subtitle = "Admin ${admin.user} · ${admin.banca.orEmpty()}",
+                    subtitle = "Admin ${admin.user} · ${admin.banca.orEmpty()} · ${sportsbookAccessReason(settings, UserRole.ADMIN, admin)}",
                     checked = sportsbookAccountKeys(admin).any { it in settings.allowedActorKeys },
                     enabled = canEdit,
                     onCheckedChange = { checked ->
@@ -1537,7 +2119,7 @@ private fun SportsbookConfigPreview(
                 )
                 SportsbookSettingSwitch(
                     title = "Cajeros de ${admin.user}",
-                    subtitle = "Activa o cierra todos los cajeros de este admin sin tocar otros negocios.",
+                    subtitle = "Activa o cierra todos los cajeros de este admin sin tocar otros negocios. ${sportsbookGroupAccessReason(settings, admin)}",
                     checked = sportsbookAccountKeys(admin).any { it in settings.cashierAdminKeys },
                     enabled = canEdit,
                     onCheckedChange = { checked ->
@@ -1551,7 +2133,7 @@ private fun SportsbookConfigPreview(
                 selectedAdminCashiers.take(12).forEach { cashier ->
                     SportsbookAccountPermissionRow(
                         title = cashier.displayName ?: cashier.user,
-                        subtitle = "Cajero ${cashier.user}",
+                        subtitle = "Cajero ${cashier.user} · ${sportsbookAccessReason(settings, UserRole.CASHIER, cashier, admin)}",
                         checked = sportsbookAccountKeys(cashier).any { it in settings.allowedActorKeys },
                         enabled = canEdit,
                         onCheckedChange = { checked ->
@@ -1613,47 +2195,41 @@ private fun SportsbookAdminDropdown(
     onSelected: (String) -> Unit,
     enabled: Boolean,
 ) {
-    val visual = rememberLotteryNetVisualSpec()
-    var expanded by remember { mutableStateOf(false) }
+    var showPicker by remember { mutableStateOf(false) }
     val selected = admins.firstOrNull { it.id == selectedAdminId } ?: admins.first()
+    val options = remember(admins) {
+        admins.map { admin ->
+            SearchableSheetOption(
+                id = admin.id,
+                title = admin.user,
+                subtitle = admin.banca.orEmpty().ifBlank { admin.displayName.orEmpty() },
+                meta = admin.id,
+            )
+        }
+    }
     Box(modifier = Modifier.fillMaxWidth()) {
         CompactActionButton(
             label = "Admin: ${selected.user}",
             icon = Icons.Rounded.ExpandMore,
-            active = expanded,
-            onClick = { if (enabled) expanded = true },
+            active = showPicker,
+            onClick = { if (enabled) showPicker = true },
             modifier = Modifier.fillMaxWidth(),
+            tone = ActionTone.IntenseBlue,
         )
-        DropdownMenu(
-            expanded = expanded,
-            onDismissRequest = { expanded = false },
-            containerColor = visual.colors.panel,
-        ) {
-            admins.forEach { admin ->
-                DropdownMenuItem(
-                    text = {
-                        Column(verticalArrangement = Arrangement.spacedBy(1.dp)) {
-                            Text(
-                                text = admin.user,
-                                fontWeight = FontWeight.Black,
-                                color = visual.colors.ink,
-                            )
-                            Text(
-                                text = admin.banca.orEmpty().ifBlank { admin.displayName.orEmpty() },
-                                style = MaterialTheme.typography.labelSmall,
-                                fontWeight = FontWeight.Bold,
-                                color = visual.colors.muted,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis,
-                            )
-                        }
-                    },
-                    onClick = {
-                        expanded = false
-                        onSelected(admin.id)
-                    },
-                )
-            }
+        if (showPicker) {
+            SearchableOptionSheet(
+                title = "Seleccionar admin",
+                subtitle = "Permisos deportivos separados por negocio.",
+                options = options,
+                selectedId = selectedAdminId,
+                onSelected = {
+                    showPicker = false
+                    onSelected(it)
+                },
+                onDismiss = { showPicker = false },
+                searchLabel = "Buscar admin",
+                searchPlaceholder = "Usuario, banca o ID",
+            )
         }
     }
 }
@@ -1813,12 +2389,42 @@ internal fun buildSportsbookLeagueFilterOptions(games: List<SportsbookBoardGame>
     return listOf(SportsbookBoardFilterOption.ALL) + leagues
 }
 
+internal fun buildSportsbookSportFilterOptions(games: List<SportsbookBoardGame>): List<SportsbookBoardFilterOption> {
+    val sports = games
+        .mapNotNull { it.event.sportTitle.trim().takeIf(String::isNotBlank) }
+        .distinct()
+        .sorted()
+        .map { sport -> SportsbookBoardFilterOption(sport, sport) }
+    return listOf(SportsbookBoardFilterOption.ALL) + sports
+}
+
+internal fun sportsbookDateFilterOptions(): List<SportsbookBoardFilterOption> = listOf(
+    SportsbookBoardFilterOption.ALL,
+    SportsbookBoardFilterOption("today", "Hoy"),
+    SportsbookBoardFilterOption("tomorrow", "Mañana"),
+)
+
+internal fun buildSportsbookMarketFilterOptions(games: List<SportsbookBoardGame>): List<SportsbookBoardFilterOption> {
+    val markets = games.flatMap { it.markets }
+        .map { it.key.wireValue to it.key.label }
+        .distinctBy { it.first }
+        .sortedBy { it.second }
+        .map { (id, label) -> SportsbookBoardFilterOption(id, label) }
+    return listOf(SportsbookBoardFilterOption.ALL) + markets
+}
+
 internal fun filterSportsbookBoardGames(
     games: List<SportsbookBoardGame>,
     leagueId: String,
     statusId: String,
+    sportId: String = SportsbookBoardFilterOption.ALL.id,
+    dateId: String = SportsbookBoardFilterOption.ALL.id,
+    marketId: String = SportsbookBoardFilterOption.ALL.id,
 ): List<SportsbookBoardGame> {
+    val today = LocalDate.now()
     return games.filter { game ->
+        val sportMatches = sportId == SportsbookBoardFilterOption.ALL.id ||
+            game.event.sportTitle == sportId
         val leagueMatches = leagueId == SportsbookBoardFilterOption.ALL.id ||
             game.event.leagueTitle == leagueId
         val statusMatches = when (statusId) {
@@ -1826,7 +2432,17 @@ internal fun filterSportsbookBoardGames(
             SportsbookBoardFilterOption.CLOSED.id -> !game.isOpen
             else -> true
         }
-        leagueMatches && statusMatches
+        val gameDate = Instant.ofEpochMilli(game.event.commenceTimeEpochMs)
+            .atZone(ZoneId.systemDefault())
+            .toLocalDate()
+        val dateMatches = when (dateId) {
+            "today" -> gameDate == today
+            "tomorrow" -> gameDate == today.plusDays(1)
+            else -> true
+        }
+        val marketMatches = marketId == SportsbookBoardFilterOption.ALL.id ||
+            game.markets.any { it.key.wireValue == marketId && it.status.equals("open", ignoreCase = true) }
+        sportMatches && leagueMatches && statusMatches && dateMatches && marketMatches
     }
 }
 
@@ -1870,7 +2486,57 @@ internal fun canLoadSportsbookBoard(
     adminKey: String? = null,
 ): Boolean {
     if (role == UserRole.MASTER) return false
+    if (settings.allowedActorKeys.isEmpty() && settings.cashierAdminKeys.isEmpty()) {
+        return when (role) {
+            UserRole.ADMIN -> settings.enabled && settings.adminEnabled
+            UserRole.SUPERVISOR -> settings.enabled && settings.supervisorEnabled
+            UserRole.CASHIER -> settings.enabled && settings.cashierEnabled
+            else -> false
+        }
+    }
     return settings.toFeatureConfig().canOpen(role, actorKey, adminKey)
+}
+
+internal fun sportsbookAccessReason(
+    settings: MasterSportsbookSettings,
+    role: UserRole,
+    account: UserAccount,
+    admin: UserAccount? = null,
+): String {
+    if (!settings.enabled) return "Bloqueado: Deportes global apagado"
+    val accountKeys = sportsbookAccountKeys(account)
+    val hasIndividualAccess = accountKeys.any { key -> key in settings.allowedActorKeys }
+    val hasGroupAccess = role == UserRole.CASHIER && admin != null &&
+        sportsbookAccountKeys(admin).any { key -> key in settings.cashierAdminKeys }
+    if (hasIndividualAccess) return "Activo individual"
+    if (hasGroupAccess) return "Activo por grupo"
+    val roleEnabled = when (role) {
+        UserRole.ADMIN -> settings.adminEnabled
+        UserRole.SUPERVISOR -> settings.supervisorEnabled
+        UserRole.CASHIER -> settings.cashierEnabled
+        else -> false
+    }
+    if (settings.allowedActorKeys.isEmpty() && settings.cashierAdminKeys.isEmpty() && roleEnabled) {
+        return "Activo por rol"
+    }
+    return when (role) {
+        UserRole.ADMIN -> "Bloqueado: Admin no autorizado"
+        UserRole.SUPERVISOR -> "Bloqueado: Supervisor no autorizado"
+        UserRole.CASHIER -> "Bloqueado: Cajero no autorizado"
+        else -> "Bloqueado"
+    }
+}
+
+internal fun sportsbookGroupAccessReason(
+    settings: MasterSportsbookSettings,
+    admin: UserAccount,
+): String {
+    if (!settings.enabled) return "Bloqueado globalmente."
+    return if (sportsbookAccountKeys(admin).any { it in settings.cashierAdminKeys }) {
+        "Activo por grupo."
+    } else {
+        "Grupo apagado."
+    }
 }
 
 internal fun sportsbookAccountKeys(account: UserAccount): Set<String> {
@@ -1910,7 +2576,101 @@ internal fun MasterSportsbookSettings.withCashierAdminAccess(
 }
 
 private fun sportsbookGameStatusLabel(game: SportsbookBoardGame): String {
-    return if (game.isOpen) "Abierto" else "Cerrado"
+    return when {
+        game.event.status.equals("started", ignoreCase = true) ||
+            game.event.status.equals("in_progress", ignoreCase = true) -> "Iniciado"
+        game.event.status.equals("suspended", ignoreCase = true) ||
+            game.markets.any { it.status.equals("suspended", ignoreCase = true) } -> "Suspendido"
+        game.isOpen -> "Abierto"
+        game.event.status.equals("finished", ignoreCase = true) -> "Finalizado"
+        else -> "Cerrado"
+    }
+}
+
+private fun sportsbookGameStatusTone(
+    game: SportsbookBoardGame,
+    visual: com.lotterynet.pro.ui.common.LotteryNetVisualSpec,
+) = when (sportsbookGameStatusLabel(game)) {
+    "Abierto" -> visual.colors.gain
+    "Finalizado" -> visual.colors.neutral
+    else -> visual.colors.warning
+}
+
+private fun selectedSportsbookFilterLabel(
+    options: List<SportsbookBoardFilterOption>,
+    selectedId: String,
+): String {
+    return options.firstOrNull { it.id == selectedId }?.label ?: SportsbookBoardFilterOption.ALL.label
+}
+
+private fun sportsbookPrimaryMarketPreview(
+    game: SportsbookBoardGame,
+): Pair<SportsbookMarket, List<SportsbookOdd>>? {
+    val preferredMarket = game.markets.firstOrNull { market ->
+        market.key == SportsbookMarketKey.MONEYLINE && sportsbookOddsForMarket(game, market).any(::sportsbookOddCanBeSold)
+    }
+    val market = preferredMarket ?: game.markets.firstOrNull { market ->
+        sportsbookOddsForMarket(game, market).any(::sportsbookOddCanBeSold)
+    } ?: return null
+    val odds = sportsbookOddsForMarket(game, market)
+        .filter(::sportsbookOddCanBeSold)
+        .take(3)
+    return if (odds.isEmpty()) null else market to odds
+}
+
+private fun sportsbookOddCanBeSold(odd: SportsbookOdd): Boolean {
+    return odd.id.isNotBlank() && odd.decimalOdds > 1.0 && odd.status.lowercase(Locale.US) != "closed"
+}
+
+internal fun buildSportsbookTicketRecordFromSale(
+    session: ActiveSession,
+    sale: SportsbookTicketSaleResult,
+    selections: List<SportsbookSelection>,
+): SportsbookTicketRecord {
+    return SportsbookTicketRecord(
+        id = "local-${sale.ticketCode}",
+        ticketCode = sale.ticketCode,
+        sellerUsername = session.username,
+        bancaName = session.banca.orEmpty(),
+        ticketType = if (selections.size > 1) "parlay" else "straight",
+        stake = sale.stake,
+        decimalOdds = sale.decimalOdds,
+        potentialPayout = sale.potentialPayout,
+        status = sale.status,
+        soldAtEpochMs = System.currentTimeMillis(),
+        legs = selections.map { selection ->
+            SportsbookTicketLegRecord(
+                eventLabel = selection.eventLabel,
+                marketTitle = selection.marketTitle,
+                selectionLabel = selection.selectionLabel,
+                decimalOdds = selection.decimalOdds,
+                status = sale.status,
+            )
+        },
+    )
+}
+
+internal fun mergeSportsbookTicketSnapshot(
+    snapshot: SportsbookTicketSnapshot,
+    recentTicket: SportsbookTicketRecord,
+): SportsbookTicketSnapshot {
+    val tickets = listOf(recentTicket) + snapshot.tickets.filterNot {
+        it.ticketCode == recentTicket.ticketCode ||
+            (recentTicket.id.isNotBlank() && it.id == recentTicket.id)
+    }
+    val pending = tickets.count { it.status == SportsbookTicketStatus.PENDING }
+    val won = tickets.count { it.status == SportsbookTicketStatus.WON }
+    val paid = tickets.count { it.status == SportsbookTicketStatus.PAID }
+    return snapshot.copy(
+        tickets = tickets,
+        summary = snapshot.summary.copy(
+            totalTickets = maxOf(snapshot.summary.totalTickets, tickets.size),
+            pendingTickets = maxOf(snapshot.summary.pendingTickets, pending),
+            wonTickets = maxOf(snapshot.summary.wonTickets, won),
+            paidTickets = maxOf(snapshot.summary.paidTickets, paid),
+            totalStake = maxOf(snapshot.summary.totalStake, tickets.sumOf { it.stake }),
+        ),
+    )
 }
 
 @Composable

@@ -2,6 +2,7 @@ package com.lotterynet.pro.core.operations
 
 import com.lotterynet.pro.core.model.TicketRecord
 import com.lotterynet.pro.core.model.UserAccount
+import com.lotterynet.pro.core.model.UserRole
 import java.util.Locale
 
 fun buildUserActorLabelLookup(users: List<UserAccount>): Map<String, String> {
@@ -42,6 +43,7 @@ fun resolveTicketActorLabel(
 }
 
 fun resolveUserActorDisplayLabel(user: UserAccount): String {
+    if (user.role == UserRole.CASHIER) return cashierDisplayLabel(user)
     return user.displayName?.takeIf { it.isNotBlank() }
         ?: user.banca?.takeIf { it.isNotBlank() }
         ?: user.ownerName?.takeIf { it.isNotBlank() }

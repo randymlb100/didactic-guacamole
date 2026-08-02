@@ -3,7 +3,8 @@ import { bearerToken, corsHeaders, json, clean, lower, supabaseAdmin } from "../
 type JsonMap = Record<string, unknown>;
 
 const ODDS_API_BASE_URL = "https://api.odds-api.net/v1";
-const SUPPORTED_MARKETS = new Set(["moneyline", "runline", "spread", "total", "first_half", "first_five"]);
+// Keep ingestion aligned with the markets the settlement engine can resolve.
+const SUPPORTED_MARKETS = new Set(["moneyline", "runline", "spread", "total"]);
 
 function ok(body: JsonMap): Response {
   return json({ ok: true, ...body });
@@ -61,8 +62,6 @@ function marketKey(value: unknown, betTypeValue: unknown = ""): string {
   if (raw.startsWith("runline/") || raw === "runline") return "runline";
   if (raw === "handicap" || raw === "spread") return "spread";
   if (raw.startsWith("handicap/")) {
-    if (raw.includes("5 innings")) return "first_five";
-    if (raw.includes("1st half")) return "first_half";
     return "spread";
   }
 
@@ -82,10 +81,6 @@ function titleFromMarket(key: string): string {
       return "Spread";
     case "total":
       return "Alta/Baja";
-    case "first_half":
-      return "Mitad";
-    case "first_five":
-      return "F5";
     default:
       return key;
   }

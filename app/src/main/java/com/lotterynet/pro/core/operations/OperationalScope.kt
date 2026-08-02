@@ -25,8 +25,8 @@ fun resolveOperationalScope(
         role = session.role,
         bancaName = session.banca,
         adminKeys = when (session.role) {
-            UserRole.CASHIER -> identityKeys(session.userId, session.username)
-            else -> identityKeys(session.userId, session.username, session.adminId, session.adminUser)
+            UserRole.CASHIER -> identityKeys(session.userId, session.username, session.authUserId)
+            else -> identityKeys(session.userId, session.username, session.adminId, session.adminUser, session.authUserId)
         },
         cashierKeys = cashierKeys,
         canSeeAllBanks = session.role == UserRole.MASTER,
@@ -54,7 +54,8 @@ fun filterCashiersForSession(
         UserRole.CASHIER -> cashiers.filter { cashier ->
             cashier.role == UserRole.CASHIER && (
                 equalsKey(cashier.id, session.userId) ||
-                    equalsKey(cashier.user, session.username)
+                    equalsKey(cashier.user, session.username) ||
+                    equalsKey(cashier.authUserId, session.authUserId)
                 )
         }
         UserRole.UNKNOWN -> emptyList()
@@ -116,7 +117,7 @@ private fun cashierIdentityKeys(cashiers: List<UserAccount>): Set<String> {
         .groupingBy { it }
         .eachCount()
     return cashiers.flatMapTo(mutableSetOf()) { cashier ->
-        val keys = identityKeys(cashier.id, cashier.user).toMutableSet()
+        val keys = identityKeys(cashier.id, cashier.user, cashier.authUserId).toMutableSet()
         val displayNameKey = normalizeKey(cashier.displayName)
         if (displayNameKey != null && displayNameCounts[displayNameKey] == 1) {
             keys += displayNameKey

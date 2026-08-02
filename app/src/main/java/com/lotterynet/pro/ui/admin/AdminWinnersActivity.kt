@@ -5,6 +5,7 @@ import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import androidx.activity.compose.setContent
+import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -14,16 +15,12 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Paid
-import androidx.compose.material.icons.rounded.QueryStats
-import androidx.compose.material.icons.rounded.WarningAmber
-import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -35,10 +32,12 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.safeDrawing
+import com.lotterynet.pro.core.auth.SupabaseSessionTokenProvider
 import com.lotterynet.pro.core.model.ActiveSession
 import com.lotterynet.pro.core.model.LotteryResult
 import com.lotterynet.pro.core.model.PrizeTableConfig
@@ -63,12 +62,19 @@ import com.lotterynet.pro.core.sync.NativeTicketSyncQueueRepository
 import com.lotterynet.pro.core.sync.ForegroundCatchUpInput
 import com.lotterynet.pro.core.sync.ForegroundCatchUpPolicy
 import com.lotterynet.pro.core.sync.OperationalSyncThrottle
+import com.lotterynet.pro.core.sync.TicketRefreshGovernor
 import com.lotterynet.pro.core.sync.resolveOperationalOwnerKey
 import com.lotterynet.pro.core.sync.resolveOperationalOwnerKeys
+import com.lotterynet.pro.core.sync.resolveOperationalRealtimeOwnerKeys
+import com.lotterynet.pro.core.sync.ticketRefreshGovernorKey
+import com.lotterynet.pro.core.sync.invalidateTicketRealtimeCaches
 import com.lotterynet.pro.ui.common.BottomNavBar
 import com.lotterynet.pro.ui.common.CompactPanel
+import com.lotterynet.pro.ui.common.CompactSegmentedSelector
 import com.lotterynet.pro.ui.common.CompactStatusBadge
 import com.lotterynet.pro.ui.common.NativeBottomTab
+import com.lotterynet.pro.ui.common.OperationalListHeader
+import com.lotterynet.pro.ui.common.QuickFilterChip
 import com.lotterynet.pro.ui.common.ScreenHeaderPanel
 import com.lotterynet.pro.ui.common.SectionHeader
 import com.lotterynet.pro.ui.common.openBottomTab
@@ -86,11 +92,12 @@ import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.concurrent.thread
 
 class AdminWinnersActivity : AppCompatActivity() {
+    private val adminWinnersViewModel by viewModels<AdminWinnersViewModel>()
     private val syncHandler = Handler(Looper.getMainLooper())
     private val realtimeClient = LotterynetRealtimeClient()
     private val realtimeSubscriptions = mutableListOf<LotterynetRealtimeClient.SubscriptionHandle>()
     private val winnersSyncInFlight = AtomicBoolean(false)
-    private val remoteStampStore = NativeTicketRemoteStore()
+    private lateinit var remoteStampStore: NativeTicketRemoteStore
     private val foregroundCatchUpPolicy = ForegroundCatchUpPolicy(
         OperationalSyncThrottle(ADMIN_WINNERS_FOREGROUND_CATCH_UP_THROTTLE_MS),
     )
@@ -103,10 +110,13 @@ class AdminWinnersActivity : AppCompatActivity() {
     private lateinit var operationalSyncCoordinator: NativeOperationalSyncCoordinator
     private var ticketsState by mutableStateOf<List<TicketRecord>>(emptyList())
     private var lastRemoteUpdatedAt: String? = null
+    private val winnersRemoteRefreshGovernor = TicketRefreshGovernor(requestCooldownMs = ADMIN_WINNERS_REMOTE_REFRESH_DEDUP_MS)
     private val resumeSyncRunnable = Runnable { runForegroundCatchUp(force = false) }
     private val syncPollRunnable = object : Runnable {
         override fun run() {
-            syncWinners(force = false)
+            if (realtimeClient.shouldUsePollingFallback()) {
+                syncWinners(force = false)
+            }
             syncHandler.postDelayed(this, resolveAdminWinnersPollIntervalMs(realtimeClient.isConfigured()))
         }
     }
@@ -124,21 +134,29 @@ class AdminWinnersActivity : AppCompatActivity() {
         salesRepository = LocalSalesRepository(this)
         resultsRepository = LocalResultsRepository(this)
         prizePayoutRepository = LocalCashierPrizePayoutRepository(this)
+        val sessionTokenProvider = SupabaseSessionTokenProvider(LocalSessionRepository(this))
+        remoteStampStore = NativeTicketRemoteStore(
+            bearerTokenProvider = { sessionTokenProvider.freshAccessToken() },
+            bearerTokenRefresher = { sessionTokenProvider.forceFreshAccessToken() },
+        )
         operationalSyncCoordinator = NativeOperationalSyncCoordinator(
             ticketGateway = NativeTicketCloudSyncCoordinator(
                 salesRepository = salesRepository,
                 queueRepository = NativeTicketSyncQueueRepository(this),
+                remoteStore = remoteStampStore,
             ),
+            remoteStampStore = remoteStampStore,
         )
         refreshWinnersData()
 
         setContent {
+            val screenState by adminWinnersViewModel.state.collectAsState()
             LotteryNetComposeTheme {
                 AdminWinnersRoute(
                     session = session,
                     bancaName = session.banca ?: "LotteryNet",
                     dayKey = dayKey,
-                    tickets = ticketsState,
+                    tickets = screenState.tickets,
                     onBack = { finish() },
                     onOpenTicket = { ticket ->
                         startActivity(Intent(this, TicketOfficialActivity::class.java).apply {
@@ -152,7 +170,9 @@ class AdminWinnersActivity : AppCompatActivity() {
         }
         syncWinners(force = true)
         subscribeRealtime(reset = false)
-        syncHandler.postDelayed(syncPollRunnable, resolveAdminWinnersPollIntervalMs(realtimeClient.isConfigured()))
+        if (realtimeSubscriptions.isEmpty()) {
+            syncHandler.postDelayed(syncPollRunnable, resolveAdminWinnersPollIntervalMs(realtimeClient.isConfigured()))
+        }
     }
 
     override fun onResume() {
@@ -198,11 +218,14 @@ class AdminWinnersActivity : AppCompatActivity() {
             },
         )
             .sortedByDescending { it.createdAtEpochMs }
+        adminWinnersViewModel.showLocal(ticketsState)
     }
 
     private fun syncWinners(force: Boolean) {
         if (!winnersSyncInFlight.compareAndSet(false, true)) return
+        adminWinnersViewModel.showCatchingUp()
         thread(name = "admin-winners-sync") {
+            var syncFailed = false
             runCatching {
                 operationalSyncCoordinator.syncTicketsForSession(
                     session = session,
@@ -211,9 +234,19 @@ class AdminWinnersActivity : AppCompatActivity() {
                 )
             }.onSuccess { state ->
                 lastRemoteUpdatedAt = state.remoteUpdatedAt ?: lastRemoteUpdatedAt
+            }.onFailure { error ->
+                syncFailed = true
+                runOnUiThread {
+                    adminWinnersViewModel.showRecoverableError(error.message ?: "No se pudo sincronizar ganadores.")
+                }
             }.also {
                 winnersSyncInFlight.set(false)
-                runOnUiThread { refreshWinnersData() }
+                runOnUiThread {
+                    refreshWinnersData()
+                    if (!syncFailed) {
+                        adminWinnersViewModel.showFresh(ticketsState, lastRemoteUpdatedAt)
+                    }
+                }
             }
         }
     }
@@ -221,8 +254,16 @@ class AdminWinnersActivity : AppCompatActivity() {
     private fun runForegroundCatchUp(force: Boolean) {
         if (!::operationalSyncCoordinator.isInitialized || !::salesRepository.isInitialized) return
         refreshWinnersData()
-        val ownerKeys = resolveOperationalOwnerKeys(session)
+        val ownerKeys = resolveOperationalRealtimeOwnerKeys(session)
         if (ownerKeys.isEmpty()) return
+        if (shouldSkipAdminWinnersRemoteRefresh(
+                governor = winnersRemoteRefreshGovernor,
+                ownerKey = ownerKeys.joinToString("|"),
+                dayKey = dayKey,
+                authScope = session.role.name,
+                force = force,
+            )
+        ) return
         thread(name = "admin-winners-foreground-catch-up") {
             val remoteStamps = ownerKeys.mapNotNull { ownerKey ->
                 runCatching { remoteStampStore.fetchUpdatedAtFresh(ownerKey) }.getOrNull()
@@ -263,12 +304,38 @@ class AdminWinnersActivity : AppCompatActivity() {
         } else if (realtimeSubscriptions.isNotEmpty()) {
             return
         }
-        resolveOperationalOwnerKeys(session).forEach { ownerKey ->
-            realtimeSubscriptions += realtimeClient.subscribe(LotterynetRealtimeSubscription.ticketOwner(ownerKey)) {
-                syncWinners(force = true)
+        val tokenProvider = SupabaseSessionTokenProvider(LocalSessionRepository(this))
+        resolveOperationalRealtimeOwnerKeys(session).forEach { ownerKey ->
+            realtimeSubscriptions += realtimeClient.subscribeTicketOwnerSignals(
+                ownerKey = ownerKey,
+                bearerTokenProvider = { tokenProvider.freshAccessToken() },
+            ) {
+                invalidateTicketRealtimeCaches(ownerKey)
+                syncWinners(force = false)
             }
         }
     }
+}
+
+private const val ADMIN_WINNERS_REMOTE_REFRESH_DEDUP_MS = 15_000L
+
+internal fun shouldSkipAdminWinnersRemoteRefresh(
+    governor: TicketRefreshGovernor,
+    ownerKey: String,
+    dayKey: String,
+    authScope: String,
+    force: Boolean,
+    nowEpochMs: Long = System.currentTimeMillis(),
+): Boolean {
+    if (force) return false
+    return governor.shouldReuse(
+        ticketRefreshGovernorKey(
+            ownerKey = ownerKey,
+            requestType = "admin-winners:$dayKey",
+            authScope = authScope,
+        ),
+        nowMs = nowEpochMs,
+    )
 }
 
 internal fun canOpenWinnersForRole(role: UserRole): Boolean {
@@ -347,10 +414,13 @@ internal fun filterPaidWinnerTickets(tickets: List<TicketRecord>): List<TicketRe
     return tickets.filter { it.isPaidStatus() }
 }
 
-private enum class WinnersFilter {
-    PENDING,
-    PAID,
-    ALL,
+private enum class WinnersFilter(
+    val id: String,
+    val label: String,
+) {
+    PENDING("pending", "Pendientes"),
+    PAID("paid", "Pagados"),
+    ALL("all", "Todos"),
 }
 
 internal const val ADMIN_WINNERS_POLL_MS = 60_000L
@@ -441,34 +511,61 @@ private fun AdminWinnersRoute(
             ) {
                 item {
                     ScreenHeaderPanel(
-                        title = "Ganadores",
-                        subtitle = "$bancaName · $dayKey",
+                        title = "Cobro",
+                        subtitle = "Tickets ganadores · $bancaName · $dayKey",
                         onBack = onBack,
-                        badgeLabel = if (filter == WinnersFilter.PENDING) "Pendientes" else if (filter == WinnersFilter.PAID) "Pagados" else "Todos",
+                        badgeLabel = filter.label,
                         badgeTone = if (filter == WinnersFilter.PENDING) warningColor() else Color(0xFF0F9F66),
                     )
                 }
                 item {
-                    CompactPanel {
-                        SectionHeader(title = "Resumen", meta = "${filteredTickets.size} tickets")
-                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
-                            WinnerMetric(Modifier.weight(1f), Icons.Rounded.WarningAmber, "Pendientes", pendingCount.toString(), formatWinnerMoney(pendingAmount), warningColor())
-                            WinnerMetric(Modifier.weight(1f), Icons.Rounded.Paid, "Pagados", paidCount.toString(), formatWinnerMoney(paidAmount), Color(0xFF0F9F66))
-                            WinnerMetric(Modifier.weight(1f), Icons.Rounded.QueryStats, "Total", tickets.size.toString(), formatWinnerMoney(pendingAmount + paidAmount), visual.colors.ink)
-                        }
-                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
-                            WinnerFilterChip("Pendientes", filter == WinnersFilter.PENDING) { filter = WinnersFilter.PENDING }
-                            WinnerFilterChip("Pagados", filter == WinnersFilter.PAID) { filter = WinnersFilter.PAID }
-                            WinnerFilterChip("Todos", filter == WinnersFilter.ALL) { filter = WinnersFilter.ALL }
+                    CompactPanel(
+                        alt = true,
+                        contentPadding = PaddingValues(horizontal = 10.dp, vertical = 9.dp),
+                    ) {
+                        OperationalListHeader(
+                            title = "Estado de cobro",
+                            meta = "${filteredTickets.size} visibles",
+                        )
+                        CompactSegmentedSelector(
+                            options = WinnersFilter.values().map { option ->
+                                QuickFilterChip(option.id, option.label)
+                            },
+                            selectedId = filter.id,
+                            onSelected = { selectedId ->
+                                filter = WinnersFilter.values().firstOrNull { option -> option.id == selectedId }
+                                    ?: WinnersFilter.PENDING
+                            },
+                            columns = 3,
+                        )
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Text(
+                                "$pendingCount pendientes · ${formatWinnerMoney(pendingAmount)}",
+                                style = MaterialTheme.typography.labelMedium,
+                                color = warningColor(),
+                            )
+                            Text(
+                                "$paidCount pagados · ${formatWinnerMoney(paidAmount)}",
+                                style = MaterialTheme.typography.labelMedium,
+                                color = Color(0xFF0F9F66),
+                            )
                         }
                     }
                 }
+                item {
+                    SectionHeader(
+                        title = "Tickets ganadores",
+                        meta = "${filter.label} · ${filteredTickets.size}",
+                    )
+                }
                 if (filteredTickets.isEmpty()) {
                     item {
-                        CompactPanel {
-                            Box(modifier = Modifier.fillMaxWidth().padding(vertical = 18.dp), contentAlignment = Alignment.Center) {
-                                Text("No hay tickets en este filtro.", color = visual.colors.muted)
-                            }
+                        Box(modifier = Modifier.fillMaxWidth().padding(vertical = 24.dp), contentAlignment = Alignment.Center) {
+                            Text("No hay tickets ganadores en este filtro.", color = visual.colors.muted)
                         }
                     }
                 } else {
@@ -479,34 +576,6 @@ private fun AdminWinnersRoute(
             }
         }
     }
-}
-
-@Composable
-private fun WinnerMetric(
-    modifier: Modifier,
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
-    label: String,
-    value: String,
-    amount: String,
-    tone: Color,
-) {
-    CompactPanel(modifier = modifier, alt = true, contentPadding = androidx.compose.foundation.layout.PaddingValues(10.dp)) {
-        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            androidx.compose.material3.Icon(icon, contentDescription = null, tint = tone)
-            Text(label, style = MaterialTheme.typography.labelMedium, color = tone)
-            Text(value, style = MaterialTheme.typography.titleSmall, color = tone, fontFamily = FontFamily.Monospace)
-            Text(amount, style = MaterialTheme.typography.bodySmall, color = tone, fontFamily = FontFamily.Monospace)
-        }
-    }
-}
-
-@Composable
-private fun WinnerFilterChip(
-    label: String,
-    selected: Boolean,
-    onClick: () -> Unit,
-) {
-    FilterChip(selected = selected, onClick = onClick, label = { Text(label) })
 }
 
 @Composable
@@ -546,7 +615,7 @@ private fun WinnerTicketRow(
                     color = visual.colors.ink,
                 )
                 Text(
-                    formatWinnerMoney(winnerAmount(ticket)),
+                    "Premio ${formatWinnerMoney(winnerAmount(ticket))}",
                     style = MaterialTheme.typography.titleSmall,
                     color = winnerStatusColor(ticket.status),
                     fontFamily = FontFamily.Monospace,

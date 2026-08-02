@@ -14,10 +14,16 @@ const sportsbookPlan = read("docs/superpowers/specs/2026-05-30-deportes-apuestas
 const getBoardFunction = read("supabase/functions/sports-get-board/index.ts");
 const syncOddsFunction = read("supabase/functions/sports-sync-odds/index.ts");
 const syncTeamAssetsFunction = read("supabase/functions/sports-sync-team-assets/index.ts");
+const syncResultsFunction = read("supabase/functions/sports-sync-results/index.ts");
+const syncResultsJob = read("tools/render/sync_sports_results.py");
+const renderConfig = read("render.yaml");
+const resultsMigration = read("supabase/migrations/20260718120000_sports_results_provenance.sql");
+const atomicSportsMigration = read("supabase/migrations/20260719043000_atomic_sports_ticket_creation.sql");
 const createTicketFunction = read("supabase/functions/create-sports-ticket/index.ts");
 const getTicketsFunction = read("supabase/functions/get-sports-tickets/index.ts");
 const payTicketFunction = read("supabase/functions/pay-sports-ticket/index.ts");
 const settleTicketFunction = read("supabase/functions/settle-sports-ticket/index.ts");
+const autoSettleFunction = read("supabase/functions/settle-sports-tickets/index.ts");
 const nativeBitmapExport = read("app/src/main/java/com/lotterynet/pro/core/export/NativeBitmapExport.kt");
 const thermalTicketRenderer = read("app/src/main/java/com/lotterynet/pro/core/printing/ThermalTicketRenderer.kt");
 const teamAssetsMigration = read("supabase/migrations/20260531091500_sports_team_assets.sql");
@@ -43,14 +49,48 @@ test("sportsbook admin can sell and also has business control", () => {
 });
 
 test("sportsbook UI uses filters, tabs, modal sheet, and separated finance", () => {
-  assert.match(sportsbookActivity, /DropdownMenu\(/);
-  assert.match(sportsbookActivity, /ModalBottomSheet\(/);
+  assert.match(sportsbookActivity, /SportsbookBoardFilterSheet/);
+  assert.match(sportsbookActivity, /buildSportsbookSportFilterOptions/);
+  assert.match(sportsbookActivity, /sportsbookDateFilterOptions/);
+  assert.match(sportsbookActivity, /buildSportsbookMarketFilterOptions/);
+  assert.match(sportsbookActivity, /title = "Fecha"/);
+  assert.match(sportsbookActivity, /title = "Mercado"/);
+  assert.match(sportsbookActivity, /title = "Deporte"/);
+  assert.match(sportsbookActivity, /sportId: String = SportsbookBoardFilterOption\.ALL\.id/);
+  assert.match(sportsbookActivity, /Filtros de cartelera/);
+  assert.match(sportsbookActivity, /OperationalModalSheet\(/);
   assert.match(sportsbookActivity, /SportsbookGameSheet/);
   assert.match(sportsbookActivity, /SportsbookFinancePreview/);
   assert.match(sportsbookActivity, /Ganancia \/ perdida/);
-  assert.match(sportsbookPlan, /Dropdown solo para filtros/);
+  assert.match(sportsbookActivity, /Finanza deportiva/);
   assert.match(sportsbookPlan, /Modal bottom sheet para detalle de juego/);
   assert.match(sportsbookPlan, /Finanza usa lenguaje fintech/);
+});
+
+test("sportsbook keeps the board visible while selections are being prepared", () => {
+  assert.match(sportsbookActivity, /SportsbookCompactBetSlip/);
+  assert.match(sportsbookActivity, /Boleto en preparación/);
+  assert.match(sportsbookActivity, /onOpenTicket = \{ selectedTab = "ticket" \}/);
+  assert.match(sportsbookActivity, /selections = selections/);
+});
+
+test("sportsbook filters stay compact and use Material 3 filter chips", () => {
+  assert.match(sportsbookActivity, /LazyRow\(/);
+  assert.match(sportsbookActivity, /FilterChip\(/);
+  assert.match(sportsbookActivity, /SportsbookActiveFilterChip/);
+  assert.match(sportsbookActivity, /label = "Mercado"/);
+  assert.match(sportsbookActivity, /label = "Fecha"/);
+});
+
+test("sportsbook cashier can pick odds fast and print last sale from sports ticket", () => {
+  assert.match(sportsbookActivity, /SportsbookInlineOddButton/);
+  assert.match(sportsbookActivity, /buildSportsbookSelection\(game, market, odd\)/);
+  assert.match(sportsbookActivity, /SportsbookLastSalePanel/);
+  assert.match(sportsbookActivity, /TicketPrintMark\.ORIGINAL/);
+  assert.match(sportsbookActivity, /Guardado en finanza deportiva separada/);
+  assert.doesNotMatch(sportsbookActivity, /lotterynet_tickets|create-ticket-v2/);
+  assert.match(sportsbookActivity, /sportsbookTicketValidationMessage/);
+  assert.match(sportsbookActivity, /tone = ActionTone\.Secondary/);
 });
 
 test("sportsbook board filters are contract-covered in Kotlin tests", () => {
@@ -87,6 +127,15 @@ test("sportsbook team logos are cached by server instead of fetched by Android",
   assert.match(sportsbookActivity, /AsyncImage\(/);
 });
 
+test("sportsbook logo integration tolerates provider aliases and league-name differences", () => {
+  assert.match(getBoardFunction, /source\.strTeamAlternate/);
+  assert.match(getBoardFunction, /source\.strTeamShort/);
+  assert.match(getBoardFunction, /sportTeamLookupKey/);
+  assert.match(getBoardFunction, /assetUrlBySportTeam/);
+  assert.match(getBoardFunction, /ambiguousSportTeams/);
+  assert.match(getBoardFunction, /normalizeTeamName\(leagueTitle\)/);
+});
+
 test("create sports ticket validates sale before writing", () => {
   assert.match(createTicketFunction, /authenticatedUser\(req\)/);
   assert.match(createTicketFunction, /canRoleSell\(actorRole\)/);
@@ -94,7 +143,21 @@ test("create sports ticket validates sale before writing", () => {
   assert.match(createTicketFunction, /featureEnabledFor\(actorRole, actorKey, adminKey, cashierKey\)/);
   assert.match(createTicketFunction, /existingTicket\(clientRequestId\)/);
   assert.match(createTicketFunction, /validateResolvedOdds\(odds, maxOddsAgeSeconds\)/);
-  assert.match(createTicketFunction, /validateLimits\(stake, potentialPayout, limits\)/);
+  assert.match(createTicketFunction, /validateLimits\(/);
+  assert.match(createTicketFunction, /max_selection_stake/);
+  assert.match(createTicketFunction, /enabled_markets/);
+  assert.match(createTicketFunction, /metadataValues\.length === 0\) return false/);
+  assert.match(createTicketFunction, /eventExposure\(/);
+  assert.match(createTicketFunction, /max_event_exposure/);
+  assert.match(createTicketFunction, /selectedEventMarkets/);
+  assert.match(createTicketFunction, /Solo se permite una seleccion por mercado del mismo juego/);
+  assert.match(createTicketFunction, /selectedOddsIds/);
+});
+
+test("sportsbook does not sell markets without official settlement scores", () => {
+  assert.match(createTicketFunction, /new Set\(\["moneyline", "runline", "spread", "total"\]\)/);
+  assert.match(syncOddsFunction, /new Set\(\["moneyline", "runline", "spread", "total"\]\)/);
+  assert.doesNotMatch(getBoardFunction, /first_half|first_five/);
 });
 
 test("sportsbook master config saves and sells by selected business scope", () => {
@@ -128,6 +191,9 @@ test("android sportsbook sale flow uses server-first ticket creation", () => {
   assert.match(sportsbookModels, /val oddsId: String = ""/);
   assert.match(sportsbookTicketStore, /invokeAuthenticated\(\s*"create-sports-ticket"/);
   assert.match(sportsbookTicketStore, /clientRequestId/);
+  assert.match(sportsbookTicketStore, /bearerTokenProvider/);
+  assert.match(sportsbookTicketStore, /freshBearerToken\(session\)/);
+  assert.match(sportsbookActivity, /SportsbookTicketRemoteStore\(\s*bearerTokenProvider = \{ sessionTokenProvider\.freshAccessToken\(\) \},\s*\)/s);
   assert.match(supabaseConfig, /\[functions\.create-sports-ticket\]\s+verify_jwt = true/s);
   assert.doesNotMatch(sportsbookTicketStore, /lotterynet_tickets|create-ticket-v2/);
 });
@@ -162,11 +228,21 @@ test("sportsbook official and thermal ticket templates exist", () => {
 test("sportsbook payout and settlement stay on sports tables", () => {
   assert.match(payTicketFunction, /\.from\("sports_tickets"\)/);
   assert.match(payTicketFunction, /status.*won/s);
-  assert.match(payTicketFunction, /\.from\("sports_settlements"\)/);
+  assert.match(payTicketFunction, /pay_sports_ticket_atomic/);
+  assert.match(payTicketFunction, /alreadyPaid/);
+  assert.match(atomicSportsMigration, /insert into public\.sports_settlements/);
   assert.match(settleTicketFunction, /\.from\("sports_tickets"\)/);
-  assert.match(settleTicketFunction, /nextStatus/);
-  assert.match(settleTicketFunction, /\.from\("sports_ticket_legs"\)/);
-  assert.match(settleTicketFunction, /\.from\("sports_settlements"\)/);
+  assert.match(settleTicketFunction, /settle_sports_ticket_atomic/);
+  assert.match(autoSettleFunction, /status: "void"/);
+  assert.match(autoSettleFunction, /\.eq\("status", "pending"\)/);
+  assert.match(atomicSportsMigration, /where id = p_ticket_id and status = 'pending'/);
+  assert.match(settleTicketFunction, /alreadySettled/);
+  assert.match(atomicSportsMigration, /create or replace function public\.settle_sports_ticket_atomic/);
+  assert.match(atomicSportsMigration, /update public\.sports_ticket_legs/);
+  assert.match(atomicSportsMigration, /insert into public\.sports_settlements/);
+  assert.match(payTicketFunction, /rpc\("pay-sports-ticket-atomic|rpc\("pay_sports_ticket_atomic/);
+  assert.match(atomicSportsMigration, /create or replace function public\.pay_sports_ticket_atomic/);
+  assert.match(atomicSportsMigration, /where id = p_ticket_id and status = 'won'/);
   assert.match(sportsbookTicketStore, /invokeAuthenticated\(\s*"pay-sports-ticket"/);
   assert.match(sportsbookTicketStore, /invokeAuthenticated\(\s*"settle-sports-ticket"/);
   assert.match(sportsbookActivity, /onPayTicket/);
@@ -175,4 +251,57 @@ test("sportsbook payout and settlement stay on sports tables", () => {
   assert.match(supabaseConfig, /\[functions\.settle-sports-ticket\]\s+verify_jwt = true/s);
   assert.doesNotMatch(payTicketFunction, /lotterynet_tickets|create-ticket-v2|void-ticket/);
   assert.doesNotMatch(settleTicketFunction, /lotterynet_tickets|create-ticket-v2|void-ticket/);
+  assert.match(payTicketFunction, /metadataValues\.length === 0\) return false/);
+  assert.match(settleTicketFunction, /metadataValues\.length === 0\) return false/);
+  assert.match(getTicketsFunction, /metadataValues\.length === 0\) return false/);
+});
+
+test("sportsbook sale never leaves a ticket without legs when leg insert fails", () => {
+  assert.match(createTicketFunction, /rpc\("create_sports_ticket_atomic"/);
+  assert.match(createTicketFunction, /p_ticket: ticket/);
+  assert.match(createTicketFunction, /p_legs: legs/);
+  assert.match(createTicketFunction, /p_max_event_exposure: maxEventExposure/);
+  assert.match(atomicSportsMigration, /create or replace function public\.create_sports_ticket_atomic/);
+  assert.match(atomicSportsMigration, /sports_ticket_legs/);
+  assert.match(atomicSportsMigration, /pg_advisory_xact_lock/);
+});
+
+test("sportsbook exposure counts one ticket once per event", () => {
+  assert.match(createTicketFunction, /const seenTicketIds = new Set<string>\(\)/);
+  assert.match(createTicketFunction, /if \(ticketId && seenTicketIds\.has\(ticketId\)\) return total/);
+  assert.match(createTicketFunction, /return total \+ number\(ticket\.stake\)/);
+});
+
+test("sportsbook preserves provider odds timestamp when locking a leg", () => {
+  assert.match(createTicketFunction, /odds_locked_at: clean\(odds\.last_updated\) \|\| new Date\(\)\.toISOString\(\)/);
+});
+
+test("sportsbook open state is case insensitive in Android", () => {
+  assert.match(sportsbookModels, /event\.status\.trim\(\)\.lowercase\(Locale\.US\) == "open"/);
+  assert.match(sportsbookModels, /it\.status\.trim\(\)\.lowercase\(Locale\.US\) == "open"/);
+});
+
+test("sports results use the official provider endpoint and persist provenance", () => {
+  assert.match(syncResultsFunction, /events\/\$\{encodeURIComponent\(providerEventId\)\}\/results/);
+  assert.match(syncResultsFunction, /X-API-Key/);
+  assert.match(syncResultsFunction, /result_source: "odds-api\.net"/);
+  assert.match(syncResultsFunction, /result_payload: result/);
+  assert.match(syncResultsFunction, /result_updated_at:/);
+  assert.match(syncResultsFunction, /status: "final"/);
+  assert.match(syncResultsFunction, /status: "cancelled"/);
+  assert.match(syncResultsFunction, /sports_events/);
+  assert.match(syncResultsFunction, /settle-sports-tickets/);
+  assert.match(syncResultsFunction, /settlement requested/);
+  assert.doesNotMatch(syncResultsFunction, /lotterynet_tickets|pick_/i);
+});
+
+test("sports results cron is separate, opt-in, and isolated", () => {
+  assert.match(renderConfig, /name: lotterynet-sports-results-sync/);
+  assert.match(renderConfig, /startCommand: python tools\/render\/sync_sports_results\.py/);
+  assert.match(renderConfig, /SPORTS_RESULTS_SYNC_ENABLED/);
+  assert.match(syncResultsJob, /SPORTS_RESULTS_SYNC_ENABLED/);
+  assert.match(syncResultsJob, /sports-sync-results/);
+  assert.doesNotMatch(syncResultsJob, /lotterynet_tickets|pick_/i);
+  assert.match(resultsMigration, /result_payload jsonb/);
+  assert.match(resultsMigration, /result_updated_at timestamptz/);
 });
