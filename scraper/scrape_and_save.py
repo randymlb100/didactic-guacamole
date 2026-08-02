@@ -295,6 +295,16 @@ LOTTERY_MAP = {
     "king lottery 7:30":     {"id": "24", "name": "King Lottery Noche"},
 }
 
+# The current loteriasdominicanas.com catalog renamed the Anguilla draws to
+# clock-based titles. Keep both names mapped to the same application IDs so a
+# catalog rename cannot make an otherwise valid result disappear.
+LOTTERY_MAP.update({
+    "anguila 10:00 am":      {"id": "2",  "name": "Anguila Mañana"},
+    "anguila 1:00 pm":       {"id": "4",  "name": "Anguila Mediodía"},
+    "anguila 6:00 pm":       {"id": "11", "name": "Anguila Tarde"},
+    "anguila 9:00 pm":       {"id": "14", "name": "Anguila Noche"},
+})
+
 MILOTERIA_NJ_MAP = {
     "new jersey am": {"id": "25", "name": "New Jersey AM"},
     "new jersey pm": {"id": "26", "name": "New Jersey PM"},
@@ -2905,6 +2915,21 @@ def parse_loterias_dominicanas_session_date(raw):
     return None
 
 
+def session_score_numbers(score):
+    """Extract lottery numbers from both flat and grouped API score arrays."""
+    values = []
+    for item in score or []:
+        if isinstance(item, (list, tuple)):
+            values.extend(item)
+        else:
+            values.append(item)
+    return [
+        str(value).strip().zfill(2)
+        for value in values
+        if re.fullmatch(r"\d{1,2}", str(value or "").strip())
+    ]
+
+
 def parse_loterias_dominicanas_sessions_payload(site_payload, sessions_payload, date_str, wanted_ids=None):
     results = []
     seen_ids = set()
@@ -2953,12 +2978,7 @@ def parse_loterias_dominicanas_sessions_payload(site_payload, sessions_payload, 
         if not chosen_session:
             continue
 
-        numbers = []
-        for score_row in chosen_session.get("score") or []:
-            for value in score_row or []:
-                text = str(value or "").strip()
-                if re.fullmatch(r"\d{1,2}", text):
-                    numbers.append(text.zfill(2))
+        numbers = session_score_numbers(chosen_session.get("score"))
 
         if len(numbers) < 3:
             continue
@@ -2998,14 +3018,7 @@ def parse_loterias_dominicanas_api_site(payload, date_str, wanted_ids=None):
                 session_date = str(session.get("date") or "")
                 if not session_date.startswith(expected_iso_prefix):
                     continue
-                numbers = []
-                for score_row in session.get("score") or []:
-                    for value in score_row or []:
-                        text = str(value or "").strip()
-                        if re.fullmatch(r"\d{1,2}", text):
-                            numbers.append(text.zfill(2))
-                    if len(numbers) >= 3:
-                        break
+                numbers = session_score_numbers(session.get("score"))
                 if len(numbers) < 3:
                     continue
 
@@ -3041,9 +3054,29 @@ async def _async_fetch_loterias_dominicanas_api_results(date_str, wanted_ids=Non
     except Exception as e:
         logger.warning("LoteriasDominicanas API JSON parse error for %s: %s", date_str, e)
         return []
-    rows = parse_loterias_dominicanas_sessions_payload(site_payload, sessions_payload, date_str, wanted_ids=wanted_ids)
-    if not rows:
-        rows = parse_loterias_dominicanas_api_site(site_payload, date_str, wanted_ids=wanted_ids)
+    rows = parse_loterias_dominicanas_sessions_payload(
+        site_payload,
+        sessions_payload,
+        date_str,
+        wanted_ids=wanted_ids,
+    )
+
+    # The sessions endpoint is not complete while draws are being published.
+    # Always fill only the missing IDs from the site catalog instead of
+    # discarding that complementary source when the first endpoint has rows.
+    seen_ids = {str(row.get("id")) for row in rows}
+    remaining_ids = None
+    if wanted_ids:
+        remaining_ids = {str(value) for value in wanted_ids} - seen_ids
+    catalog_rows = parse_loterias_dominicanas_api_site(
+        site_payload,
+        date_str,
+        wanted_ids=remaining_ids,
+    )
+    for row in catalog_rows:
+        if str(row.get("id")) not in seen_ids:
+            rows.append(row)
+            seen_ids.add(str(row.get("id")))
     for row in rows:
         logger.info("LoteriasDominicanas API [%s] %s: %s", row["id"], row["name"], row["number"])
     return rows
