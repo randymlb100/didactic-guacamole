@@ -319,6 +319,15 @@ KING_LOTTERY_STATUS_ROWS = [
 ]
 
 ENLOTERIA_RESULT_SOURCES = [
+    # Draws not included in the general date page's explicit name map.
+    # Keep these as dedicated historical pages so completed draws are not
+    # silently omitted when the primary provider is unavailable.
+    {"url": "https://enloteria.com/resultados-florida-tarde", "id": "6", "name": "Florida Día", "source_name": "Florida Tarde"},
+    {"url": "https://enloteria.com/resultados-la-suerte-6pm", "id": "10", "name": "La Suerte Tarde", "source_name": "La Suerte 6PM"},
+    {"url": "https://enloteria.com/resultados-loteka", "id": "12", "name": "Quiniela Loteka", "source_name": "Loteka"},
+    {"url": "https://enloteria.com/resultados-nacional-noche", "id": "13", "name": "Lotería Nacional", "source_name": "Nacional Noche"},
+    {"url": "https://enloteria.com/resultados-la-primera-noche", "id": "16", "name": "Primera Noche", "source_name": "La Primera Noche"},
+    {"url": "https://enloteria.com/resultados-new-york-noche", "id": "18", "name": "New York Noche", "source_name": "New York Noche"},
     {"url": "https://enloteria.com/resultados-anguilla-8am", "id": "29", "name": "Anguilla 8AM"},
     {"url": "https://enloteria.com/resultados-anguilla-9am", "id": "30", "name": "Anguilla 9AM"},
     {"url": "https://enloteria.com/resultados-anguilla-10am", "id": "2", "name": "Anguila Mañana", "source_name": "Anguilla 10AM"},
