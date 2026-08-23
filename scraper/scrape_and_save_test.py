@@ -882,6 +882,31 @@ class ScraperContractsTest(unittest.TestCase):
         self.assertEqual("7-6-4", rows[0]["number"])
         self.assertEqual("14-05-2026", rows[0]["date"])
 
+    def test_normal_result_guard_rejects_pick_shape_and_partial_numbers(self):
+        self.assertTrue(scraper.valid_dominican_result_row({
+            "id": "13", "number": "01-14-29", "status": "published"
+        }))
+        self.assertFalse(scraper.valid_dominican_result_row({
+            "id": "13", "number": "1-4-9", "status": "published"
+        }))
+        self.assertFalse(scraper.valid_dominican_result_row({
+            "id": "13", "number": "01-14", "status": "published"
+        }))
+        self.assertFalse(scraper.valid_dominican_result_row({
+            "id": "US-P3-NJ-DRAW", "number": "1-4-9", "status": "published"
+        }))
+        self.assertFalse(scraper.valid_dominican_result_row({
+            "id": "19", "number": "08-11-22", "status": "published"
+        }))
+
+    def test_normal_result_guard_allows_explicit_no_draw_without_number(self):
+        self.assertTrue(scraper.valid_dominican_result_row({
+            "id": "23", "number": "", "status": "no_draw"
+        }))
+        self.assertFalse(scraper.valid_dominican_result_row({
+            "id": "23", "number": "01-02-03", "status": "no_draw"
+        }))
+
 
 if __name__ == "__main__":
     unittest.main()

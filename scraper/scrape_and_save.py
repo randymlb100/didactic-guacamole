@@ -311,6 +311,10 @@ MILOTERIA_NJ_MAP = {
 }
 
 AUTHORITATIVE_NJ_IDS = {"19", "20", "21", "22", "25", "26"}
+# NJ Pick 3/4 are written by the dedicated Pick pipeline.  They must never
+# be accepted by the normal Dominican-lottery payload, even though their IDs
+# are numeric and their values look like hyphenated lottery results.
+PICK_ONLY_NORMAL_IDS = {"19", "20", "21", "22"}
 
 KING_LOTTERY_STATUS_ROWS = [
     {"id": "23", "name": "King Lottery D\u00eda"},
@@ -2760,7 +2764,10 @@ async def _async_fetch_blocks(url, client):
         return soup.find_all("div", class_="game-block")
     except Exception as e:
         logger.warning("Error fetching %s: %s", url, e)
-        return []
+        # Distinguish an unavailable source from a successful page with no
+        # draws.  The caller must not treat a 403/timeout as an empty page,
+        # otherwise an unverified API fallback can publish false results.
+        return None
 
 
 def _king_api_date(date_str):
@@ -3091,30 +3098,60 @@ async def _async_fetch_loterias_dominicanas_results(date_str, wanted_ids=None, c
         f"{base}/king-lottery?date={date_str}",
     ]
     block_results = await asyncio.gather(*[_async_fetch_blocks(u, c) for u in urls])
-    all_blocks = [b for blocks in block_results for b in blocks]
+    primary_fetch_ok = all(blocks is not None for blocks in block_results)
+    all_blocks = [b for blocks in block_results if blocks is not None for b in blocks]
     results = parse_loterias_dominicanas_blocks(all_blocks, date_str, wanted_ids=wanted_ids)
+    for row in results:
+        row["source_url"] = base
+
+    # EnLoteria is the controlled backup source.  Use it only for results
+    # that the primary source could not provide; never let the older API
+    # fallback fill a primary-source outage because it can publish a
+    # different draw for the same lottery/date.
     seen_ids = {str(row.get("id")) for row in results}
-    api_wanted = None
-    if wanted_ids:
-        api_wanted = {str(value) for value in wanted_ids} - seen_ids
-        if not api_wanted:
-            return results
-    api_rows = await _async_fetch_loterias_dominicanas_api_results(
-        date_str,
-        wanted_ids=api_wanted,
-        client=c,
-    )
-    for row in api_rows:
-        if str(row.get("id")) not in seen_ids:
-            results.append(row)
-            seen_ids.add(str(row.get("id")))
-    king_rows = await _async_fetch_king_results(date_str, client=c)
-    for row in king_rows:
-        if wanted_ids and str(row.get("id")) not in {str(value) for value in wanted_ids}:
-            continue
-        if str(row.get("id")) not in seen_ids:
-            results.append(row)
-            seen_ids.add(str(row.get("id")))
+    if primary_fetch_ok:
+        fallback_sources = [
+            source for source in ENLOTERIA_RESULT_SOURCES
+            if str(source.get("id")) not in seen_ids
+            and (not wanted_ids or str(source.get("id")) in {str(value) for value in wanted_ids})
+        ]
+    else:
+        # A 403/timeout is not an empty successful page.  In that case ask
+        # the explicit backup for the complete catalog so missing draws are
+        # not silently replaced with no_draw rows.
+        fallback_sources = [
+            source for source in ENLOTERIA_RESULT_SOURCES
+            if not wanted_ids or str(source.get("id")) in {str(value) for value in wanted_ids}
+        ]
+
+    if fallback_sources:
+        fallback_rows = await _async_fetch_enloteria_results(
+            date_str,
+            fallback_days=0,
+            sources=fallback_sources,
+            client=c,
+        )
+        for row in fallback_rows:
+            result_id = str(row.get("id"))
+            if result_id not in seen_ids:
+                row["source"] = "enloteria.com"
+                row["source_url"] = row.get("source_url") or "https://enloteria.com/"
+                results.append(row)
+                seen_ids.add(result_id)
+
+    if not primary_fetch_ok:
+        logger.error(
+            "Primary LoteriasDominicanas source unavailable for %s; "
+            "used EnLoteria backup only (%d verified rows); blocking API fallback",
+            date_str,
+            len(results),
+        )
+        return sorted(results, key=result_sort_key)
+
+    # Do not fill missing normal-lottery rows from the legacy API or an
+    # unrelated King endpoint.  A missing row remains missing until one of
+    # the two configured HTML sources confirms it; this prevents publishing
+    # a plausible but unverified number under the wrong lottery/date.
     return sorted(results, key=result_sort_key)
 
 
@@ -3146,6 +3183,8 @@ async def _async_scrape_missing_rd_results(date_str, missing_ids, client=None):
         )
         for row in enloteria_rows:
             if row["id"] not in seen_ids:
+                row["source"] = "enloteria.com"
+                row["source_url"] = row.get("source_url") or "https://enloteria.com/"
                 results.append(row)
                 seen_ids.add(row["id"])
 
@@ -3556,6 +3595,44 @@ def missing_tracked_result_ids(results):
     return sorted(TRACKED_REMOTE_RESULT_IDS - available, key=int)
 
 
+def valid_dominican_result_row(row):
+    """Return true only for a complete normal-lottery result payload.
+
+    Pick 3/4 results use a separate payload and RPC.  Allowing their
+    hyphenated values through the normal-lottery path can make the database
+    reject the batch (or, worse, associate a partial value with a lottery).
+    A published Dominican draw must contain exactly three two-digit values;
+    a no-draw row is allowed to remain explicit and empty.
+    """
+    if not isinstance(row, dict):
+        return False
+    result_id = str(row.get("id") or "").strip()
+    if not result_id.isdigit():
+        return False
+    if result_id in PICK_ONLY_NORMAL_IDS:
+        return False
+    status = str(row.get("status") or "published").strip().lower()
+    number = str(row.get("number") or "").strip()
+    if status in {"no_draw", "no-draw", "pending"}:
+        return number == ""
+    return bool(re.fullmatch(r"\d{2}(?:-\d{2}){2}", number))
+
+
+def filter_invalid_dominican_results(rows):
+    valid = []
+    for row in rows or []:
+        if valid_dominican_result_row(row):
+            valid.append(row)
+        else:
+            logger.error(
+                "Skipping invalid normal-lottery result before Supabase save: id=%s number=%s status=%s",
+                row.get("id") if isinstance(row, dict) else None,
+                row.get("number") if isinstance(row, dict) else None,
+                row.get("status") if isinstance(row, dict) else None,
+            )
+    return valid
+
+
 def us_pick_rows_changed(existing_rows, refreshed_rows):
     existing_by_id = {
         str(row.get("id") or "").strip(): row
@@ -3585,6 +3662,13 @@ async def _async_save_native_results_table(date_str, merged_list, client=None):
 
 async def _async_save_to_supabase(date_str, results, prune_missing_ids=None, client=None):
     c = client or get_http_client()
+
+    # Never let a partial/malformed source row reach the normal result RPC.
+    # The RPC is intentionally strict, and Pick rows are saved separately.
+    results = filter_invalid_dominican_results(results)
+    if not results:
+        logger.warning("No valid normal-lottery results to save for %s", date_str)
+        return
 
     existing = await _async_fetch_existing_from_supabase(date_str, client=c)
     merged_list = merge_results_by_id(existing, results, prune_missing_ids, observed_at=utc_now_iso())
