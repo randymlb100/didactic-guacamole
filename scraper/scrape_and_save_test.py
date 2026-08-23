@@ -976,6 +976,55 @@ class ScraperContractsTest(unittest.TestCase):
         self.assertEqual("Anguilla 6PM", sources_by_id["11"]["source_name"])
         self.assertEqual("Anguilla 9PM", sources_by_id["14"]["source_name"])
 
+    def test_verified_normal_result_rejects_wrong_date_and_pick_format(self):
+        expected = "23-08-2026"
+        valid = {
+            "id": "1",
+            "name": "La Primera Día",
+            "date": expected,
+            "number": "04-19-70",
+        }
+        self.assertTrue(scraper.is_verified_normal_result_row(valid, expected))
+        self.assertFalse(
+            scraper.is_verified_normal_result_row(
+                {**valid, "date": "22-08-2026"}, expected
+            )
+        )
+        self.assertFalse(
+            scraper.is_verified_normal_result_row(
+                {**valid, "number": "1-4-9"}, expected
+            )
+        )
+
+    def test_append_verified_normal_result_deduplicates_lottery_id(self):
+        rows = []
+        seen = set()
+        row = {
+            "id": "5",
+            "name": "Quiniela Real",
+            "date": "23-08-2026",
+            "number": "04-19-70",
+        }
+        self.assertTrue(
+            scraper.append_verified_normal_result(
+                rows, seen, row, "23-08-2026", "test"
+            )
+        )
+        self.assertFalse(
+            scraper.append_verified_normal_result(
+                rows, seen, row, "23-08-2026", "test"
+            )
+        )
+        self.assertEqual(1, len(rows))
+
+    def test_parse_winning_numbers_accepts_enloteria_sentence_template(self):
+        self.assertEqual(
+            scraper.parse_winning_numbers_from_text(
+                "Los números ganadores son: 33, 58, 68."
+            ),
+            ["33", "58", "68"],
+        )
+
     def test_parse_enloteria_haiti_bolet_jsonld_event(self):
         html = """
         <script type="application/ld+json">

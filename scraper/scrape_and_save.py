@@ -361,6 +361,60 @@ ENLOTERIA_HAITI_BOLET_SOURCES = [
     if str(source["name"]).startswith("Haiti Bolet")
 ]
 
+# The date-indexed EnLoteria page exposes the same draws with shorter display
+# names than the primary source. Keep this mapping explicit: an unmapped name
+# must remain missing instead of being guessed and published under the wrong
+# lottery.
+ENLOTERIA_GENERAL_RESULT_MAP = {
+    "la primera": {"id": "1", "name": "La Primera Día"},
+    "lotedom": {"id": "7", "name": "Quiniela LoteDom"},
+    "la suerte": {"id": "3", "name": "La Suerte 12:30"},
+    "real": {"id": "5", "name": "Quiniela Real"},
+    "nacional gana más": {"id": "9", "name": "Gana Más"},
+    "new york tarde": {"id": "8", "name": "New York Tarde"},
+    "leidsa": {"id": "15", "name": "Quiniela Leidsa"},
+    "king lottery día": {"id": "23", "name": "King Lottery Día"},
+    "king lottery noche": {"id": "24", "name": "King Lottery Noche"},
+}
+
+
+def is_verified_normal_result_row(row, expected_date=None):
+    """Accept only dated, three-number normal lottery results."""
+    if not isinstance(row, dict):
+        return False
+    result_date = str(row.get("date") or "").strip()
+    if expected_date and result_date != str(expected_date):
+        return False
+    if not re.fullmatch(r"\d{2}-\d{2}-\d{4}", result_date):
+        return False
+    lottery_id = str(row.get("id") or "").strip()
+    if not lottery_id or not str(row.get("name") or "").strip():
+        return False
+    numbers = str(row.get("number") or "").strip().split("-")
+    return len(numbers) == 3 and all(re.fullmatch(r"\d{2}", value) for value in numbers)
+
+
+def append_verified_normal_result(results, seen_ids, row, expected_date, source):
+    """Merge one source row without allowing malformed or duplicate data."""
+    if not is_verified_normal_result_row(row, expected_date):
+        logger.warning(
+            "Rejected unverified result: source=%s id=%s date=%s number=%s",
+            source,
+            row.get("id") if isinstance(row, dict) else None,
+            row.get("date") if isinstance(row, dict) else None,
+            row.get("number") if isinstance(row, dict) else None,
+        )
+        return False
+    lottery_id = str(row["id"])
+    if lottery_id in seen_ids:
+        return False
+    normalized = dict(row)
+    normalized["id"] = lottery_id
+    normalized["number"] = "-".join(str(row["number"]).split("-"))
+    results.append(normalized)
+    seen_ids.add(lottery_id)
+    return True
+
 # ---------------------------------------------------------------------------
 # Async infrastructure
 # ---------------------------------------------------------------------------
@@ -1752,7 +1806,14 @@ def build_king_no_draw_rows(date_str, seen_ids, now_dr=None):
 
 def parse_winning_numbers_from_text(raw):
     text = str(raw or "")
-    match = re.search(r"N[uú]meros ganadores:\s*([0-9]{1,2})\s*,\s*([0-9]{1,2})\s*,\s*([0-9]{1,2})", text, re.I)
+    # EnLoteria uses both "Números ganadores:" and
+    # "Los números ganadores son:" depending on the page/template.
+    match = re.search(
+        r"(?:los\s+)?n[uú]meros ganadores(?:\s+son)?\s*:\s*"
+        r"([0-9]{1,2})\s*,\s*([0-9]{1,2})\s*,\s*([0-9]{1,2})",
+        text,
+        re.I,
+    )
     if not match:
         return []
     return [part.zfill(2) for part in match.groups()]
@@ -1891,6 +1952,67 @@ def parse_enloteria_haiti_bolet_jsonld_for_dates(html_text, lottery_id, lottery_
         lottery_name=lottery_name,
         target_dates=target_dates,
     )
+
+
+def parse_enloteria_general_jsonld_for_dates(html_text, target_dates, wanted_ids=None):
+    """Parse only explicitly mapped, date-matching events from the daily page."""
+    allowed_dates = {str(date) for date in target_dates if str(date or "").strip()}
+    wanted = {str(value) for value in (wanted_ids or [])}
+    results = []
+    seen_ids = set()
+    for data in iter_enloteria_jsonld_objects(html_text):
+        graph = data.get("@graph") if isinstance(data, dict) else None
+        nodes = graph if isinstance(graph, list) else [data]
+        for node in nodes:
+            if not isinstance(node, dict) or node.get("@type") != "Event":
+                continue
+            source_name = str(node.get("name") or "").strip().lower()
+            mapped = ENLOTERIA_GENERAL_RESULT_MAP.get(source_name)
+            if not mapped or mapped["id"] in seen_ids:
+                continue
+            if wanted and mapped["id"] not in wanted:
+                continue
+            result_date = iso_date_to_dr_date(node.get("startDate"))
+            if result_date not in allowed_dates:
+                continue
+            numbers = parse_winning_numbers_from_text(node.get("description"))
+            if len(numbers) != 3 or any(not re.fullmatch(r"\d{2}", str(value)) for value in numbers):
+                continue
+            row = {
+                "id": mapped["id"],
+                "name": mapped["name"],
+                "date": result_date,
+                "number": "-".join(numbers),
+            }
+            results.append(row)
+            seen_ids.add(mapped["id"])
+    return results
+
+
+async def _async_fetch_enloteria_general_results(date_str, wanted_ids=None, client=None):
+    target_date = date_str or get_dr_date_str()
+    c = client or get_http_client()
+    try:
+        date_iso = datetime.datetime.strptime(target_date, "%d-%m-%Y").strftime("%Y-%m-%d")
+    except ValueError:
+        return []
+    url = f"https://enloteria.com/resultados-loterias-{date_iso}"
+    try:
+        resp = await async_http_get(url, client=c)
+    except Exception as e:
+        logger.warning("EnLoteria general fallback error for %s: %s", target_date, e)
+        return []
+    rows = parse_enloteria_general_jsonld_for_dates(
+        resp.text,
+        target_dates=[target_date],
+        wanted_ids=wanted_ids,
+    )
+    logger.info(
+        "EnLoteria general fallback [%s]: %d verified rows",
+        target_date,
+        len(rows),
+    )
+    return rows
 
 
 async def _async_fetch_enloteria_results(date_str=None, fallback_days=0, sources=None, client=None):
@@ -3161,10 +3283,15 @@ async def _async_scrape_missing_rd_results(date_str, missing_ids, client=None):
     results = []
     seen_ids = set()
 
-    loterias_rows = await _async_fetch_loterias_dominicanas_results(date_str, wanted_ids=wanted, client=c)
-    for row in loterias_rows:
-        results.append(row)
-        seen_ids.add(row["id"])
+    # EnLoteria is the primary reachable source. The daily page covers the
+    # common Dominican draws; its per-draw pages cover the extended catalog.
+    general_rows = await _async_fetch_enloteria_general_results(
+        date_str, wanted_ids=wanted, client=c
+    )
+    for row in general_rows:
+        append_verified_normal_result(
+            results, seen_ids, row, date_str, source="enloteria-general"
+        )
 
     still_missing = wanted - seen_ids
     enloteria_sources = [
@@ -3179,11 +3306,22 @@ async def _async_scrape_missing_rd_results(date_str, missing_ids, client=None):
             client=c,
         )
         for row in enloteria_rows:
-            if row["id"] not in seen_ids:
-                row["source"] = "enloteria.com"
-                row["source_url"] = row.get("source_url") or "https://enloteria.com/"
-                results.append(row)
-                seen_ids.add(row["id"])
+            append_verified_normal_result(
+                results, seen_ids, row, date_str, source="enloteria-draw"
+            )
+
+    still_missing = wanted - seen_ids
+    if still_missing:
+        # The legacy source is a last-resort transport fallback only. Its
+        # rows still pass the same strict validation and cannot replace an
+        # already accepted EnLoteria row.
+        legacy_rows = await _async_fetch_loterias_dominicanas_results(
+            date_str, wanted_ids=still_missing, client=c
+        )
+        for row in legacy_rows:
+            append_verified_normal_result(
+                results, seen_ids, row, date_str, source="legacy-fallback"
+            )
 
     still_missing = wanted - seen_ids
     for row in build_king_no_draw_rows(date_str, seen_ids):
@@ -3200,8 +3338,33 @@ async def _async_scrape(date_str=None, client=None):
         date_str = get_dr_date_str()
     c = client or get_http_client()
 
-    results = await _async_fetch_loterias_dominicanas_results(date_str, client=c)
-    seen_ids = {row["id"] for row in results}
+    results = []
+    seen_ids = set()
+
+    primary_rows = await _async_fetch_enloteria_general_results(date_str, client=c)
+    for row in primary_rows:
+        append_verified_normal_result(
+            results, seen_ids, row, date_str, source="enloteria-general"
+        )
+
+    draw_rows = await _async_fetch_enloteria_results(date_str, fallback_days=0, client=c)
+    for row in draw_rows:
+        append_verified_normal_result(
+            results, seen_ids, row, date_str, source="enloteria-draw"
+        )
+
+    still_missing = {
+        str(match["id"])
+        for match in LOTTERY_MAP.values()
+    } - seen_ids
+    if still_missing:
+        legacy_rows = await _async_fetch_loterias_dominicanas_results(
+            date_str, wanted_ids=still_missing, client=c
+        )
+        for row in legacy_rows:
+            append_verified_normal_result(
+                results, seen_ids, row, date_str, source="legacy-fallback"
+            )
 
     for row in build_king_no_draw_rows(date_str, seen_ids):
         results.append(row)
@@ -3216,12 +3379,6 @@ async def _async_scrape(date_str=None, client=None):
 
     miloteria_nj = await _async_fetch_miloteria_new_jersey(date_str, client=c)
     for row in miloteria_nj:
-        if row["id"] not in seen_ids:
-            results.append(row)
-            seen_ids.add(row["id"])
-
-    enloteria_rows = await _async_fetch_enloteria_results(date_str, fallback_days=0, client=c)
-    for row in enloteria_rows:
         if row["id"] not in seen_ids:
             results.append(row)
             seen_ids.add(row["id"])
