@@ -3253,6 +3253,28 @@ async def _async_fetch_loterias_dominicanas_results(date_str, wanted_ids=None, c
         ]
 
     if fallback_sources:
+        # The daily EnLoteria page contains the common Dominican draws
+        # (La Primera, LoteDom, La Suerte, Real, Leidsa, King, etc.).
+        # It must be consulted during a primary-source outage as well; the
+        # dedicated pages alone do not cover the complete normal catalog.
+        general_rows = await _async_fetch_enloteria_general_results(
+            date_str,
+            wanted_ids=wanted_ids,
+            client=c,
+        )
+        for row in general_rows:
+            result_id = str(row.get("id"))
+            if result_id not in seen_ids:
+                row["source"] = "enloteria.com"
+                date_iso = datetime.datetime.strptime(
+                    date_str, "%d-%m-%Y"
+                ).strftime("%Y-%m-%d")
+                row["source_url"] = (
+                    f"https://enloteria.com/resultados-loterias-{date_iso}"
+                )
+                results.append(row)
+                seen_ids.add(result_id)
+
         fallback_rows = await _async_fetch_enloteria_results(
             date_str,
             fallback_days=0,
