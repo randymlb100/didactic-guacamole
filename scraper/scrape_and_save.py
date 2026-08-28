@@ -416,10 +416,8 @@ def is_verified_normal_result_row(row, expected_date=None):
         trusted in source
         for trusted in (
             "enloteria.com",
-            "loteriasdominicanas.com",
             "enloteria-general",
             "enloteria-draw",
-            "legacy-fallback",
         )
     )
 
@@ -3354,13 +3352,6 @@ async def _async_fetch_loterias_dominicanas_results(date_str, wanted_ids=None, c
         for row in rows:
             append_verified_normal_result(results, seen_ids, row, date_str, "enloteria-draw")
 
-    remaining = wanted - seen_ids if wanted else set()
-    if remaining:
-        legacy_rows = await _async_fetch_loterias_dominicanas_legacy_results(
-            date_str, wanted_ids=remaining, client=c
-        )
-        for row in legacy_rows:
-            append_verified_normal_result(results, seen_ids, row, date_str, "legacy-fallback")
     return sorted(results, key=result_sort_key)
 
 
@@ -3401,19 +3392,6 @@ async def _async_scrape_missing_rd_results(date_str, missing_ids, client=None):
             )
 
     still_missing = wanted - seen_ids
-    if still_missing:
-        # The legacy source is a last-resort transport fallback only. Its
-        # rows still pass the same strict validation and cannot replace an
-        # already accepted EnLoteria row.
-        legacy_rows = await _async_fetch_loterias_dominicanas_results(
-            date_str, wanted_ids=still_missing, client=c
-        )
-        for row in legacy_rows:
-            append_verified_normal_result(
-                results, seen_ids, row, date_str, source="legacy-fallback"
-            )
-
-    still_missing = wanted - seen_ids
     for row in build_king_no_draw_rows(date_str, seen_ids):
         if row["id"] in still_missing:
             results.append(row)
@@ -3442,19 +3420,6 @@ async def _async_scrape(date_str=None, client=None):
         append_verified_normal_result(
             results, seen_ids, row, date_str, source="enloteria-draw"
         )
-
-    still_missing = {
-        str(match["id"])
-        for match in LOTTERY_MAP.values()
-    } - seen_ids
-    if still_missing:
-        legacy_rows = await _async_fetch_loterias_dominicanas_results(
-            date_str, wanted_ids=still_missing, client=c
-        )
-        for row in legacy_rows:
-            append_verified_normal_result(
-                results, seen_ids, row, date_str, source="legacy-fallback"
-            )
 
     for row in build_king_no_draw_rows(date_str, seen_ids):
         results.append(row)
