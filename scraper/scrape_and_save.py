@@ -3622,7 +3622,7 @@ async def _async_fetch_existing_from_supabase(date_str, client=None):
             f"?result_day_key=eq.{api_date}"
             "&source=eq.lottery"
             "&select=id,lottery_legacy_id,lottery_name,game,draw_name,number_raw,status",
-            headers=supabase_rest_headers(),
+            headers=supabase_write_headers(),
         )
         response.raise_for_status()
         rows = response.json()
