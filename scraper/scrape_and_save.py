@@ -3606,7 +3606,47 @@ async def _async_fetch_kv_list(key, client=None):
 
 async def _async_fetch_existing_from_supabase(date_str, client=None):
     key = f"lot_results_cache_by_day:{date_str}"
-    return await _async_fetch_kv_list(key, client=client)
+    cached = await _async_fetch_kv_list(key, client=client)
+    if cached:
+        return cached
+
+    # The KV snapshot is optional and may be absent after a deployment or
+    # cache migration.  Read the authoritative rows before building a write
+    # payload; otherwise every published row looks new and one immutable-row
+    # conflict rejects the whole recovery batch.
+    c = client or get_http_client()
+    try:
+        api_date = urllib.parse.quote(str(date_str), safe="")
+        response = await c.get(
+            f"{SUPABASE_URL}/rest/v1/result_draws"
+            f"?result_day_key=eq.{api_date}"
+            "&source=eq.lottery"
+            "&select=id,lottery_legacy_id,lottery_name,game,draw_name,number_raw,status",
+            headers=supabase_rest_headers(),
+        )
+        response.raise_for_status()
+        rows = response.json()
+        if not isinstance(rows, list):
+            return []
+        normalized = []
+        for row in rows:
+            if not isinstance(row, dict):
+                continue
+            legacy_id = str(row.get("lottery_legacy_id") or "").strip()
+            if not legacy_id:
+                continue
+            normalized.append({
+                "id": legacy_id,
+                "name": row.get("lottery_name") or "",
+                "date": date_str,
+                "number": row.get("number_raw") or "",
+                "status": row.get("status") or "",
+            })
+        logger.info("Loaded %d authoritative result_draws rows for %s", len(normalized), date_str)
+        return normalized
+    except Exception as exc:
+        logger.warning("Could not load authoritative result_draws for %s: %s", date_str, exc)
+        return []
 
 
 def fetch_existing_from_supabase(date_str):
