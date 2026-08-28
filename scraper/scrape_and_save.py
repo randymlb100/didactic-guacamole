@@ -3348,8 +3348,18 @@ async def _async_fetch_loteriadela1_results(date_str, wanted_ids=None, client=No
         "gana-mas": {"dia": ("9", "Gana Más"), "noche": ("9", "Gana Más")},
         "leidsa": {"dia": ("15", "Quiniela Leidsa"), "noche": ("15", "Quiniela Leidsa")},
         "new-york": {"dia": ("8", "New York Tarde"), "noche": ("18", "New York Noche")},
+        "nueva-york": {"dia": ("8", "New York Tarde"), "noche": ("18", "New York Noche")},
         "florida": {"dia": ("6", "Florida Día"), "noche": ("17", "Florida Noche")},
+        "americanas": {"dia": ("6", "Florida Día"), "noche": ("17", "Florida Noche")},
         "king-lottery": {"dia": ("23", "King Lottery Día"), "noche": ("24", "King Lottery Noche")},
+        "nacional": {"dia": ("9", "Gana Más"), "noche": ("13", "Lotería Nacional")},
+        "real": {"dia": ("5", "Quiniela Real"), "noche": ("5", "Quiniela Real")},
+        "anguila": {
+            "dia": ("29", "Anguilla 8AM"), "noche": ("39", "Anguilla 10PM")
+        },
+        "haiti-bolet": {
+            "dia": ("40", "Haiti Bolet 9:30 AM"), "noche": ("43", "Haiti Bolet 7:30 PM")
+        },
     }
     for item in payload.get("sorteos", []) if isinstance(payload, dict) else []:
         if str(item.get("fecha")) != target:
@@ -3357,12 +3367,37 @@ async def _async_fetch_loteriadela1_results(date_str, wanted_ids=None, client=No
         lottery = item.get("loteria") or {}
         game = item.get("juego") or {}
         session = str(item.get("sesion") or "").lower()
-        mapping = name_to_ids.get(str(lottery.get("key") or "").lower(), {})
+        lottery_key = str(lottery.get("key") or "").lower()
+        mapping = name_to_ids.get(lottery_key, {})
         pair = mapping.get("noche" if "noche" in session else "dia")
+        game_key = str(game.get("key") or "").lower()
+        # Extended schedules use one lottery key and encode the exact draw in
+        # the game key; map those explicitly rather than guessing by position.
+        extended = {
+            "anguila": {
+                "anguila-8am": ("29", "Anguilla 8AM"), "anguila-9am": ("30", "Anguilla 9AM"),
+                "anguila-10am": ("2", "Anguila Mañana"), "anguila-11am": ("31", "Anguilla 11AM"),
+                "anguila-12pm": ("32", "Anguilla 12PM"), "anguila-1pm": ("4", "Anguilla 1PM"),
+                "anguila-2pm": ("33", "Anguilla 2PM"), "anguila-3pm": ("34", "Anguilla 3PM"),
+                "anguila-4pm": ("35", "Anguilla 4PM"), "anguila-5pm": ("36", "Anguilla 5PM"),
+                "anguila-6pm": ("11", "Anguilla 6PM"), "anguila-7pm": ("37", "Anguilla 7PM"),
+                "anguila-9pm": ("14", "Anguilla 9PM"), "anguila-10pm": ("39", "Anguilla 10PM"),
+            },
+            "haiti-bolet": {
+                "bolet-9-30am": ("40", "Haiti Bolet 9:30 AM"), "bolet-10-30am": ("41", "Haiti Bolet 10:30 AM"),
+                "bolet-11-30am": ("27", "Haiti Bolet 11:30 AM"), "bolet-5-30pm": ("42", "Haiti Bolet 5:30 PM"),
+                "bolet-6-30pm": ("28", "Haiti Bolet 6:30 PM"), "bolet-7-30pm": ("43", "Haiti Bolet 7:30 PM"),
+            },
+        }
+        pair = extended.get(lottery_key, {}).get(game_key, pair)
         if not pair or (wanted and pair[0] not in wanted) or pair[0] in seen:
             continue
         nums = [str(value).strip().zfill(2) for value in (item.get("numeros") or [])]
-        if str(game.get("key") or "").lower() not in {"quiniela", "quiniela-real", "quiniela-lotedom"}:
+        if not (
+            game_key in {"quiniela", "quiniela-real", "quiniela-lotedom"}
+            or game_key.startswith("anguila-")
+            or game_key.startswith("bolet-")
+        ):
             continue
         if len(nums) < 3 or not all(re.fullmatch(r"\d{2}", value) for value in nums[:3]):
             continue
