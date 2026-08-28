@@ -312,6 +312,12 @@ AUTHORITATIVE_NJ_IDS = {"19", "20", "21", "22", "25", "26"}
 # be accepted by the normal Dominican-lottery payload, even though their IDs
 # are numeric and their values look like hyphenated lottery results.
 PICK_ONLY_NORMAL_IDS = {"19", "20", "21", "22"}
+# Pick results use a separate provider and pipeline. Keep them disabled in the
+# normal Dominican scrape unless explicitly enabled, so a Pick number can
+# never be published under a normal lottery.
+SCRAPE_PICK_RESULTS = os.getenv("SCRAPE_PICK_RESULTS", "0").strip().lower() in {
+    "1", "true", "yes", "on"
+}
 
 KING_LOTTERY_STATUS_ROWS = [
     {"id": "23", "name": "King Lottery D\u00eda"},
@@ -3402,17 +3408,20 @@ async def _async_scrape(date_str=None, client=None):
         seen_ids.add(row["id"])
         logger.info("King [%s] %s: no_draw for %s", row['id'], row['name'], date_str)
 
-    nj_nj = await _async_fetch_nj_picks_lotteryusa(date_str, client=c)
-    for row in nj_nj:
-        if row["id"] not in seen_ids:
-            results.append(row)
-            seen_ids.add(row["id"])
+    if SCRAPE_PICK_RESULTS:
+        nj_nj = await _async_fetch_nj_picks_lotteryusa(date_str, client=c)
+        for row in nj_nj:
+            if row["id"] not in seen_ids:
+                results.append(row)
+                seen_ids.add(row["id"])
 
-    miloteria_nj = await _async_fetch_miloteria_new_jersey(date_str, client=c)
-    for row in miloteria_nj:
-        if row["id"] not in seen_ids:
-            results.append(row)
-            seen_ids.add(row["id"])
+        miloteria_nj = await _async_fetch_miloteria_new_jersey(date_str, client=c)
+        for row in miloteria_nj:
+            if row["id"] not in seen_ids:
+                results.append(row)
+                seen_ids.add(row["id"])
+    else:
+        logger.info("Pick scrape disabled; normal results only")
 
     results.sort(key=lambda x: int(x["id"]))
     return results
