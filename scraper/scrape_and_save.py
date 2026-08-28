@@ -406,12 +406,30 @@ def is_verified_normal_result_row(row, expected_date=None):
     if not lottery_id or not str(row.get("name") or "").strip():
         return False
     numbers = str(row.get("number") or "").strip().split("-")
-    return len(numbers) == 3 and all(re.fullmatch(r"\d{2}", value) for value in numbers)
+    if len(numbers) != 3 or not all(re.fullmatch(r"\d{2}", value) for value in numbers):
+        return False
+    # Never accept the placeholder used by failed/partial scrapes.
+    if all(value == "00" for value in numbers):
+        return False
+    source = str(row.get("source") or row.get("source_url") or "").lower()
+    return any(
+        trusted in source
+        for trusted in (
+            "enloteria.com",
+            "loteriasdominicanas.com",
+            "enloteria-general",
+            "enloteria-draw",
+            "legacy-fallback",
+        )
+    )
 
 
 def append_verified_normal_result(results, seen_ids, row, expected_date, source):
     """Merge one source row without allowing malformed or duplicate data."""
-    if not is_verified_normal_result_row(row, expected_date):
+    candidate = dict(row) if isinstance(row, dict) else row
+    if isinstance(candidate, dict) and not candidate.get("source"):
+        candidate["source"] = source
+    if not is_verified_normal_result_row(candidate, expected_date):
         logger.warning(
             "Rejected unverified result: source=%s id=%s date=%s number=%s",
             source,
@@ -423,7 +441,7 @@ def append_verified_normal_result(results, seen_ids, row, expected_date, source)
     lottery_id = str(row["id"])
     if lottery_id in seen_ids:
         return False
-    normalized = dict(row)
+    normalized = dict(candidate)
     normalized["id"] = lottery_id
     normalized["number"] = "-".join(str(row["number"]).split("-"))
     results.append(normalized)
@@ -3975,9 +3993,8 @@ async def _async_main():
             try:
                 await _async_save_to_supabase(target_date, results, prune_missing_ids=prune_missing_ids, client=client)
             except (httpx.HTTPError, httpx.TimeoutException) as e:
-                if not should_continue_after_supabase_save_error(save_required, explicit_dates):
-                    raise
-                logger.warning("Continuing after RD Supabase save error for %s; health check will verify cache: %s", target_date, e)
+                logger.error("RD Supabase save failed for %s; marking cron run failed: %s", target_date, e)
+                raise
         else:
             logger.info("No results found for %s — skipping RD save", target_date)
 
