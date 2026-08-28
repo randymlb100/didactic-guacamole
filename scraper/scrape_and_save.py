@@ -3993,8 +3993,16 @@ async def _async_main():
             try:
                 await _async_save_to_supabase(target_date, results, prune_missing_ids=prune_missing_ids, client=client)
             except (httpx.HTTPError, httpx.TimeoutException) as e:
-                logger.error("RD Supabase save failed for %s; marking cron run failed: %s", target_date, e)
-                raise
+                error_text = str(getattr(getattr(e, "response", None), "text", ""))
+                if "Resultado bloqueado" in error_text:
+                    logger.warning(
+                        "RD result conflict for %s; keeping published data and continuing: %s",
+                        target_date,
+                        e,
+                    )
+                else:
+                    logger.error("RD Supabase save failed for %s; marking cron run failed: %s", target_date, e)
+                    raise
         else:
             logger.info("No results found for %s — skipping RD save", target_date)
 
