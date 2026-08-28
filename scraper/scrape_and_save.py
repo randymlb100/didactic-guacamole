@@ -316,6 +316,15 @@ AUTHORITATIVE_NJ_IDS = {"19", "20", "21", "22", "25", "26"}
 # are numeric and their values look like hyphenated lottery results.
 PICK_ONLY_NORMAL_IDS = {"19", "20", "21", "22"}
 
+# The production app currently consumes Dominican normal-lottery results only.
+# Keep the Pick collectors available for a future, explicitly enabled rollout,
+# but never let them run as part of the normal results cron by default.  This
+# prevents Pick rows from consuming the scrape window or being mixed with the
+# normal-lottery contract.
+SCRAPE_PICK_RESULTS = os.getenv("SCRAPE_PICK_RESULTS", "0").strip().lower() in {
+    "1", "true", "yes", "on"
+}
+
 KING_LOTTERY_STATUS_ROWS = [
     {"id": "23", "name": "King Lottery D\u00eda"},
     {"id": "24", "name": "King Lottery Noche"},
@@ -3089,7 +3098,7 @@ async def _async_fetch_loterias_dominicanas_api_results(date_str, wanted_ids=Non
     return rows
 
 
-async def _async_fetch_loterias_dominicanas_results(date_str, wanted_ids=None, client=None):
+async def _async_fetch_loterias_dominicanas_legacy_results(date_str, wanted_ids=None, client=None):
     c = client or get_http_client()
     base = "https://loteriasdominicanas.com"
     urls = [
@@ -3155,6 +3164,55 @@ async def _async_fetch_loterias_dominicanas_results(date_str, wanted_ids=None, c
     return sorted(results, key=result_sort_key)
 
 
+async def _async_fetch_loterias_dominicanas_results(date_str, wanted_ids=None, client=None):
+    """Fetch normal Dominican results with a verified-source-first policy.
+
+    EnLoteria is the primary source because the former primary site currently
+    returns intermittent 403 responses.  The legacy site is queried only for
+    IDs that EnLoteria did not confirm, and it can never replace a verified
+    primary row.  Pick collectors are intentionally excluded from this path.
+    """
+    c = client or get_http_client()
+    primary = await _async_fetch_enloteria_results(
+        date_str,
+        fallback_days=0,
+        sources=ENLOTERIA_RESULT_SOURCES,
+        client=c,
+    )
+    results = []
+    seen_ids = set()
+    wanted = {str(value) for value in (wanted_ids or [])}
+    for row in primary:
+        result_id = str(row.get("id") or "")
+        if not result_id or (wanted and result_id not in wanted):
+            continue
+        row["source"] = "enloteria.com"
+        row["source_url"] = row.get("source_url") or "https://enloteria.com/"
+        results.append(row)
+        seen_ids.add(result_id)
+
+    # A full scrape uses the tracked normal-lottery catalog as the target.
+    # Only ask the legacy source for IDs EnLoteria did not confirm; never
+    # query it for an already verified row and never use it to replace one.
+    target_ids = wanted or {str(value) for value in TRACKED_REMOTE_RESULT_IDS}
+    missing = target_ids - seen_ids
+    if missing:
+        legacy_rows = await _async_fetch_loterias_dominicanas_legacy_results(
+            date_str,
+            wanted_ids=missing,
+            client=c,
+        )
+        for row in legacy_rows:
+            result_id = str(row.get("id") or "")
+            if result_id in seen_ids:
+                continue
+            row["source"] = "loteriasdominicanas.com-legacy"
+            results.append(row)
+            seen_ids.add(result_id)
+
+    return sorted(results, key=result_sort_key)
+
+
 
 async def _async_scrape_missing_rd_results(date_str, missing_ids, client=None):
     wanted = {str(value) for value in (missing_ids or []) if str(value).strip()}
@@ -3168,25 +3226,6 @@ async def _async_scrape_missing_rd_results(date_str, missing_ids, client=None):
     for row in loterias_rows:
         results.append(row)
         seen_ids.add(row["id"])
-
-    still_missing = wanted - seen_ids
-    enloteria_sources = [
-        source for source in ENLOTERIA_RESULT_SOURCES
-        if str(source.get("id")) in still_missing
-    ]
-    if enloteria_sources:
-        enloteria_rows = await _async_fetch_enloteria_results(
-            date_str,
-            fallback_days=0,
-            sources=enloteria_sources,
-            client=c,
-        )
-        for row in enloteria_rows:
-            if row["id"] not in seen_ids:
-                row["source"] = "enloteria.com"
-                row["source_url"] = row.get("source_url") or "https://enloteria.com/"
-                results.append(row)
-                seen_ids.add(row["id"])
 
     still_missing = wanted - seen_ids
     for row in build_king_no_draw_rows(date_str, seen_ids):
@@ -3211,23 +3250,24 @@ async def _async_scrape(date_str=None, client=None):
         seen_ids.add(row["id"])
         logger.info("King [%s] %s: no_draw for %s", row['id'], row['name'], date_str)
 
-    nj_nj = await _async_fetch_nj_picks_lotteryusa(date_str, client=c)
-    for row in nj_nj:
-        if row["id"] not in seen_ids:
-            results.append(row)
-            seen_ids.add(row["id"])
+    if SCRAPE_PICK_RESULTS:
+        logger.warning(
+            "Pick scraping explicitly enabled; normal-lottery cron will also "
+            "collect Pick results"
+        )
+        nj_nj = await _async_fetch_nj_picks_lotteryusa(date_str, client=c)
+        for row in nj_nj:
+            if row["id"] not in seen_ids:
+                results.append(row)
+                seen_ids.add(row["id"])
 
-    miloteria_nj = await _async_fetch_miloteria_new_jersey(date_str, client=c)
-    for row in miloteria_nj:
-        if row["id"] not in seen_ids:
-            results.append(row)
-            seen_ids.add(row["id"])
-
-    enloteria_rows = await _async_fetch_enloteria_results(date_str, fallback_days=0, client=c)
-    for row in enloteria_rows:
-        if row["id"] not in seen_ids:
-            results.append(row)
-            seen_ids.add(row["id"])
+        miloteria_nj = await _async_fetch_miloteria_new_jersey(date_str, client=c)
+        for row in miloteria_nj:
+            if row["id"] not in seen_ids:
+                results.append(row)
+                seen_ids.add(row["id"])
+    else:
+        logger.info("Pick scraping disabled; collecting normal lotteries only")
 
     results.sort(key=lambda x: int(x["id"]))
     return results
