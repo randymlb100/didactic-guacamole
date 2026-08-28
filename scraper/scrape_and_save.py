@@ -418,6 +418,7 @@ def is_verified_normal_result_row(row, expected_date=None):
             "enloteria.com",
             "enloteria-general",
             "enloteria-draw",
+            "loteriadela1.com",
         )
     )
 
@@ -3327,6 +3328,51 @@ async def _async_fetch_loterias_dominicanas_legacy_results(date_str, wanted_ids=
     return sorted(results, key=result_sort_key)
 
 
+async def _async_fetch_loteriadela1_results(date_str, wanted_ids=None, client=None):
+    """Fetch only missing normal results from Lotería de la 1 JSON export."""
+    target = datetime.datetime.strptime(date_str, "%d-%m-%Y").strftime("%Y-%m-%d")
+    wanted = {str(value) for value in (wanted_ids or [])}
+    resp = await async_http_get(
+        f"https://loteriadela1.com/datos/sorteos.json?desde={target}&limit=500",
+        client=client,
+        accept_json=True,
+    )
+    payload = resp.json()
+    results = []
+    seen = set()
+    name_to_ids = {
+        "la-primera": {"dia": ("1", "La Primera Día"), "noche": ("16", "Primera Noche")},
+        "lotedom": {"dia": ("7", "Quiniela LoteDom"), "noche": ("7", "Quiniela LoteDom")},
+        "la-suerte": {"dia": ("3", "La Suerte 12:30"), "noche": ("10", "La Suerte Tarde")},
+        "quiniela-real": {"dia": ("5", "Quiniela Real"), "noche": ("5", "Quiniela Real")},
+        "gana-mas": {"dia": ("9", "Gana Más"), "noche": ("9", "Gana Más")},
+        "leidsa": {"dia": ("15", "Quiniela Leidsa"), "noche": ("15", "Quiniela Leidsa")},
+        "new-york": {"dia": ("8", "New York Tarde"), "noche": ("18", "New York Noche")},
+        "florida": {"dia": ("6", "Florida Día"), "noche": ("17", "Florida Noche")},
+        "king-lottery": {"dia": ("23", "King Lottery Día"), "noche": ("24", "King Lottery Noche")},
+    }
+    for item in payload.get("sorteos", []) if isinstance(payload, dict) else []:
+        if str(item.get("fecha")) != target:
+            continue
+        lottery = item.get("loteria") or {}
+        game = item.get("juego") or {}
+        session = str(item.get("sesion") or "").lower()
+        mapping = name_to_ids.get(str(lottery.get("key") or "").lower(), {})
+        pair = mapping.get("noche" if "noche" in session else "dia")
+        if not pair or (wanted and pair[0] not in wanted) or pair[0] in seen:
+            continue
+        nums = [str(value).strip().zfill(2) for value in (item.get("numeros") or [])]
+        if str(game.get("key") or "").lower() not in {"quiniela", "quiniela-real", "quiniela-lotedom"}:
+            continue
+        if len(nums) < 3 or not all(re.fullmatch(r"\d{2}", value) for value in nums[:3]):
+            continue
+        results.append({"id": pair[0], "name": pair[1], "date": date_str,
+                        "number": "-".join(nums[:3]), "source": "loteriadela1.com"})
+        seen.add(pair[0])
+    logger.info("Lotería de la 1 fallback [%s]: %d verified rows", date_str, len(results))
+    return results
+
+
 async def _async_fetch_loterias_dominicanas_results(date_str, wanted_ids=None, client=None):
     """Use EnLoteria first; consult the legacy site only for missing IDs."""
     c = client or get_http_client()
@@ -3351,6 +3397,14 @@ async def _async_fetch_loterias_dominicanas_results(date_str, wanted_ids=None, c
         )
         for row in rows:
             append_verified_normal_result(results, seen_ids, row, date_str, "enloteria-draw")
+
+    remaining = wanted - seen_ids if wanted else set()
+    if remaining:
+        fallback_rows = await _async_fetch_loteriadela1_results(
+            date_str, wanted_ids=remaining, client=c
+        )
+        for row in fallback_rows:
+            append_verified_normal_result(results, seen_ids, row, date_str, "loteriadela1.com")
 
     return sorted(results, key=result_sort_key)
 
@@ -3392,6 +3446,16 @@ async def _async_scrape_missing_rd_results(date_str, missing_ids, client=None):
             )
 
     still_missing = wanted - seen_ids
+    if still_missing:
+        fallback_rows = await _async_fetch_loteriadela1_results(
+            date_str, wanted_ids=still_missing, client=c
+        )
+        for row in fallback_rows:
+            append_verified_normal_result(
+                results, seen_ids, row, date_str, source="loteriadela1.com"
+            )
+
+    still_missing = wanted - seen_ids
     for row in build_king_no_draw_rows(date_str, seen_ids):
         if row["id"] in still_missing:
             results.append(row)
@@ -3420,6 +3484,18 @@ async def _async_scrape(date_str=None, client=None):
         append_verified_normal_result(
             results, seen_ids, row, date_str, source="enloteria-draw"
         )
+
+    missing_ids = {
+        str(match["id"]) for match in LOTTERY_MAP.values()
+    } - seen_ids
+    if missing_ids:
+        fallback_rows = await _async_fetch_loteriadela1_results(
+            date_str, wanted_ids=missing_ids, client=c
+        )
+        for row in fallback_rows:
+            append_verified_normal_result(
+                results, seen_ids, row, date_str, source="loteriadela1.com"
+            )
 
     for row in build_king_no_draw_rows(date_str, seen_ids):
         results.append(row)
