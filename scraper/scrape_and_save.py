@@ -3241,7 +3241,7 @@ async def _async_fetch_loterias_dominicanas_api_results(date_str, wanted_ids=Non
     return rows
 
 
-async def _async_fetch_loterias_dominicanas_results(date_str, wanted_ids=None, client=None):
+async def _async_fetch_loterias_dominicanas_legacy_results(date_str, wanted_ids=None, client=None):
     c = client or get_http_client()
     base = "https://loteriasdominicanas.com"
     urls = [
@@ -3326,6 +3326,41 @@ async def _async_fetch_loterias_dominicanas_results(date_str, wanted_ids=None, c
     # unrelated King endpoint.  A missing row remains missing until one of
     # the two configured HTML sources confirms it; this prevents publishing
     # a plausible but unverified number under the wrong lottery/date.
+    return sorted(results, key=result_sort_key)
+
+
+async def _async_fetch_loterias_dominicanas_results(date_str, wanted_ids=None, client=None):
+    """Use EnLoteria first; consult the legacy site only for missing IDs."""
+    c = client or get_http_client()
+    wanted = {str(value) for value in (wanted_ids or []) if str(value).strip()}
+    results = []
+    seen_ids = set()
+
+    general_rows = await _async_fetch_enloteria_general_results(
+        date_str, wanted_ids=wanted or None, client=c
+    )
+    for row in general_rows:
+        append_verified_normal_result(results, seen_ids, row, date_str, "enloteria-general")
+
+    remaining = wanted - seen_ids if wanted else set()
+    sources = [
+        source for source in ENLOTERIA_RESULT_SOURCES
+        if not wanted or str(source.get("id")) in remaining
+    ]
+    if sources:
+        rows = await _async_fetch_enloteria_results(
+            date_str, fallback_days=0, sources=sources, client=c
+        )
+        for row in rows:
+            append_verified_normal_result(results, seen_ids, row, date_str, "enloteria-draw")
+
+    remaining = wanted - seen_ids if wanted else set()
+    if remaining:
+        legacy_rows = await _async_fetch_loterias_dominicanas_legacy_results(
+            date_str, wanted_ids=remaining, client=c
+        )
+        for row in legacy_rows:
+            append_verified_normal_result(results, seen_ids, row, date_str, "legacy-fallback")
     return sorted(results, key=result_sort_key)
 
 
