@@ -3480,6 +3480,18 @@ async def _async_scrape_missing_rd_results(date_str, missing_ids, client=None):
                 results, seen_ids, row, date_str, source="enloteria-draw"
             )
 
+    # Historical backfill: use the tested JSON export only for IDs that both
+    # EnLoteria paths could not provide. Never replace an accepted row.
+    still_missing = wanted - seen_ids
+    if still_missing:
+        fallback_rows = await _async_fetch_loteriadela1_results(
+            date_str, wanted_ids=still_missing, client=c
+        )
+        for row in fallback_rows:
+            append_verified_normal_result(
+                results, seen_ids, row, date_str, source="loteriadela1.com"
+            )
+
     still_missing = wanted - seen_ids
     if still_missing:
         fallback_rows = await _async_fetch_loteriadela1_results(
