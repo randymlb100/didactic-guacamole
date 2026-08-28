@@ -3493,16 +3493,6 @@ async def _async_scrape_missing_rd_results(date_str, missing_ids, client=None):
             )
 
     still_missing = wanted - seen_ids
-    if still_missing:
-        fallback_rows = await _async_fetch_loteriadela1_results(
-            date_str, wanted_ids=still_missing, client=c
-        )
-        for row in fallback_rows:
-            append_verified_normal_result(
-                results, seen_ids, row, date_str, source="loteriadela1.com"
-            )
-
-    still_missing = wanted - seen_ids
     for row in build_king_no_draw_rows(date_str, seen_ids):
         if row["id"] in still_missing:
             results.append(row)
@@ -4006,13 +3996,50 @@ async def _async_save_to_supabase(date_str, results, prune_missing_ids=None, cli
         return
 
     existing = await _async_fetch_existing_from_supabase(date_str, client=c)
-    merged_list = merge_results_by_id(existing, results, prune_missing_ids, observed_at=utc_now_iso())
+    observed_at = utc_now_iso()
+    merged_list = merge_results_by_id(existing, results, prune_missing_ids, observed_at=observed_at)
+
+    # A published row is immutable.  Do not resend it with a fallback value:
+    # the RPC correctly rejects that change, but rejecting the whole merged
+    # payload also prevented unrelated missing rows from being recovered.
+    existing_by_id = {
+        str(row.get("id") or "").strip(): row
+        for row in (existing or [])
+        if str(row.get("id") or "").strip()
+    }
+    rows_to_save = []
+    skipped_published = []
+    for row in merged_list:
+        previous = existing_by_id.get(str(row.get("id") or "").strip())
+        if previous and str(previous.get("status") or "").lower() == "published":
+            if (
+                str(previous.get("number") or "") != str(row.get("number") or "")
+                or str(previous.get("status") or "") != str(row.get("status") or "")
+            ):
+                skipped_published.append(str(row.get("id")))
+            continue
+        if previous and (
+            str(previous.get("number") or "") == str(row.get("number") or "")
+            and str(previous.get("status") or "") == str(row.get("status") or "")
+        ):
+            continue
+        rows_to_save.append(row)
+
+    if skipped_published:
+        logger.warning(
+            "Skipping %d published result conflicts for %s: %s",
+            len(skipped_published), date_str, ", ".join(sorted(set(skipped_published))),
+        )
     missing_tracked = missing_tracked_result_ids(merged_list)
     if missing_tracked:
         logger.warning("Missing tracked remote result ids for %s: %s", date_str, ", ".join(missing_tracked))
 
+    if not rows_to_save:
+        logger.info("No new normal-lottery rows to save for %s", date_str)
+        return
+
     try:
-        await _async_save_native_results_table(date_str, merged_list, client=c)
+        await _async_save_native_results_table(date_str, rows_to_save, client=c)
     except httpx.HTTPStatusError as e:
         logger.error("Supabase error %s: %s", e.response.status_code, e.response.text)
         raise
