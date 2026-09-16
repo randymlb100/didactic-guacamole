@@ -76,6 +76,7 @@ TRACKED_REMOTE_RESULT_IDS = {
     "1", "2", "3", "4", "5", "6", "7", "8", "9", "10",
     "11", "12", "13", "14", "15", "16", "17",
     "18",  # New York Noche often completes after the first daily cache write.
+    "47",  # Real Noche (separate 8:00 PM draw identity).
     "23", "24",  # King Lottery
     "25", "26",  # New Jersey normal draws
     "27", "28", "29", "30", "31", "32", "33", "34", "35", "36",
@@ -278,6 +279,7 @@ LOTTERY_MAP = {
     "la suerte 12:30":       {"id": "3",  "name": "La Suerte 12:30"},
     "anguila medio día":     {"id": "4",  "name": "Anguila Mediodía"},
     "quiniela real":         {"id": "5",  "name": "Quiniela Real"},
+    "real noche":             {"id": "47", "name": "Real Noche"},
     "florida día":           {"id": "6",  "name": "Florida Día"},
     "quiniela lotedom":      {"id": "7",  "name": "Quiniela LoteDom"},
     "new york tarde":        {"id": "8",  "name": "New York Tarde"},
@@ -366,6 +368,7 @@ ENLOTERIA_RESULT_SOURCES = [
     {"url": "https://enloteria.com/resultados-florida-noche", "id": "17", "name": "Florida Noche"},
     {"url": "https://enloteria.com/resultados-new-jersey-tarde", "id": "25", "name": "New Jersey Tarde"},
     {"url": "https://enloteria.com/resultados-new-jersey-noche", "id": "26", "name": "New Jersey Noche"},
+    {"url": "https://enloteria.com/resultados-real-noche", "id": "47", "name": "Real Noche", "source_name": "Real Noche"},
 ]
 
 ENLOTERIA_HAITI_BOLET_SOURCES = [
