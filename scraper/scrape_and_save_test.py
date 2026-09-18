@@ -435,7 +435,7 @@ class ScraperContractsTest(unittest.TestCase):
                 "11", "12", "13", "14", "15", "16", "17",
                 "18", "23", "24", "25", "26", "27", "28", "29", "30",
                 "31", "32", "33", "34", "35", "36", "37", "38", "39",
-                "40", "41", "42", "43", "44", "45", "46",
+                "40", "41", "42", "43", "44", "45", "46", "47",
             },
             scraper.TRACKED_REMOTE_RESULT_IDS,
         )
@@ -983,6 +983,7 @@ class ScraperContractsTest(unittest.TestCase):
             "name": "La Primera Día",
             "date": expected,
             "number": "04-19-70",
+            "source": "enloteria-general",
         }
         self.assertTrue(scraper.is_verified_normal_result_row(valid, expected))
         self.assertFalse(
@@ -996,6 +997,16 @@ class ScraperContractsTest(unittest.TestCase):
             )
         )
 
+    def test_verified_normal_result_rejects_disabled_loteriadela1_source(self):
+        row = {
+            "id": "1",
+            "name": "La Primera Día",
+            "date": "23-08-2026",
+            "number": "04-19-70",
+            "source": "loteriadela1.com",
+        }
+        self.assertFalse(scraper.is_verified_normal_result_row(row, row["date"]))
+
     def test_append_verified_normal_result_deduplicates_lottery_id(self):
         rows = []
         seen = set()
@@ -1004,6 +1015,7 @@ class ScraperContractsTest(unittest.TestCase):
             "name": "Quiniela Real",
             "date": "23-08-2026",
             "number": "04-19-70",
+            "source": "enloteria-general",
         }
         self.assertTrue(
             scraper.append_verified_normal_result(
@@ -1964,6 +1976,53 @@ class ScraperContractsTest(unittest.TestCase):
 
         self.assertTrue(scraper.us_pick_rows_changed(existing, refreshed))
         self.assertFalse(scraper.us_pick_rows_changed(refreshed, refreshed))
+
+    def test_official_operator_catalog_matches_enloteria_sources(self):
+        self.assertEqual(
+            scraper.official_operator_for_id("44")["url"],
+            "https://www.galottery.com/",
+        )
+        self.assertEqual(
+            scraper.official_operator_for_id("27")["url"],
+            "https://haitibolet.net/",
+        )
+        self.assertEqual(
+            scraper.official_operator_for_id("23")["url"],
+            "https://www.kinglotterysxm.com/",
+        )
+
+    def test_enloteria_jsonld_extracts_operator_metadata(self):
+        html = """
+        <script type="application/ld+json">
+        {
+          "@graph": [{
+            "@type": "Event",
+            "name": "Georgia Tarde",
+            "startDate": "2026-09-18T18:59:00-04:00",
+            "description": "Los números ganadores son: 10, 20, 30.",
+            "performer": {
+              "@type": "Organization",
+              "name": "Georgia Lottery Corporation",
+              "url": "https://www.galottery.com"
+            },
+            "organizer": {
+              "@type": "Organization",
+              "name": "Georgia Lottery Corporation",
+              "url": "https://www.galottery.com"
+            }
+          }]
+        }
+        </script>
+        """
+        row = scraper.parse_enloteria_result_jsonld_for_dates(
+            html,
+            lottery_id="45",
+            lottery_name="Georgia Tarde",
+            target_dates=["18-09-2026"],
+        )
+        self.assertEqual(row["operator_name"], "Georgia Lottery Corporation")
+        self.assertEqual(row["operator_url"], "https://www.galottery.com")
+        self.assertEqual(row["operator_source_field"], "performer")
 
 
 if __name__ == "__main__":

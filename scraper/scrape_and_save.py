@@ -76,6 +76,7 @@ TRACKED_REMOTE_RESULT_IDS = {
     "1", "2", "3", "4", "5", "6", "7", "8", "9", "10",
     "11", "12", "13", "14", "15", "16", "17",
     "18",  # New York Noche often completes after the first daily cache write.
+    "47",  # Real Noche (separate 8:00 PM draw identity).
     "23", "24",  # King Lottery
     "25", "26",  # New Jersey normal draws
     "27", "28", "29", "30", "31", "32", "33", "34", "35", "36",
@@ -275,6 +276,7 @@ LOTTERY_MAP = {
     "la suerte 12:30":       {"id": "3",  "name": "La Suerte 12:30"},
     "anguila medio día":     {"id": "4",  "name": "Anguila Mediodía"},
     "quiniela real":         {"id": "5",  "name": "Quiniela Real"},
+    "real noche":             {"id": "47", "name": "Real Noche"},
     "florida día":           {"id": "6",  "name": "Florida Día"},
     "quiniela lotedom":      {"id": "7",  "name": "Quiniela LoteDom"},
     "new york tarde":        {"id": "8",  "name": "New York Tarde"},
@@ -369,7 +371,79 @@ ENLOTERIA_RESULT_SOURCES = [
     {"url": "https://enloteria.com/resultados-florida-noche", "id": "17", "name": "Florida Noche"},
     {"url": "https://enloteria.com/resultados-new-jersey-tarde", "id": "25", "name": "New Jersey Tarde"},
     {"url": "https://enloteria.com/resultados-new-jersey-noche", "id": "26", "name": "New Jersey Noche"},
+    {"url": "https://enloteria.com/resultados-real-noche", "id": "47", "name": "Real Noche", "source_name": "Real Noche"},
 ]
+
+# EnLoteria exposes the operator behind each Event in JSON-LD through
+# performer/organizer.  Keep this allow-list explicit: the aggregator remains
+# the primary collector, but a result may only be corroborated against the
+# operator expected for its catalog id.  Do not infer an operator from a
+# lottery name or accept an arbitrary URL from page content.
+OFFICIAL_OPERATOR_SOURCES = {
+    "1": {"name": "La Primera", "url": "https://laprimera.do/", "hosts": {"laprimera.do"}},
+    "16": {"name": "La Primera", "url": "https://laprimera.do/", "hosts": {"laprimera.do"}},
+    "2": {"name": "Anguilla Lottery", "url": "https://anguillalottery.ai/", "hosts": {"anguillalottery.ai"}},
+    "4": {"name": "Anguilla Lottery", "url": "https://anguillalottery.ai/", "hosts": {"anguillalottery.ai"}},
+    "11": {"name": "Anguilla Lottery", "url": "https://anguillalottery.ai/", "hosts": {"anguillalottery.ai"}},
+    "14": {"name": "Anguilla Lottery", "url": "https://anguillalottery.ai/", "hosts": {"anguillalottery.ai"}},
+    "29": {"name": "Anguilla Lottery", "url": "https://anguillalottery.ai/", "hosts": {"anguillalottery.ai"}},
+    "30": {"name": "Anguilla Lottery", "url": "https://anguillalottery.ai/", "hosts": {"anguillalottery.ai"}},
+    "31": {"name": "Anguilla Lottery", "url": "https://anguillalottery.ai/", "hosts": {"anguillalottery.ai"}},
+    "32": {"name": "Anguilla Lottery", "url": "https://anguillalottery.ai/", "hosts": {"anguillalottery.ai"}},
+    "33": {"name": "Anguilla Lottery", "url": "https://anguillalottery.ai/", "hosts": {"anguillalottery.ai"}},
+    "34": {"name": "Anguilla Lottery", "url": "https://anguillalottery.ai/", "hosts": {"anguillalottery.ai"}},
+    "35": {"name": "Anguilla Lottery", "url": "https://anguillalottery.ai/", "hosts": {"anguillalottery.ai"}},
+    "36": {"name": "Anguilla Lottery", "url": "https://anguillalottery.ai/", "hosts": {"anguillalottery.ai"}},
+    "37": {"name": "Anguilla Lottery", "url": "https://anguillalottery.ai/", "hosts": {"anguillalottery.ai"}},
+    "38": {"name": "Anguilla Lottery", "url": "https://anguillalottery.ai/", "hosts": {"anguillalottery.ai"}},
+    "39": {"name": "Anguilla Lottery", "url": "https://anguillalottery.ai/", "hosts": {"anguillalottery.ai"}},
+    "3": {"name": "La Suerte Dominicana", "url": "https://lasuertedominicana.do/", "hosts": {"lasuertedominicana.do"}},
+    "10": {"name": "La Suerte Dominicana", "url": "https://lasuertedominicana.do/", "hosts": {"lasuertedominicana.do"}},
+    "5": {"name": "Loto Real", "url": "https://www.lotoreal.com.do/", "hosts": {"lotoreal.com.do"}},
+    "47": {"name": "Loto Real", "url": "https://www.lotoreal.com.do/", "hosts": {"lotoreal.com.do"}},
+    "6": {"name": "Florida Lottery", "url": "https://www.floridalottery.com/", "hosts": {"floridalottery.com"}},
+    "17": {"name": "Florida Lottery", "url": "https://www.floridalottery.com/", "hosts": {"floridalottery.com"}},
+    "7": {"name": "Lotedom", "url": "https://lotedom.com/", "hosts": {"lotedom.com"}},
+    "8": {"name": "New York Lottery", "url": "https://nylottery.ny.gov/", "hosts": {"nylottery.ny.gov"}},
+    "18": {"name": "New York Lottery", "url": "https://nylottery.ny.gov/", "hosts": {"nylottery.ny.gov"}},
+    "9": {"name": "Lotería Nacional", "url": "https://www.loterianacional.gob.do/", "hosts": {"loterianacional.gob.do"}},
+    "13": {"name": "Lotería Nacional", "url": "https://www.loterianacional.gob.do/", "hosts": {"loterianacional.gob.do"}},
+    "12": {"name": "Loteka", "url": "https://www.loteka.com.do/", "hosts": {"loteka.com.do"}},
+    "15": {"name": "Leidsa", "url": "https://www.leidsa.com/", "hosts": {"leidsa.com"}},
+    "23": {"name": "King Lottery", "url": "https://www.kinglotterysxm.com/", "hosts": {"kinglotterysxm.com"}},
+    "24": {"name": "King Lottery", "url": "https://www.kinglotterysxm.com/", "hosts": {"kinglotterysxm.com"}},
+    "25": {"name": "New Jersey Lottery", "url": "https://www.njlottery.com/", "hosts": {"njlottery.com"}},
+    "26": {"name": "New Jersey Lottery", "url": "https://www.njlottery.com/", "hosts": {"njlottery.com"}},
+    "27": {"name": "Haiti Bolet", "url": "https://haitibolet.net/", "hosts": {"haitibolet.net"}},
+    "28": {"name": "Haiti Bolet", "url": "https://haitibolet.net/", "hosts": {"haitibolet.net"}},
+    "40": {"name": "Haiti Bolet", "url": "https://haitibolet.net/", "hosts": {"haitibolet.net"}},
+    "41": {"name": "Haiti Bolet", "url": "https://haitibolet.net/", "hosts": {"haitibolet.net"}},
+    "42": {"name": "Haiti Bolet", "url": "https://haitibolet.net/", "hosts": {"haitibolet.net"}},
+    "43": {"name": "Haiti Bolet", "url": "https://haitibolet.net/", "hosts": {"haitibolet.net"}},
+    "44": {"name": "Georgia Lottery Corporation", "url": "https://www.galottery.com/", "hosts": {"galottery.com"}},
+    "45": {"name": "Georgia Lottery Corporation", "url": "https://www.galottery.com/", "hosts": {"galottery.com"}},
+    "46": {"name": "Georgia Lottery Corporation", "url": "https://www.galottery.com/", "hosts": {"galottery.com"}},
+}
+
+
+def official_operator_for_id(lottery_id):
+    return OFFICIAL_OPERATOR_SOURCES.get(str(lottery_id).strip())
+
+
+def _jsonld_operator_metadata(node):
+    """Return operator metadata declared by an EnLoteria Event node."""
+    candidates = []
+    for field in ("performer", "organizer"):
+        value = node.get(field) if isinstance(node, dict) else None
+        values = value if isinstance(value, list) else [value]
+        for item in values:
+            if not isinstance(item, dict):
+                continue
+            url = str(item.get("url") or "").strip()
+            name = str(item.get("name") or "").strip()
+            if url:
+                candidates.append({"name": name, "url": url, "field": field})
+    return candidates[0] if candidates else None
 
 ENLOTERIA_HAITI_BOLET_SOURCES = [
     source for source in ENLOTERIA_RESULT_SOURCES
@@ -418,7 +492,6 @@ def is_verified_normal_result_row(row, expected_date=None):
             "enloteria.com",
             "enloteria-general",
             "enloteria-draw",
-            "loteriadela1.com",
         )
     )
 
@@ -1962,12 +2035,18 @@ def parse_enloteria_result_jsonld_for_dates(html_text, lottery_id, lottery_name,
             numbers = parse_winning_numbers_from_text(node.get("description"))
             if len(numbers) != 3:
                 continue
-            return {
+            row = {
                 "id": lottery_id,
                 "name": lottery_name,
                 "date": result_date,
                 "number": "-".join(numbers),
             }
+            operator = _jsonld_operator_metadata(node)
+            if operator:
+                row["operator_name"] = operator["name"]
+                row["operator_url"] = operator["url"]
+                row["operator_source_field"] = operator["field"]
+            return row
     return parse_enloteria_result_dom_for_dates(
         html_text,
         lottery_id=lottery_id,
@@ -2016,6 +2095,11 @@ def parse_enloteria_general_jsonld_for_dates(html_text, target_dates, wanted_ids
                 "date": result_date,
                 "number": "-".join(numbers),
             }
+            operator = _jsonld_operator_metadata(node)
+            if operator:
+                row["operator_name"] = operator["name"]
+                row["operator_url"] = operator["url"]
+                row["operator_source_field"] = operator["field"]
             results.append(row)
             seen_ids.add(mapped["id"])
     return results
@@ -3435,11 +3519,12 @@ async def _async_fetch_loterias_dominicanas_results(date_str, wanted_ids=None, c
 
     remaining = wanted - seen_ids if wanted else set()
     if remaining:
-        fallback_rows = await _async_fetch_loteriadela1_results(
-            date_str, wanted_ids=remaining, client=c
+        logger.warning(
+            "Official corroboration pending for %s lottery ids on %s; "
+            "the unverified loteriadela1.com fallback is disabled",
+            sorted(remaining),
+            date_str,
         )
-        for row in fallback_rows:
-            append_verified_normal_result(results, seen_ids, row, date_str, "loteriadela1.com")
 
     return sorted(results, key=result_sort_key)
 
@@ -3480,17 +3565,16 @@ async def _async_scrape_missing_rd_results(date_str, missing_ids, client=None):
                 results, seen_ids, row, date_str, source="enloteria-draw"
             )
 
-    # Historical backfill: use the tested JSON export only for IDs that both
-    # EnLoteria paths could not provide. Never replace an accepted row.
+    # Do not backfill from an unverified aggregator. Missing rows remain
+    # pending until the mapped operator source corroborates them.
     still_missing = wanted - seen_ids
     if still_missing:
-        fallback_rows = await _async_fetch_loteriadela1_results(
-            date_str, wanted_ids=still_missing, client=c
+        logger.warning(
+            "Backfill pending official corroboration for %s on %s; "
+            "loteriadela1.com is intentionally disabled",
+            sorted(still_missing),
+            date_str,
         )
-        for row in fallback_rows:
-            append_verified_normal_result(
-                results, seen_ids, row, date_str, source="loteriadela1.com"
-            )
 
     still_missing = wanted - seen_ids
     for row in build_king_no_draw_rows(date_str, seen_ids):
@@ -3526,13 +3610,12 @@ async def _async_scrape(date_str=None, client=None):
         str(match["id"]) for match in LOTTERY_MAP.values()
     } - seen_ids
     if missing_ids:
-        fallback_rows = await _async_fetch_loteriadela1_results(
-            date_str, wanted_ids=missing_ids, client=c
+        logger.warning(
+            "Official corroboration pending for %s on %s; "
+            "loteriadela1.com fallback is disabled",
+            sorted(missing_ids),
+            date_str,
         )
-        for row in fallback_rows:
-            append_verified_normal_result(
-                results, seen_ids, row, date_str, source="loteriadela1.com"
-            )
 
     for row in build_king_no_draw_rows(date_str, seen_ids):
         results.append(row)
