@@ -901,6 +901,83 @@ async def async_save_result_draws_payload(date_str, rows, source, client=None):
     return resp
 
 
+def result_reconcile_scope(row, source):
+    lottery_id = str((row or {}).get("id") or "").strip()
+    if not lottery_id:
+        return None
+    game = str((row or {}).get("game") or "").strip().lower()
+    if source == "lottery":
+        game = "normal"
+    if game not in {"normal", "pick3", "pick4"}:
+        return None
+    status = str((row or {}).get("status") or "").strip().lower()
+    number = str((row or {}).get("number") or "").strip()
+    if status != "published" or not number:
+        return None
+    return lottery_id, game
+
+
+def result_rows_changed_since(existing_rows, candidate_rows):
+    existing_by_id = {
+        str(row.get("id") or "").strip(): row
+        for row in (existing_rows or [])
+        if str(row.get("id") or "").strip()
+    }
+    changed = []
+    for row in candidate_rows or []:
+        row_id = str(row.get("id") or "").strip()
+        previous = existing_by_id.get(row_id) or {}
+        if not previous or (
+            str(previous.get("number") or "") != str(row.get("number") or "")
+            or str(previous.get("status") or "").lower() != str(row.get("status") or "").lower()
+        ):
+            changed.append(row)
+    return changed
+
+
+async def async_dispatch_result_reconcile_scopes(date_str, rows, source, client=None):
+    """Wake only the ticket work that belongs to each newly published draw."""
+    c = client or get_http_client()
+    scopes = sorted({
+        scope for scope in (result_reconcile_scope(row, source) for row in (rows or []))
+        if scope is not None
+    })
+    for lottery_id, game in scopes:
+        try:
+            response = await async_supabase_rest_post(
+                f"{SUPABASE_URL}/rest/v1/rpc/lotterynet_process_result_reconcile_job_scope",
+                payload=json.dumps({
+                    "p_result_day_key": date_str,
+                    "p_lottery_legacy_id": lottery_id,
+                    "p_game": game,
+                    "p_ticket_limit": 150,
+                }).encode("utf-8"),
+                headers=supabase_write_headers(extra={
+                    "Content-Type": "application/json",
+                    "Prefer": "return=representation",
+                }),
+                client=c,
+                label=f"Supabase reconcile dispatch {date_str}/{lottery_id}/{game}",
+            )
+            logger.info(
+                "Dispatched result reconciliation for %s/%s/%s -> HTTP %s",
+                date_str,
+                lottery_id,
+                game,
+                response.status_code,
+            )
+        except (httpx.HTTPError, httpx.TimeoutException) as exc:
+            # Saving an authoritative result must succeed independently of a
+            # transient reconciler outage. The pending scoped job is preserved.
+            logger.warning(
+                "Result reconciliation dispatch deferred for %s/%s/%s: %s",
+                date_str,
+                lottery_id,
+                game,
+                exc,
+            )
+
+
 def parse_miloteria_date(raw):
     text = str(raw or "").strip()
     if not text:
@@ -3979,10 +4056,17 @@ async def _async_save_us_picks_to_supabase(date_str, rows, client=None):
     existing = prune_stale_us_pick_rows_when_catalog_is_complete(existing, rows)
     merged_rows = merge_us_pick_results_by_id(existing, rows, observed_at=utc_now_iso())
     merged_rows = sanitize_unreleased_nj_pick_rows(merged_rows, date_str)
+    changed_rows = result_rows_changed_since(existing, merged_rows)
     try:
         await async_save_result_draws_payload(
             date_str,
             merged_rows,
+            "pick",
+            client=c,
+        )
+        await async_dispatch_result_reconcile_scopes(
+            date_str,
+            changed_rows,
             "pick",
             client=c,
         )
@@ -4163,6 +4247,12 @@ async def _async_save_to_supabase(date_str, results, prune_missing_ids=None, cli
 
     try:
         await _async_save_native_results_table(date_str, rows_to_save, client=c)
+        await async_dispatch_result_reconcile_scopes(
+            date_str,
+            rows_to_save,
+            "lottery",
+            client=c,
+        )
     except httpx.HTTPStatusError as e:
         logger.error("Supabase error %s: %s", e.response.status_code, e.response.text)
         raise

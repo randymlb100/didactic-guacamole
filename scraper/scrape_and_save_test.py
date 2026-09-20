@@ -2025,5 +2025,39 @@ class ScraperContractsTest(unittest.TestCase):
         self.assertEqual(row["operator_source_field"], "performer")
 
 
+    def test_result_reconcile_scope_dispatches_only_published_supported_draws(self):
+        self.assertEqual(
+            ("13", "normal"),
+            scraper.result_reconcile_scope(
+                {"id": "13", "number": "52-37-68", "status": "published"},
+                "lottery",
+            ),
+        )
+        self.assertEqual(
+            ("US-P3-TEST", "pick3"),
+            scraper.result_reconcile_scope(
+                {"id": "US-P3-TEST", "game": "pick3", "number": "1-2-3", "status": "published"},
+                "pick",
+            ),
+        )
+        self.assertIsNone(scraper.result_reconcile_scope(
+            {"id": "13", "number": "", "status": "pending"}, "lottery",
+        ))
+        self.assertIsNone(scraper.result_reconcile_scope(
+            {"id": "13", "game": "sports", "number": "1", "status": "published"}, "pick",
+        ))
+
+    def test_changed_result_rows_excludes_unchanged_draws(self):
+        existing = [
+            {"id": "13", "number": "52-37-68", "status": "published"},
+            {"id": "9", "number": "12-41-20", "status": "published"},
+        ]
+        candidates = [
+            {"id": "13", "number": "52-37-68", "status": "published"},
+            {"id": "24", "number": "11-22-33", "status": "published"},
+        ]
+        self.assertEqual([candidates[1]], scraper.result_rows_changed_since(existing, candidates))
+
+
 if __name__ == "__main__":
     unittest.main()
