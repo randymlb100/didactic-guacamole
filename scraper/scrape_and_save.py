@@ -935,16 +935,11 @@ def result_rows_changed_since(existing_rows, candidate_rows):
     return changed
 
 
-async def async_dispatch_result_reconcile_scopes(date_str, rows, source, client=None):
-    """Wake only the ticket work that belongs to each newly published draw."""
+async def async_dispatch_result_reconcile_scope(date_str, lottery_id, game, client=None):
+    """Wake exactly one published-result scope without scanning unrelated tickets."""
     c = client or get_http_client()
-    scopes = sorted({
-        scope for scope in (result_reconcile_scope(row, source) for row in (rows or []))
-        if scope is not None
-    })
-    for lottery_id, game in scopes:
-        try:
-            response = await async_supabase_rest_post(
+    try:
+        response = await async_supabase_rest_post(
                 f"{SUPABASE_URL}/rest/v1/rpc/lotterynet_process_result_reconcile_job_scope",
                 payload=json.dumps({
                     "p_result_day_key": date_str,
@@ -956,26 +951,64 @@ async def async_dispatch_result_reconcile_scopes(date_str, rows, source, client=
                     "Content-Type": "application/json",
                     "Prefer": "return=representation",
                 }),
-                client=c,
-                label=f"Supabase reconcile dispatch {date_str}/{lottery_id}/{game}",
-            )
-            logger.info(
-                "Dispatched result reconciliation for %s/%s/%s -> HTTP %s",
-                date_str,
-                lottery_id,
-                game,
-                response.status_code,
-            )
-        except (httpx.HTTPError, httpx.TimeoutException) as exc:
-            # Saving an authoritative result must succeed independently of a
-            # transient reconciler outage. The pending scoped job is preserved.
-            logger.warning(
-                "Result reconciliation dispatch deferred for %s/%s/%s: %s",
-                date_str,
-                lottery_id,
-                game,
-                exc,
-            )
+            client=c,
+            label=f"Supabase reconcile dispatch {date_str}/{lottery_id}/{game}",
+        )
+        logger.info(
+            "Dispatched result reconciliation for %s/%s/%s -> HTTP %s",
+            date_str,
+            lottery_id,
+            game,
+            response.status_code,
+        )
+    except (httpx.HTTPError, httpx.TimeoutException) as exc:
+        # Saving an authoritative result must succeed independently of a
+        # transient reconciler outage. The pending scoped job is preserved.
+        logger.warning(
+            "Result reconciliation dispatch deferred for %s/%s/%s: %s",
+            date_str,
+            lottery_id,
+            game,
+            exc,
+        )
+
+
+async def async_dispatch_result_reconcile_scopes(date_str, rows, source, client=None):
+    """Wake only the ticket work that belongs to each newly published draw."""
+    scopes = sorted({
+        scope for scope in (result_reconcile_scope(row, source) for row in (rows or []))
+        if scope is not None
+    })
+    for lottery_id, game in scopes:
+        await async_dispatch_result_reconcile_scope(date_str, lottery_id, game, client=client)
+
+
+async def async_recover_pending_reconcile_scopes(client=None):
+    """Retry only pending published-result scopes that still have active tickets."""
+    c = client or get_http_client()
+    try:
+        response = await async_supabase_rest_post(
+            f"{SUPABASE_URL}/rest/v1/rpc/lotterynet_pending_reconcile_scopes_with_active_tickets",
+            payload=json.dumps({"p_limit": 12}).encode("utf-8"),
+            headers=supabase_write_headers(extra={
+                "Content-Type": "application/json",
+                "Prefer": "return=representation",
+            }),
+            client=c,
+            label="Supabase pending reconcile scope lookup",
+        )
+        scopes = response.json() or []
+    except (httpx.HTTPError, httpx.TimeoutException, ValueError) as exc:
+        logger.warning("Pending result reconciliation lookup deferred: %s", exc)
+        return
+
+    for scope in scopes:
+        await async_dispatch_result_reconcile_scope(
+            str(scope.get("result_day_key") or ""),
+            str(scope.get("lottery_legacy_id") or ""),
+            str(scope.get("game") or ""),
+            client=c,
+        )
 
 
 def parse_miloteria_date(raw):
@@ -4385,6 +4418,12 @@ async def _async_main():
                 logger.warning("Continuing after Pick Supabase save error for %s; health check will verify cache: %s", target_date, e)
         else:
             logger.info("No US Pick results found for %s — skipping pick save", target_date)
+
+    # A published result can be saved while its one-time dispatch is interrupted.
+    # Recover only pending scopes that actually have an active ticket; never sweep
+    # every ticket or reprocess a completed draw.
+    if SUPABASE_KEY:
+        await async_recover_pending_reconcile_scopes(client=client)
 
     await close_http_client()
 
