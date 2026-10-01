@@ -77,6 +77,7 @@ TRACKED_REMOTE_RESULT_IDS = {
     "11", "12", "13", "14", "15", "16", "17",
     "18",  # New York Noche often completes after the first daily cache write.
     "47",  # Real Noche (separate 8:00 PM draw identity).
+    "48",  # Loteka Tarde (separate 1:30 PM draw identity).
     "23", "24",  # King Lottery
     "25", "26",  # New Jersey normal draws
     "27", "28", "29", "30", "31", "32", "33", "34", "35", "36",
@@ -284,6 +285,7 @@ LOTTERY_MAP = {
     "la suerte 18:00":       {"id": "10", "name": "La Suerte Tarde"},
     "anguila tarde":         {"id": "11", "name": "Anguila Tarde"},
     "quiniela loteka":       {"id": "12", "name": "Quiniela Loteka"},
+    "loteka tarde":           {"id": "48", "name": "Loteka Tarde"},
     "lotería nacional":      {"id": "13", "name": "Lotería Nacional"},
     "anguila noche":         {"id": "14", "name": "Anguila Noche"},
     "quiniela leidsa":       {"id": "15", "name": "Quiniela Leidsa"},
@@ -333,6 +335,7 @@ ENLOTERIA_RESULT_SOURCES = [
     {"url": "https://enloteria.com/resultados-florida-tarde", "id": "6", "name": "Florida Día", "source_name": "Florida Tarde"},
     {"url": "https://enloteria.com/resultados-la-suerte-6pm", "id": "10", "name": "La Suerte Tarde", "source_name": "La Suerte 6PM"},
     {"url": "https://enloteria.com/resultados-loteka", "id": "12", "name": "Quiniela Loteka", "source_name": "Loteka"},
+    {"url": "https://enloteria.com/resultados-loteka-tarde", "id": "48", "name": "Loteka Tarde", "source_name": "Loteka Tarde"},
     {"url": "https://enloteria.com/resultados-nacional-noche", "id": "13", "name": "Lotería Nacional", "source_name": "Nacional Noche"},
     {"url": "https://enloteria.com/resultados-la-primera-noche", "id": "16", "name": "Primera Noche", "source_name": "La Primera Noche"},
     {"url": "https://enloteria.com/resultados-new-york-noche", "id": "18", "name": "New York Noche", "source_name": "New York Noche"},
@@ -409,6 +412,10 @@ OFFICIAL_OPERATOR_SOURCES = {
     "9": {"name": "Lotería Nacional", "url": "https://www.loterianacional.gob.do/", "hosts": {"loterianacional.gob.do"}},
     "13": {"name": "Lotería Nacional", "url": "https://www.loterianacional.gob.do/", "hosts": {"loterianacional.gob.do"}},
     "12": {"name": "Loteka", "url": "https://www.loteka.com.do/", "hosts": {"loteka.com.do"}},
+    # Loteka Tarde is listed separately so official corroboration cannot be
+    # confused with the 7:55 PM Loteka draw. The operator page currently does
+    # not expose a verifiable 1:30 PM result, so checks remain pending.
+    "48": {"name": "Loteka", "url": "https://www.loteka.com.do/", "hosts": {"loteka.com.do"}},
     "15": {"name": "Leidsa", "url": "https://www.leidsa.com/", "hosts": {"leidsa.com"}},
     "23": {"name": "King Lottery", "url": "https://www.kinglotterysxm.com/", "hosts": {"kinglotterysxm.com"}},
     "24": {"name": "King Lottery", "url": "https://www.kinglotterysxm.com/", "hosts": {"kinglotterysxm.com"}},
