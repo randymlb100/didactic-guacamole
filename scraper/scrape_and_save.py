@@ -4089,10 +4089,14 @@ def prune_stale_us_pick_rows_when_catalog_is_complete(existing, incoming, catalo
     return existing
 
 
-async def _async_save_us_picks_to_supabase(date_str, rows, client=None):
+async def _async_save_us_picks_to_supabase(date_str, rows, client=None, existing_rows=None):
     c = client or get_http_client()
     rows = suppress_early_us_pick_results(date_str, rows)
-    existing = await _async_fetch_existing_pick_results_from_supabase(date_str, client=c)
+    # Reuse only this run's snapshot. Standalone saves still fetch fresh data;
+    # the database RPC remains responsible for concurrent/publication guards.
+    existing = existing_rows
+    if existing is None:
+        existing = await _async_fetch_existing_pick_results_from_supabase(date_str, client=c)
     existing = prune_stale_us_pick_rows_when_catalog_is_complete(existing, rows)
     merged_rows = merge_us_pick_results_by_id(existing, rows, observed_at=utc_now_iso())
     merged_rows = sanitize_unreleased_nj_pick_rows(merged_rows, date_str)
@@ -4328,11 +4332,13 @@ async def _async_main():
 
         existing_results = []
         existing_pick_results = []
+        pick_snapshot_loaded = False
         if not save_required:
             existing_results, existing_pick_results = await asyncio.gather(
                 _async_fetch_existing_from_supabase(target_date, client=client),
                 _async_fetch_existing_pick_results_from_supabase(target_date, client=client),
             )
+            pick_snapshot_loaded = True
             if not non_current_backfill_should_run(existing_results, existing_pick_results):
                 logger.info("Backfill %s already complete — skipping scrape and save", target_date)
                 continue
@@ -4348,6 +4354,7 @@ async def _async_main():
             should_scrape_picks = True
             if target_date == current_date and not explicit_dates:
                 existing_pick_results = await _async_fetch_existing_pick_results_from_supabase(target_date, client=client)
+                pick_snapshot_loaded = True
                 if should_run_full_us_pick_sweep():
                     logger.info("Running hourly full US Pick sweep for %s", target_date)
                 else:
@@ -4418,7 +4425,10 @@ async def _async_main():
                 logger.info("Backfill %s Pick rows unchanged — skipping save", target_date)
                 continue
             try:
-                await _async_save_us_picks_to_supabase(target_date, pick_results, client=client)
+                await _async_save_us_picks_to_supabase(
+                    target_date, pick_results, client=client,
+                    existing_rows=existing_pick_results if pick_snapshot_loaded else None,
+                )
             except (httpx.HTTPError, httpx.TimeoutException) as e:
                 if not should_continue_after_supabase_save_error(save_required, explicit_dates):
                     raise
