@@ -1440,7 +1440,7 @@ class ScraperContractsTest(unittest.TestCase):
         self.assertEqual(1, len(rows))
         self.assertEqual("2-1-0-4", rows[0]["number"])
 
-    def test_scrape_us_picks_with_catalog_skips_slow_pick_domains(self):
+    def test_scrape_us_picks_with_catalog_uses_pick_history_instead_of_lotteryusa(self):
         catalog = [{
             "id": "US-P4-FL-PICK-4-EVENING",
             "state": "Florida",
@@ -1449,7 +1449,7 @@ class ScraperContractsTest(unittest.TestCase):
             "gameName": "Pick 4",
             "draw": "Evening Draw",
         }]
-        lotteryusa_rows = [{
+        history_rows = [{
             "id": "US-P4-FL-PICK-4-EVENING",
             "state": "Florida",
             "stateCode": "FL",
@@ -1458,19 +1458,18 @@ class ScraperContractsTest(unittest.TestCase):
             "draw": "Evening Draw",
             "date": "14-05-2026",
             "number": "2-8-4-4",
-            "source": "lotteryusa.com",
+            "source": "pick-4.com",
         }]
 
-        async def fake_catalog(date_str, catalog_rows, client=None):
-            return lotteryusa_rows
-
-        with patch.object(scraper, "_async_fetch_lotteryusa_pick_catalog_rows", side_effect=fake_catalog), \
-            patch.object(scraper, "_async_fetch_us_pick_overview") as overview:
+        with patch.object(scraper, "_async_fetch_us_pick_overview", AsyncMock(return_value=catalog)), \
+            patch.object(scraper, "_async_fetch_us_pick_state_history", AsyncMock(return_value=history_rows)), \
+            patch.object(scraper, "_async_fetch_new_jersey_pick_home", AsyncMock(return_value=[])), \
+            patch.object(scraper, "_async_fetch_lotteryusa_pick_catalog_rows", AsyncMock(side_effect=AssertionError("LotteryUSA must not be called"))):
             rows = scraper.scrape_us_picks("14-05-2026", games=("pick4",), existing_rows=catalog)
 
         self.assertEqual(1, len(rows))
         self.assertEqual("2-8-4-4", rows[0]["number"])
-        overview.assert_not_called()
+        self.assertEqual("pick-4.com", rows[0]["source"])
 
     def test_merge_us_pick_results_preserves_existing_published_over_new_pending(self):
         existing = [{
@@ -1591,8 +1590,7 @@ class ScraperContractsTest(unittest.TestCase):
             "draw": "Day Draw",
         }]
 
-        with patch.object(scraper, "_async_fetch_lotteryusa_pick_catalog_rows", AsyncMock(return_value=refreshed)), \
-                patch.object(scraper, "_async_fetch_lotteryusa_pick_fallbacks", AsyncMock(return_value=[])):
+        with patch.object(scraper, "_async_fetch_working_us_pick_history", AsyncMock(return_value=refreshed)):
             rows = scraper.sync_run(scraper._async_refresh_missing_us_pick_results("18-05-2026", existing))
 
         by_id = {row["id"]: row for row in rows}
@@ -1618,8 +1616,7 @@ class ScraperContractsTest(unittest.TestCase):
             "draw": "Draw",
         }]
 
-        with patch.object(scraper, "_async_fetch_lotteryusa_pick_catalog_rows", AsyncMock(return_value=refreshed)), \
-                patch.object(scraper, "_async_fetch_lotteryusa_pick_fallbacks", AsyncMock(return_value=[])):
+        with patch.object(scraper, "_async_fetch_working_us_pick_history", AsyncMock(return_value=refreshed)):
             rows = scraper.sync_run(scraper._async_refresh_missing_us_pick_results("18-05-2026", existing))
 
         self.assertEqual(["US-P3-AZ-PICK-3-DRAW"], [row["id"] for row in rows])
@@ -1639,29 +1636,16 @@ class ScraperContractsTest(unittest.TestCase):
             "playTypes": ["straight", "box"],
             "source": "pick-3.com",
         }]
-        fallback_rows = [{
-            "id": "US-P3-AZ-PICK-3-DRAW",
-            "name": "Arizona Pick 3",
-            "date": "15-05-2026",
-            "number": "3-7-3",
-            "status": "published",
-        }]
-
         with patch.object(scraper, "_async_fetch_us_pick_overview", AsyncMock(return_value=overview_rows)), \
                 patch.object(scraper, "static_us_pick_catalog_rows", return_value=[]), \
                 patch.object(scraper, "_async_fetch_us_pick_state_history", AsyncMock(return_value=[])), \
                 patch.object(scraper, "_async_fetch_new_jersey_pick_home", AsyncMock(return_value=[])), \
-                patch.object(scraper, "_async_fetch_nj_picks_lotteryusa", AsyncMock(return_value=[])), \
-                patch.object(scraper, "_async_fetch_lotteryusa_pick_fallbacks", AsyncMock(return_value=fallback_rows)), \
-                patch.object(scraper, "_async_fetch_wa_match4", AsyncMock(return_value=[])):
+                patch.object(scraper, "_async_fetch_lotteryusa_pick_fallbacks", AsyncMock(side_effect=AssertionError("LotteryUSA fallback must not be used"))):
             rows = scraper.sync_run(scraper._async_scrape_us_picks("15-05-2026", games=("pick3",)))
 
-        self.assertEqual(1, len(rows))
-        self.assertEqual("US-P3-AZ-PICK-3-DRAW", rows[0]["id"])
-        self.assertEqual("15-05-2026", rows[0]["date"])
-        self.assertEqual("3-7-3", rows[0]["number"])
+        self.assertEqual([], rows)
 
-    def test_async_scrape_us_picks_uses_lotteryusa_fallback_for_missing_pick(self):
+    def test_async_scrape_us_picks_leaves_unmatched_draw_unpublished(self):
         overview_rows = [{
             "id": "US-P4-FL-PICK-4-EVENING",
             "state": "Florida",
@@ -1675,59 +1659,24 @@ class ScraperContractsTest(unittest.TestCase):
             "playTypes": ["straight", "box"],
             "source": "pick-4.com",
         }]
-        fallback_rows = [{
-            "id": "US-P4-FL-PICK-4-EVENING",
-            "name": "Florida Pick 4 Evening",
-            "date": "14-05-2026",
-            "number": "2-8-4-4",
-        }]
-
         with patch.object(scraper, "_async_fetch_us_pick_overview", AsyncMock(return_value=overview_rows)), \
                 patch.object(scraper, "static_us_pick_catalog_rows", return_value=[]), \
                 patch.object(scraper, "_async_fetch_us_pick_state_history", AsyncMock(return_value=[])), \
                 patch.object(scraper, "_async_fetch_new_jersey_pick_home", AsyncMock(return_value=[])), \
-                patch.object(scraper, "_async_fetch_nj_picks_lotteryusa", AsyncMock(return_value=[])), \
-                patch.object(scraper, "_async_fetch_lotteryusa_pick_fallbacks", AsyncMock(return_value=fallback_rows)), \
-                patch.object(scraper, "_async_fetch_wa_match4", AsyncMock(return_value=[])):
+                patch.object(scraper, "_async_fetch_lotteryusa_pick_fallbacks", AsyncMock(side_effect=AssertionError("same-domain fallback must not be called"))):
             rows = scraper.sync_run(scraper._async_scrape_us_picks("14-05-2026", games=("pick4",)))
 
-        self.assertEqual(1, len(rows))
-        self.assertEqual("2-8-4-4", rows[0]["number"])
-        self.assertEqual("14-05-2026", rows[0]["date"])
+        self.assertEqual([], rows)
 
-    def test_async_scrape_us_picks_uses_nj_lotteryusa_backup(self):
-        overview_rows = [{
-            "id": "20",
-            "state": "New Jersey",
-            "stateCode": "NJ",
-            "game": "pick3",
-            "gameName": "Pick 3",
-            "draw": "Evening Draw",
-            "date": "",
-            "number": "",
-            "status": "pending",
-            "playTypes": ["straight", "box"],
-            "source": "pick-3.com",
-        }]
-        nj_rows = [{
-            "id": "20",
-            "name": "NJ Pick 3 Noche",
-            "date": "14-05-2026",
-            "number": "7-6-4",
-        }]
-
-        with patch.object(scraper, "_async_fetch_us_pick_overview", AsyncMock(return_value=overview_rows)), \
-                patch.object(scraper, "static_us_pick_catalog_rows", return_value=[]), \
-                patch.object(scraper, "_async_fetch_us_pick_state_history", AsyncMock(return_value=[])), \
-                patch.object(scraper, "_async_fetch_new_jersey_pick_home", AsyncMock(return_value=[])), \
-                patch.object(scraper, "_async_fetch_nj_picks_lotteryusa", AsyncMock(return_value=nj_rows)), \
-                patch.object(scraper, "_async_fetch_lotteryusa_pick_fallbacks", AsyncMock(return_value=[])), \
-                patch.object(scraper, "_async_fetch_wa_match4", AsyncMock(return_value=[])):
-            rows = scraper.sync_run(scraper._async_scrape_us_picks("14-05-2026", games=("pick3",)))
-
-        self.assertEqual(1, len(rows))
-        self.assertEqual("7-6-4", rows[0]["number"])
-        self.assertEqual("14-05-2026", rows[0]["date"])
+    def test_nj_pick_legacy_rows_use_validated_pick_provider(self):
+        provider_rows = [
+            {"id": "US-P3-NJ-PICK-3-EVENING", "game": "pick3", "draw": "Evening Draw", "date": "14-05-2026", "number": "7-6-4"},
+            {"id": "US-P4-NJ-PICK-4-MIDDAY", "game": "pick4", "draw": "Midday Draw", "date": "14-05-2026", "number": "1-2-3-4"},
+        ]
+        with patch.object(scraper, "_async_fetch_new_jersey_pick_home", AsyncMock(side_effect=[provider_rows[:1], provider_rows[1:]])):
+            rows = scraper.sync_run(scraper._async_fetch_nj_pick_history("14-05-2026"))
+        self.assertEqual(["20", "21"], [row["id"] for row in rows])
+        self.assertEqual(["7-6-4", "1-2-3-4"], [row["number"] for row in rows])
 
     def test_supabase_rest_post_retries_statement_timeout(self):
         class FakeClient:

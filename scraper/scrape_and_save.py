@@ -1782,6 +1782,59 @@ def fetch_us_pick_overview(game):
     return sync_run(_async_fetch_us_pick_overview(game))
 
 
+async def _async_fetch_working_us_pick_history(target_date, game, catalog_rows, client=None):
+    """Fetch Pick results from the validated pick-3.com/pick-4.com history pages."""
+    normalized_game = normalize_us_pick_game(game)
+    c = client or get_http_client()
+    allowed_ids = {
+        US_PICK_LEGACY_RESULT_ID_ALIASES.get(str(row.get("id") or "").strip(), str(row.get("id") or "").strip())
+        for row in catalog_rows if row.get("id")
+    }
+    overview_rows = await _async_fetch_us_pick_overview(normalized_game, client=c)
+    state_rows = {}
+    for row in overview_rows:
+        state_code = str(row.get("stateCode") or "").strip().upper()
+        game_name = str(row.get("gameName") or "").strip()
+        if state_code:
+            state_rows[(state_code, game_name)] = row
+
+    # NH has a working history host but is not consistently listed on the overview.
+    if normalized_game == "pick3":
+        state_rows.setdefault(("NH", "Pick 3"), {
+            "stateCode": "NH", "state": "New Hampshire", "gameName": "Pick 3",
+        })
+
+    history_groups = await asyncio.gather(*[
+        _async_fetch_us_pick_state_history(
+            normalized_game,
+            row.get("stateCode"),
+            row.get("state"),
+            row.get("gameName"),
+            target_date,
+            client=c,
+        )
+        for row in state_rows.values()
+    ])
+    rows_by_id = {}
+    for history_rows in history_groups:
+        for row in history_rows:
+            result_id = str(row.get("id") or "").strip()
+            if row.get("date") == target_date and result_id in allowed_ids and row.get("number"):
+                enriched = enrich_us_pick_result_row(dict(row))
+                enriched["source"] = US_PICK_SOURCE_NAMES[normalized_game]
+                rows_by_id[result_id] = enriched
+
+    # The NJ landing pages are on the same tested Pick provider and cover cases
+    # where its state-history route is temporarily incomplete.
+    for row in await _async_fetch_new_jersey_pick_home(normalized_game, client=c):
+        result_id = str(row.get("id") or "").strip()
+        if row.get("date") == target_date and result_id in allowed_ids and row.get("number"):
+            enriched = enrich_us_pick_result_row(dict(row))
+            enriched["source"] = US_PICK_SOURCE_NAMES[normalized_game]
+            rows_by_id[result_id] = enriched
+    return list(rows_by_id.values())
+
+
 async def _async_scrape_us_picks(date_str=None, games=None, existing_rows=None, client=None):
     target_date = date_str or get_dr_date_str()
     c = client or get_http_client()
@@ -1795,152 +1848,17 @@ async def _async_scrape_us_picks(date_str=None, games=None, existing_rows=None, 
     ]
 
     async def _process_game(game):
-        game_rows_by_id = {}
         catalog_rows = [row for row in existing_catalog if catalog_row_game(row) == normalize_us_pick_game(game)]
-        for catalog_row in await _async_fetch_lotteryusa_pick_catalog_rows(target_date, catalog_rows, client=c):
-            game_rows_by_id[catalog_row["id"]] = catalog_row
-        if catalog_rows:
-            missing_catalog_ids = [
-                str(row.get("id", "")).strip()
-                for row in catalog_rows
-                if str(row.get("id", "")).strip() and str(row.get("id", "")).strip() not in game_rows_by_id
-            ]
-            if missing_catalog_ids:
-                for fallback_row in await _async_fetch_lotteryusa_pick_fallbacks(
-                    target_date,
-                    ids=missing_catalog_ids,
-                    client=c,
-                ):
-                    previous = game_rows_by_id.get(fallback_row["id"]) or {}
-                    merged = dict(previous)
-                    merged.update(fallback_row)
-                    merged["source"] = "lotteryusa.com"
-                    game_rows_by_id[fallback_row["id"]] = enrich_us_pick_result_row(merged)
-            return game_rows_by_id
-        overview_rows = await _async_fetch_us_pick_overview(game, client=c)
-        if target_date:
-            history_keys = set()
-            state_rows = {}
-            overview_rows_by_id = {}
-            for row in overview_rows:
-                state_key = (row.get("stateCode"), row.get("gameName"))
-                state_rows[state_key] = row
-                if row.get("id"):
-                    overview_rows_by_id[row["id"]] = row
+        return await _async_fetch_working_us_pick_history(
+            target_date, game, catalog_rows, client=c,
+        )
 
-            # Fetch all state history pages in parallel
-            history_tasks = []
-            for row in state_rows.values():
-                history_tasks.append(
-                    _async_fetch_us_pick_state_history(
-                        game,
-                        row.get("stateCode"),
-                        row.get("state"),
-                        row.get("gameName"),
-                        target_date,
-                        client=c,
-                    )
-                )
-            nj_home_task = _async_fetch_new_jersey_pick_home(game, client=c)
-            nj_lotteryusa_task = _async_fetch_nj_picks_lotteryusa(target_date, client=c)
-            state_history_results, nj_rows, nj_lotteryusa_rows = await asyncio.gather(
-                asyncio.gather(*history_tasks),
-                nj_home_task,
-                nj_lotteryusa_task,
-            )
-
-            for row in state_rows.values():
-                state_key = (row.get("stateCode"), row.get("gameName"))
-
-            for history_rows in state_history_results:
-                for history_row in history_rows:
-                    game_rows_by_id[history_row["id"]] = history_row
-                    # Only mark key when history row matches target date;
-                    # otherwise overview fallback will fill in
-                    if history_row.get("date") == target_date:
-                        key = (history_row.get("stateCode"), history_row.get("gameName"))
-                        if history_row.get("stateCode"):
-                            history_keys.add(key)
-
-            for nj_row in nj_rows:
-                if nj_row.get("date") == target_date:
-                    history_keys.add((nj_row.get("stateCode"), nj_row.get("gameName")))
-                    game_rows_by_id[nj_row["id"]] = nj_row
-
-            for nj_row in nj_lotteryusa_rows:
-                if nj_row.get("date") != target_date:
-                    continue
-                previous = game_rows_by_id.get(nj_row["id"]) or overview_rows_by_id.get(nj_row["id"]) or {}
-                state_code = str(previous.get("stateCode", "")).strip()
-                game_name = str(previous.get("gameName", "")).strip()
-                if state_code:
-                    history_keys.add((state_code, game_name))
-                merged = dict(previous)
-                merged.update(nj_row)
-                game_rows_by_id[nj_row["id"]] = enrich_us_pick_result_row(merged)
-
-            for row in overview_rows:
-                state_key = (row.get("stateCode"), row.get("gameName"))
-                if state_key not in history_keys:
-                    overview_date = str(row.get("date", "")).strip()
-                    if overview_date == target_date:
-                        game_rows_by_id[row["id"]] = row
-                    else:
-                        pending = dict(row)
-                        pending["date"] = target_date
-                        pending["number"] = ""
-                        pending["status"] = "pending"
-                        game_rows_by_id[pending["id"]] = pending
-
-            # Extra states not listed in overview but with working subdomains
-            extra_states = {"pick3": {"NH"}, "pick4": set()}
-            norm_game = normalize_us_pick_game(game)
-            for extra_sc in extra_states.get(norm_game, set()):
-                extra_rows = await _async_fetch_us_pick_state_history(
-                    norm_game, extra_sc, "", "", target_date, client=c,
-                )
-                for er in extra_rows:
-                    if er.get("date") == target_date:
-                        game_rows_by_id[er["id"]] = er
-
-            # WA Match 4 — single evening draw sourced from lotteryusa.com
-            if norm_game == "pick4":
-                for wr in await _async_fetch_wa_match4(target_date, client=c):
-                    game_rows_by_id[wr["id"]] = wr
-
-            missing_ids = sorted(
-                result_id
-                for result_id, row in game_rows_by_id.items()
-                if not str(row.get("number", "")).strip()
-            )
-            if missing_ids or not game_rows_by_id:
-                fallback_ids = missing_ids or [
-                    result_id
-                    for result_id, source in LOTTERYUSA_PICK_FALLBACK_SOURCES.items()
-                    if normalize_us_pick_game(source.get("game")) == normalize_us_pick_game(game)
-                ]
-                for fallback_row in await _async_fetch_lotteryusa_pick_fallbacks(
-                    target_date,
-                    ids=fallback_ids,
-                    client=c,
-                ):
-                    previous = game_rows_by_id.get(fallback_row["id"]) or {}
-                    merged = dict(previous)
-                    merged.update(fallback_row)
-                    merged["source"] = "lotteryusa.com"
-                    game_rows_by_id[fallback_row["id"]] = enrich_us_pick_result_row(merged)
-        else:
-            for row in overview_rows:
-                game_rows_by_id[row["id"]] = row
-            for row in await _async_fetch_new_jersey_pick_home(game, client=c):
-                game_rows_by_id[row["id"]] = row
-
-        return game_rows_by_id
-
-    # Process both games in parallel
+    # Pick 3 and Pick 4 use their tested, separate history domains; no
+    # LotteryUSA request or same-domain "fallback" is made on this path.
     game_results = await asyncio.gather(*[_process_game(g) for g in game_list])
     for gr in game_results:
-        rows_by_id.update(gr)
+        for row in gr:
+            rows_by_id[row["id"]] = row
 
     rows = list(rows_by_id.values())
     if target_date:
@@ -2320,20 +2238,29 @@ async def _async_fetch_lotteryusa_results(url, lottery_id, lottery_name, digits,
     return None
 
 
-async def _async_fetch_nj_picks_lotteryusa(date_str=None, client=None):
+async def _async_fetch_nj_pick_history(date_str=None, client=None):
     target_date = date_str or get_et_date_str()
     c = client or get_http_client()
-    sources = [
-        ("https://www.lotteryusa.com/new-jersey/midday-pick-3/", "19", "NJ Pick 3 Día", 3),
-        ("https://www.lotteryusa.com/new-jersey/pick-3/", "20", "NJ Pick 3 Noche", 3),
-        ("https://www.lotteryusa.com/new-jersey/midday-pick-4/", "21", "NJ Pick 4 Día", 4),
-        ("https://www.lotteryusa.com/new-jersey/pick-4/", "22", "NJ Pick 4 Noche", 4),
-    ]
-    all_results = await asyncio.gather(*[
-        _async_fetch_lotteryusa_results(url, lid, lname, digits, target_date, client=c)
-        for url, lid, lname, digits in sources
-    ])
-    return [r for r in all_results if r is not None]
+    game_ids = {
+        ("pick3", "midday"): ("19", "NJ Pick 3 Día"),
+        ("pick3", "evening"): ("20", "NJ Pick 3 Noche"),
+        ("pick4", "midday"): ("21", "NJ Pick 4 Día"),
+        ("pick4", "evening"): ("22", "NJ Pick 4 Noche"),
+    }
+    results = []
+    for game in ("pick3", "pick4"):
+        for row in await _async_fetch_new_jersey_pick_home(game, client=c):
+            if row.get("date") != target_date:
+                continue
+            draw = str(row.get("draw") or "").lower()
+            period = "midday" if "midday" in draw else "evening" if "evening" in draw else ""
+            mapped = game_ids.get((game, period))
+            if mapped and row.get("number"):
+                results.append({
+                    "id": mapped[0], "name": mapped[1], "date": target_date,
+                    "number": row["number"], "source": US_PICK_SOURCE_NAMES[game],
+                })
+    return results
 
 
 LOTTERYUSA_PICK_FALLBACK_SOURCES = {
@@ -2802,17 +2729,17 @@ async def _async_refresh_missing_us_pick_results(date_str, existing_rows, client
         return unique_us_pick_results(rows)
 
     refreshed_by_id = {}
-    for refreshed in await _async_fetch_lotteryusa_pick_catalog_rows(target_date, missing_templates, client=c):
-        refreshed_id = str(refreshed.get("id") or "").strip()
-        if refreshed_id and str(refreshed.get("number") or "").strip():
-            refreshed_by_id[refreshed_id] = enrich_us_pick_result_row(refreshed)
-
-    fallback_ids = sorted(pending_ids - set(refreshed_by_id))
-    if fallback_ids:
-        for refreshed in await _async_fetch_lotteryusa_pick_fallbacks(target_date, ids=fallback_ids, client=c):
-            refreshed_id = str(refreshed.get("id") or "").strip()
-            if refreshed_id and str(refreshed.get("number") or "").strip():
-                refreshed_by_id[refreshed_id] = enrich_us_pick_result_row(refreshed)
+    for game in ("pick3", "pick4"):
+        templates = [row for row in missing_templates if catalog_row_game(row) == game]
+        if not templates:
+            continue
+        refreshed = await _async_fetch_working_us_pick_history(
+            target_date, game, templates, client=c,
+        )
+        for row in refreshed:
+            refreshed_id = str(row.get("id") or "").strip()
+            if refreshed_id in pending_ids and row.get("number"):
+                refreshed_by_id[refreshed_id] = enrich_us_pick_result_row(row)
 
     if not refreshed_by_id:
         return unique_us_pick_results(rows)
@@ -2828,7 +2755,7 @@ async def _async_refresh_missing_us_pick_results(date_str, existing_rows, client
             candidate.update(refreshed)
             candidate["id"] = canonical_id
             candidate["date"] = target_date
-            candidate["source"] = "lotteryusa.com"
+            candidate["source"] = str(refreshed.get("source") or "pick-3.com")
             replaced_ids.add(canonical_id)
             merged_rows.append(enrich_us_pick_result_row(candidate))
         else:
@@ -3101,8 +3028,8 @@ def fetch_enloteria_haiti_bolet(date_str=None, fallback_days=2):
     ))
 
 
-def fetch_nj_picks_lotteryusa(date_str=None):
-    return sync_run(_async_fetch_nj_picks_lotteryusa(date_str))
+def fetch_nj_pick_history(date_str=None):
+    return sync_run(_async_fetch_nj_pick_history(date_str))
 
 
 def fetch_miloteria_new_jersey(date_str=None):
@@ -3740,7 +3667,7 @@ async def _async_scrape(date_str=None, client=None):
         logger.info("King [%s] %s: no_draw for %s", row['id'], row['name'], date_str)
 
     if SCRAPE_PICK_RESULTS:
-        nj_nj = await _async_fetch_nj_picks_lotteryusa(date_str, client=c)
+        nj_nj = await _async_fetch_nj_pick_history(date_str, client=c)
         for row in nj_nj:
             if row["id"] not in seen_ids:
                 results.append(row)
