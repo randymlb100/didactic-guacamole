@@ -35,8 +35,6 @@ _scrape_cache = {}
 _pick_scrape_cache = {}
 _live_system_results_cache = {}
 _manual_override_cache = {}
-_lottery_refresh_lock = threading.Lock()
-_lottery_refresh_inflight = set()
 _pick_refresh_lock = threading.Lock()
 _pick_refresh_inflight = set()
 _pick_refresh_last_started = {}
@@ -278,38 +276,6 @@ def scrape_cached_isolated(date_key):
         return pool.submit(scrape_cached, date_key).result()
 
 
-def set_lottery_scrape_cache(date_key, rows):
-    _scrape_cache[date_key] = {"stored_at": time.time(), "rows": rows}
-
-
-def refresh_lottery_cache_async(date_key):
-    try:
-        rows = unique_sorted_results(scrape(date_key))
-        set_lottery_scrape_cache(date_key, rows)
-        if rows and SUPABASE_KEY.strip():
-            save_to_supabase(date_key, rows)
-    except Exception as error:
-        print(f"Warning: background lottery refresh failed for {date_key}: {error}")
-    finally:
-        with _lottery_refresh_lock:
-            _lottery_refresh_inflight.discard(date_key)
-
-
-def schedule_background_lottery_refresh(date_key):
-    with _lottery_refresh_lock:
-        if date_key in _lottery_refresh_inflight:
-            return False
-        _lottery_refresh_inflight.add(date_key)
-    thread = threading.Thread(
-        target=refresh_lottery_cache_async,
-        args=(date_key,),
-        daemon=True,
-        name=f"lottery-refresh-{date_key}",
-    )
-    thread.start()
-    return True
-
-
 def set_live_served_from_flag(section, value):
     try:
         setattr(g, f"{section}_live_served_from", value)
@@ -494,7 +460,6 @@ def lottery_rows_for_request_date(date_key):
         cached_lottery_rows = unique_sorted_results(cached_lottery_rows)
         if cached_lottery_rows and date_key == get_dr_date_str():
             set_live_served_from_flag("lottery", "supabase-snapshot")
-            schedule_background_lottery_refresh(date_key)
             return cached_lottery_rows
         set_live_served_from_flag("lottery", "inline-scrape")
         fresh_rows = unique_sorted_results(scrape_cached(date_key))
@@ -509,7 +474,6 @@ def lottery_rows_for_request_date(date_key):
             return rows
         if cached_lottery_rows and date_key == get_dr_date_str():
             set_live_served_from_flag("lottery", "supabase-snapshot")
-            schedule_background_lottery_refresh(date_key)
             return cached_lottery_rows
         return []
     lottery_rows, _ = split_lottery_and_pick_rows(fetch_existing_from_supabase(date_key))
