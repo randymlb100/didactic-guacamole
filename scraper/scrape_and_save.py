@@ -44,6 +44,7 @@ def get_supabase_key_from_env(source_env=None):
 def supabase_rest_headers(api_key=None, extra=None):
     key = str(api_key if api_key is not None else SUPABASE_KEY).strip()
     headers = dict(extra or {})
+    headers.setdefault("User-Agent", "LotteryNet-Render/1.0")
     if not key:
         return headers
     headers["apikey"] = key
@@ -1297,23 +1298,21 @@ async def _async_fetch_wa_match4(target_date, client=None):
 
 def parse_us_pick_draw_date(raw):
     text = str(raw or "").strip()
-    match = re.search(r"(\d{1,2}\s+[A-Za-z]{3}\s+\d{2})\s+(.+?Draw)", text)
+    match = re.fullmatch(r"(\d{1,2}\s+[A-Za-z]+\s+\d{2}(?:\d{2})?)\s+(.+?Draw)", text)
     if not match:
         return "", ""
-    try:
-        parsed = datetime.datetime.strptime(match.group(1), "%d %b %y")
-    except ValueError:
-        return "", ""
-    return parsed.strftime("%d-%m-%Y"), match.group(2).strip()
+    date_key = parse_us_pick_date_only(match.group(1))
+    return (date_key, match.group(2).strip()) if date_key else ("", "")
 
 
 def parse_us_pick_date_only(raw):
     text = str(raw or "").strip()
-    try:
-        parsed = datetime.datetime.strptime(text, "%d %b %y")
-    except ValueError:
-        return ""
-    return parsed.strftime("%d-%m-%Y")
+    for fmt in ("%d %b %y", "%d %B %y", "%d %b %Y", "%d %B %Y"):
+        try:
+            return datetime.datetime.strptime(text, fmt).strftime("%d-%m-%Y")
+        except ValueError:
+            pass
+    return ""
 
 
 def parse_us_pick_long_date(raw):
@@ -1730,6 +1729,9 @@ def us_pick_history_url_candidates(game, state_code):
     normalized_game = normalize_us_pick_game(game)
     domain = "pick-3.com" if normalized_game == "pick3" else "pick-4.com"
     code = str(state_code or "").lower()
+    if code == "nj":
+        path = "results" if normalized_game == "pick3" else "pick-4-results"
+        return [f"https://{code}.{domain}/{path}", f"https://{code}.{domain}/"]
     urls = []
     for path in US_PICK_HISTORY_PATHS.get(normalized_game, []):
         suffix = f"/{path}" if path else "/"
@@ -1823,6 +1825,13 @@ async def _async_fetch_working_us_pick_history(target_date, game, catalog_rows, 
                 enriched = enrich_us_pick_result_row(dict(row))
                 enriched["source"] = US_PICK_SOURCE_NAMES[normalized_game]
                 rows_by_id[result_id] = enriched
+
+    # Overview entries may cover the latest draw when a history page is missing.
+    # Never infer a date for Pick 4 cards that do not display one.
+    for row in overview_rows:
+        result_id = str(row.get("id") or "").strip()
+        if row.get("date") == target_date and result_id in allowed_ids and row.get("number"):
+            rows_by_id.setdefault(result_id, enrich_us_pick_result_row(dict(row)))
 
     # The NJ landing pages are on the same tested Pick provider and cover cases
     # where its state-history route is temporarily incomplete.
@@ -3706,7 +3715,53 @@ async def _async_fetch_single_block(url):
 def scrape(date_str=None):
     return sync_run(_async_scrape(date_str))
 
-async def _async_fetch_kv_list(key, client=None):
+def _decode_kv_results(value):
+    if isinstance(value, str):
+        value = json.loads(value)
+    if isinstance(value, dict):
+        value = value.get("results") or value.get("rows") or []
+    return value if isinstance(value, list) else []
+
+
+async def _async_fetch_kv_snapshot(keys, client=None):
+    """Read the run's keys together; never retain snapshots across cron runs.
+
+    Failed batches remain absent so the existing per-key path can retry.
+    Missing rows in a successful response are cached as empty lists.
+    """
+    snapshot = {}
+    keys = list(dict.fromkeys(keys))
+    if not SUPABASE_KEY.strip():
+        return snapshot
+    c = client or get_http_client()
+    for offset in range(0, len(keys), 100):
+        batch = keys[offset:offset + 100]
+        params = urllib.parse.urlencode({
+            "key": "in.(" + ",".join(json.dumps(key) for key in batch) + ")",
+            "select": "key,value",
+        })
+        try:
+            response = await c.get(
+                f"{SUPABASE_URL}/rest/v1/lotterynet_kv?{params}",
+                headers=supabase_rest_headers(),
+            )
+            response.raise_for_status()
+            rows = response.json()
+            if not isinstance(rows, list):
+                raise ValueError("Expected KV row list")
+            decoded = dict.fromkeys(batch, None)
+            for row in rows:
+                if row.get("key") in decoded:
+                    decoded[row["key"]] = _decode_kv_results(row.get("value"))
+            snapshot.update({key: value if value is not None else [] for key, value in decoded.items()})
+        except Exception as exc:
+            logger.warning("KV batch unavailable; using per-key reads: %s", exc)
+    return snapshot
+
+
+async def _async_fetch_kv_list(key, client=None, snapshot=None):
+    if snapshot is not None and key in snapshot:
+        return snapshot[key]
     params = urllib.parse.urlencode({"key": f"eq.{key}", "select": "value"})
     url = f"{SUPABASE_URL}/rest/v1/lotterynet_kv?{params}"
     c = client or get_http_client()
@@ -3717,23 +3772,15 @@ async def _async_fetch_kv_list(key, client=None):
         resp.raise_for_status()
         rows = resp.json()
         if rows and rows[0].get("value"):
-            existing = rows[0]["value"]
-            if isinstance(existing, str):
-                existing = json.loads(existing)
-            if isinstance(existing, list):
-                return existing
-            if isinstance(existing, dict):
-                nested = existing.get("results") or existing.get("rows") or []
-                if isinstance(nested, list):
-                    return nested
+            return _decode_kv_results(rows[0]["value"])
     except Exception as e:
         logger.warning("Could not fetch existing cache for %s: %s", key, e)
     return []
 
 
-async def _async_fetch_existing_from_supabase(date_str, client=None):
+async def _async_fetch_existing_from_supabase(date_str, client=None, snapshot=None):
     key = f"lot_results_cache_by_day:{date_str}"
-    cached = await _async_fetch_kv_list(key, client=client)
+    cached = await _async_fetch_kv_list(key, client=client, snapshot=snapshot)
     if cached:
         return cached
 
@@ -3784,8 +3831,8 @@ def pick_results_cache_key(date_str):
     return f"pick_results_cache_by_day:{date_str}"
 
 
-async def _async_fetch_existing_pick_results_from_supabase(date_str, client=None):
-    return await _async_fetch_kv_list(pick_results_cache_key(date_str), client=client)
+async def _async_fetch_existing_pick_results_from_supabase(date_str, client=None, snapshot=None):
+    return await _async_fetch_kv_list(pick_results_cache_key(date_str), client=client, snapshot=snapshot)
 
 
 def us_pick_period_from_row(row):
@@ -4163,7 +4210,8 @@ async def _async_save_native_results_table(date_str, merged_list, client=None):
     return await async_save_result_draws_payload(date_str, merged_list, "lottery", client=client)
 
 
-async def _async_save_to_supabase(date_str, results, prune_missing_ids=None, client=None):
+async def _async_save_to_supabase(date_str, results, prune_missing_ids=None, client=None,
+                                  existing_rows=None, snapshot=None):
     c = client or get_http_client()
 
     # Never let a partial/malformed source row reach the normal result RPC.
@@ -4173,7 +4221,9 @@ async def _async_save_to_supabase(date_str, results, prune_missing_ids=None, cli
         logger.warning("No valid normal-lottery results to save for %s", date_str)
         return
 
-    existing = await _async_fetch_existing_from_supabase(date_str, client=c)
+    existing = existing_rows if existing_rows is not None else await _async_fetch_existing_from_supabase(
+        date_str, client=c, snapshot=snapshot,
+    )
     observed_at = utc_now_iso()
     merged_list = merge_results_by_id(existing, results, prune_missing_ids, observed_at=observed_at)
 
@@ -4248,6 +4298,12 @@ async def _async_main():
     )
     client = get_http_client()
 
+    kv_snapshot = await _async_fetch_kv_snapshot([
+        key for date in target_dates for key in (
+            f"lot_results_cache_by_day:{date}", pick_results_cache_key(date),
+        )
+    ], client=client)
+
     for idx, target_date in enumerate(target_dates):
         logger.info("Scraping %s...", target_date)
         current_date = get_dr_date_str()
@@ -4258,12 +4314,12 @@ async def _async_main():
         )
 
         existing_results = []
-        existing_pick_results = []
-        pick_snapshot_loaded = False
+        existing_pick_results = kv_snapshot.get(pick_results_cache_key(target_date), [])
+        pick_snapshot_loaded = pick_results_cache_key(target_date) in kv_snapshot
         if not save_required:
             existing_results, existing_pick_results = await asyncio.gather(
-                _async_fetch_existing_from_supabase(target_date, client=client),
-                _async_fetch_existing_pick_results_from_supabase(target_date, client=client),
+                _async_fetch_existing_from_supabase(target_date, client=client, snapshot=kv_snapshot),
+                _async_fetch_existing_pick_results_from_supabase(target_date, client=client, snapshot=kv_snapshot),
             )
             pick_snapshot_loaded = True
             if not non_current_backfill_should_run(existing_results, existing_pick_results):
@@ -4280,7 +4336,7 @@ async def _async_main():
             pick_source_rows = None
             should_scrape_picks = True
             if target_date == current_date and not explicit_dates:
-                existing_pick_results = await _async_fetch_existing_pick_results_from_supabase(target_date, client=client)
+                existing_pick_results = await _async_fetch_existing_pick_results_from_supabase(target_date, client=client, snapshot=kv_snapshot)
                 pick_snapshot_loaded = True
                 if should_run_full_us_pick_sweep():
                     logger.info("Running hourly full US Pick sweep for %s", target_date)
@@ -4328,7 +4384,11 @@ async def _async_main():
         if results:
             prune_missing_ids = AUTHORITATIVE_NJ_IDS if idx == 0 and target_date == current_date else None
             try:
-                await _async_save_to_supabase(target_date, results, prune_missing_ids=prune_missing_ids, client=client)
+                await _async_save_to_supabase(
+                    target_date, results, prune_missing_ids=prune_missing_ids, client=client,
+                    existing_rows=existing_results if not save_required else None,
+                    snapshot=kv_snapshot,
+                )
             except (httpx.HTTPError, httpx.TimeoutException) as e:
                 error_text = str(getattr(getattr(e, "response", None), "text", ""))
                 if "Resultado bloqueado" in error_text:
