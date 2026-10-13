@@ -3778,7 +3778,50 @@ async def _async_fetch_kv_list(key, client=None, snapshot=None):
     return []
 
 
+async def _async_prefetch_authoritative_results(dates, snapshot, client):
+    """Batch missing historical KV days only for this run; fail back to fresh reads."""
+    missing = list(dict.fromkeys(date for date in dates
+                                if not snapshot.get(f"lot_results_cache_by_day:{date}")))
+    for offset in range(0, len(missing), 3):
+        batch = missing[offset:offset + 3]
+        try:
+            response = await client.get(
+                f"{SUPABASE_URL}/rest/v1/result_draws",
+                params={
+                    "result_day_key": "in.(" + ",".join(json.dumps(date) for date in batch) + ")",
+                    "source": "eq.lottery",
+                    "select": "result_day_key,lottery_legacy_id,lottery_name,number_raw,status",
+                    "limit": "1000",
+                },
+                headers=supabase_write_headers(),
+            )
+            response.raise_for_status()
+            rows = response.json()
+            # Do not treat a capped or malformed response as a complete snapshot.
+            if not isinstance(rows, list) or len(rows) >= 1000:
+                raise ValueError("Incomplete authoritative batch")
+            grouped = {date: [] for date in batch}
+            for row in rows:
+                if not isinstance(row, dict) or row.get("result_day_key") not in grouped:
+                    raise ValueError("Unexpected authoritative batch row")
+                legacy_id = str(row.get("lottery_legacy_id") or "").strip()
+                if not legacy_id:
+                    raise ValueError("Missing lottery identity")
+                date = row["result_day_key"]
+                grouped[date].append({
+                    "id": legacy_id, "name": row.get("lottery_name") or "",
+                    "date": date, "number": row.get("number_raw") or "",
+                    "status": row.get("status") or "",
+                })
+            snapshot.update({f"authoritative_lottery:{date}": values for date, values in grouped.items()})
+        except Exception as exc:
+            logger.warning("Authoritative batch unavailable; retaining individual reads: %s", exc)
+
+
 async def _async_fetch_existing_from_supabase(date_str, client=None, snapshot=None):
+    authoritative_key = f"authoritative_lottery:{date_str}"
+    if snapshot is not None and authoritative_key in snapshot:
+        return snapshot[authoritative_key]
     key = f"lot_results_cache_by_day:{date_str}"
     cached = await _async_fetch_kv_list(key, client=client, snapshot=snapshot)
     if cached:
@@ -4303,6 +4346,12 @@ async def _async_main():
             f"lot_results_cache_by_day:{date}", pick_results_cache_key(date),
         )
     ], client=client)
+
+    await _async_prefetch_authoritative_results([
+        date for date in target_dates if not should_require_supabase_save(
+            target_date=date, current_date=get_dr_date_str(), explicit_dates=explicit_dates,
+        )
+    ], kv_snapshot, client)
 
     for idx, target_date in enumerate(target_dates):
         logger.info("Scraping %s...", target_date)

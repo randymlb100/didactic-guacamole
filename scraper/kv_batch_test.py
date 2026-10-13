@@ -28,7 +28,25 @@ class KvBatchTest(unittest.IsolatedAsyncioTestCase):
                 await scraper._async_main()
                 recover.assert_awaited_once()
         self.assertEqual(1, sum(r.url.path.endswith("lotterynet_kv") for r in calls))
-        self.assertEqual(2, sum(r.url.path.endswith("result_draws") for r in calls))
+        self.assertEqual(1, sum(r.url.path.endswith("result_draws") for r in calls))
+
+    async def test_authoritative_batch_isolates_dates_and_preserves_empty_days(self):
+        calls = []
+        def respond(request):
+            calls.append(request)
+            return httpx.Response(200, json=[{
+                "result_day_key": "12-10-2026", "lottery_legacy_id": "1",
+                "number_raw": "01-02-03", "status": "published",
+            }])
+        snapshot = {"lot_results_cache_by_day:12-10-2026": [], "lot_results_cache_by_day:11-10-2026": []}
+        async with httpx.AsyncClient(transport=httpx.MockTransport(respond)) as client:
+            await scraper._async_prefetch_authoritative_results(["12-10-2026", "11-10-2026"], snapshot, client)
+            first = await scraper._async_fetch_existing_from_supabase("12-10-2026", client, snapshot)
+            second = await scraper._async_fetch_existing_from_supabase("11-10-2026", client, snapshot)
+        self.assertEqual(1, len(calls))
+        self.assertEqual("01-02-03", first[0]["number"])
+        self.assertEqual("12-10-2026", first[0]["date"])
+        self.assertEqual([], second)
 
     async def test_three_days_share_one_request_including_missing_keys(self):
         calls = []
@@ -54,6 +72,22 @@ class KvBatchTest(unittest.IsolatedAsyncioTestCase):
         self.assertEqual([{"id": "pick"}], values[1])
         self.assertEqual([], values[2])
         self.assertEqual(values[:6], values[6:])
+
+    async def test_authoritative_batch_failure_retains_individual_read(self):
+        calls = []
+        def respond(request):
+            calls.append(request)
+            if "in.(" in request.url.params.get("result_day_key", ""):
+                return httpx.Response(503)
+            return httpx.Response(200, json=[{
+                "lottery_legacy_id": "1", "number_raw": "04-05-06", "status": "published",
+            }])
+        snapshot = {"lot_results_cache_by_day:12-10-2026": []}
+        async with httpx.AsyncClient(transport=httpx.MockTransport(respond)) as client:
+            await scraper._async_prefetch_authoritative_results(["12-10-2026"], snapshot, client)
+            result = await scraper._async_fetch_existing_from_supabase("12-10-2026", client, snapshot)
+        self.assertEqual("04-05-06", result[0]["number"])
+        self.assertEqual(2, len(calls))
 
     async def test_failed_batch_does_not_hide_per_key_result(self):
         calls = []
