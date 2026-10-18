@@ -1440,6 +1440,47 @@ class ScraperContractsTest(unittest.TestCase):
         self.assertEqual(1, len(rows))
         self.assertEqual("2-1-0-4", rows[0]["number"])
 
+    def test_lotteryusa_catalog_rows_do_not_retry_permanent_http_403(self):
+        calls = {"count": 0}
+
+        async def forbidden(url, client=None):
+            calls["count"] += 1
+            request = scraper.httpx.Request("GET", url)
+            response = scraper.httpx.Response(403, request=request)
+            raise scraper.httpx.HTTPStatusError("forbidden", request=request, response=response)
+
+        catalog = [{
+            "id": "US-P4-CT-PLAY-4-EVENING",
+            "state": "Connecticut",
+            "stateCode": "CT",
+            "game": "pick4",
+            "gameName": "Play 4",
+            "draw": "Evening Draw",
+            "lotteryUsaUrl": "https://www.lotteryusa.com/connecticut/play-4/",
+        }]
+
+        with patch.object(scraper, "async_lotteryusa_http_get", side_effect=forbidden):
+            rows = scraper.sync_run(scraper._async_fetch_lotteryusa_pick_catalog_rows("14-05-2026", catalog))
+
+        self.assertEqual([], rows)
+        self.assertEqual(1, calls["count"])
+
+    def test_pick_provider_connect_timeout_is_not_retried_three_times(self):
+        class TimeoutClient:
+            def __init__(self):
+                self.calls = 0
+
+            async def get(self, url, headers=None):
+                self.calls += 1
+                request = scraper.httpx.Request("GET", url)
+                raise scraper.httpx.ConnectTimeout("connect timed out", request=request)
+
+        client = TimeoutClient()
+        with self.assertRaises(scraper.httpx.ConnectTimeout):
+            scraper.sync_run(scraper.async_http_get("https://pick-3.com/winning-numbers", client=client))
+
+        self.assertEqual(1, client.calls)
+
     def test_scrape_us_picks_with_catalog_uses_pick_history_instead_of_lotteryusa(self):
         catalog = [{
             "id": "US-P4-FL-PICK-4-EVENING",
@@ -1667,6 +1708,83 @@ class ScraperContractsTest(unittest.TestCase):
             rows = scraper.sync_run(scraper._async_scrape_us_picks("14-05-2026", games=("pick4",)))
 
         self.assertEqual([], rows)
+
+    def test_async_scrape_us_picks_uses_lotteryusa_only_when_pick_overview_is_unreachable(self):
+        catalog = [{
+            "id": "US-P4-CT-PLAY-4-EVENING",
+            "state": "Connecticut",
+            "stateCode": "CT",
+            "game": "pick4",
+            "gameName": "Play 4",
+            "draw": "Evening Draw",
+            "lotteryUsaUrl": "https://www.lotteryusa.com/connecticut/play-4/",
+        }]
+        fallback_row = dict(catalog[0], date="14-05-2026", number="3-6-7-1", source="lotteryusa.com")
+
+        async def unavailable_pick_history(target_date, game, catalog_rows, client=None, source_health=None):
+            source_health["overview_ok"] = False
+            return []
+
+        with patch.object(scraper, "static_us_pick_catalog_rows", return_value=catalog), \
+                patch.object(scraper, "_async_fetch_working_us_pick_history", side_effect=unavailable_pick_history), \
+                patch.object(scraper, "_async_fetch_lotteryusa_pick_catalog_rows", AsyncMock(return_value=[fallback_row])) as fallback:
+            rows = scraper.sync_run(scraper._async_scrape_us_picks(
+                "14-05-2026", games=("pick4",), existing_rows=catalog,
+            ))
+
+        self.assertEqual(["US-P4-CT-PLAY-4-EVENING"], [row["id"] for row in rows])
+        self.assertEqual("3-6-7-1", rows[0]["number"])
+        fallback.assert_awaited_once()
+
+    def test_async_scrape_us_picks_does_not_use_lotteryusa_when_pick_overview_is_reachable(self):
+        catalog = [{
+            "id": "US-P4-CT-PLAY-4-EVENING",
+            "state": "Connecticut",
+            "stateCode": "CT",
+            "game": "pick4",
+            "gameName": "Play 4",
+            "draw": "Evening Draw",
+            "lotteryUsaUrl": "https://www.lotteryusa.com/connecticut/play-4/",
+        }]
+
+        async def reachable_pick_history(target_date, game, catalog_rows, client=None, source_health=None):
+            source_health["overview_ok"] = True
+            return []
+
+        with patch.object(scraper, "static_us_pick_catalog_rows", return_value=catalog), \
+                patch.object(scraper, "_async_fetch_working_us_pick_history", side_effect=reachable_pick_history), \
+                patch.object(scraper, "_async_fetch_lotteryusa_pick_catalog_rows", AsyncMock(side_effect=AssertionError("unexpected fallback"))):
+            rows = scraper.sync_run(scraper._async_scrape_us_picks("14-05-2026", games=("pick4",)))
+
+        self.assertEqual([], rows)
+
+    def test_refresh_missing_pick_results_uses_lotteryusa_when_primary_is_unreachable(self):
+        pending = [{
+            "id": "US-P4-CT-PLAY-4-EVENING",
+            "date": "14-05-2026",
+            "state": "Connecticut",
+            "stateCode": "CT",
+            "game": "pick4",
+            "gameName": "Play 4",
+            "draw": "Evening Draw",
+            "number": "",
+            "status": "pending",
+        }]
+        static_catalog = [dict(pending[0], lotteryUsaUrl="https://www.lotteryusa.com/connecticut/play-4/")]
+        fallback_row = dict(static_catalog[0], number="3-6-7-1", source="lotteryusa.com")
+
+        async def unavailable_pick_history(target_date, game, catalog_rows, client=None, source_health=None):
+            source_health["overview_ok"] = False
+            return []
+
+        with patch.object(scraper, "static_us_pick_catalog_rows", return_value=static_catalog), \
+                patch.object(scraper, "_async_fetch_working_us_pick_history", side_effect=unavailable_pick_history), \
+                patch.object(scraper, "_async_fetch_lotteryusa_pick_catalog_rows", AsyncMock(return_value=[fallback_row])) as fallback:
+            rows = scraper.sync_run(scraper._async_refresh_missing_us_pick_results("14-05-2026", pending))
+
+        self.assertEqual("3-6-7-1", rows[0]["number"])
+        self.assertEqual("lotteryusa.com", rows[0]["source"])
+        fallback.assert_awaited_once()
 
     def test_nj_pick_legacy_rows_use_validated_pick_provider(self):
         provider_rows = [

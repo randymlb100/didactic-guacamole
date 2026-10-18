@@ -558,7 +558,10 @@ async def close_http_client():
 async def async_http_get(url, client=None, accept_json=False):
     c = client or get_http_client()
     headers = {"Accept": "application/json"} if accept_json else {}
-    for attempt in range(1, _RETRY_MAX + 1):
+    host = urllib.parse.urlsplit(str(url)).netloc.lower()
+    is_unreliable_pick_host = host == "pick-3.com" or host.endswith(".pick-3.com") or host == "pick-4.com" or host.endswith(".pick-4.com")
+    max_attempts = 1 if is_unreliable_pick_host else _RETRY_MAX
+    for attempt in range(1, max_attempts + 1):
         try:
             resp = await c.get(url, headers=headers)
             if resp.is_error:
@@ -571,14 +574,14 @@ async def async_http_get(url, client=None, accept_json=False):
             if 400 <= status < 500:
                 logger.debug("Client error %d fetching %s — not retrying", status, url)
                 raise
-            logger.warning("HTTP error fetching %s (attempt %d/%d): %s", url, attempt, _RETRY_MAX, exc)
-            if attempt < _RETRY_MAX:
+            logger.warning("HTTP error fetching %s (attempt %d/%d, %s): %s", url, attempt, max_attempts, type(exc).__name__, exc)
+            if attempt < max_attempts:
                 await asyncio.sleep(_RETRY_BASE_DELAY * (2 ** (attempt - 1)))
             else:
                 raise
         except (httpx.RequestError, httpx.TimeoutException) as exc:
-            logger.warning("HTTP error fetching %s (attempt %d/%d): %s", url, attempt, _RETRY_MAX, exc)
-            if attempt < _RETRY_MAX:
+            logger.warning("HTTP error fetching %s (attempt %d/%d, %s): %s", url, attempt, max_attempts, type(exc).__name__, exc)
+            if attempt < max_attempts:
                 await asyncio.sleep(_RETRY_BASE_DELAY * (2 ** (attempt - 1)))
             else:
                 raise
@@ -1761,7 +1764,7 @@ async def _async_fetch_us_pick_state_history(game, state_code, state_name, game_
     return []
 
 
-async def _async_fetch_us_pick_overview(game, client=None):
+async def _async_fetch_us_pick_overview(game, client=None, source_health=None):
     normalized_game = normalize_us_pick_game(game)
     url = US_PICK_URLS.get(normalized_game)
     if not url:
@@ -1771,8 +1774,12 @@ async def _async_fetch_us_pick_overview(game, client=None):
         resp = await async_http_get(url, client=c)
         html = resp.text
     except Exception as e:
+        if source_health is not None:
+            source_health["overview_ok"] = False
         logger.warning("US Pick error for %s: %s", normalized_game, e)
         return []
+    if source_health is not None:
+        source_health["overview_ok"] = True
     return parse_us_pick_overview(html, normalized_game)
 
 
@@ -1784,7 +1791,7 @@ def fetch_us_pick_overview(game):
     return sync_run(_async_fetch_us_pick_overview(game))
 
 
-async def _async_fetch_working_us_pick_history(target_date, game, catalog_rows, client=None):
+async def _async_fetch_working_us_pick_history(target_date, game, catalog_rows, client=None, source_health=None):
     """Fetch Pick results from the validated pick-3.com/pick-4.com history pages."""
     normalized_game = normalize_us_pick_game(game)
     c = client or get_http_client()
@@ -1792,7 +1799,7 @@ async def _async_fetch_working_us_pick_history(target_date, game, catalog_rows, 
         US_PICK_LEGACY_RESULT_ID_ALIASES.get(str(row.get("id") or "").strip(), str(row.get("id") or "").strip())
         for row in catalog_rows if row.get("id")
     }
-    overview_rows = await _async_fetch_us_pick_overview(normalized_game, client=c)
+    overview_rows = await _async_fetch_us_pick_overview(normalized_game, client=c, source_health=source_health)
     state_rows = {}
     for row in overview_rows:
         state_code = str(row.get("stateCode") or "").strip().upper()
@@ -1858,12 +1865,46 @@ async def _async_scrape_us_picks(date_str=None, games=None, existing_rows=None, 
 
     async def _process_game(game):
         catalog_rows = [row for row in existing_catalog if catalog_row_game(row) == normalize_us_pick_game(game)]
-        return await _async_fetch_working_us_pick_history(
-            target_date, game, catalog_rows, client=c,
+        source_health = {}
+        rows = await _async_fetch_working_us_pick_history(
+            target_date, game, catalog_rows, client=c, source_health=source_health,
         )
+        if source_health.get("overview_ok") is not False:
+            return rows
 
-    # Pick 3 and Pick 4 use their tested, separate history domains; no
-    # LotteryUSA request or same-domain "fallback" is made on this path.
+        fallback_candidates = catalog_rows
+        if existing_rows is None:
+            # Keep an outage from turning a full catalog sweep into hundreds of
+            # third-party requests. Recover only recently due draws; later runs
+            # will pick up newly closed or still-pending results.
+            fallback_candidates = recently_closed_us_pick_catalog_rows(
+                target_date, catalog_rows=catalog_rows,
+            )
+        primary_ids = {str(row.get("id") or "") for row in rows if row.get("number")}
+        fallback_candidates = [
+            row for row in fallback_candidates
+            if str(row.get("id") or "") not in primary_ids and lotteryusa_catalog_row_url(row)
+        ]
+        if not fallback_candidates:
+            return rows
+        logger.warning(
+            "Pick %s history unreachable; checking LotteryUSA for %d due/pending catalog rows",
+            game,
+            len(fallback_candidates),
+        )
+        fallback_rows = await _async_fetch_lotteryusa_pick_catalog_rows(
+            target_date, fallback_candidates, client=c,
+        )
+        return rows + [
+            row for row in fallback_rows
+            if catalog_row_game(row) == normalize_us_pick_game(game)
+            and row.get("date") == target_date
+            and str(row.get("number") or "").strip()
+        ]
+
+    # Pick 3 and Pick 4 use separate primary history domains. LotteryUSA is
+    # consulted only for due/pending rows when the corresponding primary
+    # overview cannot be reached.
     game_results = await asyncio.gather(*[_process_game(g) for g in game_list])
     for gr in game_results:
         for row in gr:
@@ -2737,18 +2778,49 @@ async def _async_refresh_missing_us_pick_results(date_str, existing_rows, client
     if not pending_ids:
         return unique_us_pick_results(rows)
 
+    static_catalog_by_id = {
+        str(row.get("id") or "").strip(): row
+        for row in static_us_pick_catalog_rows(games=("pick3", "pick4"))
+        if str(row.get("id") or "").strip()
+    }
+
     refreshed_by_id = {}
     for game in ("pick3", "pick4"):
         templates = [row for row in missing_templates if catalog_row_game(row) == game]
         if not templates:
             continue
+        source_health = {}
         refreshed = await _async_fetch_working_us_pick_history(
-            target_date, game, templates, client=c,
+            target_date, game, templates, client=c, source_health=source_health,
         )
         for row in refreshed:
             refreshed_id = str(row.get("id") or "").strip()
             if refreshed_id in pending_ids and row.get("number"):
                 refreshed_by_id[refreshed_id] = enrich_us_pick_result_row(row)
+
+        if source_health.get("overview_ok") is False:
+            fallback_templates = []
+            for template in templates:
+                result_id = str(template.get("id") or "").strip()
+                source_template = dict(static_catalog_by_id.get(result_id) or {})
+                source_template.update(template)
+                source_template["id"] = result_id
+                source_template["date"] = target_date
+                if lotteryusa_catalog_row_url(source_template):
+                    fallback_templates.append(source_template)
+            if fallback_templates:
+                logger.warning(
+                    "Pick %s history unreachable while refreshing %d pending rows; checking LotteryUSA",
+                    game,
+                    len(fallback_templates),
+                )
+                fallback_rows = await _async_fetch_lotteryusa_pick_catalog_rows(
+                    target_date, fallback_templates, client=c,
+                )
+                for row in fallback_rows:
+                    result_id = str(row.get("id") or "").strip()
+                    if result_id in pending_ids and row.get("date") == target_date and row.get("number"):
+                        refreshed_by_id[result_id] = enrich_us_pick_result_row(row)
 
     if not refreshed_by_id:
         return unique_us_pick_results(rows)
@@ -2949,8 +3021,18 @@ async def _async_fetch_lotteryusa_pick_catalog_rows(date_str, catalog_rows, clie
     async def _fetch_result(source):
         try:
             resp = await _limited_get(source["url"])
+        except httpx.HTTPStatusError as error:
+            status = error.response.status_code
+            retryable = status in {408, 425, 429} or status >= 500
+            logger.warning(
+                "Lottery USA pick catalog HTTP %s for %s%s",
+                status,
+                source["url"],
+                " (transient; one bounded retry allowed)" if retryable else " (permanent; not retrying)",
+            )
+            return source["url"], None, retryable
         except Exception as error:
-            logger.warning("Lottery USA pick catalog error for %s: %s", source["url"], error)
+            logger.warning("Lottery USA pick catalog error for %s (%s): %s", source["url"], type(error).__name__, error)
             return source["url"], None, True
         return source["url"], parse_lotteryusa_result_page_row(resp.text, source, target_date), False
 
