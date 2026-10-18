@@ -1800,6 +1800,11 @@ async def _async_fetch_working_us_pick_history(target_date, game, catalog_rows, 
         for row in catalog_rows if row.get("id")
     }
     overview_rows = await _async_fetch_us_pick_overview(normalized_game, client=c, source_health=source_health)
+    if source_health is not None and source_health.get("overview_ok") is False:
+        # The per-state/history URLs share the same unavailable Pick host.
+        # Stop here instead of serially timing out on each variant; the caller
+        # can move directly to the independent LotteryUSA fallback.
+        return []
     state_rows = {}
     for row in overview_rows:
         state_code = str(row.get("stateCode") or "").strip().upper()

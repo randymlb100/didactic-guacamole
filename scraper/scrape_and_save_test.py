@@ -1481,6 +1481,23 @@ class ScraperContractsTest(unittest.TestCase):
 
         self.assertEqual(1, client.calls)
 
+    def test_pick_history_stops_after_unreachable_overview_instead_of_probing_more_urls(self):
+        health = {}
+
+        async def unreachable_overview(game, client=None, source_health=None):
+            source_health["overview_ok"] = False
+            return []
+
+        with patch.object(scraper, "_async_fetch_us_pick_overview", side_effect=unreachable_overview), \
+                patch.object(scraper, "_async_fetch_us_pick_state_history", AsyncMock(side_effect=AssertionError("do not probe history host"))), \
+                patch.object(scraper, "_async_fetch_new_jersey_pick_home", AsyncMock(side_effect=AssertionError("do not probe NJ host"))):
+            rows = scraper.sync_run(scraper._async_fetch_working_us_pick_history(
+                "14-05-2026", "pick3", [], source_health=health,
+            ))
+
+        self.assertEqual([], rows)
+        self.assertFalse(health["overview_ok"])
+
     def test_scrape_us_picks_with_catalog_uses_pick_history_instead_of_lotteryusa(self):
         catalog = [{
             "id": "US-P4-FL-PICK-4-EVENING",
