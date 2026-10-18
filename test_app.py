@@ -48,6 +48,7 @@ class RenderApiContractsTest(unittest.TestCase):
         app._pick_refresh_last_error.clear()
         app._live_system_results_cache.clear()
         app._manual_override_cache.clear()
+        app._pick_result_read_cache.clear()
 
     def save_override_cache(self, date_key, rows):
         normalized = [app.normalize_manual_override_row(row, date_key) for row in rows]
@@ -78,6 +79,54 @@ class RenderApiContractsTest(unittest.TestCase):
         self.assertEqual(28, payload["count"])
         self.assertEqual("supabase-cache", payload["source"])
         self.assertEqual("27", payload["results"][-2]["id"])
+
+    def test_pick_read_falls_back_to_authoritative_result_draws_and_is_cached(self):
+        class FakeResponse:
+            def __init__(self, payload):
+                self.payload = payload
+
+            def read(self):
+                return json.dumps(self.payload).encode("utf-8")
+
+        responses = [
+            FakeResponse([]),
+            FakeResponse([{
+                "lottery_legacy_id": "US-P3-CA-PICK-3-MIDDAY",
+                "lottery_name": "California Pick 3 Midday Draw",
+                "game": "pick3",
+                "draw_name": "Midday Draw",
+                "result_date": "2026-10-18",
+                "number_raw": "4-5-9",
+                "status": "published",
+                "source": "pick",
+            }]),
+            FakeResponse([]),
+            FakeResponse([{
+                "lottery_legacy_id": "US-P3-CA-PICK-3-MIDDAY",
+                "lottery_name": "California Pick 3 Midday Draw",
+                "game": "pick3",
+                "draw_name": "Midday Draw",
+                "result_date": "2026-10-18",
+                "number_raw": "4-5-9",
+                "status": "published",
+                "source": "pick",
+            }]),
+        ]
+        with patch.object(app, "SUPABASE_URL", "https://supabase.test"), \
+            patch.object(app, "SUPABASE_KEY", "test-key"), \
+            patch("app.urllib.request.urlopen", side_effect=responses) as request_mock:
+            first = app.fetch_pick_rows_from_supabase("18-10-2026")
+            second = app.fetch_pick_rows_from_supabase("18-10-2026")
+            app.invalidate_results_cache_key("pick_results_cache_by_day:18-10-2026")
+            refreshed = app.fetch_pick_rows_from_supabase("18-10-2026")
+
+        self.assertEqual(4, request_mock.call_count)
+        self.assertEqual(first, second)
+        self.assertEqual(first, refreshed)
+        self.assertEqual(1, len(first))
+        self.assertEqual("4-5-9", first[0]["number"])
+        self.assertEqual("California", first[0]["state"])
+        self.assertEqual("pick3", first[0]["game"])
 
     def test_haiti_route_filters_haiti_bolet(self):
         with patch("app.fetch_existing_from_supabase", return_value=fake_results()), patch("app.scrape") as scrape_mock:

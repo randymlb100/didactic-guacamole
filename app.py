@@ -42,6 +42,9 @@ ADMIN_ROLES = {"admin", "master"}
 USERS_STATE_KEY = "sys_users_v4"
 _supabase_cache = {}
 _CACHE_TTL_SECONDS = 300
+_PICK_RESULT_READ_TTL_SECONDS = 10
+_pick_result_read_cache = {}
+_pick_result_read_lock = threading.Lock()
 INTERNAL_SHARED_SECRET = os.environ.get("LOTTERYNET_ADMIN_SHARED_SECRET", "").strip()
 PUBLIC_CACHE_INVALIDATION_PREFIXES = (
     "lot_results_cache_by_day:",
@@ -189,6 +192,9 @@ def invalidate_results_cache_key(cache_key):
     _supabase_cache.pop(cache_key, None)
     if ":" in cache_key:
         date_key = cache_key.split(":", 1)[1]
+        if cache_key.startswith("pick_results_cache_by_day:"):
+            with _pick_result_read_lock:
+                _pick_result_read_cache.pop(date_key, None)
         if is_public_cache_invalidation_key(cache_key):
             _manual_override_cache.pop(date_key, None)
         keys_to_delete = [
@@ -483,30 +489,84 @@ def lottery_rows_for_request_date(date_key):
 def fetch_pick_rows_from_supabase(date_key):
     if not SUPABASE_KEY.strip():
         return []
-    params = urllib.parse.urlencode({"key": f"eq.{pick_results_cache_key(date_key)}", "select": "value"})
-    req = urllib.request.Request(
-        f"{SUPABASE_URL}/rest/v1/lotterynet_kv?{params}",
-        headers={
-            "apikey": SUPABASE_KEY,
-            "Authorization": f"Bearer {SUPABASE_KEY}",
-        },
-    )
-    try:
-        resp = urllib.request.urlopen(req, timeout=5)
-        rows = json.loads(resp.read().decode("utf-8"))
-        if rows and rows[0].get("value"):
-            value = rows[0]["value"]
+    cache_key = str(date_key)
+    with _pick_result_read_lock:
+        cached = _pick_result_read_cache.get(cache_key)
+        if cached and time.monotonic() - cached[0] < _PICK_RESULT_READ_TTL_SECONDS:
+            return cached[1]
+
+        rows = []
+        params = urllib.parse.urlencode({"key": f"eq.{pick_results_cache_key(date_key)}", "select": "value"})
+        req = urllib.request.Request(
+            f"{SUPABASE_URL}/rest/v1/lotterynet_kv?{params}",
+            headers={
+                "Accept": "application/json",
+                "apikey": SUPABASE_KEY,
+                "Authorization": f"Bearer {SUPABASE_KEY}",
+            },
+        )
+        try:
+            resp = urllib.request.urlopen(req, timeout=5)
+            payload = json.loads(resp.read().decode("utf-8"))
+            value = payload[0].get("value") if payload else None
             if isinstance(value, str):
                 value = json.loads(value)
-            if isinstance(value, list):
-                return value
             if isinstance(value, dict):
-                nested = value.get("results") or value.get("rows") or []
-                if isinstance(nested, list):
-                    return nested
-    except Exception as error:
-        print(f"Warning: could not fetch pick cache: {error}")
-    return []
+                value = value.get("results") or value.get("rows") or []
+            if isinstance(value, list):
+                rows = value
+        except Exception as error:
+            print(f"Warning: could not fetch pick cache: {error}")
+
+        # The scraper's authoritative writer upserts result_draws directly;
+        # the legacy KV snapshot can therefore be absent. Read that canonical
+        # table as the compatibility fallback instead of reporting cache-miss.
+        if not rows:
+            table_params = urllib.parse.urlencode({
+                "result_day_key": f"eq.{date_key}",
+                "source": "eq.pick",
+                "select": "lottery_legacy_id,lottery_name,game,draw_name,result_date,number_raw,status,source",
+                "order": "lottery_legacy_id.asc,draw_name.asc",
+            })
+            table_req = urllib.request.Request(
+                f"{SUPABASE_URL}/rest/v1/result_draws?{table_params}",
+                headers={
+                    "Accept": "application/json",
+                    "apikey": SUPABASE_KEY,
+                    "Authorization": f"Bearer {SUPABASE_KEY}",
+                },
+            )
+            try:
+                response = urllib.request.urlopen(table_req, timeout=5)
+                records = json.loads(response.read().decode("utf-8"))
+                for record in records if isinstance(records, list) else []:
+                    legacy_id = str(record.get("lottery_legacy_id") or "").strip()
+                    if not legacy_id:
+                        continue
+                    raw_name = str(record.get("lottery_name") or "").strip()
+                    game = str(record.get("game") or "").strip().lower()
+                    game_name = "Pick 4" if game == "pick4" else "Pick 3" if game == "pick3" else ""
+                    state_code_match = re.match(r"^US-P[34]-([A-Z]{2})-", legacy_id)
+                    state_name_match = re.match(r"^(.*?)\s+Pick\s+[34]\b", raw_name, re.IGNORECASE)
+                    rows.append({
+                        "id": legacy_id,
+                        "name": raw_name,
+                        "date": date_key,
+                        "number": str(record.get("number_raw") or ""),
+                        "status": record.get("status") or "",
+                        "source": record.get("source") or "pick",
+                        "game": game,
+                        "gameName": game_name,
+                        "draw": record.get("draw_name") or "",
+                        "state": state_name_match.group(1).strip() if state_name_match else "",
+                        "stateCode": state_code_match.group(1) if state_code_match else "",
+                    })
+            except Exception as error:
+                print(f"Warning: could not fetch authoritative Pick results: {error}")
+
+        rows = unique_sorted_pick_results(rows)
+        _pick_result_read_cache[cache_key] = (time.monotonic(), rows)
+        return rows
 
 
 def pick_rows_for_request_date(date_key, game_filter="", allow_combined_fallback=False):
