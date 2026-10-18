@@ -114,6 +114,7 @@ class RenderApiContractsTest(unittest.TestCase):
         ]
         with patch.object(app, "SUPABASE_URL", "https://supabase.test"), \
             patch.object(app, "SUPABASE_KEY", "test-key"), \
+            patch("app.supabase_write_headers", return_value={"apikey": "test-secret"}), \
             patch("app.urllib.request.urlopen", side_effect=responses) as request_mock:
             first = app.fetch_pick_rows_from_supabase("18-10-2026")
             second = app.fetch_pick_rows_from_supabase("18-10-2026")

@@ -13,6 +13,7 @@ from flask_cors import CORS
 
 from scraper.scrape_and_save import (
     SUPABASE_KEY,
+    SUPABASE_SECRET_KEY,
     SUPABASE_URL,
     fetch_existing_from_supabase,
     get_dr_date_str,
@@ -22,6 +23,7 @@ from scraper.scrape_and_save import (
     save_us_picks_to_supabase,
     scrape,
     scrape_us_picks,
+    supabase_write_headers,
 )
 
 app = Flask(__name__)
@@ -487,7 +489,7 @@ def lottery_rows_for_request_date(date_key):
 
 
 def fetch_pick_rows_from_supabase(date_key):
-    if not SUPABASE_KEY.strip():
+    if not (SUPABASE_KEY.strip() or SUPABASE_SECRET_KEY.strip()):
         return []
     cache_key = str(date_key)
     with _pick_result_read_lock:
@@ -530,11 +532,7 @@ def fetch_pick_rows_from_supabase(date_key):
             })
             table_req = urllib.request.Request(
                 f"{SUPABASE_URL}/rest/v1/result_draws?{table_params}",
-                headers={
-                    "Accept": "application/json",
-                    "apikey": SUPABASE_KEY,
-                    "Authorization": f"Bearer {SUPABASE_KEY}",
-                },
+                headers=supabase_write_headers(extra={"Accept": "application/json"}),
             )
             try:
                 response = urllib.request.urlopen(table_req, timeout=5)
