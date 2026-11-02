@@ -1,0 +1,482 @@
+[
+  {
+    "source_name": "La Primera",
+    "id": "1",
+    "zone": "America/Santo_Domingo",
+    "draw_time": "12:00 PM",
+    "name": "La Primera Día",
+    "slug": "la-primera"
+  },
+  {
+    "source_name": "Anguilla 10AM",
+    "id": "2",
+    "zone": "America/Santo_Domingo",
+    "draw_time": "10:00 AM",
+    "name": "Anguila 10AM",
+    "slug": "anguilla-10am"
+  },
+  {
+    "source_name": "La Suerte",
+    "id": "3",
+    "zone": "America/Santo_Domingo",
+    "draw_time": "12:30 PM",
+    "name": "La Suerte 12:30",
+    "slug": "la-suerte"
+  },
+  {
+    "source_name": "Anguilla 1PM",
+    "id": "4",
+    "zone": "America/Santo_Domingo",
+    "draw_time": "1:00 PM",
+    "name": "Anguila Mediodía",
+    "slug": "anguilla-1pm"
+  },
+  {
+    "source_name": "Real",
+    "id": "5",
+    "zone": "America/Santo_Domingo",
+    "draw_time": "12:55 PM",
+    "name": "Quiniela Real",
+    "slug": "real"
+  },
+  {
+    "source_name": "Florida Tarde",
+    "id": "6",
+    "zone": "America/New_York",
+    "draw_time": "1:30 PM",
+    "name": "Florida Día",
+    "slug": "florida-tarde"
+  },
+  {
+    "source_name": "LoteDom",
+    "id": "7",
+    "zone": "America/Santo_Domingo",
+    "draw_time": "12:00 PM",
+    "name": "Quiniela LoteDom",
+    "slug": "lotedom"
+  },
+  {
+    "source_name": "New York Tarde",
+    "id": "8",
+    "zone": "America/New_York",
+    "draw_time": "2:30 PM",
+    "name": "New York Tarde",
+    "slug": "new-york-tarde"
+  },
+  {
+    "source_name": "Nacional Gana Más",
+    "id": "9",
+    "zone": "America/Santo_Domingo",
+    "draw_time": "2:40 PM",
+    "name": "Gana Más",
+    "slug": "gana-mas"
+  },
+  {
+    "source_name": "La Suerte 6PM",
+    "id": "10",
+    "zone": "America/Santo_Domingo",
+    "draw_time": "6:00 PM",
+    "name": "La Suerte Tarde",
+    "slug": "la-suerte-6pm"
+  },
+  {
+    "source_name": "Anguilla 6PM",
+    "id": "11",
+    "zone": "America/Santo_Domingo",
+    "draw_time": "6:00 PM",
+    "name": "Anguila 6PM",
+    "slug": "anguilla-6pm"
+  },
+  {
+    "source_name": "Loteka",
+    "id": "12",
+    "zone": "America/Santo_Domingo",
+    "draw_time": "7:55 PM",
+    "name": "Loteka",
+    "slug": "loteka"
+  },
+  {
+    "source_name": "Nacional Noche",
+    "id": "13",
+    "zone": "America/Santo_Domingo",
+    "draw_time": "9:00 PM",
+    "name": "Lotería Nacional",
+    "slug": "nacional-noche"
+  },
+  {
+    "source_name": "Anguilla 9PM",
+    "id": "14",
+    "zone": "America/Santo_Domingo",
+    "draw_time": "9:00 PM",
+    "name": "Anguila 9PM",
+    "slug": "anguilla-9pm"
+  },
+  {
+    "source_name": "Leidsa",
+    "id": "15",
+    "zone": "America/Santo_Domingo",
+    "draw_time": "8:55 PM",
+    "name": "Leidsa",
+    "slug": "leidsa"
+  },
+  {
+    "source_name": "La Primera Noche",
+    "id": "16",
+    "zone": "America/Santo_Domingo",
+    "draw_time": "7:00 PM",
+    "name": "Primera Noche",
+    "slug": "la-primera-noche"
+  },
+  {
+    "source_name": "Florida Noche",
+    "id": "17",
+    "zone": "America/New_York",
+    "draw_time": "9:45 PM",
+    "name": "Florida Noche",
+    "slug": "florida-noche"
+  },
+  {
+    "source_name": "New York Noche",
+    "id": "18",
+    "zone": "America/New_York",
+    "draw_time": "10:30 PM",
+    "name": "New York Noche",
+    "slug": "new-york-noche"
+  },
+  {
+    "source_name": "King Lottery Día",
+    "id": "23",
+    "zone": "America/Santo_Domingo",
+    "draw_time": "12:30 PM",
+    "name": "King Lottery Día",
+    "slug": "king-lottery-dia"
+  },
+  {
+    "source_name": "King Lottery Noche",
+    "id": "24",
+    "zone": "America/Santo_Domingo",
+    "draw_time": "7:30 PM",
+    "name": "King Lottery Noche",
+    "slug": "king-lottery-noche"
+  },
+  {
+    "source_name": "New Jersey Tarde",
+    "id": "25",
+    "zone": "America/New_York",
+    "draw_time": "12:59 PM",
+    "name": "New Jersey Tarde",
+    "slug": "new-jersey-tarde"
+  },
+  {
+    "source_name": "New Jersey Noche",
+    "id": "26",
+    "zone": "America/New_York",
+    "draw_time": "10:57 PM",
+    "name": "New Jersey Noche",
+    "slug": "new-jersey-noche"
+  },
+  {
+    "source_name": "Haiti Bolet 11:30 AM",
+    "id": "27",
+    "zone": "America/Santo_Domingo",
+    "draw_time": "11:30 AM",
+    "name": "Haiti Bolet 11:30 AM",
+    "slug": "haiti-bolet-11-30-am"
+  },
+  {
+    "source_name": "Haiti Bolet 6:30 PM",
+    "id": "28",
+    "zone": "America/Santo_Domingo",
+    "draw_time": "6:30 PM",
+    "name": "Haiti Bolet 6:30 PM",
+    "slug": "haiti-bolet-6-30-pm"
+  },
+  {
+    "source_name": "Anguilla 8AM",
+    "id": "29",
+    "zone": "America/Santo_Domingo",
+    "draw_time": "8:00 AM",
+    "name": "Anguilla 8AM",
+    "slug": "anguilla-8am"
+  },
+  {
+    "source_name": "Anguilla 9AM",
+    "id": "30",
+    "zone": "America/Santo_Domingo",
+    "draw_time": "9:00 AM",
+    "name": "Anguilla 9AM",
+    "slug": "anguilla-9am"
+  },
+  {
+    "source_name": "Anguilla 11AM",
+    "id": "31",
+    "zone": "America/Santo_Domingo",
+    "draw_time": "11:00 AM",
+    "name": "Anguilla 11AM",
+    "slug": "anguilla-11am"
+  },
+  {
+    "source_name": "Anguilla 12PM",
+    "id": "32",
+    "zone": "America/Santo_Domingo",
+    "draw_time": "12:00 PM",
+    "name": "Anguilla 12PM",
+    "slug": "anguilla-12pm"
+  },
+  {
+    "source_name": "Anguilla 2PM",
+    "id": "33",
+    "zone": "America/Santo_Domingo",
+    "draw_time": "2:00 PM",
+    "name": "Anguilla 2PM",
+    "slug": "anguilla-2pm"
+  },
+  {
+    "source_name": "Anguilla 3PM",
+    "id": "34",
+    "zone": "America/Santo_Domingo",
+    "draw_time": "3:00 PM",
+    "name": "Anguilla 3PM",
+    "slug": "anguilla-3pm"
+  },
+  {
+    "source_name": "Anguilla 4PM",
+    "id": "35",
+    "zone": "America/Santo_Domingo",
+    "draw_time": "4:00 PM",
+    "name": "Anguilla 4PM",
+    "slug": "anguilla-4pm"
+  },
+  {
+    "source_name": "Anguilla 5PM",
+    "id": "36",
+    "zone": "America/Santo_Domingo",
+    "draw_time": "5:00 PM",
+    "name": "Anguilla 5PM",
+    "slug": "anguilla-5pm"
+  },
+  {
+    "source_name": "Anguilla 7PM",
+    "id": "37",
+    "zone": "America/Santo_Domingo",
+    "draw_time": "7:00 PM",
+    "name": "Anguilla 7PM",
+    "slug": "anguilla-7pm"
+  },
+  {
+    "source_name": "Anguilla 8PM",
+    "id": "38",
+    "zone": "America/Santo_Domingo",
+    "draw_time": "8:00 PM",
+    "name": "Anguilla 8PM",
+    "slug": "anguilla-8pm"
+  },
+  {
+    "source_name": "Anguilla 10PM",
+    "id": "39",
+    "zone": "America/Santo_Domingo",
+    "draw_time": "10:00 PM",
+    "name": "Anguilla 10PM",
+    "slug": "anguilla-10pm"
+  },
+  {
+    "source_name": "Haiti Bolet 9:30 AM",
+    "id": "40",
+    "zone": "America/Santo_Domingo",
+    "draw_time": "9:30 AM",
+    "name": "Haiti Bolet 9:30 AM",
+    "slug": "haiti-bolet-9-30-am"
+  },
+  {
+    "source_name": "Haiti Bolet 10:30 AM",
+    "id": "41",
+    "zone": "America/Santo_Domingo",
+    "draw_time": "10:30 AM",
+    "name": "Haiti Bolet 10:30 AM",
+    "slug": "haiti-bolet-10-30-am"
+  },
+  {
+    "source_name": "Haiti Bolet 5:30 PM",
+    "id": "42",
+    "zone": "America/Santo_Domingo",
+    "draw_time": "5:30 PM",
+    "name": "Haiti Bolet 5:30 PM",
+    "slug": "haiti-bolet-5-30-pm"
+  },
+  {
+    "source_name": "Haiti Bolet 7:30 PM",
+    "id": "43",
+    "zone": "America/Santo_Domingo",
+    "draw_time": "7:30 PM",
+    "name": "Haiti Bolet 7:30 PM",
+    "slug": "haiti-bolet-7-30-pm"
+  },
+  {
+    "source_name": "Georgia Día",
+    "id": "44",
+    "zone": "America/New_York",
+    "draw_time": "12:29 PM",
+    "name": "Georgia Día",
+    "slug": "georgia-dia"
+  },
+  {
+    "source_name": "Georgia Tarde",
+    "id": "45",
+    "zone": "America/New_York",
+    "draw_time": "6:59 PM",
+    "name": "Georgia Tarde",
+    "slug": "georgia-tarde"
+  },
+  {
+    "source_name": "Georgia Noche",
+    "id": "46",
+    "zone": "America/New_York",
+    "draw_time": "11:34 PM",
+    "name": "Georgia Noche",
+    "slug": "georgia-noche"
+  },
+  {
+    "source_name": "Real Noche",
+    "id": "47",
+    "zone": "America/Santo_Domingo",
+    "draw_time": "8:00 PM",
+    "name": "Real Noche",
+    "slug": "real-noche"
+  },
+  {
+    "source_name": "Loteka Tarde",
+    "id": "48",
+    "zone": "America/Santo_Domingo",
+    "draw_time": "1:30 PM",
+    "name": "Loteka Tarde",
+    "slug": "loteka-tarde"
+  },
+  {
+    "source_name": "LoteDom Noche",
+    "id": "49",
+    "zone": "America/Santo_Domingo",
+    "draw_time": "10:00 PM",
+    "name": "LoteDom Noche",
+    "slug": "lotedom-noche"
+  },
+  {
+    "source_name": "Pennsylvania Tarde",
+    "id": "50",
+    "zone": "America/New_York",
+    "draw_time": "1:35 PM",
+    "name": "Pennsylvania Tarde",
+    "slug": "pennsylvania-tarde"
+  },
+  {
+    "source_name": "Pennsylvania Noche",
+    "id": "51",
+    "zone": "America/New_York",
+    "draw_time": "6:59 PM",
+    "name": "Pennsylvania Noche",
+    "slug": "pennsylvania-noche"
+  },
+  {
+    "source_name": "Connecticut Tarde",
+    "id": "52",
+    "zone": "America/New_York",
+    "draw_time": "1:57 PM",
+    "name": "Connecticut Tarde",
+    "slug": "connecticut-tarde"
+  },
+  {
+    "source_name": "Connecticut Noche",
+    "id": "53",
+    "zone": "America/New_York",
+    "draw_time": "10:29 PM",
+    "name": "Connecticut Noche",
+    "slug": "connecticut-noche"
+  },
+  {
+    "source_name": "Virginia Tarde",
+    "id": "54",
+    "zone": "America/New_York",
+    "draw_time": "1:59 PM",
+    "name": "Virginia Tarde",
+    "slug": "virginia-tarde"
+  },
+  {
+    "source_name": "Virginia Noche",
+    "id": "55",
+    "zone": "America/New_York",
+    "draw_time": "11:00 PM",
+    "name": "Virginia Noche",
+    "slug": "virginia-noche"
+  },
+  {
+    "source_name": "Maryland Tarde",
+    "id": "56",
+    "zone": "America/New_York",
+    "draw_time": "12:27 PM",
+    "name": "Maryland Tarde",
+    "slug": "maryland-tarde"
+  },
+  {
+    "source_name": "Maryland Noche",
+    "id": "57",
+    "zone": "America/New_York",
+    "draw_time": "7:56 PM",
+    "name": "Maryland Noche",
+    "slug": "maryland-noche"
+  },
+  {
+    "source_name": "Illinois Tarde",
+    "id": "58",
+    "zone": "America/Chicago",
+    "draw_time": "12:40 PM",
+    "name": "Illinois Tarde",
+    "slug": "illinois-tarde"
+  },
+  {
+    "source_name": "Illinois Noche",
+    "id": "59",
+    "zone": "America/Chicago",
+    "draw_time": "9:22 PM",
+    "name": "Illinois Noche",
+    "slug": "illinois-noche"
+  },
+  {
+    "source_name": "Massachusetts",
+    "id": "60",
+    "zone": "America/New_York",
+    "draw_time": "10:00 PM",
+    "name": "Massachusetts",
+    "slug": "massachusetts"
+  },
+  {
+    "source_name": "Texas Mañana",
+    "id": "61",
+    "zone": "America/Chicago",
+    "draw_time": "10:00 AM",
+    "name": "Texas Mañana",
+    "slug": "texas-manana"
+  },
+  {
+    "source_name": "Texas Día",
+    "id": "62",
+    "zone": "America/Chicago",
+    "draw_time": "12:27 PM",
+    "name": "Texas Día",
+    "slug": "texas-dia"
+  },
+  {
+    "source_name": "Texas Tarde",
+    "id": "63",
+    "zone": "America/Chicago",
+    "draw_time": "6:00 PM",
+    "name": "Texas Tarde",
+    "slug": "texas-tarde"
+  },
+  {
+    "source_name": "Texas Noche",
+    "id": "64",
+    "zone": "America/Chicago",
+    "draw_time": "10:12 PM",
+    "name": "Texas Noche",
+    "slug": "texas-noche"
+  }
+]

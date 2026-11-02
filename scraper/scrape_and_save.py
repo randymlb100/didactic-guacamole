@@ -7,6 +7,10 @@ import os, json, datetime, urllib.parse, re, asyncio, logging
 from zoneinfo import ZoneInfo
 import httpx
 from bs4 import BeautifulSoup
+if __package__:
+    from .normal_rss import CATALOG as NORMAL_RSS_CATALOG, HybridNormalRun
+else:
+    from normal_rss import CATALOG as NORMAL_RSS_CATALOG, HybridNormalRun
 
 SUPABASE_URL = os.environ.get("SUPABASE_URL", "https://unhoulkujbtsypccpirc.supabase.co")
 
@@ -84,6 +88,7 @@ TRACKED_REMOTE_RESULT_IDS = {
     "27", "28", "29", "30", "31", "32", "33", "34", "35", "36",
     "37", "38", "39", "40", "41", "42", "43", "44", "45", "46",
 }
+TRACKED_REMOTE_RESULT_IDS.update(NORMAL_RSS_CATALOG)
 US_PICK_NORMAL_CATALOG_STATE_CODES = set()
 US_PICK_URLS = {
     "pick3": "https://pick-3.com/winning-numbers",
@@ -473,6 +478,17 @@ ENLOTERIA_GENERAL_RESULT_MAP = {
     "king lottery día": {"id": "23", "name": "King Lottery Día"},
     "king lottery noche": {"id": "24", "name": "King Lottery Noche"},
 }
+for _normal_row in NORMAL_RSS_CATALOG.values():
+    ENLOTERIA_GENERAL_RESULT_MAP.setdefault(
+        _normal_row['source_name'].lower(),
+        {'id': _normal_row['id'], 'name': _normal_row['name']},
+    )
+    if not any(str(source['id']) == _normal_row['id'] for source in ENLOTERIA_RESULT_SOURCES):
+        ENLOTERIA_RESULT_SOURCES.append({
+            'id': _normal_row['id'], 'name': _normal_row['name'],
+            'source_name': _normal_row['source_name'],
+            'url': f"https://enloteria.com/resultados-{_normal_row['slug']}-hoy",
+        })
 
 
 def is_verified_normal_result_row(row, expected_date=None):
@@ -3670,63 +3686,35 @@ async def _async_fetch_loterias_dominicanas_results(date_str, wanted_ids=None, c
 
 
 
-async def _async_scrape_missing_rd_results(date_str, missing_ids, client=None):
+def create_normal_run(client):
+    async def fetch_text(url):
+        response = await async_http_get(url, client=client)
+        response.raise_for_status()
+        return response.text
+
+    async def fetch_general(date):
+        return await _async_fetch_enloteria_general_results(date, client=client)
+
+    def parse_detail(html, row, date):
+        return parse_enloteria_result_jsonld_for_dates(
+            html, row['id'], row['name'], [date], source_name=row['source_name'],
+        )
+
+    return HybridNormalRun(fetch_text, fetch_general, parse_detail)
+
+
+async def _async_scrape_missing_rd_results(date_str, missing_ids, client=None, hybrid=None):
     wanted = {str(value) for value in (missing_ids or []) if str(value).strip()}
     if not wanted:
         return []
-    c = client or get_http_client()
-    results = []
-    seen_ids = set()
-
-    # EnLoteria is the primary reachable source. The daily page covers the
-    # common Dominican draws; its per-draw pages cover the extended catalog.
-    general_rows = await _async_fetch_enloteria_general_results(
-        date_str, wanted_ids=wanted, client=c
-    )
-    for row in general_rows:
-        append_verified_normal_result(
-            results, seen_ids, row, date_str, source="enloteria-general"
-        )
-
-    still_missing = wanted - seen_ids
-    enloteria_sources = [
-        source for source in ENLOTERIA_RESULT_SOURCES
-        if str(source.get("id")) in still_missing
-    ]
-    if enloteria_sources:
-        enloteria_rows = await _async_fetch_enloteria_results(
-            date_str,
-            fallback_days=0,
-            sources=enloteria_sources,
-            client=c,
-        )
-        for row in enloteria_rows:
-            append_verified_normal_result(
-                results, seen_ids, row, date_str, source="enloteria-draw"
-            )
-
-    # Do not backfill from an unverified aggregator. Missing rows remain
-    # pending until the mapped operator source corroborates them.
-    still_missing = wanted - seen_ids
-    if still_missing:
-        logger.warning(
-            "Backfill pending official corroboration for %s on %s; "
-            "loteriadela1.com is intentionally disabled",
-            sorted(still_missing),
-            date_str,
-        )
-
-    still_missing = wanted - seen_ids
-    for row in build_king_no_draw_rows(date_str, seen_ids):
-        if row["id"] in still_missing:
-            results.append(row)
-            seen_ids.add(row["id"])
-            logger.info("King [%s] %s: no_draw for %s", row['id'], row['name'], date_str)
-
-    return sorted(results, key=result_sort_key)
+    hybrid = hybrid or create_normal_run(client or get_http_client())
+    rows = await hybrid.collect(date_str, wanted_ids=wanted)
+    seen = {str(row['id']) for row in rows}
+    rows.extend(row for row in build_king_no_draw_rows(date_str, seen) if row['id'] in wanted)
+    return sorted(rows, key=result_sort_key)
 
 
-async def _async_scrape(date_str=None, client=None):
+async def _async_scrape(date_str=None, client=None, hybrid=None, existing_rows=None):
     if not date_str:
         date_str = get_dr_date_str()
     c = client or get_http_client()
@@ -3734,30 +3722,16 @@ async def _async_scrape(date_str=None, client=None):
     results = []
     seen_ids = set()
 
-    primary_rows = await _async_fetch_enloteria_general_results(date_str, client=c)
+    hybrid = hybrid or create_normal_run(c)
+    primary_rows = await hybrid.collect(date_str, existing_rows=existing_rows)
     for row in primary_rows:
         append_verified_normal_result(
             results, seen_ids, row, date_str, source="enloteria-general"
         )
 
-    draw_rows = await _async_fetch_enloteria_results(date_str, fallback_days=0, client=c)
-    for row in draw_rows:
-        append_verified_normal_result(
-            results, seen_ids, row, date_str, source="enloteria-draw"
-        )
-
-    missing_ids = {
-        str(match["id"]) for match in LOTTERY_MAP.values()
-    } - seen_ids
-    if missing_ids:
-        logger.warning(
-            "Official corroboration pending for %s on %s; "
-            "loteriadela1.com fallback is disabled",
-            sorted(missing_ids),
-            date_str,
-        )
-
-    for row in build_king_no_draw_rows(date_str, seen_ids):
+    known_ids = seen_ids | {str(row.get('id')) for row in existing_rows or []
+                            if row.get('status') in ('published', 'no_draw')}
+    for row in build_king_no_draw_rows(date_str, known_ids):
         results.append(row)
         seen_ids.add(row["id"])
         logger.info("King [%s] %s: no_draw for %s", row['id'], row['name'], date_str)
@@ -4428,17 +4402,15 @@ async def _async_main():
     )
     client = get_http_client()
 
+    normal_run = create_normal_run(client)
+
     kv_snapshot = await _async_fetch_kv_snapshot([
         key for date in target_dates for key in (
             f"lot_results_cache_by_day:{date}", pick_results_cache_key(date),
         )
     ], client=client)
 
-    await _async_prefetch_authoritative_results([
-        date for date in target_dates if not should_require_supabase_save(
-            target_date=date, current_date=get_dr_date_str(), explicit_dates=explicit_dates,
-        )
-    ], kv_snapshot, client)
+    await _async_prefetch_authoritative_results(target_dates, kv_snapshot, client)
 
     for idx, target_date in enumerate(target_dates):
         logger.info("Scraping %s...", target_date)
@@ -4449,7 +4421,8 @@ async def _async_main():
             explicit_dates=explicit_dates,
         )
 
-        existing_results = []
+        existing_results = (await _async_fetch_existing_from_supabase(target_date, client=client, snapshot=kv_snapshot)
+                            if save_required else [])
         existing_pick_results = kv_snapshot.get(pick_results_cache_key(target_date), [])
         pick_snapshot_loaded = pick_results_cache_key(target_date) in kv_snapshot
         if not save_required:
@@ -4496,13 +4469,13 @@ async def _async_main():
                 else asyncio.sleep(0, result=[])
             )
             results, pick_results = await asyncio.gather(
-                _async_scrape(target_date, client=client),
+                _async_scrape(target_date, client=client, hybrid=normal_run, existing_rows=existing_results),
                 pick_task,
             )
         else:
             missing_rd_ids = missing_tracked_result_ids(existing_results)
             results, pick_results = await asyncio.gather(
-                _async_scrape_missing_rd_results(target_date, missing_rd_ids, client=client),
+                _async_scrape_missing_rd_results(target_date, missing_rd_ids, client=client, hybrid=normal_run),
                 _async_refresh_missing_us_pick_results(target_date, existing_pick_results, client=client),
             )
 
@@ -4522,7 +4495,7 @@ async def _async_main():
             try:
                 await _async_save_to_supabase(
                     target_date, results, prune_missing_ids=prune_missing_ids, client=client,
-                    existing_rows=existing_results if not save_required else None,
+                    existing_rows=existing_results,
                     snapshot=kv_snapshot,
                 )
             except (httpx.HTTPError, httpx.TimeoutException) as e:
