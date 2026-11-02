@@ -4491,7 +4491,9 @@ async def _async_main():
             continue
 
         if results:
-            prune_missing_ids = AUTHORITATIVE_NJ_IDS if idx == 0 and target_date == current_date else None
+            # A delta omits unchanged normal NJ draws; only legacy Pick IDs leave this cache.
+            prune_missing_ids = (AUTHORITATIVE_NJ_IDS - set(NORMAL_RSS_CATALOG)
+                                 if idx == 0 and target_date == current_date else None)
             try:
                 await _async_save_to_supabase(
                     target_date, results, prune_missing_ids=prune_missing_ids, client=client,

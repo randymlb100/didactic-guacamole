@@ -149,6 +149,31 @@ class RssContracts(unittest.IsolatedAsyncioTestCase):
             # Same numbers already accepted: no result rewrite or repeated ticket work.
             write.assert_not_awaited()
 
+    async def test_cron_delta_never_prunes_unchanged_normal_new_jersey(self):
+        import scrape_and_save as scraper
+        from unittest.mock import AsyncMock, patch
+        from contextlib import ExitStack
+        date='02-11-2026'
+        existing=[{'id':'25','name':'New Jersey Tarde','date':date,'number':'07-08-09','status':'published'}]
+        new=[{'id':'50','name':'Pennsylvania Día','date':date,'number':'04-05-06'}]
+        with ExitStack() as stack:
+            for name,value in [('get_http_client',object()),('default_scrape_dates',[date]),
+                               ('get_dr_date_str',date),('should_run_full_us_pick_sweep',False),
+                               ('recently_closed_us_pick_catalog_rows',[])]:
+                stack.enter_context(patch.object(scraper,name,return_value=value))
+            stack.enter_context(patch.object(scraper,'SUPABASE_KEY','test'))
+            stack.enter_context(patch('sys.argv',['scrape_and_save.py']))
+            for name,value in [('_async_fetch_kv_snapshot',{f'lot_results_cache_by_day:{date}':existing,scraper.pick_results_cache_key(date):[]}),
+                               ('_async_prefetch_authoritative_results',None),('_async_fetch_existing_pick_results_from_supabase',[]),
+                               ('_async_scrape',new),('async_recover_pending_reconcile_scopes',None),('close_http_client',None)]:
+                stack.enter_context(patch.object(scraper,name,new_callable=AsyncMock,return_value=value))
+            save=stack.enter_context(patch.object(scraper,'_async_save_to_supabase',new_callable=AsyncMock))
+            await scraper._async_main()
+        self.assertEqual({'19','20','21','22'},save.call_args.kwargs['prune_missing_ids'])
+        self.assertEqual(existing,save.call_args.kwargs['existing_rows'])
+        merged=scraper.merge_results_by_id(existing,new,save.call_args.kwargs['prune_missing_ids'])
+        self.assertEqual({'25','50'},{r['id'] for r in merged})
+
     async def test_conflict_is_quarantined_and_general_match_avoids_detail(self):
         calls=[]
         async def fetch(url): calls.append(url);return feed()
