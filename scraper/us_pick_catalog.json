@@ -1,5 +1,44 @@
 [
   {
+    "id": "US-P4-AZ-PICK-4-MIDDAY",
+    "state": "Arizona",
+    "stateCode": "AZ",
+    "game": "pick4",
+    "gameName": "Pick 4",
+    "draw": "Midday Draw",
+    "playTypes": [
+      "straight",
+      "box"
+    ],
+    "lotteryUsaUrl": "https://www.lotteryusa.com/arizona/midday-pick-4/"
+  },
+  {
+    "id": "US-P4-AZ-PICK-4-EVENING",
+    "state": "Arizona",
+    "stateCode": "AZ",
+    "game": "pick4",
+    "gameName": "Pick 4",
+    "draw": "Evening Draw",
+    "playTypes": [
+      "straight",
+      "box"
+    ],
+    "lotteryUsaUrl": "https://www.lotteryusa.com/arizona/pick-4/"
+  },
+  {
+    "id": "US-P3-AZ-PICK-3-MIDDAY",
+    "state": "Arizona",
+    "stateCode": "AZ",
+    "game": "pick3",
+    "gameName": "Pick 3",
+    "draw": "Midday Draw",
+    "playTypes": [
+      "straight",
+      "box"
+    ],
+    "lotteryUsaUrl": "https://www.lotteryusa.com/arizona/midday-pick-3/"
+  },
+  {
     "id": "US-P3-NH--DAY",
     "stateCode": "NH",
     "game": "pick3",
@@ -347,7 +386,7 @@
       "straight",
       "box"
     ],
-    "lotteryUsaUrl": "https://www.lotteryusa.com/georgia/cash-3-evening/"
+    "lotteryUsaUrl": "https://www.lotteryusa.com/georgia/cash-3/"
   },
   {
     "id": "US-P4-GA-CASH-4-EVENING",
@@ -386,7 +425,7 @@
       "straight",
       "box"
     ],
-    "lotteryUsaUrl": "https://www.lotteryusa.com/georgia/cash-4-evening/"
+    "lotteryUsaUrl": "https://www.lotteryusa.com/georgia/cash-4/"
   },
   {
     "id": "US-P3-ID-PICK-3-DAY",
@@ -1319,7 +1358,7 @@
       "straight",
       "box"
     ],
-    "lotteryUsaUrl": "https://www.lotteryusa.com/north-carolina/midday-3/"
+    "lotteryUsaUrl": "https://www.lotteryusa.com/north-carolina/pick-3/"
   },
   {
     "state": "North Carolina",
@@ -1333,7 +1372,7 @@
       "straight",
       "box"
     ],
-    "lotteryUsaUrl": "https://www.lotteryusa.com/north-carolina/midday-pick-4/"
+    "lotteryUsaUrl": "https://www.lotteryusa.com/north-carolina/pick-4/"
   },
   {
     "id": "US-P4-NC-PICK-4-MIDDAY",
@@ -1425,7 +1464,7 @@
       "straight",
       "box"
     ],
-    "lotteryUsaUrl": "https://www.lotteryusa.com/oregon/pick-4-1pm/"
+    "lotteryUsaUrl": "https://www.lotteryusa.com/oregon/pick-4-4pm/"
   },
   {
     "id": "US-P4-OR-PICK-4-EVENING",
@@ -1620,7 +1659,7 @@
       "straight",
       "box"
     ],
-    "lotteryUsaUrl": "https://www.lotteryusa.com/tennessee/morning-cash-3/"
+    "lotteryUsaUrl": "https://www.lotteryusa.com/tennessee/midday-cash-3/"
   },
   {
     "id": "US-P3-TN-CASH-3-MORNING",
@@ -1646,7 +1685,7 @@
       "straight",
       "box"
     ],
-    "lotteryUsaUrl": "https://www.lotteryusa.com/tennessee/morning-cash-4/"
+    "lotteryUsaUrl": "https://www.lotteryusa.com/tennessee/midday-cash-4/"
   },
   {
     "id": "US-P4-TN-CASH-4-EVENING",
@@ -1685,7 +1724,7 @@
       "straight",
       "box"
     ],
-    "lotteryUsaUrl": "https://www.lotteryusa.com/texas/morning-pick-3/"
+    "lotteryUsaUrl": "https://www.lotteryusa.com/texas/midday-pick-3/"
   },
   {
     "id": "US-P3-TX-PICK-3-EVENING",
@@ -1724,7 +1763,7 @@
       "straight",
       "box"
     ],
-    "lotteryUsaUrl": "https://www.lotteryusa.com/texas/evening-pick-3/"
+    "lotteryUsaUrl": "https://www.lotteryusa.com/texas/pick-3/"
   },
   {
     "id": "US-P4-TX-DAILY-4-DAY",
@@ -1737,7 +1776,7 @@
       "straight",
       "box"
     ],
-    "lotteryUsaUrl": "https://www.lotteryusa.com/texas/morning-pick-4/"
+    "lotteryUsaUrl": "https://www.lotteryusa.com/texas/midday-4/"
   },
   {
     "id": "US-P4-TX-DAILY-4-EVENING",
@@ -1777,7 +1816,7 @@
       "straight",
       "box"
     ],
-    "lotteryUsaUrl": "https://www.lotteryusa.com/texas/evening-pick-4/"
+    "lotteryUsaUrl": "https://www.lotteryusa.com/texas/daily-4/"
   },
   {
     "id": "US-P3-VT-PICK-3-DAY",
@@ -1899,6 +1938,8 @@
   },
   {
     "id": "US-P4-WA-MATCH-4-EVENING",
+    "supported": false,
+    "unsupportedReason": "Official Match 4 draws four numbers from 1 to 24, not four decimal digits.",
     "state": "Washington",
     "stateCode": "WA",
     "game": "pick4",
@@ -1946,7 +1987,7 @@
       "straight",
       "box"
     ],
-    "lotteryUsaUrl": "https://www.lotteryusa.com/district-of-columbia/dc-lucky-numbers/"
+    "lotteryUsaUrl": "https://www.lotteryusa.com/district-of-columbia/dc-3-night/"
   },
   {
     "id": "US-P4-DC-MATCH-4-EVENING",
@@ -1985,7 +2026,7 @@
       "straight",
       "box"
     ],
-    "lotteryUsaUrl": "https://www.lotteryusa.com/district-of-columbia/dc-4/"
+    "lotteryUsaUrl": "https://www.lotteryusa.com/district-of-columbia/dc-4-night/"
   },
   {
     "id": "US-P3-WV-DAILY-3-DAY",

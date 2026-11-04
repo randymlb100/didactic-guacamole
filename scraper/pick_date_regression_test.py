@@ -27,7 +27,7 @@ class PickDateRegressionTest(unittest.TestCase):
 
 class PickOverviewFallbackTest(unittest.IsolatedAsyncioTestCase):
     async def test_only_requested_date_can_be_recovered_from_overview(self):
-        row = {'id': 'US-P3-AZ-PICK-3-EVENING', 'date': '12-10-2026',
+        row = {'id': 'US-P3-AZ-PICK-3-DRAW', 'date': '12-10-2026',
                'stateCode': 'AZ', 'state': 'Arizona', 'game': 'pick3',
                'gameName': 'Pick 3', 'draw': 'Evening Draw', 'number': '6-8-6'}
         with patch.object(s, '_async_fetch_us_pick_overview', new_callable=AsyncMock, return_value=[row]), \

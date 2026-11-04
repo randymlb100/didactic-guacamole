@@ -9,7 +9,7 @@ class PickReadReuseTest(unittest.IsolatedAsyncioTestCase):
             kwargs = {'existing_rows': snapshot} if supplied else {}
             await scraper._async_save_us_picks_to_supabase('01-10-2026', [], client=object(), **kwargs)
             self.assertEqual(0 if supplied else 1, read.await_count)
-            write.assert_awaited_once()
+            write.assert_not_awaited()
 
     async def test_empty_snapshot_is_reused_not_refetched(self):
         await self.check_save([], True)
@@ -22,6 +22,6 @@ class PickReadReuseTest(unittest.IsolatedAsyncioTestCase):
         with patch.object(scraper, '_async_fetch_existing_pick_results_from_supabase', new_callable=AsyncMock) as read, patch.object(scraper, 'async_save_result_draws_payload', new_callable=AsyncMock) as write, patch.object(scraper, 'async_dispatch_result_reconcile_scopes', new_callable=AsyncMock) as dispatch:
             await scraper._async_save_us_picks_to_supabase('01-10-2026', [], client=object(), existing_rows=snapshot)
             read.assert_not_awaited()
-            self.assertEqual('123', write.await_args.args[1][0]['number'])
-            self.assertEqual([], dispatch.await_args.args[1])
+            write.assert_not_awaited()
+            dispatch.assert_not_awaited()
             self.assertEqual('123', snapshot[0]['number'])

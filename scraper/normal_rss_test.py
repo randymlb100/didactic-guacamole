@@ -157,13 +157,14 @@ class RssContracts(unittest.IsolatedAsyncioTestCase):
         existing=[{'id':'25','name':'New Jersey Tarde','date':date,'number':'07-08-09','status':'published'}]
         new=[{'id':'50','name':'Pennsylvania Día','date':date,'number':'04-05-06'}]
         with ExitStack() as stack:
-            for name,value in [('get_http_client',object()),('default_scrape_dates',[date]),
+            for name,value in [('get_http_client',type('Client',(),{})()),('default_scrape_dates',[date]),
                                ('get_dr_date_str',date),('should_run_full_us_pick_sweep',False),
                                ('recently_closed_us_pick_catalog_rows',[])]:
                 stack.enter_context(patch.object(scraper,name,return_value=value))
             stack.enter_context(patch.object(scraper,'SUPABASE_KEY','test'))
             stack.enter_context(patch('sys.argv',['scrape_and_save.py']))
             for name,value in [('_async_fetch_kv_snapshot',{f'lot_results_cache_by_day:{date}':existing,scraper.pick_results_cache_key(date):[]}),
+                               ('_async_fetch_pick_snapshot',{scraper.pick_results_cache_key(date):[]}),
                                ('_async_prefetch_authoritative_results',None),('_async_fetch_existing_pick_results_from_supabase',[]),
                                ('_async_scrape',new),('async_recover_pending_reconcile_scopes',None),('close_http_client',None)]:
                 stack.enter_context(patch.object(scraper,name,new_callable=AsyncMock,return_value=value))

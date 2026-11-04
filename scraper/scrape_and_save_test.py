@@ -925,7 +925,7 @@ class ScraperContractsTest(unittest.TestCase):
         )
 
         self.assertEqual(1, len(rows))
-        self.assertEqual("US-P3-WV-DAILY-3-09-00-PM", rows[0]["id"])
+        self.assertEqual("US-P3-WV-DAILY-3-DAY", rows[0]["id"])
         self.assertEqual("7-2-2", rows[0]["number"])
 
     def test_sunday_pick_no_draw_rows_fill_known_closed_draws(self):
@@ -1483,7 +1483,7 @@ class ScraperContractsTest(unittest.TestCase):
 
         self.assertEqual(1, client.calls)
 
-    def test_pick_history_stops_after_unreachable_overview_instead_of_probing_more_urls(self):
+    def test_empty_catalog_does_not_probe_unrequested_hosts(self):
         health = {}
 
         async def unreachable_overview(game, client=None, source_health=None):
@@ -1498,7 +1498,7 @@ class ScraperContractsTest(unittest.TestCase):
             ))
 
         self.assertEqual([], rows)
-        self.assertFalse(health["overview_ok"])
+        self.assertEqual({}, health)
 
     def test_scrape_us_picks_with_catalog_uses_pick_history_instead_of_lotteryusa(self):
         catalog = [{
@@ -1650,7 +1650,8 @@ class ScraperContractsTest(unittest.TestCase):
             "draw": "Day Draw",
         }]
 
-        with patch.object(scraper, "_async_fetch_working_us_pick_history", AsyncMock(return_value=refreshed)):
+        with patch.object(scraper, "static_us_pick_catalog_rows", return_value=existing), \
+                patch.object(scraper, "_async_fetch_working_us_pick_history", AsyncMock(return_value=refreshed)):
             rows = scraper.sync_run(scraper._async_refresh_missing_us_pick_results("18-05-2026", existing))
 
         by_id = {row["id"]: row for row in rows}
@@ -1676,7 +1677,8 @@ class ScraperContractsTest(unittest.TestCase):
             "draw": "Draw",
         }]
 
-        with patch.object(scraper, "_async_fetch_working_us_pick_history", AsyncMock(return_value=refreshed)):
+        with patch.object(scraper, "static_us_pick_catalog_rows", return_value=existing), \
+                patch.object(scraper, "_async_fetch_working_us_pick_history", AsyncMock(return_value=refreshed)):
             rows = scraper.sync_run(scraper._async_refresh_missing_us_pick_results("18-05-2026", existing))
 
         self.assertEqual(["US-P3-AZ-PICK-3-DRAW"], [row["id"] for row in rows])
@@ -1755,7 +1757,7 @@ class ScraperContractsTest(unittest.TestCase):
         self.assertEqual("3-6-7-1", rows[0]["number"])
         fallback.assert_awaited_once()
 
-    def test_async_scrape_us_picks_does_not_use_lotteryusa_when_pick_overview_is_reachable(self):
+    def test_async_scrape_us_picks_recovers_missing_rows_even_when_overview_is_reachable(self):
         catalog = [{
             "id": "US-P4-CT-PLAY-4-EVENING",
             "state": "Connecticut",
@@ -1772,10 +1774,11 @@ class ScraperContractsTest(unittest.TestCase):
 
         with patch.object(scraper, "static_us_pick_catalog_rows", return_value=catalog), \
                 patch.object(scraper, "_async_fetch_working_us_pick_history", side_effect=reachable_pick_history), \
-                patch.object(scraper, "_async_fetch_lotteryusa_pick_catalog_rows", AsyncMock(side_effect=AssertionError("unexpected fallback"))):
-            rows = scraper.sync_run(scraper._async_scrape_us_picks("14-05-2026", games=("pick4",)))
+                patch.object(scraper, "_async_fetch_lotteryusa_pick_catalog_rows", AsyncMock(return_value=[])) as fallback:
+            rows = scraper.sync_run(scraper._async_scrape_us_picks("14-05-2026", games=("pick4",), existing_rows=catalog))
 
         self.assertEqual([], rows)
+        fallback.assert_awaited_once()
 
     def test_refresh_missing_pick_results_uses_lotteryusa_when_primary_is_unreachable(self):
         pending = [{

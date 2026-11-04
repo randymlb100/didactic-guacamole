@@ -28,7 +28,7 @@ class KvBatchTest(unittest.IsolatedAsyncioTestCase):
                 await scraper._async_main()
                 recover.assert_awaited_once()
         self.assertEqual(1, sum(r.url.path.endswith("lotterynet_kv") for r in calls))
-        self.assertEqual(1, sum(r.url.path.endswith("result_draws") for r in calls))
+        self.assertEqual(2, sum(r.url.path.endswith("result_draws") for r in calls))
 
     async def test_authoritative_batch_isolates_dates_and_preserves_empty_days(self):
         calls = []
