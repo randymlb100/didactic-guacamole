@@ -14,6 +14,28 @@ def row(id="US-P3-FL-PICK-3-MIDDAY", number="", status="pending"):
 
 
 class PickReliabilityTest(unittest.IsolatedAsyncioTestCase):
+    async def test_connection_outage_does_not_probe_other_paths_on_same_host(self):
+        for error_type in (httpx.ConnectTimeout, httpx.ConnectError):
+            with self.subTest(error=error_type.__name__):
+                async def unavailable(url, client=None):
+                    raise error_type("connection unavailable")
+                with patch.object(s, "async_pick_http_get", side_effect=unavailable) as get:
+                    found = await s._async_fetch_us_pick_state_history(
+                        "pick3", "FL", "Florida", "Pick 3", "03-11-2026")
+                self.assertEqual([], found)
+                self.assertEqual(1, get.await_count)
+
+    async def test_http_route_failure_still_tries_another_history_path(self):
+        request = httpx.Request("GET", "https://fl.pick-3.com/numbers")
+        response = httpx.Response(404, request=request)
+        failure = httpx.HTTPStatusError("route missing", request=request, response=response)
+        with patch.object(s, "async_pick_http_get", AsyncMock(side_effect=[failure, httpx.Response(200, text="history")])) as get, \
+             patch.object(s, "parse_us_pick_history_page", return_value=[row(number="1-2-3")]):
+            found = await s._async_fetch_us_pick_state_history(
+                "pick3", "FL", "Florida", "Pick 3", "03-11-2026")
+        self.assertEqual(2, get.await_count)
+        self.assertEqual("1-2-3", found[0]["number"])
+
     async def test_compact_native_snapshot_is_batched_and_reused(self):
         calls = []
         def respond(request):

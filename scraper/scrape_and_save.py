@@ -1798,6 +1798,9 @@ async def _async_fetch_us_pick_state_history(game, state_code, state_name, game_
         try:
             resp = await async_pick_http_get(url, client=c)
             html = resp.text
+        except (httpx.ConnectTimeout, httpx.ConnectError):
+            # Other paths cannot repair an unreachable TCP/TLS origin this cycle.
+            break
         except Exception:
             continue
         rows = parse_us_pick_history_page(
