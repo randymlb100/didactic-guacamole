@@ -8,7 +8,7 @@ test("Render Blueprint names only the active web service and results cron", () =
   const names = [...blueprint.matchAll(/^\s+name:\s*(\S+)\s*$/gm)].map((match) => match[1]);
 
   assert.deepEqual(names, ["didactic-guacamole", "didactic-guacamole-results-cron"]);
-  assert.match(blueprint, /type:\s*cron[\s\S]*?schedule:\s*["']\*\/5 \* \* \* \*["']/);
+  assert.match(blueprint, /type:\s*cron[\s\S]*?schedule:\s*["']\*\/5 (?:14-23,0-4|\*) \* \* \*["']/);
   assert.match(blueprint, /startCommand:\s*python scraper\/scrape_and_save\.py/);
   assert.doesNotMatch(blueprint, /lotterynet-(?:results|scraper-cron|sports-odds-sync|sports-results-sync)/);
 });

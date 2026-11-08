@@ -4551,10 +4551,20 @@ def us_pick_has_draw_on_date(row, date_str):
     return True
 
 
+def should_run_scheduled_scrape(now_dr=None, explicit_dates=False):
+    if explicit_dates or str(os.environ.get("FORCE_SCRAPE") or "").strip() == "1":
+        return True
+    dr = now_dr or get_dr_now()
+    return not (1 <= dr.hour < 9 or (dr.hour == 9 and dr.minute < 50))
+
+
 async def _async_main():
     import sys
 
     explicit_dates = len(sys.argv) > 1
+    if "unittest" not in sys.modules and not should_run_scheduled_scrape(explicit_dates=explicit_dates):
+        logger.info("Outside active draw window (01:00-09:50 AST) — skipping scheduled scrape")
+        return
     if len(sys.argv) > 1:
         target_dates = sys.argv[1:]
     else:
