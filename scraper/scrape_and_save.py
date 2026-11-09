@@ -87,6 +87,7 @@ TRACKED_REMOTE_RESULT_IDS = {
     "25", "26",  # New Jersey normal draws
     "27", "28", "29", "30", "31", "32", "33", "34", "35", "36",
     "37", "38", "39", "40", "41", "42", "43", "44", "45", "46",
+    "48", "49", "50", "51", "52", "53", "54", "55", "56", "57", "58", "59", "60", "61", "62", "63", "64",
 }
 TRACKED_REMOTE_RESULT_IDS.update(NORMAL_RSS_CATALOG)
 US_PICK_NORMAL_CATALOG_STATE_CODES = set()
@@ -384,7 +385,23 @@ ENLOTERIA_RESULT_SOURCES = [
     {"url": "https://enloteria.com/resultados-florida-noche", "id": "17", "name": "Florida Noche"},
     {"url": "https://enloteria.com/resultados-new-jersey-tarde", "id": "25", "name": "New Jersey Tarde"},
     {"url": "https://enloteria.com/resultados-new-jersey-noche", "id": "26", "name": "New Jersey Noche"},
-    {"url": "https://enloteria.com/resultados-real-noche", "id": "47", "name": "Real Noche", "source_name": "Real Noche"},
+        {"url": "https://enloteria.com/resultados-real-noche", "id": "47", "name": "Real Noche", "source_name": "Real Noche"},
+    {"url": "https://enloteria.com/resultados-lotedom-noche", "id": "49", "name": "LoteDom Noche"},
+    {"url": "https://enloteria.com/resultados-pennsylvania-tarde", "id": "50", "name": "Pennsylvania Tarde"},
+    {"url": "https://enloteria.com/resultados-pennsylvania-noche", "id": "51", "name": "Pennsylvania Noche"},
+    {"url": "https://enloteria.com/resultados-connecticut-tarde", "id": "52", "name": "Connecticut Tarde"},
+    {"url": "https://enloteria.com/resultados-connecticut-noche", "id": "53", "name": "Connecticut Noche"},
+    {"url": "https://enloteria.com/resultados-virginia-tarde", "id": "54", "name": "Virginia Tarde"},
+    {"url": "https://enloteria.com/resultados-virginia-noche", "id": "55", "name": "Virginia Noche"},
+    {"url": "https://enloteria.com/resultados-maryland-tarde", "id": "56", "name": "Maryland Tarde"},
+    {"url": "https://enloteria.com/resultados-maryland-noche", "id": "57", "name": "Maryland Noche"},
+    {"url": "https://enloteria.com/resultados-illinois-tarde", "id": "58", "name": "Illinois Tarde"},
+    {"url": "https://enloteria.com/resultados-illinois-noche", "id": "59", "name": "Illinois Noche"},
+    {"url": "https://enloteria.com/resultados-massachusetts", "id": "60", "name": "Massachusetts"},
+    {"url": "https://enloteria.com/resultados-texas-manana", "id": "61", "name": "Texas Mañana"},
+    {"url": "https://enloteria.com/resultados-texas-dia", "id": "62", "name": "Texas Día"},
+    {"url": "https://enloteria.com/resultados-texas-tarde", "id": "63", "name": "Texas Tarde"},
+    {"url": "https://enloteria.com/resultados-texas-noche", "id": "64", "name": "Texas Noche"},
 ]
 
 # EnLoteria exposes the operator behind each Event in JSON-LD through
